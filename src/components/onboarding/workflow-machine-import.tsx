@@ -242,11 +242,30 @@ export function convertToDockerSteps(
   };
 }
 
+interface MachineCompatibility {
+  machineId: string;
+  machineName: string;
+  matchingNodes: string[];
+  missingNodes: string[];
+}
+
 export function WorkflowImportMachine({
   validation,
   setValidation,
 }: StepComponentProps<StepValidation>) {
   const sub = useCurrentPlan();
+  const [machineCompatibility, setMachineCompatibility] = useState<
+    MachineCompatibility[]
+  >([]);
+
+  // Calculate machine compatibility when component mounts or dependencies change
+  useEffect(() => {
+    if (validation.dependencies?.custom_nodes) {
+      // Fetch machines and their installed nodes
+      // Compare with required custom nodes
+      // Update machineCompatibility state
+    }
+  }, [validation.dependencies]);
 
   return (
     <div>
@@ -318,6 +337,34 @@ export function WorkflowImportMachine({
           }
         />
       </Accordion>
+
+      {/* Existing machine selection UI */}
+      <div className="mt-4">
+        <h3 className="text-sm font-medium mb-2">Machine Compatibility</h3>
+        {machineCompatibility.map((machine) => (
+          <div
+            key={machine.machineId}
+            className={cn(
+              "p-4 border rounded-md mb-2",
+              machine.missingNodes.length === 0
+                ? "border-green-500"
+                : "border-yellow-500",
+            )}
+          >
+            <h4>{machine.machineName}</h4>
+            {machine.matchingNodes.length > 0 && (
+              <div className="text-sm text-green-600">
+                ✓ Has {machine.matchingNodes.length} required nodes
+              </div>
+            )}
+            {machine.missingNodes.length > 0 && (
+              <div className="text-sm text-yellow-600">
+                ! Missing {machine.missingNodes.length} nodes
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -68,42 +68,32 @@ function getStepNavigation(
   switch (currentStep) {
     case 0: // Create Workflow
       return {
-        next: 1,
+        next: validation.importOption === "import" ? 1 : 2, // Go to custom node setup only for imports
         prev: null,
       };
 
-    case 1: // Select Machine
+    case 1: // Custom Node Setup
       return {
-        next:
-          validation.machineOption === "new"
-            ? validation.importOption === "empty" ||
-              validation.importOption === "default"
-              ? 4
-              : 2 // Skip Custom Node Setup for empty workflows
-            : null, // End flow for existing/none machine
+        next: 2,
         prev: 0,
       };
 
-    case 2: // Custom Node Setup
+    case 2: // Select Machine
       return {
-        next: 3,
-        prev: 1,
+        next: validation.machineOption === "new" ? 4 : null,
+        prev: validation.importOption === "import" ? 1 : 0,
       };
 
     case 3: // Model Checking
       return {
-        next: 4,
+        next: validation.machineOption === "new" ? 4 : null,
         prev: 2,
       };
 
     case 4: // Machine Settings
       return {
         next: null,
-        prev:
-          validation.importOption === "empty" ||
-          validation.importOption === "default"
-            ? 1
-            : 3,
+        prev: 3,
       };
 
     default:
@@ -193,68 +183,6 @@ export default function WorkflowImport() {
     },
     {
       id: 2,
-      title: "Select Machine",
-      component: WorkflowImportMachine,
-      validate: (validation) => {
-        if (
-          validation.machineOption === "existing" &&
-          !validation.selectedMachineId
-        ) {
-          return { isValid: false, error: "Please select a machine" };
-        }
-        return { isValid: true };
-      },
-      actions: {
-        onNext: async (validation) => {
-          try {
-            switch (validation.machineOption) {
-              case "existing":
-                // console.log(validation);
-                // console.log(validation.workflowApi);
-                // console.log(validation.workflowJson);
-
-                // Execute the promise with toast and handle navigation
-                toast.promise(
-                  createWorkflow(validation.selectedMachineId || undefined),
-                  {
-                    loading: "Creating workflow...",
-                    success: (data) => {
-                      console.log(data);
-                      if (data.workflow_id) {
-                        navigate({
-                          to: "/workflows/$workflowId/$view",
-                          params: {
-                            workflowId: data.workflow_id,
-                            view: "workspace",
-                          },
-                          search: { view: undefined },
-                        });
-                      }
-                      return `Workflow "${validation.workflowName}" has been created!`;
-                    },
-                    error: (err) => `Failed to create workflow: ${err.message}`,
-                  },
-                );
-
-                return true;
-
-              case "new":
-                // Maybe store some state and continue to next step
-                return true;
-
-              default:
-                return false;
-            }
-          } catch (error) {
-            toast.error(`Failed to create workflow: ${error}`);
-            return false;
-          }
-        },
-      },
-    },
-    // Add more steps as needed:
-    {
-      id: 3,
       title: "Custom Node Setup",
       component: WorkflowImportCustomNodeSetup,
       validate: (validation) => {
@@ -318,6 +246,58 @@ export default function WorkflowImport() {
         },
       },
     },
+    {
+      id: 3,
+      title: "Select Machine",
+      component: WorkflowImportMachine,
+      validate: (validation) => {
+        if (
+          validation.machineOption === "existing" &&
+          !validation.selectedMachineId
+        ) {
+          return { isValid: false, error: "Please select a machine" };
+        }
+        return { isValid: true };
+      },
+      actions: {
+        onNext: async (validation) => {
+          try {
+            if (
+              validation.machineOption === "existing" &&
+              (validation.importOption === "empty" ||
+                validation.importOption === "default")
+            ) {
+              // Create workflow directly for empty/default templates with existing machine
+              toast.promise(
+                createWorkflow(validation.selectedMachineId || undefined),
+                {
+                  loading: "Creating workflow...",
+                  success: (data) => {
+                    if (data.workflow_id) {
+                      navigate({
+                        to: "/workflows/$workflowId/$view",
+                        params: {
+                          workflowId: data.workflow_id,
+                          view: "workspace",
+                        },
+                        search: { view: undefined },
+                      });
+                    }
+                    return `Workflow "${validation.workflowName}" has been created!`;
+                  },
+                  error: (err) => `Failed to create workflow: ${err.message}`,
+                },
+              );
+            }
+            return true;
+          } catch (error) {
+            toast.error(`Failed to create workflow: ${error}`);
+            return false;
+          }
+        },
+      },
+    },
+    // Add more steps as needed:
     {
       id: 4,
       title: "Model Checking (Beta)",
