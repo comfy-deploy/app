@@ -1,3 +1,4 @@
+import { useIsAdminOnly } from "@/components/permissions";
 import { openAddModelModal } from "@/components/storage/model-list-view";
 import {
   CommandDialog,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/command";
 import { LoadingIcon } from "@/components/ui/custom/loading-icon";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrentPlan } from "@/hooks/use-current-plan";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
 import { getRelativeTime } from "@/lib/get-relative-time";
@@ -27,6 +29,7 @@ import {
   Folder,
   Github,
   Key,
+  LineChart,
   MessageCircle,
   Plus,
   Rss,
@@ -274,6 +277,9 @@ function NavigationPartCommand({ navigate, setOpen }: ComfyCommandProps) {
 }
 
 function AccountPartCommand({ navigate, setOpen }: ComfyCommandProps) {
+  const sub = useCurrentPlan();
+  const isAdminOnly = useIsAdminOnly();
+
   return (
     <CommandGroup heading="Account">
       <CommandItem
@@ -298,17 +304,35 @@ function AccountPartCommand({ navigate, setOpen }: ComfyCommandProps) {
         <Key className="!h-4 !w-4 mr-2" />
         <span>API Keys</span>
       </CommandItem>
-      <CommandItem
-        onSelect={() => {
-          navigate({
-            to: "/usage",
-          });
-          setOpen(false);
-        }}
-      >
-        <CircleGauge className="!h-4 !w-4 mr-2" />
-        <span>Usage</span>
-      </CommandItem>
+
+      {isAdminOnly && (
+        <CommandItem
+          onSelect={() => {
+            navigate({
+              to: "/usage",
+            });
+            setOpen(false);
+          }}
+        >
+          <CircleGauge className="!h-4 !w-4 mr-2" />
+          <span>Usage</span>
+        </CommandItem>
+      )}
+
+      {sub?.plans && (
+        <CommandItem
+          onSelect={() => {
+            navigate({
+              to: "/analytics",
+            });
+            setOpen(false);
+          }}
+        >
+          <LineChart className="!h-4 !w-4 mr-2" />
+          <span>Analytics</span>
+        </CommandItem>
+      )}
+
       <CommandItem
         onSelect={() => {
           navigate({
