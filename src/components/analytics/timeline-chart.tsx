@@ -3,16 +3,16 @@
 import { Bar, BarChart, CartesianGrid, ReferenceArea, XAxis } from "recharts";
 
 import {
-  ChartConfig,
+  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { useMemo, useState } from "react";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import type { ColumnFiltersColumn } from "@tanstack/react-table";
+import { format } from "date-fns";
+import { useMemo, useState } from "react";
 import type { CategoricalChartFunc } from "recharts/types/chart/generateCategoricalChart";
-import { ColumnFiltersColumn } from "@tanstack/react-table";
 
 export const description = "A stacked bar chart with a legend";
 
@@ -55,7 +55,7 @@ export function TimelineChart({
         ...item,
         date: new Date(item.timestamp).toString(),
       })),
-    [data]
+    [data],
   );
 
   const interval = useMemo(() => {
@@ -79,7 +79,7 @@ export function TimelineChart({
   const handleMouseUp: CategoricalChartFunc = (e) => {
     if (refAreaLeft && refAreaRight) {
       const [left, right] = [refAreaLeft, refAreaRight].sort(
-        (a, b) => new Date(a).getTime() - new Date(b).getTime()
+        (a, b) => new Date(a).getTime() - new Date(b).getTime(),
       );
       handleFilter?.([new Date(left), new Date(right)]);
     }
@@ -95,7 +95,7 @@ export function TimelineChart({
         "aspect-auto h-[60px] w-full",
         "[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted/50", // otherwise same color as 200
         "select-none", // disable text selection
-        className
+        className,
       )}
     >
       <BarChart

@@ -1,6 +1,4 @@
 import { useAuthStore } from "@/lib/auth-store";
-import type { Percentile } from "@/lib/request/percentile";
-import type { MakeArray } from "@/types";
 import { infiniteQueryOptions, keepPreviousData } from "@tanstack/react-query";
 import type { ColumnSchema } from "./schema";
 import { type SearchParamsType, searchParamsSerializer } from "./search-params";
@@ -8,8 +6,6 @@ import { type SearchParamsType, searchParamsSerializer } from "./search-params";
 export type InfiniteQueryMeta = {
   totalRowCount: number;
   filterRowCount: number;
-  totalFilters: MakeArray<ColumnSchema>;
-  currentPercentiles: Record<Percentile, number>;
   chartData: { timestamp: number; [key: string]: number }[];
 };
 

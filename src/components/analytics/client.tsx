@@ -2,7 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import * as React from "react";
 import { columns } from "./columns";
-import { filterFields as defaultFilterFields } from "./constants";
+import { filterFields as defaultFilterFields, filterFields } from "./constants";
 import { DataTableInfinite } from "./data-table-infinite";
 import { dataOptions } from "./query-options";
 import { searchParamsParser } from "./search-params";
@@ -21,20 +21,10 @@ export function Client() {
   const lastPage = data?.pages?.[data?.pages.length - 1];
   const totalDBRowCount = lastPage?.meta?.totalRowCount;
   const filterDBRowCount = lastPage?.meta?.filterRowCount;
-  const totalFilters = lastPage?.meta?.totalFilters;
-  const currentPercentiles = lastPage?.meta?.currentPercentiles;
   const chartData = lastPage?.meta?.chartData;
   const totalFetched = flatData?.length;
 
   const { offset, limit, id, ...filter } = search;
-
-  const filterFields = React.useMemo(
-    () =>
-      defaultFilterFields.map((field) => {
-        return field;
-      }),
-    [totalFilters],
-  );
 
   return (
     <DataTableInfinite

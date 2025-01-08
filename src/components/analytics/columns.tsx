@@ -1,17 +1,17 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import type { ColumnSchema } from "./schema";
-import { format, formatDistanceToNow } from "date-fns";
+import TextWithTooltip from "@/components/custom/text-with-tooltip";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { Badge } from "@/components/ui/badge";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import TextWithTooltip from "@/components/custom/text-with-tooltip";
 import { UTCDate } from "@date-fns/utc";
-import { Badge } from "@/components/ui/badge";
+import type { ColumnDef } from "@tanstack/react-table";
+import { format, formatDistanceToNow } from "date-fns";
+import type { ColumnSchema } from "./schema";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -78,7 +78,7 @@ export const columns: ColumnDef<ColumnSchema>[] = [
     },
     filterFn: "inDateRange",
     meta: {
-      headerClassName: "h-5 text-xs max-w-[100px]",
+      headerClassName: "h-5 text-xs max-w-[100px] text-muted-foreground",
     },
   },
   {

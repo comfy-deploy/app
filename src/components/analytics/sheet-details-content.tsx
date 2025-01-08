@@ -1,4 +1,3 @@
-"use client";
 import CopyToClipboardContainer from "@/components/custom/copy-to-clipboard-container";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -7,24 +6,10 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Skeleton } from "@/components/ui/skeleton";
-// import { getStatusColor } from "@/lib/request/status-code";
-import { regions } from "@/constants/region";
-// import {
-//   getTimingColor,
-//   getTimingLabel,
-//   getTimingPercentage,
-//   timingPhases,
-// } from "@/lib/request/timing";
-import {
-  formatCompactNumber,
-  formatDate,
-  formatMilliseconds,
-} from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { Check, FunctionSquare, X } from "lucide-react";
+import { formatCompactNumber, formatDate } from "@/lib/format";
+import { Check, X } from "lucide-react";
 import * as React from "react";
 import type { ColumnSchema } from "./schema";
-// import { Percentile, getPercentileColor } from "@/lib/request/percentile";
 
 interface SheetDetailsContentProps
   extends React.HTMLAttributes<HTMLDListElement> {
