@@ -16,19 +16,19 @@ import { LoaderCircle, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Kbd } from "@/components/custom/kbd";
+import { Separator } from "@/components/ui/separator";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { Table } from "@tanstack/react-table";
+import { formatDistanceToNow } from "date-fns";
 import type { z } from "zod";
 import type { DataTableFilterField } from "../types";
 import { deserialize, serializeColumFilters } from "../utils";
-import { Separator } from "@/components/ui/separator";
 import {
   getFieldOptions,
   getFilterValue,
   getWordByCaretPosition,
   replaceInputByFieldType,
 } from "./utils";
-import { formatDistanceToNow } from "date-fns";
-import { useLocalStorage } from "@/hooks/use-local-storage";
 
 // FIXME: there is an issue on cmdk if I wanna only set a single slider value...
 
@@ -51,10 +51,10 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
   const [currentWord, setCurrentWord] = useState<string>("");
   const filterFields = useMemo(
     () => _filterFields?.filter((i) => !i.commandDisabled),
-    [_filterFields]
+    [_filterFields],
   );
   const [inputValue, setInputValue] = useState<string>(
-    serializeColumFilters(columnFilters, filterFields)
+    serializeColumFilters(columnFilters, filterFields),
   );
   const [lastSearches, setLastSearches] = useLocalStorage<
     {
@@ -88,7 +88,7 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
         prev[curr.id] = curr.value;
         return prev;
       },
-      {} as Record<string, unknown>
+      {} as Record<string, unknown>,
     );
 
     if (searchParams.success) {
@@ -113,16 +113,16 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
     }
   }, [columnFilters, filterFields, open]);
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((open) => !open);
-      }
-    };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
+  // useEffect(() => {
+  //   const down = (e: KeyboardEvent) => {
+  //     if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+  //       e.preventDefault();
+  //       setOpen((open) => !open);
+  //     }
+  //   };
+  //   document.addEventListener("keydown", down);
+  //   return () => document.removeEventListener("keydown", down);
+  // }, []);
 
   useEffect(() => {
     if (open) {
@@ -136,7 +136,7 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
         type="button"
         className={cn(
           "group flex w-full items-center rounded-lg border border-input bg-background px-3 text-muted-foreground ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-accent hover:text-accent-foreground",
-          open ? "hidden" : "visible"
+          open ? "hidden" : "visible",
         )}
         onClick={() => setOpen(true)}
       >
@@ -145,22 +145,18 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
         ) : (
           <Search className="mr-2 h-4 w-4 shrink-0 text-muted-foreground opacity-50 group-hover:text-popover-foreground" />
         )}
-        <span className="h-11 w-full max-w-sm truncate py-3 text-left text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50 md:max-w-xl lg:max-w-4xl xl:max-w-5xl">
+        <span className="w-full max-w-sm truncate py-3 text-left text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50 md:max-w-xl lg:max-w-4xl xl:max-w-5xl">
           {inputValue.trim() ? (
             <span className="text-foreground">{inputValue}</span>
           ) : (
             <span>Search data table...</span>
           )}
         </span>
-        <Kbd className="ml-auto text-muted-foreground group-hover:text-accent-foreground">
-          <span className="mr-0.5">⌘</span>
-          <span>K</span>
-        </Kbd>
       </button>
       <Command
         className={cn(
           "overflow-visible rounded-lg border shadow-md [&>div]:border-none",
-          open ? "visible" : "hidden"
+          open ? "visible" : "hidden",
         )}
         filter={(value, search, keywords) =>
           getFilterValue({ value, search, keywords, currentWord })
@@ -183,7 +179,7 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
             if (!search) return;
             const timestamp = Date.now();
             const searchIndex = lastSearches.findIndex(
-              (item) => item.search === search
+              (item) => item.search === search,
             );
             if (searchIndex !== -1) {
               lastSearches[searchIndex].timestamp = timestamp;
@@ -229,7 +225,7 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
                           const prefix = isStarting ? "" : " ";
                           const input = prev.replace(
                             `${prefix}${currentWord}`,
-                            `${prefix}${value}`
+                            `${prefix}${value}`,
                           );
                           return `${input}:`;
                         });
@@ -271,7 +267,7 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
                               optionValue,
                               value,
                               field,
-                            })
+                            }),
                           );
                           setCurrentWord("");
                         }}
@@ -326,8 +322,8 @@ export function DataTableFilterCommand<TData, TSchema extends z.AnyZodObject>({
                             // TODO: extract into function
                             setLastSearches(
                               lastSearches.filter(
-                                (i) => i.search !== item.search
-                              )
+                                (i) => i.search !== item.search,
+                              ),
                             );
                           }}
                           className="ml-1 hidden rounded-md p-0.5 hover:bg-background group-aria-[selected=true]:block"
