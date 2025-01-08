@@ -76,7 +76,7 @@
     "nuqs": "^2.2.3",
     "posthog-js": "^1.200.1",
     "react": "^19.0.0",
-    "react-day-picker": "^9.4.3",
+    "react-day-picker": "^8.9.1",
     "react-dom": "^19.0.0",
     "react-grid-layout": "^1.5.0",
     "react-hook-form": "^7.54.1",
