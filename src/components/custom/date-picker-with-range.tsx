@@ -143,8 +143,8 @@ function CustomDateRange({
     selected?.from,
   );
   const [dateTo, setDateTo] = React.useState<Date | undefined>(selected?.to);
-  const debounceDateFrom = useDebounce(dateFrom, 1000);
-  const debounceDateTo = useDebounce(dateTo, 1000);
+  const [debounceDateFrom] = useDebounce(dateFrom, 1000);
+  const [debounceDateTo] = useDebounce(dateTo, 1000);
 
   const formatDateForInput = (date: Date | undefined): string => {
     if (!date) return "";
