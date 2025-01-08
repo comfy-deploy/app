@@ -18,6 +18,7 @@ import { Route as PricingImport } from './routes/pricing'
 import { Route as OnboardingCallImport } from './routes/onboarding-call'
 import { Route as AssetsImport } from './routes/assets'
 import { Route as ApiKeysImport } from './routes/api-keys'
+import { Route as AnalyticsImport } from './routes/analytics'
 import { Route as IndexImport } from './routes/index'
 import { Route as WorkflowsIndexImport } from './routes/workflows/index'
 import { Route as OrganizationProfileIndexImport } from './routes/organization-profile/index'
@@ -70,6 +71,12 @@ const AssetsRoute = AssetsImport.update({
 const ApiKeysRoute = ApiKeysImport.update({
   id: '/api-keys',
   path: '/api-keys',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AnalyticsRoute = AnalyticsImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -152,6 +159,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsImport
       parentRoute: typeof rootRoute
     }
     '/api-keys': {
@@ -273,6 +287,7 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -293,6 +308,7 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -314,6 +330,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -336,6 +353,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/analytics'
     | '/api-keys'
     | '/assets'
     | '/onboarding-call'
@@ -355,6 +373,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/analytics'
     | '/api-keys'
     | '/assets'
     | '/onboarding-call'
@@ -374,6 +393,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/analytics'
     | '/api-keys'
     | '/assets'
     | '/onboarding-call'
@@ -395,6 +415,7 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyticsRoute: typeof AnalyticsRoute
   ApiKeysRoute: typeof ApiKeysRoute
   AssetsRoute: typeof AssetsRoute
   OnboardingCallRoute: typeof OnboardingCallRoute
@@ -415,6 +436,7 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyticsRoute: AnalyticsRoute,
   ApiKeysRoute: ApiKeysRoute,
   AssetsRoute: AssetsRoute,
   OnboardingCallRoute: OnboardingCallRoute,
@@ -446,6 +468,7 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/analytics",
         "/api-keys",
         "/assets",
         "/onboarding-call",
@@ -466,6 +489,9 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/analytics": {
+      "filePath": "analytics.tsx"
     },
     "/api-keys": {
       "filePath": "api-keys.tsx"

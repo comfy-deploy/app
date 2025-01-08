@@ -183,6 +183,11 @@ function usePages() {
       : []),
 
     {
+      name: "Analytics",
+      path: "/analytics",
+      icon: LineChart,
+    },
+    {
       name: "Plan",
       path: "/pricing",
       icon: CreditCard,
