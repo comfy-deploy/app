@@ -8,9 +8,13 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { useUserInfo } from "@/hooks/use-user-info";
 import { UTCDate } from "@date-fns/utc";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format, formatDistanceToNow } from "date-fns";
+import { Check, Minus, X } from "lucide-react";
+import { LoadingIcon } from "../ui/custom/loading-icon";
+import { Skeleton } from "../ui/skeleton";
 import type { ColumnSchema } from "./schema";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -82,6 +86,35 @@ export const columns: ColumnDef<ColumnSchema>[] = [
     },
   },
   {
+    accessorKey: "user",
+    header: "User",
+    accessorFn: (row) => row.user_id,
+    cell: ({ row }) => {
+      const value = row.getValue("user") as string;
+      const { data: user, isLoading } = useUserInfo(value);
+
+      if (isLoading) return <Skeleton className="h-5 w-20" />;
+
+      if (!user) return null;
+
+      return (
+        <div className="flex items-center gap-3">
+          <img
+            src={user.image_url ?? ""}
+            alt={`${user.first_name}'s avatar`}
+            className="h-[20px] w-[20px] rounded-full"
+          />
+          <span className="text-muted-foreground">
+            {user.username ?? `${user.first_name} ${user.last_name}`}
+          </span>
+        </div>
+      );
+    },
+    meta: {
+      headerClassName: "h-5 text-xs max-w-[100px] text-muted-foreground",
+    },
+  },
+  {
     accessorKey: "machine",
     header: "Machine",
     accessorFn: (row) => row.machine.name,
@@ -126,7 +159,7 @@ export const columns: ColumnDef<ColumnSchema>[] = [
       return <TextWithTooltip className="max-w-[200px]" text={value} />;
     },
     meta: {
-      headerClassName: "h-5 text-xs",
+      headerClassName: "h-5 text-xs max-w-[120px]",
     },
   },
   {
@@ -138,7 +171,7 @@ export const columns: ColumnDef<ColumnSchema>[] = [
       return <Badge variant={"outline"}>{`v${value}`}</Badge>;
     },
     meta: {
-      headerClassName: "h-5 text-xs",
+      headerClassName: "h-5 text-xs max-w-[60px]",
     },
   },
   {
@@ -147,7 +180,40 @@ export const columns: ColumnDef<ColumnSchema>[] = [
     filterFn: "arrIncludesSome",
     cell: ({ row }) => {
       const value = row.getValue("status") as string;
-      return <TextWithTooltip className="max-w-[120px]" text={value} />;
+
+      switch (value) {
+        case "success":
+          return (
+            <Badge variant={"green"}>
+              <Check className="h-3 w-3" />
+              <span className="leading-snug">{value}</span>
+            </Badge>
+          );
+        case "failed":
+          return (
+            <Badge variant={"destructive"}>
+              <X className="h-3 w-3" />
+              <span className="leading-snug">{value}</span>
+            </Badge>
+          );
+        case "cancelled":
+        case "timeout":
+          return (
+            <Badge variant={"secondary"}>
+              <Minus className="h-3 w-3" />
+              <span className="text-muted-foreground leading-snug">
+                {value}
+              </span>
+            </Badge>
+          );
+        default:
+          return (
+            <Badge variant={"yellow"}>
+              <LoadingIcon className="h-3 w-3" />
+              <span className="leading-snug">{value}</span>
+            </Badge>
+          );
+      }
     },
     meta: {
       headerClassName: "h-5 text-xs",
@@ -167,7 +233,7 @@ export const columns: ColumnDef<ColumnSchema>[] = [
   },
   {
     id: "duration",
-    accessorFn: (row) => row["duration"],
+    accessorFn: (row) => row.duration,
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}

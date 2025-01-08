@@ -22,6 +22,7 @@ export const columnSchema = z.object({
   }),
   workflow_version: z.string(),
   duration: z.number(),
+  user_id: z.string(),
 });
 
 export type ColumnSchema = z.infer<typeof columnSchema>;

@@ -35,5 +35,7 @@ export const dataOptions = (search: SearchParamsType) => {
     getNextPageParam: (_lastGroup, groups) => groups.length,
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
+    gcTime: 60 * 1000,
   });
 };

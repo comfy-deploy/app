@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
 import { useCurrentPlan } from "@/hooks/use-current-plan";
 import { useMachineVersion, useMachineVersions } from "@/hooks/use-machine";
+import { useUserInfo } from "@/hooks/use-user-info";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -92,22 +93,6 @@ export function formatShortDistanceToNow(date: Date): string {
 
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
-}
-
-interface UserInfo {
-  user_id: string;
-  image_url?: string | null;
-  username?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-}
-
-// Create a hook for fetching user
-function useUserInfo(userId: string) {
-  return useQuery<UserInfo>({
-    queryKey: ["user", userId],
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
 }
 
 // Then in your UserInfo component

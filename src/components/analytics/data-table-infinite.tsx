@@ -1,5 +1,3 @@
-"use client";
-
 import type {
   ColumnDef,
   ColumnFiltersState,
@@ -29,23 +27,19 @@ import {
 } from "@/components/custom/table";
 import { DataTableFilterCommand } from "@/components/data-table/data-table-filter-command";
 import { DataTableFilterControls } from "@/components/data-table/data-table-filter-controls";
-import { DataTableSheetDetails } from "@/components/data-table/data-table-sheet-details";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar"; // TODO: check where to put this
 import type { DataTableFilterField } from "@/components/data-table/types";
-// import { SocialsFooter } from "@/components/layout/socials-footer";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { formatCompactNumber } from "@/lib/format";
-// import type { Percentile } from "@/lib/request/percentile";
 import { arrSome, inDateRange } from "@/lib/table/filterfns";
 import { cn } from "@/lib/utils";
 import type { FetchNextPageOptions } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { LoaderCircle } from "lucide-react";
 import { useQueryStates } from "nuqs";
-import { type ColumnSchema, columnFilterSchema } from "./schema";
+import { columnFilterSchema } from "./schema";
 import { searchParamsParser } from "./search-params";
-import { SheetDetailsContent } from "./sheet-details-content";
 import { TimelineChart } from "./timeline-chart";
 
 // TODO: add a possible chartGroupBy
@@ -96,6 +90,7 @@ export function DataTableInfinite<TData, TValue>({
     useLocalStorage<VisibilityState>("data-table-visibility", {
       id: false,
       version: false,
+      machine: false,
       origin: false,
       workflow_id: false,
     });
@@ -107,6 +102,7 @@ export function DataTableInfinite<TData, TValue>({
   const [topBarHeight, setTopBarHeight] = React.useState(0);
   const [_, setSearch] = useQueryStates(searchParamsParser);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     const observer = new ResizeObserver(() => {
@@ -290,7 +286,7 @@ export function DataTableInfinite<TData, TValue>({
           <div className="z-0">
             <Table containerClassName="overflow-clip">
               <TableHeader
-                className="sticky bg-muted z-20"
+                className="sticky z-20 bg-muted"
                 style={{ top: `${topBarHeight}px` }}
               >
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -324,10 +320,20 @@ export function DataTableInfinite<TData, TValue>({
                   table.getRowModel().rows.map((row, index) => (
                     <TableRow
                       key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                      onClick={() => row.toggleSelected()}
+                      onClick={() => {
+                        navigate({
+                          to: "/workflows/$workflowId/$view",
+                          params: {
+                            workflowId: row.getValue("workflow_id") as string,
+                            view: "requests",
+                          },
+                          search: {
+                            "run-id": row.id,
+                          },
+                        });
+                      }}
                       className={cn(
-                        "border-0 h-0 my-1",
+                        "my-1 h-0 border-0",
                         index % 2 === 0 && "bg-gray-50",
                         row.getValue("status") === "failed" &&
                           "bg-red-500/10 text-red-500 hover:bg-red-400/10",
@@ -391,18 +397,6 @@ export function DataTableInfinite<TData, TValue>({
           </div>
         </div>
       </div>
-      <DataTableSheetDetails
-        // TODO: make it dynamic via renderSheetDetailsContent
-        title={(selectedRow?.original as ColumnSchema | undefined)?.id}
-        titleClassName="font-mono"
-        table={table}
-      >
-        <SheetDetailsContent
-          data={selectedRow?.original as ColumnSchema}
-          // percentiles={currentPercentiles}
-          filterRows={filterRows}
-        />
-      </DataTableSheetDetails>
     </>
   );
 }
