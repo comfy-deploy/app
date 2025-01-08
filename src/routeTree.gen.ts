@@ -8,6 +8,8 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
@@ -18,7 +20,6 @@ import { Route as PricingImport } from './routes/pricing'
 import { Route as OnboardingCallImport } from './routes/onboarding-call'
 import { Route as AssetsImport } from './routes/assets'
 import { Route as ApiKeysImport } from './routes/api-keys'
-import { Route as AnalyticsImport } from './routes/analytics'
 import { Route as IndexImport } from './routes/index'
 import { Route as WorkflowsIndexImport } from './routes/workflows/index'
 import { Route as OrganizationProfileIndexImport } from './routes/organization-profile/index'
@@ -29,6 +30,10 @@ import { Route as OrganizationProfileOrganizationMembersIndexImport } from './ro
 import { Route as MachinesMachineIdIndexImport } from './routes/machines/$machineId/index'
 import { Route as WorkflowsWorkflowIdViewImport } from './routes/workflows/$workflowId/$view'
 import { Route as MachinesMachineIdMachineVersionIdImport } from './routes/machines/$machineId/$machineVersionId'
+
+// Create Virtual Routes
+
+const AnalyticsIndexLazyImport = createFileRoute('/analytics/')()
 
 // Create/Update Routes
 
@@ -74,17 +79,19 @@ const ApiKeysRoute = ApiKeysImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const AnalyticsRoute = AnalyticsImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
 } as any)
+
+const AnalyticsIndexLazyRoute = AnalyticsIndexLazyImport.update({
+  id: '/analytics/',
+  path: '/analytics/',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() =>
+  import('./routes/analytics/index.lazy').then((d) => d.Route),
+)
 
 const WorkflowsIndexRoute = WorkflowsIndexImport.update({
   id: '/workflows/',
@@ -159,13 +166,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/analytics': {
-      id: '/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsImport
       parentRoute: typeof rootRoute
     }
     '/api-keys': {
@@ -252,6 +252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkflowsIndexImport
       parentRoute: typeof rootRoute
     }
+    '/analytics/': {
+      id: '/analytics/'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsIndexLazyImport
+      parentRoute: typeof rootRoute
+    }
     '/machines/$machineId/$machineVersionId': {
       id: '/machines/$machineId/$machineVersionId'
       path: '/machines/$machineId/$machineVersionId'
@@ -287,7 +294,6 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/machines': typeof MachinesIndexRoute
   '/organization-profile': typeof OrganizationProfileIndexRoute
   '/workflows': typeof WorkflowsIndexRoute
+  '/analytics': typeof AnalyticsIndexLazyRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId': typeof MachinesMachineIdIndexRoute
@@ -308,7 +315,6 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -321,6 +327,7 @@ export interface FileRoutesByTo {
   '/machines': typeof MachinesIndexRoute
   '/organization-profile': typeof OrganizationProfileIndexRoute
   '/workflows': typeof WorkflowsIndexRoute
+  '/analytics': typeof AnalyticsIndexLazyRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId': typeof MachinesMachineIdIndexRoute
@@ -330,7 +337,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -343,6 +349,7 @@ export interface FileRoutesById {
   '/machines/': typeof MachinesIndexRoute
   '/organization-profile/': typeof OrganizationProfileIndexRoute
   '/workflows/': typeof WorkflowsIndexRoute
+  '/analytics/': typeof AnalyticsIndexLazyRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId/': typeof MachinesMachineIdIndexRoute
@@ -353,7 +360,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/analytics'
     | '/api-keys'
     | '/assets'
     | '/onboarding-call'
@@ -366,6 +372,7 @@ export interface FileRouteTypes {
     | '/machines'
     | '/organization-profile'
     | '/workflows'
+    | '/analytics'
     | '/machines/$machineId/$machineVersionId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId'
@@ -373,7 +380,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/analytics'
     | '/api-keys'
     | '/assets'
     | '/onboarding-call'
@@ -386,6 +392,7 @@ export interface FileRouteTypes {
     | '/machines'
     | '/organization-profile'
     | '/workflows'
+    | '/analytics'
     | '/machines/$machineId/$machineVersionId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId'
@@ -393,7 +400,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/analytics'
     | '/api-keys'
     | '/assets'
     | '/onboarding-call'
@@ -406,6 +412,7 @@ export interface FileRouteTypes {
     | '/machines/'
     | '/organization-profile/'
     | '/workflows/'
+    | '/analytics/'
     | '/machines/$machineId/$machineVersionId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId/'
@@ -415,7 +422,6 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AnalyticsRoute: typeof AnalyticsRoute
   ApiKeysRoute: typeof ApiKeysRoute
   AssetsRoute: typeof AssetsRoute
   OnboardingCallRoute: typeof OnboardingCallRoute
@@ -428,6 +434,7 @@ export interface RootRouteChildren {
   MachinesIndexRoute: typeof MachinesIndexRoute
   OrganizationProfileIndexRoute: typeof OrganizationProfileIndexRoute
   WorkflowsIndexRoute: typeof WorkflowsIndexRoute
+  AnalyticsIndexLazyRoute: typeof AnalyticsIndexLazyRoute
   MachinesMachineIdMachineVersionIdRoute: typeof MachinesMachineIdMachineVersionIdRoute
   WorkflowsWorkflowIdViewRoute: typeof WorkflowsWorkflowIdViewRoute
   MachinesMachineIdIndexRoute: typeof MachinesMachineIdIndexRoute
@@ -436,7 +443,6 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AnalyticsRoute: AnalyticsRoute,
   ApiKeysRoute: ApiKeysRoute,
   AssetsRoute: AssetsRoute,
   OnboardingCallRoute: OnboardingCallRoute,
@@ -449,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   MachinesIndexRoute: MachinesIndexRoute,
   OrganizationProfileIndexRoute: OrganizationProfileIndexRoute,
   WorkflowsIndexRoute: WorkflowsIndexRoute,
+  AnalyticsIndexLazyRoute: AnalyticsIndexLazyRoute,
   MachinesMachineIdMachineVersionIdRoute:
     MachinesMachineIdMachineVersionIdRoute,
   WorkflowsWorkflowIdViewRoute: WorkflowsWorkflowIdViewRoute,
@@ -468,7 +475,6 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/analytics",
         "/api-keys",
         "/assets",
         "/onboarding-call",
@@ -481,6 +487,7 @@ export const routeTree = rootRoute
         "/machines/",
         "/organization-profile/",
         "/workflows/",
+        "/analytics/",
         "/machines/$machineId/$machineVersionId",
         "/workflows/$workflowId/$view",
         "/machines/$machineId/",
@@ -489,9 +496,6 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.tsx"
-    },
-    "/analytics": {
-      "filePath": "analytics.tsx"
     },
     "/api-keys": {
       "filePath": "api-keys.tsx"
@@ -528,6 +532,9 @@ export const routeTree = rootRoute
     },
     "/workflows/": {
       "filePath": "workflows/index.tsx"
+    },
+    "/analytics/": {
+      "filePath": "analytics/index.lazy.tsx"
     },
     "/machines/$machineId/$machineVersionId": {
       "filePath": "machines/$machineId/$machineVersionId.tsx"

@@ -7,7 +7,7 @@ import { DataTableInfinite } from "./data-table-infinite";
 import { dataOptions } from "./query-options";
 import { searchParamsParser } from "./search-params";
 
-export function Client() {
+export function AnalyticsClient() {
   const [search] = useQueryStates(searchParamsParser);
   const { data, isFetching, isLoading, fetchNextPage } = useInfiniteQuery(
     dataOptions(search),
