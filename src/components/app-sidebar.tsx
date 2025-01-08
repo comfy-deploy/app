@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/sidebar";
 import { WorkflowDropdown } from "@/components/workflow-dropdown";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
+import { useCurrentPlan } from "@/hooks/use-current-plan";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { WorkflowsBreadcrumb } from "@/routes/workflows/$workflowId/$view.lazy";
@@ -122,6 +123,7 @@ function usePages() {
 
   const isAdminOnly = useIsAdminOnly();
   const isAdminAndMember = useIsAdminAndMember();
+  const sub = useCurrentPlan();
 
   // const pricingPlanFlagEnable = useFeatureFlagEnabled("pricing-plan");
   const pages = [
@@ -182,11 +184,15 @@ function usePages() {
         ]
       : []),
 
-    {
-      name: "Analytics",
-      path: "/analytics",
-      icon: LineChart,
-    },
+    ...(sub?.plans
+      ? [
+          {
+            name: "Analytics",
+            path: "/analytics",
+            icon: LineChart,
+          },
+        ]
+      : []),
     {
       name: "Plan",
       path: "/pricing",

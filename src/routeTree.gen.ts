@@ -8,8 +8,6 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from '@tanstack/react-router'
-
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
@@ -24,16 +22,13 @@ import { Route as IndexImport } from './routes/index'
 import { Route as WorkflowsIndexImport } from './routes/workflows/index'
 import { Route as OrganizationProfileIndexImport } from './routes/organization-profile/index'
 import { Route as MachinesIndexImport } from './routes/machines/index'
+import { Route as AnalyticsIndexImport } from './routes/analytics/index'
 import { Route as AuthSignUpImport } from './routes/auth/sign-up'
 import { Route as AuthSignInImport } from './routes/auth/sign-in'
 import { Route as OrganizationProfileOrganizationMembersIndexImport } from './routes/organization-profile/organization-members/index'
 import { Route as MachinesMachineIdIndexImport } from './routes/machines/$machineId/index'
 import { Route as WorkflowsWorkflowIdViewImport } from './routes/workflows/$workflowId/$view'
 import { Route as MachinesMachineIdMachineVersionIdImport } from './routes/machines/$machineId/$machineVersionId'
-
-// Create Virtual Routes
-
-const AnalyticsIndexLazyImport = createFileRoute('/analytics/')()
 
 // Create/Update Routes
 
@@ -85,14 +80,6 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const AnalyticsIndexLazyRoute = AnalyticsIndexLazyImport.update({
-  id: '/analytics/',
-  path: '/analytics/',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() =>
-  import('./routes/analytics/index.lazy').then((d) => d.Route),
-)
-
 const WorkflowsIndexRoute = WorkflowsIndexImport.update({
   id: '/workflows/',
   path: '/workflows/',
@@ -113,6 +100,14 @@ const MachinesIndexRoute = MachinesIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any).lazy(() =>
   import('./routes/machines/index.lazy').then((d) => d.Route),
+)
+
+const AnalyticsIndexRoute = AnalyticsIndexImport.update({
+  id: '/analytics/',
+  path: '/analytics/',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() =>
+  import('./routes/analytics/index.lazy').then((d) => d.Route),
 )
 
 const AuthSignUpRoute = AuthSignUpImport.update({
@@ -231,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignUpImport
       parentRoute: typeof rootRoute
     }
+    '/analytics/': {
+      id: '/analytics/'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/machines/': {
       id: '/machines/'
       path: '/machines'
@@ -250,13 +252,6 @@ declare module '@tanstack/react-router' {
       path: '/workflows'
       fullPath: '/workflows'
       preLoaderRoute: typeof WorkflowsIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/analytics/': {
-      id: '/analytics/'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsIndexLazyImport
       parentRoute: typeof rootRoute
     }
     '/machines/$machineId/$machineVersionId': {
@@ -303,10 +298,10 @@ export interface FileRoutesByFullPath {
   '/usage': typeof UsageRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/analytics': typeof AnalyticsIndexRoute
   '/machines': typeof MachinesIndexRoute
   '/organization-profile': typeof OrganizationProfileIndexRoute
   '/workflows': typeof WorkflowsIndexRoute
-  '/analytics': typeof AnalyticsIndexLazyRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId': typeof MachinesMachineIdIndexRoute
@@ -324,10 +319,10 @@ export interface FileRoutesByTo {
   '/usage': typeof UsageRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/analytics': typeof AnalyticsIndexRoute
   '/machines': typeof MachinesIndexRoute
   '/organization-profile': typeof OrganizationProfileIndexRoute
   '/workflows': typeof WorkflowsIndexRoute
-  '/analytics': typeof AnalyticsIndexLazyRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId': typeof MachinesMachineIdIndexRoute
@@ -346,10 +341,10 @@ export interface FileRoutesById {
   '/usage': typeof UsageRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/analytics/': typeof AnalyticsIndexRoute
   '/machines/': typeof MachinesIndexRoute
   '/organization-profile/': typeof OrganizationProfileIndexRoute
   '/workflows/': typeof WorkflowsIndexRoute
-  '/analytics/': typeof AnalyticsIndexLazyRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId/': typeof MachinesMachineIdIndexRoute
@@ -369,10 +364,10 @@ export interface FileRouteTypes {
     | '/usage'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/analytics'
     | '/machines'
     | '/organization-profile'
     | '/workflows'
-    | '/analytics'
     | '/machines/$machineId/$machineVersionId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId'
@@ -389,10 +384,10 @@ export interface FileRouteTypes {
     | '/usage'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/analytics'
     | '/machines'
     | '/organization-profile'
     | '/workflows'
-    | '/analytics'
     | '/machines/$machineId/$machineVersionId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId'
@@ -409,10 +404,10 @@ export interface FileRouteTypes {
     | '/usage'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/analytics/'
     | '/machines/'
     | '/organization-profile/'
     | '/workflows/'
-    | '/analytics/'
     | '/machines/$machineId/$machineVersionId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId/'
@@ -431,10 +426,10 @@ export interface RootRouteChildren {
   UsageRoute: typeof UsageRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
+  AnalyticsIndexRoute: typeof AnalyticsIndexRoute
   MachinesIndexRoute: typeof MachinesIndexRoute
   OrganizationProfileIndexRoute: typeof OrganizationProfileIndexRoute
   WorkflowsIndexRoute: typeof WorkflowsIndexRoute
-  AnalyticsIndexLazyRoute: typeof AnalyticsIndexLazyRoute
   MachinesMachineIdMachineVersionIdRoute: typeof MachinesMachineIdMachineVersionIdRoute
   WorkflowsWorkflowIdViewRoute: typeof WorkflowsWorkflowIdViewRoute
   MachinesMachineIdIndexRoute: typeof MachinesMachineIdIndexRoute
@@ -452,10 +447,10 @@ const rootRouteChildren: RootRouteChildren = {
   UsageRoute: UsageRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
+  AnalyticsIndexRoute: AnalyticsIndexRoute,
   MachinesIndexRoute: MachinesIndexRoute,
   OrganizationProfileIndexRoute: OrganizationProfileIndexRoute,
   WorkflowsIndexRoute: WorkflowsIndexRoute,
-  AnalyticsIndexLazyRoute: AnalyticsIndexLazyRoute,
   MachinesMachineIdMachineVersionIdRoute:
     MachinesMachineIdMachineVersionIdRoute,
   WorkflowsWorkflowIdViewRoute: WorkflowsWorkflowIdViewRoute,
@@ -484,10 +479,10 @@ export const routeTree = rootRoute
         "/usage",
         "/auth/sign-in",
         "/auth/sign-up",
+        "/analytics/",
         "/machines/",
         "/organization-profile/",
         "/workflows/",
-        "/analytics/",
         "/machines/$machineId/$machineVersionId",
         "/workflows/$workflowId/$view",
         "/machines/$machineId/",
@@ -524,6 +519,9 @@ export const routeTree = rootRoute
     "/auth/sign-up": {
       "filePath": "auth/sign-up.tsx"
     },
+    "/analytics/": {
+      "filePath": "analytics/index.tsx"
+    },
     "/machines/": {
       "filePath": "machines/index.tsx"
     },
@@ -532,9 +530,6 @@ export const routeTree = rootRoute
     },
     "/workflows/": {
       "filePath": "workflows/index.tsx"
-    },
-    "/analytics/": {
-      "filePath": "analytics/index.lazy.tsx"
     },
     "/machines/$machineId/$machineVersionId": {
       "filePath": "machines/$machineId/$machineVersionId.tsx"
