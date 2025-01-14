@@ -16,7 +16,7 @@ export const Route = createFileRoute("/storage")({
 
 export function StoragePage() {
   return (
-    <PaddingLayout className="flex h-full w-full gap-2 py-10">
+    <PaddingLayout className="flex h-full w-full gap-2 pb-10 h-[calc(100vh-60px)] max-w-[1200px] mx-auto">
       <div className="flex h-full flex-1 flex-col gap-2 rounded-md border border-gray-200 bg-muted/20 p-4">
         <div className="flex items-center justify-between font-bold">
           <ModelListHeader />
@@ -31,7 +31,7 @@ export function StoragePage() {
           }
         >
           {/* <ModelBrowserAsync> */}
-          <ModelListView className="h-[calc(100vh-142px)]">
+          <ModelListView className="h-[calc(100vh-172px)]">
             <ModelList
               apiEndpoint={process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL}
             />

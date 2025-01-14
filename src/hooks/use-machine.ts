@@ -2,20 +2,25 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 const BATCH_SIZE = 20;
 
-export function useMachines(debouncedSearchValue?: string) {
+export function useMachines(
+  debouncedSearchValue?: string,
+  batchSize: number = BATCH_SIZE,
+  limit?: number,
+) {
   return useInfiniteQuery<any[]>({
     queryKey: ["machines"],
     meta: {
-      limit: BATCH_SIZE,
+      limit: limit ?? batchSize,
       offset: 0,
       params: {
         search: debouncedSearchValue ?? "",
         is_deleted: false,
       },
     },
+    queryKeyHashFn: (queryKey) => [...queryKey, batchSize].toString(),
     getNextPageParam: (lastPage, allPages) => {
-      return lastPage?.length === BATCH_SIZE
-        ? allPages?.length * BATCH_SIZE
+      return lastPage?.length === batchSize
+        ? allPages?.length * batchSize
         : undefined;
     },
     initialPageParam: 0,

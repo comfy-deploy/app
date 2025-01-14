@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Folder,
   Github,
+  Home,
   Key,
   LineChart,
   MessageCircle,
@@ -52,7 +53,7 @@ import React, { use, useEffect, useRef } from "react";
 import { VersionSelectV2 } from "./version-select";
 import { MachineSelect } from "./workspace/MachineSelect";
 
-function UserMenu() {
+export function UserMenu() {
   const isAdminOnly = useIsAdminOnly();
   const isAdminAndMember = useIsAdminAndMember();
 
@@ -127,6 +128,11 @@ function usePages() {
 
   // const pricingPlanFlagEnable = useFeatureFlagEnabled("pricing-plan");
   const pages = [
+    {
+      name: "Home",
+      path: "/home",
+      icon: Home,
+    },
     {
       name: "Workflows",
       path: "/workflows",

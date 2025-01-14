@@ -15,6 +15,7 @@ interface VirtualizedInfiniteListProps<T> {
   header?: React.ReactNode;
   className?: string;
   containerClassName?: string;
+  autoFetch?: boolean;
 }
 
 export function VirtualizedInfiniteList<T>({
@@ -26,18 +27,16 @@ export function VirtualizedInfiniteList<T>({
   estimateSize = 50,
   className,
   containerClassName,
+  autoFetch = true,
 }: VirtualizedInfiniteListProps<T>) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = queryResult;
 
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const flatData = React.useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  );
+  const flatData = React.useMemo(() => data?.pages.flat() ?? [], [data]);
 
   const rowVirtualizer = useVirtualizer({
-    count: hasNextPage ? flatData.length + 1 : flatData.length,
+    count: autoFetch && hasNextPage ? flatData.length + 1 : flatData.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => estimateSize,
     overscan: 5,
@@ -46,6 +45,7 @@ export function VirtualizedInfiniteList<T>({
   useEffect(() => {
     const lastItem = rowVirtualizer.getVirtualItems().at(-1);
     if (!lastItem) return;
+    if (!autoFetch) return;
 
     if (
       lastItem.index >= flatData.length - 1 &&
@@ -60,6 +60,7 @@ export function VirtualizedInfiniteList<T>({
     flatData.length,
     isFetchingNextPage,
     rowVirtualizer.getVirtualItems(),
+    autoFetch,
   ]);
 
   return (

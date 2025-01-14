@@ -715,12 +715,14 @@ function ServerlessSettings({
 }
 
 // -----------------------components-----------------------
-function ComfyUIVersionSelectBox({
+export function ComfyUIVersionSelectBox({
   value,
   onChange,
+  className,
 }: {
   value?: string;
   onChange: (value: string) => void;
+  className?: string;
 }) {
   const { data: latestComfyUI, isLoading } = useGithubBranchInfo(
     "https://github.com/comfyanonymous/ComfyUI",
@@ -748,7 +750,7 @@ function ComfyUIVersionSelectBox({
         : value || comfyui_hash;
 
   return (
-    <div className="mt-2 space-y-2">
+    <div className={cn("mt-2 space-y-2", className)}>
       <Select
         value={selectedValue}
         onValueChange={(newValue) => {
@@ -859,19 +861,21 @@ function CustomNodeSetupWrapper({
   );
 }
 
-function GPUSelectBox({
+export function GPUSelectBox({
   value,
   onChange,
+  className,
 }: {
   value?: (typeof machineGPUOptions)[number];
   onChange: (value: (typeof machineGPUOptions)[number]) => void;
+  className?: string;
 }) {
   const { gpuConfig } = useGPUConfig();
   const sub = useCurrentPlan() as SubscriptionPlan;
   const isBusiness = sub?.plans?.plans?.includes("business");
 
   return (
-    <div className="mt-2">
+    <div className={cn("mt-2", className)}>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select GPU">

@@ -64,7 +64,7 @@ export function MachineList() {
   return (
     <div className="mx-auto h-[calc(100vh-60px)] max-h-full w-full max-w-[1500px] px-2 py-4 md:px-10">
       <div className="flex items-center justify-between gap-2 pb-4">
-        <div className="relative max-w-sm flex-1">
+        <div className="relative max-w-sm flex-1 hidden">
           <Input
             placeholder="Filter machines..."
             value={searchValue}
@@ -76,7 +76,7 @@ export function MachineList() {
           </kbd>
         </div>
         <Tooltip>
-          <TooltipTrigger>
+          <TooltipTrigger className="hidden">
             {sub && (
               <Badge
                 className={cn(

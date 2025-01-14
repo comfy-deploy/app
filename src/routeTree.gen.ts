@@ -16,10 +16,12 @@ import { Route as StorageImport } from './routes/storage'
 import { Route as SettingsImport } from './routes/settings'
 import { Route as PricingImport } from './routes/pricing'
 import { Route as OnboardingCallImport } from './routes/onboarding-call'
+import { Route as HomeImport } from './routes/home'
 import { Route as AssetsImport } from './routes/assets'
 import { Route as ApiKeysImport } from './routes/api-keys'
 import { Route as IndexImport } from './routes/index'
 import { Route as WorkflowsIndexImport } from './routes/workflows/index'
+import { Route as SessionsIndexImport } from './routes/sessions/index'
 import { Route as OrganizationProfileIndexImport } from './routes/organization-profile/index'
 import { Route as MachinesIndexImport } from './routes/machines/index'
 import { Route as AnalyticsIndexImport } from './routes/analytics/index'
@@ -28,6 +30,7 @@ import { Route as AuthSignInImport } from './routes/auth/sign-in'
 import { Route as OrganizationProfileOrganizationMembersIndexImport } from './routes/organization-profile/organization-members/index'
 import { Route as MachinesMachineIdIndexImport } from './routes/machines/$machineId/index'
 import { Route as WorkflowsWorkflowIdViewImport } from './routes/workflows/$workflowId/$view'
+import { Route as SessionsSessionIdWorkflowIdImport } from './routes/sessions/$sessionId/$workflowId'
 import { Route as MachinesMachineIdActivityImport } from './routes/machines/$machineId/activity'
 import { Route as MachinesMachineIdMachineVersionIdImport } from './routes/machines/$machineId/$machineVersionId'
 import { Route as MachinesMachineIdHistoryIndexImport } from './routes/machines/$machineId/history/index'
@@ -64,6 +67,12 @@ const OnboardingCallRoute = OnboardingCallImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const HomeRoute = HomeImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AssetsRoute = AssetsImport.update({
   id: '/assets',
   path: '/assets',
@@ -89,6 +98,12 @@ const WorkflowsIndexRoute = WorkflowsIndexImport.update({
 } as any).lazy(() =>
   import('./routes/workflows/index.lazy').then((d) => d.Route),
 )
+
+const SessionsIndexRoute = SessionsIndexImport.update({
+  id: '/sessions/',
+  path: '/sessions/',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const OrganizationProfileIndexRoute = OrganizationProfileIndexImport.update({
   id: '/organization-profile/',
@@ -147,6 +162,13 @@ const WorkflowsWorkflowIdViewRoute = WorkflowsWorkflowIdViewImport.update({
   import('./routes/workflows/$workflowId/$view.lazy').then((d) => d.Route),
 )
 
+const SessionsSessionIdWorkflowIdRoute =
+  SessionsSessionIdWorkflowIdImport.update({
+    id: '/sessions/$sessionId/$workflowId',
+    path: '/sessions/$sessionId/$workflowId',
+    getParentRoute: () => rootRoute,
+  } as any)
+
 const MachinesMachineIdActivityRoute = MachinesMachineIdActivityImport.update({
   id: '/machines/$machineId/activity',
   path: '/machines/$machineId/activity',
@@ -190,6 +212,13 @@ declare module '@tanstack/react-router' {
       path: '/assets'
       fullPath: '/assets'
       preLoaderRoute: typeof AssetsImport
+      parentRoute: typeof rootRoute
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeImport
       parentRoute: typeof rootRoute
     }
     '/onboarding-call': {
@@ -262,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationProfileIndexImport
       parentRoute: typeof rootRoute
     }
+    '/sessions/': {
+      id: '/sessions/'
+      path: '/sessions'
+      fullPath: '/sessions'
+      preLoaderRoute: typeof SessionsIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/workflows/': {
       id: '/workflows/'
       path: '/workflows'
@@ -281,6 +317,13 @@ declare module '@tanstack/react-router' {
       path: '/machines/$machineId/activity'
       fullPath: '/machines/$machineId/activity'
       preLoaderRoute: typeof MachinesMachineIdActivityImport
+      parentRoute: typeof rootRoute
+    }
+    '/sessions/$sessionId/$workflowId': {
+      id: '/sessions/$sessionId/$workflowId'
+      path: '/sessions/$sessionId/$workflowId'
+      fullPath: '/sessions/$sessionId/$workflowId'
+      preLoaderRoute: typeof SessionsSessionIdWorkflowIdImport
       parentRoute: typeof rootRoute
     }
     '/workflows/$workflowId/$view': {
@@ -320,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
+  '/home': typeof HomeRoute
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
@@ -330,9 +374,11 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsIndexRoute
   '/machines': typeof MachinesIndexRoute
   '/organization-profile': typeof OrganizationProfileIndexRoute
+  '/sessions': typeof SessionsIndexRoute
   '/workflows': typeof WorkflowsIndexRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/machines/$machineId/activity': typeof MachinesMachineIdActivityRoute
+  '/sessions/$sessionId/$workflowId': typeof SessionsSessionIdWorkflowIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId': typeof MachinesMachineIdIndexRoute
   '/organization-profile/organization-members': typeof OrganizationProfileOrganizationMembersIndexRoute
@@ -343,6 +389,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
+  '/home': typeof HomeRoute
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
@@ -353,9 +400,11 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsIndexRoute
   '/machines': typeof MachinesIndexRoute
   '/organization-profile': typeof OrganizationProfileIndexRoute
+  '/sessions': typeof SessionsIndexRoute
   '/workflows': typeof WorkflowsIndexRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/machines/$machineId/activity': typeof MachinesMachineIdActivityRoute
+  '/sessions/$sessionId/$workflowId': typeof SessionsSessionIdWorkflowIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId': typeof MachinesMachineIdIndexRoute
   '/organization-profile/organization-members': typeof OrganizationProfileOrganizationMembersIndexRoute
@@ -367,6 +416,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
+  '/home': typeof HomeRoute
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
@@ -377,9 +427,11 @@ export interface FileRoutesById {
   '/analytics/': typeof AnalyticsIndexRoute
   '/machines/': typeof MachinesIndexRoute
   '/organization-profile/': typeof OrganizationProfileIndexRoute
+  '/sessions/': typeof SessionsIndexRoute
   '/workflows/': typeof WorkflowsIndexRoute
   '/machines/$machineId/$machineVersionId': typeof MachinesMachineIdMachineVersionIdRoute
   '/machines/$machineId/activity': typeof MachinesMachineIdActivityRoute
+  '/sessions/$sessionId/$workflowId': typeof SessionsSessionIdWorkflowIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
   '/machines/$machineId/': typeof MachinesMachineIdIndexRoute
   '/organization-profile/organization-members/': typeof OrganizationProfileOrganizationMembersIndexRoute
@@ -392,6 +444,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api-keys'
     | '/assets'
+    | '/home'
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
@@ -402,9 +455,11 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/machines'
     | '/organization-profile'
+    | '/sessions'
     | '/workflows'
     | '/machines/$machineId/$machineVersionId'
     | '/machines/$machineId/activity'
+    | '/sessions/$sessionId/$workflowId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId'
     | '/organization-profile/organization-members'
@@ -414,6 +469,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api-keys'
     | '/assets'
+    | '/home'
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
@@ -424,9 +480,11 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/machines'
     | '/organization-profile'
+    | '/sessions'
     | '/workflows'
     | '/machines/$machineId/$machineVersionId'
     | '/machines/$machineId/activity'
+    | '/sessions/$sessionId/$workflowId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId'
     | '/organization-profile/organization-members'
@@ -436,6 +494,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api-keys'
     | '/assets'
+    | '/home'
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
@@ -446,9 +505,11 @@ export interface FileRouteTypes {
     | '/analytics/'
     | '/machines/'
     | '/organization-profile/'
+    | '/sessions/'
     | '/workflows/'
     | '/machines/$machineId/$machineVersionId'
     | '/machines/$machineId/activity'
+    | '/sessions/$sessionId/$workflowId'
     | '/workflows/$workflowId/$view'
     | '/machines/$machineId/'
     | '/organization-profile/organization-members/'
@@ -460,6 +521,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiKeysRoute: typeof ApiKeysRoute
   AssetsRoute: typeof AssetsRoute
+  HomeRoute: typeof HomeRoute
   OnboardingCallRoute: typeof OnboardingCallRoute
   PricingRoute: typeof PricingRoute
   SettingsRoute: typeof SettingsRoute
@@ -470,9 +532,11 @@ export interface RootRouteChildren {
   AnalyticsIndexRoute: typeof AnalyticsIndexRoute
   MachinesIndexRoute: typeof MachinesIndexRoute
   OrganizationProfileIndexRoute: typeof OrganizationProfileIndexRoute
+  SessionsIndexRoute: typeof SessionsIndexRoute
   WorkflowsIndexRoute: typeof WorkflowsIndexRoute
   MachinesMachineIdMachineVersionIdRoute: typeof MachinesMachineIdMachineVersionIdRoute
   MachinesMachineIdActivityRoute: typeof MachinesMachineIdActivityRoute
+  SessionsSessionIdWorkflowIdRoute: typeof SessionsSessionIdWorkflowIdRoute
   WorkflowsWorkflowIdViewRoute: typeof WorkflowsWorkflowIdViewRoute
   MachinesMachineIdIndexRoute: typeof MachinesMachineIdIndexRoute
   OrganizationProfileOrganizationMembersIndexRoute: typeof OrganizationProfileOrganizationMembersIndexRoute
@@ -483,6 +547,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiKeysRoute: ApiKeysRoute,
   AssetsRoute: AssetsRoute,
+  HomeRoute: HomeRoute,
   OnboardingCallRoute: OnboardingCallRoute,
   PricingRoute: PricingRoute,
   SettingsRoute: SettingsRoute,
@@ -493,10 +558,12 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsIndexRoute: AnalyticsIndexRoute,
   MachinesIndexRoute: MachinesIndexRoute,
   OrganizationProfileIndexRoute: OrganizationProfileIndexRoute,
+  SessionsIndexRoute: SessionsIndexRoute,
   WorkflowsIndexRoute: WorkflowsIndexRoute,
   MachinesMachineIdMachineVersionIdRoute:
     MachinesMachineIdMachineVersionIdRoute,
   MachinesMachineIdActivityRoute: MachinesMachineIdActivityRoute,
+  SessionsSessionIdWorkflowIdRoute: SessionsSessionIdWorkflowIdRoute,
   WorkflowsWorkflowIdViewRoute: WorkflowsWorkflowIdViewRoute,
   MachinesMachineIdIndexRoute: MachinesMachineIdIndexRoute,
   OrganizationProfileOrganizationMembersIndexRoute:
@@ -517,6 +584,7 @@ export const routeTree = rootRoute
         "/",
         "/api-keys",
         "/assets",
+        "/home",
         "/onboarding-call",
         "/pricing",
         "/settings",
@@ -527,9 +595,11 @@ export const routeTree = rootRoute
         "/analytics/",
         "/machines/",
         "/organization-profile/",
+        "/sessions/",
         "/workflows/",
         "/machines/$machineId/$machineVersionId",
         "/machines/$machineId/activity",
+        "/sessions/$sessionId/$workflowId",
         "/workflows/$workflowId/$view",
         "/machines/$machineId/",
         "/organization-profile/organization-members/",
@@ -544,6 +614,9 @@ export const routeTree = rootRoute
     },
     "/assets": {
       "filePath": "assets.tsx"
+    },
+    "/home": {
+      "filePath": "home.tsx"
     },
     "/onboarding-call": {
       "filePath": "onboarding-call.tsx"
@@ -575,6 +648,9 @@ export const routeTree = rootRoute
     "/organization-profile/": {
       "filePath": "organization-profile/index.tsx"
     },
+    "/sessions/": {
+      "filePath": "sessions/index.tsx"
+    },
     "/workflows/": {
       "filePath": "workflows/index.tsx"
     },
@@ -583,6 +659,9 @@ export const routeTree = rootRoute
     },
     "/machines/$machineId/activity": {
       "filePath": "machines/$machineId/activity.tsx"
+    },
+    "/sessions/$sessionId/$workflowId": {
+      "filePath": "sessions/$sessionId/$workflowId.tsx"
     },
     "/workflows/$workflowId/$view": {
       "filePath": "workflows/$workflowId/$view.tsx"

@@ -8,6 +8,7 @@ import { MachineVersionBadge } from "@/components/machine/machine-version-badge"
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Portal } from "../ui/custom/portal";
 
 export default function MachinePage({
   params,
@@ -50,24 +51,28 @@ export default function MachinePage({
   return (
     <div className="w-full">
       <div className="mx-auto w-full">
-        <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm">
-          <div className="flex flex-row items-center gap-4">
-            <Link
-              to={`/machines/${machine.id}`}
-              params={{ machineId: machine.id }}
-              className="flex flex-row items-center gap-2 font-medium text-md"
-            >
-              {machine.name}
-              {machine.machine_version_id && (
-                <MachineVersionBadge machine={machine} isExpanded={true} />
-              )}
-            </Link>
+        {/* <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm"></div> */}
+
+        <Portal targetId="nav-bar-items">
+          <div className="flex flex-row gap-2 w-full justify-between">
+            <div className="flex flex-row items-center gap-4">
+              <Link
+                to={`/machines/${machine.id}`}
+                params={{ machineId: machine.id }}
+                className="flex flex-row items-center gap-2 font-medium text-md"
+              >
+                {machine.name}
+                {machine.machine_version_id && (
+                  <MachineVersionBadge machine={machine} isExpanded={true} />
+                )}
+              </Link>
+            </div>
+            <div className="flex flex-row gap-2">
+              <MachineCostEstimate machineId={machine.id} />
+              <LastActiveEvent machineId={machine.id} />
+            </div>
           </div>
-          <div className="flex flex-row gap-2">
-            <MachineCostEstimate machineId={machine.id} />
-            <LastActiveEvent machineId={machine.id} />
-          </div>
-        </div>
+        </Portal>
 
         <div className="mx-auto max-w-[1200px]">
           <MachineOverview machine={machine} />
