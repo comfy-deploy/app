@@ -85,7 +85,11 @@ export function DataTableFilterControls<TData, TValue>({
                   switch (field.type) {
                     case "checkbox": {
                       return (
-                        <DataTableFilterCheckbox table={table} {...field} />
+                        <DataTableFilterCheckbox
+                          table={table}
+                          {...field}
+                          singleSelect={field.singleSelect}
+                        />
                       );
                     }
                     case "slider": {

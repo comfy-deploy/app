@@ -25,6 +25,7 @@ export type Checkbox = {
   type: "checkbox";
   component?: (props: Option) => JSX.Element | null;
   options?: Option[];
+  singleSelect?: boolean;
 };
 
 export type Slider = {

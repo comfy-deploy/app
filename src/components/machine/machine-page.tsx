@@ -7,7 +7,22 @@ import {
 import { MachineVersionBadge } from "@/components/machine/machine-version-badge";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Button } from "../ui/button";
+import { Loader2, Pencil } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { api } from "@/lib/api";
 import { Portal } from "../ui/custom/portal";
 
 export default function MachinePage({
@@ -30,9 +45,8 @@ export default function MachinePage({
   useEffect(() => {
     if (machine?.status === "building") {
       navigate({
-        to: "/machines/$machineId",
+        to: "/machines/$machineId/history",
         params: { machineId: params.machine_id },
-        search: { view: "history" },
       });
     }
   }, [machine?.status, navigate, params.machine_id]);
@@ -66,6 +80,9 @@ export default function MachinePage({
                   <MachineVersionBadge machine={machine} isExpanded={true} />
                 )}
               </Link>
+				{machine.type === "comfy-deploy-serverless" && (
+              		<MachineRenameButton machine={machine} />
+            	)}
             </div>
             <div className="flex flex-row gap-2">
               <MachineCostEstimate machineId={machine.id} />
@@ -79,5 +96,108 @@ export default function MachinePage({
         </div>
       </div>
     </div>
+  );
+}
+
+function MachineRenameButton({ machine }: { machine: any }) {
+  const [open, setOpen] = useState(false);
+  const [newName, setNewName] = useState(machine.name);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Reset name when dialog opens
+  useEffect(() => {
+    if (open) {
+      setNewName(machine.name);
+    }
+  }, [open, machine.name]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    if (!newName || newName.trim() === "") {
+      toast.error("Machine name cannot be empty");
+      return;
+    }
+
+    if (newName === machine.name) {
+      setOpen(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await api({
+        url: `machine/serverless/${machine.id}`,
+        init: {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: newName.trim(),
+          }),
+        },
+      });
+
+      toast.success("Machine renamed successfully");
+      setOpen(false);
+    } catch (error: any) {
+      console.error("Failed to rename machine:", error);
+      toast.error(error.message || "Failed to rename machine");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="xs">
+          <Pencil className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle className="flex flex-row items-center gap-2">
+              Rename Machine{" "}
+              <Badge variant="outline" className="text-xs">
+                {machine.name}
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={newName}
+                placeholder="Enter a new name"
+                className="col-span-3"
+                onChange={(e) => setNewName(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="submit"
+              disabled={
+                isLoading || !newName.trim() || newName === machine.name
+              }
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

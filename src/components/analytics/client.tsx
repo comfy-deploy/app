@@ -42,7 +42,7 @@ export function AnalyticsClient() {
         .filter(({ value }) => value ?? undefined)}
       // defaultColumnSorting={sort ? [sort] : undefined}
       defaultRowSelection={search.id ? { [search.id]: true } : undefined}
-      filterFields={filterFields}
+      filterFields={filterFields()}
       isFetching={isFetching}
       isLoading={isLoading}
       fetchNextPage={fetchNextPage}

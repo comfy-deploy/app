@@ -229,24 +229,31 @@ export function DataTableInfinite<TData, TValue>({
 
   return (
     <>
-      <div className="flex w-full min-h-screen h-full flex-col sm:flex-row">
+      <div className="flex h-full min-h-screen w-full flex-col sm:flex-row">
         <div
           className={cn(
-            "w-ful h-full sm:min-w-52 sm:max-w-52 sm:self-start md:min-w-72 md:max-w-72 sm:sticky sm:top-0 sm:max-h-screen sm:overflow-y-scroll",
+            "h-full w-full sm:sticky sm:top-0 sm:max-h-screen sm:min-w-52 sm:max-w-52 sm:self-start sm:overflow-y-scroll md:min-w-72 md:max-w-72",
             !controlsOpen && "hidden",
           )}
         >
-          <div className="p-2 flex-1">
+          <div className="flex-1 p-2">
             <DataTableFilterControls
               table={table}
               columns={columns}
               filterFields={filterFields}
             />
           </div>
-          {/* <Separator className="my-2" />
-          <div className="p-2">
-            <SocialsFooter />
-          </div> */}
+          <div className="absolute bottom-0 left-0 px-2 py-1 text-muted-foreground text-xs">
+            Credit to
+            <a
+              href="https://www.openstatus.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-1 hover:underline"
+            >
+              OpenStatus
+            </a>
+          </div>
         </div>
         <div
           ref={scrollContainerRef}

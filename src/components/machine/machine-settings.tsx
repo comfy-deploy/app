@@ -85,10 +85,6 @@ export function MachineSettingsWrapper({
   const isServerless = machine.type === "comfy-deploy-serverless";
   const formRef = useRef<HTMLFormElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  // const view = isServerless ? "environment" : "advanced";
-  // const { view = isServerless ? "environment" : "advanced" } = useSearch({
-  //   from: "/machines/$machineId/",
-  // });
 
   const [view, setView] = useQueryState("machine-settings-view", {
     defaultValue: isServerless ? "environment" : "advanced",
@@ -293,7 +289,6 @@ function ServerlessSettings({
       keep_warm: machine.keep_warm,
 
       // advance
-      name: machine.name,
       install_custom_node_with_gpu: machine.install_custom_node_with_gpu,
       ws_timeout: machine.ws_timeout,
       extra_docker_commands: machine.extra_docker_commands,
@@ -327,16 +322,10 @@ function ServerlessSettings({
     enableBeforeUnload: () => {
       return !disableUnsavedChangesWarning && !!isFormDirty && !isNew;
     },
-    shouldBlockFn: ({ current, next }) => {
-      if (isNew || disableUnsavedChangesWarning) return false;
+    shouldBlockFn: () => {
+      if (isNew) return false;
 
-      // Ignore navigation if it's just changing the view parameter or going to base machine URL
-      const isSafeNavigation =
-        current.pathname === next.pathname &&
-        (Object.keys(next.search).length === 0 || // base route
-          (Object.keys(next.search).length === 1 && "view" in next.search)); // view change
-
-      if (!disableUnsavedChangesWarning && isFormDirty && !isSafeNavigation) {
+      if (isFormDirty) {
         controls.start({
           x: [0, -8, 12, -15, 8, -10, 5, -3, 2, -1, 0],
           y: [0, 4, -9, 6, -12, 8, -3, 5, -2, 1, 0],
@@ -360,9 +349,7 @@ function ServerlessSettings({
         });
       }
 
-      return (
-        !disableUnsavedChangesWarning && !!isFormDirty && !isSafeNavigation
-      );
+      return !!isFormDirty;
     },
   });
 
@@ -501,28 +488,17 @@ function ServerlessSettings({
 
         {view === "advanced" && (
           <div className="space-y-10 p-2 pt-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <h3 className="font-medium text-sm">Machine Name</h3>
-                <Input
-                  value={form.watch("name")}
-                  onChange={(e) => form.setValue("name", e.target.value)}
-                  placeholder="machine name..."
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <h3 className="font-medium text-sm">Builder Version</h3>
-                <BuilderVersionSelectBox
-                  value={form.watch("machine_builder_version") || "4"}
-                  onChange={(value) =>
-                    form.setValue(
-                      "machine_builder_version",
-                      value as "2" | "3" | "4",
-                    )
-                  }
-                />
-              </div>
+            <div className="flex flex-col gap-2">
+              <h3 className="font-medium text-sm">Builder Version</h3>
+              <BuilderVersionSelectBox
+                value={form.watch("machine_builder_version") || "4"}
+                onChange={(value) =>
+                  form.setValue(
+                    "machine_builder_version",
+                    value as "2" | "3" | "4",
+                  )
+                }
+              />
             </div>
 
             <Accordion type="single" defaultValue="docker">

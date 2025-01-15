@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 const BATCH_SIZE = 20;
 
@@ -24,5 +24,12 @@ export function useWorkflowList(debouncedSearchValue: string) {
       return undefined;
     },
     initialPageParam: 0,
+  });
+}
+
+export function useWorkflowsAll() {
+  return useQuery<any[]>({
+    queryKey: ["workflows", "all"],
+    refetchInterval: 5000,
   });
 }

@@ -51,6 +51,14 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 export type DefaultCustomNodeData = {
   title: string;
@@ -93,29 +101,47 @@ function isCustomNodeData(
   return step.type === "custom-node";
 }
 
-export const createDockerCommandStep = (
-  node: DefaultCustomNodeData,
-  branchInfo: BranchInfoData,
-): DockerCommandStep => {
-  return {
-    id: crypto.randomUUID().slice(0, 10), // Add unique ID
-    type: "custom-node",
-    data: {
-      name: node.title,
-      url: node.reference,
-      files: node.files,
-      install_type: "git-clone",
-      pip: node.pip,
-      hash: branchInfo?.commit.sha, // Optional hash
-      meta: {
-        message: branchInfo?.commit.commit.message,
-        committer: branchInfo?.commit.commit?.committer,
-        latest_hash: branchInfo?.commit.sha,
-        stargazers_count: branchInfo?.stargazers_count,
-        commit_url: branchInfo?.commit?.html_url,
+const updateNodeWithBranchInfo = async (
+  node: DockerCommandStep,
+  setValidation: (validation: MachineStepValidation) => void,
+) => {
+  if (!isCustomNodeData(node)) return;
+
+  try {
+    const branchInfo = await getBranchInfo(node.data.url);
+    if (!branchInfo?.commit.sha) {
+      throw new Error("Could not fetch latest commit hash");
+    }
+
+    setValidation((prev) => ({
+      ...prev,
+      docker_command_steps: {
+        steps: prev.docker_command_steps.steps.map((step) =>
+          step.id === node.id && isCustomNodeData(step)
+            ? {
+                ...step,
+                data: {
+                  ...step.data,
+                  hash: branchInfo.commit.sha,
+                  meta: {
+                    message: branchInfo.commit.commit.message,
+                    committer: branchInfo.commit.commit.committer,
+                    latest_hash: branchInfo.commit.sha,
+                    stargazers_count: branchInfo.stargazers_count,
+                    commit_url: branchInfo.commit.html_url,
+                  },
+                },
+              }
+            : step,
+        ),
       },
-    },
-  };
+    }));
+
+    toast.success("Updated to latest commit");
+  } catch (error) {
+    console.error("Failed to update hash:", error);
+    toast.error("Failed to fetch repository information");
+  }
 };
 
 export function CustomNodeSetup({
@@ -167,15 +193,32 @@ export function CustomNodeSetup({
 
     try {
       const branchInfo = await getBranchInfo(node.reference);
-      setValidation({
-        ...validation,
-        docker_command_steps: {
-          steps: [
-            ...validation.docker_command_steps.steps,
-            createDockerCommandStep(node, branchInfo),
-          ],
+      const newNode: DockerCommandStep = {
+        id: crypto.randomUUID().slice(0, 10),
+        type: "custom-node",
+        data: {
+          name: node.title,
+          url: node.reference,
+          files: node.files,
+          install_type: "git-clone",
+          pip: node.pip,
+          hash: branchInfo?.commit.sha,
+          meta: {
+            message: branchInfo?.commit.commit.message,
+            committer: (branchInfo?.commit.commit as any).committer,
+            latest_hash: branchInfo?.commit.sha,
+            stargazers_count: branchInfo?.stargazers_count,
+            commit_url: (branchInfo?.commit as any).html_url,
+          },
         },
-      });
+      };
+
+      setValidation((prev) => ({
+        ...prev,
+        docker_command_steps: {
+          steps: [...prev.docker_command_steps.steps, newNode],
+        },
+      }));
     } catch (error) {
       console.error("Failed to fetch branch info:", error);
       toast.error("Failed to fetch repository information");
@@ -660,7 +703,11 @@ function SelectedNodeList({
                 reorder the nodes.
               </span>
             )}
-            <div className="flex max-h-[518px] flex-col gap-1 overflow-y-auto overflow-x-hidden">
+            <div
+              className={cn(
+                "flex max-h-[500px] flex-col gap-1 overflow-y-auto overflow-x-hidden p-2 pb-0",
+              )}
+            >
               {validation.docker_command_steps.steps.length === 0 ? (
                 <div className="text-gray-500 text-sm">No nodes selected.</div>
               ) : (
@@ -859,108 +906,147 @@ function CustomNodeCard({
   return (
     <div
       key={node.data.url}
-      className="group flex flex-col rounded-[6px] border border-gray-200 bg-gray-50 px-2 py-1 text-sm"
+      className="relative flex items-center justify-between gap-2 rounded-[6px] border border-gray-200 bg-gray-50 px-2 py-1 text-sm"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="flex-[2] truncate font-medium text-xs">
-            {node.data.name}
-          </span>
-          <div className="flex min-w-fit flex-1 items-center">
-            <span className="truncate text-2xs text-gray-500">
-              {node.data.url.split("/").slice(-2)[0]}
+      <div className="group flex w-full flex-col">
+        <div className="flex items-center justify-between">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="flex-[2] truncate font-medium text-xs">
+              {node.data.name}
             </span>
-            <Link
-              to={node.data.url}
-              target="_blank"
-              className="ml-1 inline-flex shrink-0 items-center text-gray-500 hover:text-gray-700"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink size={12} />
-            </Link>
+            <div className="flex min-w-fit flex-1 items-center">
+              <span className="truncate text-2xs text-gray-500">
+                {node.data.url.split("/").slice(-2)[0]}
+              </span>
+              <Link
+                to={node.data.url}
+                target="_blank"
+                className="ml-1 inline-flex shrink-0 items-center text-gray-500 hover:text-gray-700"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink size={12} />
+              </Link>
+            </div>
           </div>
-        </div>
-        <Button
+          {/* <Button
           type="button"
           variant="ghost"
           className="h-3 shrink-0 text-red-500 opacity-0 transition-opacity duration-200 hover:text-red-600 group-hover:opacity-100"
           onClick={() => handleRemoveNode(node)}
         >
           <Minus size={14} />
-        </Button>
-      </div>
+        </Button> */}
+        </div>
 
-      {node.data && (
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex w-full items-center gap-2 text-2xs text-gray-500 leading-snug">
-            <span className="whitespace-nowrap font-medium">
-              {isHashChanged || editingHash === node.data.url
-                ? "Custom hash"
-                : "Latest commit"}
-              :
-            </span>
-            {editingHash === node.data.url ? (
-              <Input
-                autoFocus
-                defaultValue={node.data.hash}
-                placeholder="commit hash..."
-                className="h-7 max-w-96 rounded-[6px] px-2 py-0 font-mono text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+        {node.data && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex w-full items-center gap-2 text-2xs text-gray-500 leading-snug">
+              <span className="whitespace-nowrap font-medium">
+                {isHashChanged || editingHash === node.data.url
+                  ? "Custom hash"
+                  : "Latest commit"}
+                :
+              </span>
+              {editingHash === node.data.url ? (
+                <Input
+                  autoFocus
+                  defaultValue={node.data.hash}
+                  placeholder="commit hash..."
+                  className="h-7 max-w-96 rounded-[6px] px-2 py-0 font-mono text-xs"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setValidation({
+                        ...validation,
+                        isEditingHashOrAddingCommands: false,
+                      });
+                      handleSaveHash(node, e.currentTarget.value);
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex min-w-0 flex-1 items-center gap-1">
+                  <code className="shrink-0 rounded bg-gray-100 px-1 py-0.5 text-[10px]">
+                    <span className={cn(isHashChanged && "text-amber-600")}>
+                      {node.data.hash?.slice(0, 7)}
+                    </span>
+                  </code>
+                </div>
+              )}
+            </div>
+            {editingHash === node.data.url && (
+              <Button
+                type="button"
+                variant="ghost"
+                className={cn(
+                  "shrink-0 text-gray-500",
+                  editingHash !== node.data.url &&
+                    "h-3 opacity-0 transition-opacity duration-200 hover:text-red-600 group-hover:opacity-100",
+                )}
+                onClick={(e) => {
+                  if (editingHash === node.data.url) {
+                    // Find the input element and get its value
+                    const input =
+                      e.currentTarget.parentElement?.querySelector("input");
+                    if (input) {
+                      setValidation({
+                        ...validation,
+                        isEditingHashOrAddingCommands: false,
+                      });
+                      handleSaveHash(node, input.value);
+                    }
+                  } else {
                     setValidation({
                       ...validation,
-                      isEditingHashOrAddingCommands: false,
+                      isEditingHashOrAddingCommands: true,
                     });
-                    handleSaveHash(node, e.currentTarget.value);
+                    handleStartEdit(node);
                   }
                 }}
-              />
-            ) : (
-              <div className="flex min-w-0 flex-1 items-center gap-1">
-                <code className="shrink-0 rounded bg-gray-100 px-1 py-0.5 text-[10px]">
-                  <span className={cn(isHashChanged && "text-amber-600")}>
-                    {node.data.hash?.slice(0, 7)}
-                  </span>
-                </code>
-              </div>
+              >
+                <Save size={12} />
+              </Button>
             )}
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            className={cn(
-              "shrink-0 text-gray-500",
-              editingHash !== node.data.url &&
-                "h-3 opacity-0 transition-opacity duration-200 hover:text-red-600 group-hover:opacity-100",
-            )}
-            onClick={(e) => {
-              if (editingHash === node.data.url) {
-                // Find the input element and get its value
-                const input =
-                  e.currentTarget.parentElement?.querySelector("input");
-                if (input) {
-                  setValidation({
-                    ...validation,
-                    isEditingHashOrAddingCommands: false,
-                  });
-                  handleSaveHash(node, input.value);
-                }
-              } else {
-                setValidation({
-                  ...validation,
-                  isEditingHashOrAddingCommands: true,
-                });
-                handleStartEdit(node);
-              }
-            }}
-          >
-            {editingHash === node.data.url ? (
-              <Save size={12} />
-            ) : (
-              <Pencil size={12} />
-            )}
-          </Button>
-        </div>
+        )}
+      </div>
+      {editingHash !== node.data.url && (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="shrink-0 text-gray-500 opacity-0 transition-opacity duration-200 hover:text-gray-700 group-hover:opacity-100"
+              >
+                <Pencil size={12} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="truncate">
+                Hash Settings
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => handleStartEdit(node)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => updateNodeWithBranchInfo(node, setValidation)}
+              >
+                Update to Latest
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="-top-2 -right-2 absolute">
+            <button
+              type="button"
+              onClick={() => handleRemoveNode(node)}
+              className="shrink-0 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            >
+              <Minus size={12} />
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
