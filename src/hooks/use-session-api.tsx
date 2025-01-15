@@ -3,7 +3,7 @@
 import { api } from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-export function useSessionAPI(machineId: string | null) {
+export function useSessionAPI(machineId?: string | null) {
   return {
     createSession: useMutation({
       mutationKey: ["session", machineId],
@@ -16,7 +16,7 @@ export function useSessionAPI(machineId: string | null) {
             init: {
               method: "POST",
               body: JSON.stringify({
-                machine_id: machineId,
+                machine_id: data?.machineId || machineId,
                 ...data,
               }),
             },
@@ -45,7 +45,6 @@ export function useSessionAPI(machineId: string | null) {
     listSession: useQuery<any[]>({
       queryKey: ["sessions"],
       refetchInterval: 2000,
-      enabled: !!machineId,
       meta: {
         params: {
           machine_id: machineId,

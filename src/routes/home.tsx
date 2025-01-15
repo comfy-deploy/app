@@ -12,6 +12,8 @@ import {
 } from "@/components/machine/machine-settings";
 import { useForm } from "react-hook-form";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
+import { useSessionAPI } from "@/hooks/use-session-api";
+import { useLogStore } from "@/components/workspace/LogContext";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -34,6 +36,8 @@ function SessionsList() {
   // console.log(data);
   const query = useMachines(undefined, 5, 5);
 
+  const { createSession, listSession, deleteSession } = useSessionAPI();
+
   const form = useForm({
     defaultValues: {
       gpu: "A10G",
@@ -44,9 +48,9 @@ function SessionsList() {
   const router = useRouter();
 
   return (
-    <div className="mx-auto w-full max-w-screen-lg pt-10 flex gap-2 flex-col">
-      <div className="bg-white rounded-3xl border p-4 flex flex-row justify-between items-center">
-        <div className="flex flex-row gap-2 items-center">
+    <div className="mx-auto w-full max-w-screen-lg pt-10 flex  flex-col">
+      <div className="bg-gray-50 rounded-t-3xl border-t border-x border-b-0 border-gray-100 p-4 pb-8 -mb-4 flex flex-row justify-between items-center">
+        <div className="flex flex-row gap-2 items-center ">
           ComfyUI
           <ComfyUIVersionSelectBox
             className="mt-0"
@@ -81,14 +85,14 @@ function SessionsList() {
             iconPlacement="right"
             onClick={() => {
               router.navigate({
-                to: "/workflows/$workflowId/$view",
+                to: "/sessions/$sessionId",
                 params: {
-                  workflowId: "e3902b92-4c83-4bae-8b69-d494ca1e91fd",
-                  view: "workspace",
+                  sessionId: "new",
+                  // workflowId: "e3902b92-4c83-4bae-8b69-d494ca1e91fd",
                 },
-                search: {
-                  sessionId: "preview",
-                },
+                // search: {
+                //   sessionId: "preview",
+                // },
               });
             }}
           >
@@ -115,15 +119,21 @@ function SessionsList() {
                 variant="outline"
                 Icon={Play}
                 iconPlacement="right"
-                onClick={() => {
+                onClick={async () => {
+                  const response = await createSession.mutateAsync({
+                    machine_id: machine.id,
+                    gpu: machine.gpu,
+                    timeout: 15,
+                  });
+                  useLogStore.getState().clearLogs();
+
                   router.navigate({
-                    to: "/workflows/$workflowId/$view",
+                    to: "/sessions/$sessionId",
                     params: {
-                      workflowId: "e3902b92-4c83-4bae-8b69-d494ca1e91fd",
-                      view: "workspace",
+                      sessionId: response.session_id,
                     },
                     search: {
-                      sessionId: "preview",
+                      machineId: machine.id,
                     },
                   });
                 }}

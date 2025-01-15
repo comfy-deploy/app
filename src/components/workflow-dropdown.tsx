@@ -29,11 +29,13 @@ export function WorkflowDropdown({
   path,
   path_suffix,
   className,
+  onNavigate,
 }: {
   workflow_id: string;
   path?: string;
   path_suffix?: string;
   className?: string;
+  onNavigate?: (workflow_id: string) => void;
 }) {
   const match = useMatch({
     from: "/workflows/$workflowId/$view",
@@ -111,13 +113,17 @@ export function WorkflowDropdown({
                   //   (path ? path : "/workflows/") +
                   //   selectedItem.id +
                   //   (path_suffix ? path_suffix : "");
-                  router.navigate({
-                    to: "/workflows/$workflowId/$view",
-                    params: {
-                      workflowId: selectedItem.id,
-                      view: match?.params.view || "workspace",
-                    },
-                  });
+                  onNavigate?.(selectedItem.id);
+
+                  if (!onNavigate) {
+                    router.navigate({
+                      to: "/workflows/$workflowId/$view",
+                      params: {
+                        workflowId: selectedItem.id,
+                        view: match?.params.view || "workspace",
+                      },
+                    });
+                  }
                 }}
               />
             )}

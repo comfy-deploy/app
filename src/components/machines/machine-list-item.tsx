@@ -176,7 +176,7 @@ export function MachineListItem({
           "bg-yellow-50",
         isDeprecated && !isStale && "bg-yellow-50",
         hasActiveEvents && "bg-green-50/80",
-        index % 2 === 0 && "bg-gray-50",
+        index % 2 !== 0 && "bg-gray-50",
         className,
       )}
     >
