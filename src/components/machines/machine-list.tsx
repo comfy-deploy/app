@@ -125,12 +125,12 @@ export function MachineList() {
             </div>
           </div>
         ))}
-      <ActiveMachineProvider>
+      {/* <ActiveMachineProvider>
         <ActiveMachineList
           machineActionItemList={<></>}
           hide={!!debouncedSearchValue}
         />
-      </ActiveMachineProvider>
+      </ActiveMachineProvider> */}
       <VirtualizedInfiniteList
         className="!h-full fab-machine-list w-full rounded-3xl border max-w-[1200px] mx-auto"
         containerClassName="divide-y divide-border"
