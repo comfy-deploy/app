@@ -46,6 +46,7 @@ import Workspace, { useAssetsBrowserStore } from "./Workspace";
 import { useCDStore } from "./Workspace";
 import { sendEventToCD } from "./sendEventToCD";
 import { SessionCreate } from "./session-create";
+import { useQuery } from "@tanstack/react-query";
 
 const staticUrl = process.env.COMFYUI_FRONTEND_URL!;
 console.log(staticUrl);
@@ -153,6 +154,7 @@ export function ModelsButton(props: {
 export function SessionCreator(props: {
   workflowId: string;
   workflowLatestVersion: any;
+  sessionIdOverride?: string;
 }) {
   const { workflow } = useCurrentWorkflow(props.workflowId);
   const machineId = workflow?.selected_machine_id;
@@ -169,7 +171,7 @@ export function SessionCreator(props: {
   const { createSession, listSession, deleteSession } =
     useSessionAPI(machineId);
 
-  const { data: sessions } = listSession;
+  // const { data: sessions } = listSession;
 
   // const sessions = [
   //   {
@@ -206,9 +208,11 @@ export function SessionCreator(props: {
   //   },
   // ];
 
-  const [sessionId, setSessionId] = useQueryState("sessionId", {
-    defaultValue: "",
+  const [_sessionId, setSessionId] = useQueryState("sessionId", {
+    defaultValue: props.sessionIdOverride || "",
   });
+
+  const sessionId = props.sessionIdOverride || _sessionId;
 
   const { open, ui, setOpen } = useUpdateServerActionDialog({
     title: "Create Session",
@@ -267,8 +271,13 @@ export function SessionCreator(props: {
     },
   });
 
-  const session = sessions?.find((session) => session.session_id === sessionId);
-  const url = session?.tunnel_url;
+  const { data: session } = useQuery<any>({
+    enabled: !!sessionId,
+    queryKey: ["session", sessionId],
+  });
+
+  // const session = sessions?.find((session) => session.session_id === sessionId);
+  const url = session?.tunnel_url || session?.url;
 
   useEffect(() => {
     setCDSetup(false);
@@ -400,7 +409,7 @@ export function SessionCreator(props: {
     );
   }
 
-  if (sessionId && machineId && url) {
+  if (sessionId && url) {
     return (
       <>
         {/* <UploadZone
@@ -422,7 +431,7 @@ export function SessionCreator(props: {
     );
   }
 
-  if (sessionId && machineId && !url) {
+  if (sessionId && !url) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center">
         <Card className="flex flex-col items-center gap-4 p-6">

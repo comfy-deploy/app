@@ -14,6 +14,7 @@ interface WorkspaceClientWrapperProps {
   workflow_id: string;
   className?: string;
   isPublic?: boolean;
+  sessionIdOverride?: string;
 }
 
 export function WorkspaceClientWrapper({
@@ -77,6 +78,7 @@ export function WorkspaceClientWrapper({
       <SessionCreator
         workflowId={props.workflow_id}
         workflowLatestVersion={versions[0]}
+        sessionIdOverride={props.sessionIdOverride}
       />
     );
   }

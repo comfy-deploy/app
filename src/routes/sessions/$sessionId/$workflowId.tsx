@@ -16,7 +16,10 @@ function RouteComponent() {
 
   return (
     <div className="h-full w-full">
-      <WorkspaceClientWrapper workflow_id={workflowId} />
+      <WorkspaceClientWrapper
+        workflow_id={workflowId}
+        sessionIdOverride={sessionId}
+      />
     </div>
   );
 }

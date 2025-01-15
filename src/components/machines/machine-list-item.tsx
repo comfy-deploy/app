@@ -175,7 +175,7 @@ export function MachineListItem({
       className={cn(
         "group relative flex min-h-[80px] w-full flex-col items-center overflow-hidden rounded-none bg-white p-4",
         isStale && "bg-gray-50 contrast-75",
-        index % 2 === 0 && "bg-gray-50",
+        index % 2 !== 0 && "bg-gray-50",
         className,
       )}
     >

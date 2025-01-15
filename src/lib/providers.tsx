@@ -153,7 +153,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <PostHogProvider client={posthog}>
       <NuqsAdapter>
         <QueryClientProvider client={queryClient}>
-          {/* <ReactQueryDevtools initialIsOpen={true} /> */}
+          <ReactQueryDevtools initialIsOpen={true} />
           <PostHogUserIdentify />
           {children}
         </QueryClientProvider>
