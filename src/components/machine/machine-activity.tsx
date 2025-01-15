@@ -32,6 +32,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 export function MachineActivity({ machine }: { machine: any }) {
   return (

@@ -42,15 +42,6 @@ export default function MachinePage({
     refetchInterval: 5000,
   });
 
-  useEffect(() => {
-    if (machine?.status === "building") {
-      navigate({
-        to: "/machines/$machineId/history",
-        params: { machineId: params.machine_id },
-      });
-    }
-  }, [machine?.status, navigate, params.machine_id]);
-
   if (isLoading || !machine) {
     return (
       <>

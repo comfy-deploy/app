@@ -277,6 +277,7 @@ function ServerlessSettings({
     resolver: zodResolver(serverlessFormSchema),
     mode: "onChange",
     defaultValues: {
+      name: machine.name,
       // env
       comfyui_version: machine.comfyui_version,
       docker_command_steps: machine.docker_command_steps,
@@ -366,18 +367,26 @@ function ServerlessSettings({
   const handleSubmit = async (data: FormData) => {
     try {
       setIsLoading(true);
+      const dirtyFields = form.formState.dirtyFields;
+      const updatedData = Object.keys(dirtyFields).reduce(
+        (acc, key) => {
+          acc[key] = data[key as keyof FormData];
+          return acc;
+        },
+        {} as Partial<FormData>,
+      );
+
       await api({
         url: `machine/serverless/${machine.id}`,
         init: {
           method: "PATCH",
-          body: JSON.stringify(data),
+          body: JSON.stringify(updatedData),
         },
       });
       toast.success("Updated successfully!");
       setIsFormDirty(false);
     } catch (error: any) {
       console.error("API Error:", error);
-      // If the error response contains validation details, show them
       if (error.response) {
         const errorData = await error.response.json();
         console.error("Validation errors:", errorData);

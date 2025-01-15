@@ -100,7 +100,7 @@ export function MachineList() {
           </TooltipContent>
         </Tooltip>
       </div>
-      {query.isLoading &&
+      {query.isLoading ? (
         [...Array(8)].map((_, i) => (
           <div
             key={i}
@@ -124,72 +124,68 @@ export function MachineList() {
               </Button>
             </div>
           </div>
-        ))}
-      {/* <ActiveMachineProvider>
-        <ActiveMachineList
-          machineActionItemList={<></>}
-          hide={!!debouncedSearchValue}
-        />
-      </ActiveMachineProvider> */}
-      <VirtualizedInfiniteList
-        className="!h-full fab-machine-list w-full rounded-3xl border max-w-[1200px] mx-auto"
-        containerClassName="divide-y divide-border"
-        queryResult={query}
-        renderItem={(machine, index) => (
-          <MachineListItem
-            key={machine.id}
-            index={index}
-            machine={machine}
-            isExpanded={expandedMachineId === machine.id}
-            setIsExpanded={(expanded) =>
-              setExpandedMachineId(expanded ? machine.id : null)
-            }
-            className={cn(expandedMachineId === machine.id && "border-b")}
-            machineActionItemList={
-              <MachineItemActionList
-                machine={machine}
-                sub={sub}
-                refetch={async () => {
-                  await query.refetch();
-                }}
-              />
-            }
-          />
-        )}
-        renderItemClassName={(machine) =>
-          cn(
-            "z-0 transition-all duration-200",
-            machine && expandedMachineId === machine.id && "z-[1]",
-          )
-        }
-        renderLoading={() => {
-          return [...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="mb-2 flex h-[80px] w-full animate-pulse items-center justify-between rounded-md border bg-white p-4"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-row items-center gap-2">
-                    <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
-                    <div className="h-4 w-60 rounded bg-gray-200" />
+        ))
+      ) : (
+        <VirtualizedInfiniteList
+          className="!h-full fab-machine-list mx-auto w-full max-w-[1200px] rounded-3xl border"
+          containerClassName="divide-y divide-border"
+          queryResult={query}
+          renderItem={(machine, index) => (
+            <MachineListItem
+              key={machine.id}
+              index={index}
+              machine={machine}
+              isExpanded={expandedMachineId === machine.id}
+              setIsExpanded={(expanded) =>
+                setExpandedMachineId(expanded ? machine.id : null)
+              }
+              className={cn(expandedMachineId === machine.id && "border-b")}
+              machineActionItemList={
+                <MachineItemActionList
+                  machine={machine}
+                  sub={sub}
+                  refetch={async () => {
+                    await query.refetch();
+                  }}
+                />
+              }
+            />
+          )}
+          renderItemClassName={(machine) =>
+            cn(
+              "z-0 transition-all duration-200",
+              machine && expandedMachineId === machine.id && "z-[1]",
+            )
+          }
+          renderLoading={() => {
+            return [...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="flex h-[80px] w-full animate-pulse items-center justify-between border bg-white p-4"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-row items-center gap-2">
+                      <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
+                      <div className="h-4 w-60 rounded bg-gray-200" />
+                    </div>
+                    <div className="h-3 w-32 rounded bg-gray-200" />
                   </div>
-                  <div className="h-3 w-32 rounded bg-gray-200" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-12 rounded-md bg-gray-200" />
+                  <div className="h-5 w-20 rounded-md bg-gray-200" />
+                  <div className="h-5 w-12 rounded-md bg-gray-200" />
+                  <Button variant="ghost" size="icon">
+                    <ChevronDown className={"h-4 w-4"} />
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="h-5 w-12 rounded-md bg-gray-200" />
-                <div className="h-5 w-20 rounded-md bg-gray-200" />
-                <div className="h-5 w-12 rounded-md bg-gray-200" />
-                <Button variant="ghost" size="icon">
-                  <ChevronDown className={"h-4 w-4"} />
-                </Button>
-              </div>
-            </div>
-          ));
-        }}
-        estimateSize={80}
-      />
+            ));
+          }}
+          estimateSize={80}
+        />
+      )}
 
       <InsertModal
         hideButton
@@ -780,7 +776,6 @@ function RebuildMachineDialog({
                   navigate({
                     to: "/machines/$machineId",
                     params: { machineId: machine.id },
-                    search: { view: "history" },
                   });
                 } catch {
                   toast.error("Failed to rebuild machine");
