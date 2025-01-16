@@ -5,11 +5,17 @@ import { UserMenu } from "./app-sidebar";
 import { Button } from "./ui/button";
 import {
   ArrowLeftIcon,
+  CircleGauge,
+  CreditCard,
   Database,
+  Folder,
+  KeyRound,
+  LineChart,
   type LucideIcon,
   MenuIcon,
   Monitor,
   Server,
+  Settings,
   Workflow,
 } from "lucide-react";
 import {
@@ -90,10 +96,43 @@ export function NavBar() {
                       {/* <DropdownMenuLabel>My Account</DropdownMenuLabel> */}
                       {/* <DropdownMenuSeparator /> */}
                       <DropdownMenuItem asChild>
-                        <Link to="/settings">Settings</Link>
+                        <Link to="/assets" className="flex items-center gap-2">
+                          <Folder className="w-4 h-4" /> Assets
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/api-keys">API Keys</Link>
+                        <Link
+                          to="/settings"
+                          className="flex items-center gap-2"
+                        >
+                          <Settings className="w-4 h-4" /> Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          to="/api-keys"
+                          className="flex items-center gap-2"
+                        >
+                          <KeyRound className="w-4 h-4" /> API Keys
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/usage" className="flex items-center gap-2">
+                          <CircleGauge className="w-4 h-4" /> Usage
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          to="/analytics"
+                          className="flex items-center gap-2"
+                        >
+                          <LineChart className="w-4 h-4" /> Analytics
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/pricing" className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4" /> Plan
+                        </Link>
                       </DropdownMenuItem>
                       {/* <DropdownMenuItem>Billing</DropdownMenuItem>
                   <DropdownMenuItem>Team</DropdownMenuItem>

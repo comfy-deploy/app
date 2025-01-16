@@ -376,7 +376,7 @@ function WorkflowCard({
       <Link
         href={
           isAdminAndMember
-            ? `/workflows/${workflow.id}/workspace`
+            ? `/workflows/${workflow.id}/requests`
             : `/workflows/${workflow.id}/playground`
         }
         className="flex w-full flex-col md:max-w-[320px]"

@@ -295,7 +295,7 @@ export function LastActiveEvent({ machineId }: { machineId: string }) {
             hasActiveEvents ? "text-yellow-500" : "text-gray-600",
           )}
         >
-          Last Active: {getLastActiveText(events)}
+          {getLastActiveText(events)}
         </span>
       </Badge>
     </div>
