@@ -73,16 +73,15 @@ export default defineConfig({
       plugins: [
         new rspack.EnvironmentPlugin([
           "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-
-          "NEXT_PUBLIC_POSTHOG_HOST",
           "NEXT_PUBLIC_POSTHOG_KEY",
-
           "NEXT_PUBLIC_CD_API_URL",
-
-          "COMFYUI_FRONTEND_URL",
-
           "COMFY_DEPLOY_SHARED_MACHINE_API_URL",
         ]),
+        new rspack.EnvironmentPlugin({
+          NEXT_PUBLIC_NGROK_CD_API_URL: null,
+          NEXT_PUBLIC_POSTHOG_HOST: "https://app.posthog.com",
+          COMFYUI_FRONTEND_URL: "https://comfyui.comfydeploy.com",
+        }),
         TanStackRouterRspack(),
         process.env.RSDOCTOR &&
           new RsdoctorRspackPlugin({

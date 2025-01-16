@@ -99,12 +99,14 @@ export default function Workspace({
   endpoint: _endpoint,
   workflowJson,
   nativeMode = false,
+  workflowId,
 }: {
   endpoint: string;
   workflowJson: any;
   nativeMode?: boolean;
+  workflowId: string;
 }) {
-  const workflowId = useWorkflowIdInWorkflowPage();
+  // const workflowId = useWorkflowIdInWorkflowPage();
 
   const { workflow } = useCurrentWorkflow(workflowId);
 
@@ -112,7 +114,12 @@ export default function Workspace({
 
   const { data: machine } = useMachine(machineId);
 
-  const newPythonEndpoint = process.env.NEXT_PUBLIC_CD_API_URL;
+  // const newPythonEndpoint = process.env.NEXT_PUBLIC_CD_API_URL;
+  const isLocal = process.env.NODE_ENV === "development";
+
+  const newPythonEndpoint = isLocal
+    ? process.env.NEXT_PUBLIC_NGROK_CD_API_URL // or whatever your local Python API URL is
+    : process.env.NEXT_PUBLIC_CD_API_URL;
 
   const { userId, orgId } = useAuth();
   const volumeName = `models_${orgId || userId}`;

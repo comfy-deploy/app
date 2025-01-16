@@ -299,6 +299,27 @@ export function SessionCreator(props: {
     // }
   }, [session, sessionId]);
 
+  const { data: isLive } = useQuery({
+    queryKey: ["session", "live", url],
+    queryFn: async ({ queryKey }) => {
+      if (!url) return null;
+      try {
+        const response = await fetch(url, { method: "HEAD" });
+        if (!response.ok) throw new Error("Failed to connect");
+        return true;
+      } catch (e) {
+        // Only show toast if we previously had a successful connection
+        const prevIsLive = queryKey[3] as boolean | undefined;
+        if (prevIsLive) {
+          toast.error("Session disconnected");
+        }
+        return false;
+      }
+    },
+    enabled: !!url,
+    refetchInterval: 2000,
+  });
+
   // const sessionUI = (
   //   <div className="flex h-full w-full flex-col items-center justify-center">
   //     {!sessions || sessions?.length === 0 ? (
@@ -332,6 +353,7 @@ export function SessionCreator(props: {
         >
           <div className="flex h-full w-full flex-col">
             <Workspace
+              workflowId={props.workflowId}
               key={props.workflowId}
               nativeMode={false}
               endpoint={staticUrl}
@@ -409,7 +431,7 @@ export function SessionCreator(props: {
     );
   }
 
-  if (sessionId && url) {
+  if (sessionId && url && isLive) {
     return (
       <>
         {/* <UploadZone
@@ -418,6 +440,7 @@ export function SessionCreator(props: {
         > */}
         <div className="flex h-full w-full flex-col">
           <Workspace
+            workflowId={props.workflowId}
             key={props.workflowId}
             nativeMode={true}
             endpoint={url}
@@ -431,7 +454,7 @@ export function SessionCreator(props: {
     );
   }
 
-  if (sessionId && !url) {
+  if (sessionId && (!url || !isLive)) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center">
         <Card className="flex flex-col items-center gap-4 p-6">

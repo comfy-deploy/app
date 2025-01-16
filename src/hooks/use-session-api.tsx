@@ -5,6 +5,26 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 export function useSessionAPI(machineId?: string | null) {
   return {
+    createDynamicSession: useMutation({
+      mutationKey: ["session", "dynamic"],
+      mutationFn: async (data: any) => {
+        try {
+          const response = await api({
+            url: "session/dynamic",
+            init: {
+              method: "POST",
+              body: JSON.stringify({
+                ...data,
+              }),
+            },
+          });
+
+          return response;
+        } catch (e) {
+          throw e;
+        }
+      },
+    }),
     createSession: useMutation({
       mutationKey: ["session", machineId],
       mutationFn: async (data: any) => {

@@ -8,9 +8,9 @@ import { useForm } from "react-hook-form";
 
 export const Route = createFileRoute("/sessions/$sessionId/")({
   component: RouteComponent,
-  validateSearch: (search) => {
+  validateSearch: (search: Record<string, unknown>) => {
     return {
-      machineId: search.machineId as string,
+      machineId: search.machineId as string | undefined | null,
     };
   },
 });
@@ -20,7 +20,7 @@ function RouteComponent() {
   const { machineId } = Route.useSearch();
   const router = useRouter();
 
-  if (sessionId === "new") {
+  if (sessionId === "new" && machineId) {
     return (
       <div>
         <MachineSelect machineId={machineId} />

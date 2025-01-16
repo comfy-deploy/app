@@ -52,7 +52,8 @@ function SessionsList() {
   // console.log(data);
   const query = useMachines(undefined, 5, 5);
 
-  const { createSession, listSession, deleteSession } = useSessionAPI();
+  const { createDynamicSession, createSession, listSession, deleteSession } =
+    useSessionAPI();
 
   const form = useForm({
     defaultValues: {
@@ -60,6 +61,9 @@ function SessionsList() {
       comfyui_version: comfyui_hash,
     },
   });
+
+  const gpu = form.watch("gpu");
+  const comfyui_version = form.watch("comfyui_version");
 
   // const data = [
   //   {
@@ -182,7 +186,7 @@ function SessionsList() {
           ComfyUI
           <ComfyUIVersionSelectBox
             className="mt-0"
-            value={form.watch("comfyui_version")}
+            value={comfyui_version}
             onChange={(value) => form.setValue("comfyui_version", value)}
           />
         </div>
@@ -190,7 +194,7 @@ function SessionsList() {
           <div className="flex gap-2 flex-row items-center">
             <GPUSelectBox
               className="mt-0"
-              value={form.watch("gpu")}
+              value={gpu}
               onChange={(value) => form.setValue("gpu", value)}
             />
           </div>
@@ -211,16 +215,22 @@ function SessionsList() {
             variant="shine"
             Icon={Play}
             iconPlacement="right"
-            onClick={() => {
+            onClick={async () => {
+              const response = await createDynamicSession.mutateAsync({
+                gpu: gpu,
+                comfyui_version: comfyui_version,
+                timeout: 15,
+              });
+              useLogStore.getState().clearLogs();
+
               router.navigate({
                 to: "/sessions/$sessionId",
                 params: {
-                  sessionId: "new",
-                  // workflowId: "e3902b92-4c83-4bae-8b69-d494ca1e91fd",
+                  sessionId: response.session_id,
                 },
-                // search: {
-                //   sessionId: "preview",
-                // },
+                search: {
+                  machineId: null,
+                },
               });
             }}
           >
