@@ -109,7 +109,6 @@ const client = new ComfyDeploy({
 
 const jsClientSetupTemplateV2 = `
 const cd = new ComfyDeploy({
-  serverURL: "<URLONLY>",
   bearer: process.env.COMFY_DEPLOY_API_KEY!,
 });
 `;

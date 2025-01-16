@@ -37,6 +37,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
+  AlertTriangle,
   ChevronRight,
   ExternalLink,
   Minus,
@@ -655,7 +656,7 @@ function SelectedNodeList({
   };
 
   return (
-    <div className="flex w-full flex-col gap-4 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="flex w-full flex-col gap-2 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex flex-row items-center justify-between">
         <h2 className="font-medium text-md">
           Selected Nodes ({validation.docker_command_steps.steps.length})
@@ -802,16 +803,27 @@ function SelectedNodeList({
           onDragEnd={handleDragEnd}
           modifiers={[restrictToVerticalAxis]}
         >
-          <SortableContext
-            items={validation.docker_command_steps.steps.map((node) => node.id)}
-            strategy={verticalListSortingStrategy}
-          >
+          <div>
             {validation.docker_command_steps.steps.length > 1 && (
               <span className="text-gray-500 text-xs">
                 <span className="text-red-500">* </span>Long press and drag to
                 reorder the nodes.
               </span>
             )}
+            {validation.docker_command_steps.steps.length > 30 && (
+              <div className="flex items-start gap-2 rounded-sm border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 leading-snug">
+                <AlertTriangle className="mt-1 h-[14px] w-[14px] shrink-0" />
+                <p>
+                  Large number of custom nodes may increase build time and risk
+                  of conflicts. <br /> Consider reducing the selection.
+                </p>
+              </div>
+            )}
+          </div>
+          <SortableContext
+            items={validation.docker_command_steps.steps.map((node) => node.id)}
+            strategy={verticalListSortingStrategy}
+          >
             <div
               className={cn(
                 "flex max-h-[500px] flex-col gap-1 overflow-y-auto overflow-x-hidden p-2 pb-0",
