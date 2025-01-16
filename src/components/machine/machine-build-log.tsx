@@ -201,7 +201,7 @@ function StepsUI(props: { logs: LogsType; machine: any }) {
   };
 
   return (
-    <ScrollArea className="h-full max-h-[calc(100vh-100px)]">
+    <ScrollArea className="h-[530px]">
       <div className="flex w-full flex-col space-y-1">
         {steps.map((step, index) => {
           const stepLogs = getLogsForStep(step.name, index);

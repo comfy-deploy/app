@@ -316,7 +316,7 @@ export function MachineVersionListItem({
 
   return (
     <div className="border-b px-4 hover:bg-gray-100">
-      <div className="grid grid-cols-1 md:grid-cols-[minmax(120px,1fr)_minmax(150px,1fr)_minmax(100px,1fr)_minmax(250px,auto)] gap-4 md:gap-x-4 md:items-center">
+      <div className="grid grid-cols-[minmax(120px,1fr)_minmax(150px,1fr)_minmax(100px,1fr)_minmax(250px,auto)] items-center gap-x-4">
         {/* Wrap only the content that should be clickable in Link */}
         <Link
           key={machineVersion.id}
@@ -325,9 +325,6 @@ export function MachineVersionListItem({
         >
           {/* ID and Version */}
           <div className="grid grid-cols-1 gap-y-1 min-w-0 cursor-pointer">
-            {/* <div className="font-medium font-mono text-2xs truncate">
-              {machineVersion.id.slice(0, 8)}
-            </div> */}
             <div className="flex flex-row gap-x-2 items-center">
               <div className="bg-gray-100 leading-snug px-2 py-0 rounded-md text-gray-500 text-xs w-fit">
                 v{machineVersion.version}
@@ -344,11 +341,9 @@ export function MachineVersionListItem({
             </div>
           </div>
 
-          <hr className="border-gray-200 border-t md:hidden" />
-
           {/* Status and Time */}
           <div className="flex flex-row gap-4">
-            <div className="flex min-w-0  items-center gap-x-1.5">
+            <div className="flex min-w-0 items-center gap-x-1.5">
               <MachineStatusBadge
                 status={machineVersion.status}
                 createdAt={machineVersion.created_at}
@@ -384,8 +379,6 @@ export function MachineVersionListItem({
                     )})`}
             </span>
           </div>
-
-          <hr className="border-gray-200 border-t md:hidden" />
 
           {/* GPU and Nodes */}
           <div className="grid grid-cols-[auto,1fr] items-center gap-x-2">
@@ -661,17 +654,15 @@ export function DiffViewer({
   }
 
   return (
-    <div className="mt-4 space-y-2">
-      <ScrollArea className="max-h-[500px] space-y-2 pb-3">
-        {changes.map((change, index) => (
-          <div
-            key={index}
-            className="rounded-lg border border-gray-100 bg-white p-4"
-          >
-            <ChangeItem change={change} />
-          </div>
-        ))}
-      </ScrollArea>
+    <div className="mt-4 max-h-[500px] space-y-2 overflow-y-auto pb-3">
+      {changes.map((change, index) => (
+        <div
+          key={index}
+          className="rounded-lg border border-gray-100 bg-white p-4"
+        >
+          <ChangeItem change={change} />
+        </div>
+      ))}
     </div>
   );
 }

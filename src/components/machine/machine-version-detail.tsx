@@ -761,25 +761,23 @@ function MachineVersionBuildLog({
         <CardDescription>Machine build logs</CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[600px]">
-          {machineVersion.status === "building" ? (
-            <MachineBuildLog
-              machine={machine}
-              instance_id={machine.build_machine_instance_id!}
-              machine_id={machine.id}
-              endpoint={machineEndpoint}
-            />
-          ) : machineVersion.build_log ? (
-            <BuildStepsUI
-              logs={JSON.parse(machineVersion.build_log ?? "")}
-              machine={machineVersion}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-              No logs
-            </div>
-          )}
-        </ScrollArea>
+        {machineVersion.status === "building" ? (
+          <MachineBuildLog
+            machine={machine}
+            instance_id={machine.build_machine_instance_id!}
+            machine_id={machine.id}
+            endpoint={machineEndpoint}
+          />
+        ) : machineVersion.build_log ? (
+          <BuildStepsUI
+            logs={JSON.parse(machineVersion.build_log ?? "")}
+            machine={machineVersion}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+            No logs
+          </div>
+        )}
       </CardContent>
     </Card>
   );

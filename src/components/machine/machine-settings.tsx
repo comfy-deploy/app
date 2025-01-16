@@ -81,7 +81,6 @@ export function MachineSettingsWrapper({
   title?: ReactNode;
   disableUnsavedChangesWarningServerless?: boolean;
 }) {
-  console.log("machine inside: ", machine);
   const isServerless = machine.type === "comfy-deploy-serverless";
   const formRef = useRef<HTMLFormElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,7 +94,7 @@ export function MachineSettingsWrapper({
   return (
     <div>
       <div>
-        <div className="sticky top-[57px] z-10 flex h-12 items-center justify-between bg-background/80 backdrop-blur-sm">
+        <div className="sticky top-[57px] z-10 flex h-[72px] flex-col bg-background/80 backdrop-blur-sm md:h-12 md:flex-row md:items-center md:justify-between">
           {title ?? (
             <div className="flex flex-col gap-2">
               <div className="flex items-center">
@@ -396,7 +395,7 @@ function ServerlessSettings({
       <form ref={formRef} onSubmit={form.handleSubmit(handleSubmit)}>
         {view === "environment" && (
           <div className="space-y-4 p-2 pt-4">
-            <div className="flex flex-row gap-2">
+            <div className="flex flex-col gap-4 md:flex-row">
               <div className="w-full">
                 <Badge className="font-medium text-sm">ComfyUI Version</Badge>
                 <ComfyUIVersionSelectBox
@@ -704,11 +703,15 @@ export function ComfyUIVersionSelectBox({
   const { data: latestComfyUI, isLoading } = useGithubBranchInfo(
     "https://github.com/comfyanonymous/ComfyUI",
   );
+  useEffect(() => {
+    setCustomValue(value || "");
+  }, [value]);
+
   const [customValue, setCustomValue] = useState(value || "");
 
   const options = [
     { label: "Recommended", value: comfyui_hash },
-    { label: "Latest", value: latestComfyUI?.commit.sha || comfyui_hash },
+    { label: "Latest", value: latestComfyUI?.commit.sha || "latest" },
     { label: "Custom", value: "custom" },
   ];
 

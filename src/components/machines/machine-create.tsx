@@ -1,29 +1,11 @@
-import { CustomNodeSetup } from "@/components/onboarding/custom-node-setup";
-import {
-  type ComfyUIOption,
-  type GpuTypes,
-  WorkflowImportMachineSetup,
-  gpuOptions,
-} from "@/components/onboarding/workflow-machine-import";
-import {
-  type Step,
-  type StepComponentProps,
-  StepForm,
-} from "@/components/step-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { WorkflowImportMachineSetup } from "@/components/onboarding/workflow-machine-import";
+import { type Step, StepForm } from "@/components/step-form";
 import { useCurrentPlan } from "@/hooks/use-current-plan";
-import { useGithubBranchInfo } from "@/hooks/use-github-branch-info";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ChevronUp, ExternalLink, Lock } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { SnapshotImportZoneSteps } from "../snapshot-import-zone-steps";
 import type { StepValidation } from "../onboarding/workflow-import";
 
 // export interface MachineStepValidation {

@@ -59,6 +59,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "../ui/drawer";
 
 export type DefaultCustomNodeData = {
   title: string;
@@ -148,6 +158,87 @@ export function CustomNodeSetup({
   validation,
   setValidation,
 }: StepComponentProps<MachineStepValidation>) {
+  return (
+    <div>
+      <div className="mb-2">
+        <span className="font-medium text-sm">Custom Nodes </span>
+        <div className="hidden lg:block">
+          <DesktopLayout
+            validation={validation}
+            setValidation={setValidation}
+          />
+        </div>
+        <div className="block lg:hidden">
+          <MobileLayout validation={validation} setValidation={setValidation} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==============================
+
+function DesktopLayout({
+  validation,
+  setValidation,
+}: StepComponentProps<MachineStepValidation>) {
+  return (
+    <ResizablePanelGroup direction="horizontal">
+      <ResizablePanel defaultSize={50} minSize={40} collapsible>
+        <SearchNodeList validation={validation} setValidation={setValidation} />
+      </ResizablePanel>
+      <ResizableHandle className="mx-2" withHandle />
+      <ResizablePanel defaultSize={50} minSize={40} collapsible>
+        <SelectedNodeList
+          validation={validation}
+          setValidation={setValidation}
+        />
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
+}
+
+function MobileLayout({
+  validation,
+  setValidation,
+}: StepComponentProps<MachineStepValidation>) {
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  return (
+    <div>
+      <SelectedNodeList
+        validation={validation}
+        setValidation={setValidation}
+        mobileDrawerOpen={mobileDrawerOpen}
+        setMobileDrawerOpen={setMobileDrawerOpen}
+      />
+      <Drawer open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader className="text-left">
+            <SearchNodeList
+              validation={validation}
+              setValidation={setValidation}
+            />
+          </DrawerHeader>
+          <DrawerFooter>
+            <DrawerClose>
+              <Button variant="outline" className="w-full">
+                Done
+              </Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    </div>
+  );
+}
+
+// ==============================
+
+function SearchNodeList({
+  validation,
+  setValidation,
+}: StepComponentProps<MachineStepValidation>) {
   const { data, isLoading } = useQuery<DefaultCustomNodeData[]>({
     queryKey: ["custom-node-list"],
     queryFn: async () => {
@@ -225,17 +316,6 @@ export function CustomNodeSetup({
     }
   };
 
-  const handleRemoveNode = (node: DockerCommandStep) => {
-    setValidation((prev) => ({
-      ...prev,
-      docker_command_steps: {
-        steps: prev.docker_command_steps.steps.filter(
-          (step) => step.id !== node.id,
-        ),
-      },
-    }));
-  };
-
   const nonBlacklistedNodes = useMemo(() => {
     if (!data) return [];
 
@@ -286,177 +366,154 @@ export function CustomNodeSetup({
   }, [parentRef, filteredNodes.length]);
 
   return (
-    <div>
-      <div className="mb-2">
-        <span className="font-medium text-sm">Custom Nodes </span>
+    <div className="flex w-full flex-col gap-4 rounded-sm border border-gray-200 bg-white px-4 pb-4 shadow-sm">
+      <div className="mt-1 flex flex-row items-center border-gray-300 border-b px-2">
+        <Search size={18} className="text-gray-500" />
+        <div className="relative flex-1">
+          <Input
+            placeholder="Search by author, title, or GitHub url..."
+            value={searchTerm}
+            className="border-none focus-visible:outline-none focus-visible:ring-0"
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              className="-translate-y-1/2 absolute top-1/2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
-      <ResizablePanelGroup direction="horizontal">
-        <ResizablePanel defaultSize={50} minSize={40} collapsible>
-          <div className="flex w-full flex-col gap-4 rounded-sm border border-gray-200 bg-white px-4 pb-4 shadow-sm">
-            {/* <h2 className="font-medium text-md">Custom Node Library</h2> */}
-            <div className="mt-1 flex flex-row items-center border-gray-300 border-b px-2">
-              <Search size={18} className="text-gray-500" />
-              <div className="relative flex-1">
-                <Input
-                  placeholder="Search by author, title, or GitHub url..."
-                  value={searchTerm}
-                  className="border-none focus-visible:outline-none focus-visible:ring-0"
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm("")}
-                    className="-translate-y-1/2 absolute top-1/2 right-2 text-gray-500 hover:text-gray-700"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
+      {isLoading ? (
+        <div className="flex max-h-[400px] flex-col gap-1 overflow-y-auto">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={i}
+              className="min-h-[50px] w-full animate-pulse rounded-[6px] bg-gray-100"
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          ref={setParentRef}
+          className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent mx-1 h-[500px] overflow-auto"
+        >
+          {filteredNodes.length === 0 ? (
+            <div className="flex justify-center text-gray-500 text-sm">
+              No custom nodes found.
             </div>
-            {isLoading ? (
-              <div className="flex max-h-[400px] flex-col gap-1 overflow-y-auto">
-                {Array.from({ length: 10 }).map((_, i) => (
+          ) : (
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: "100%",
+                position: "relative",
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow, index) => {
+                const node = filteredNodes[virtualRow.index];
+                const nodeRefLower = node.reference.toLowerCase();
+
+                return (
                   <div
-                    key={i}
-                    className="min-h-[50px] w-full animate-pulse rounded-[6px] bg-gray-100"
-                  />
-                ))}
-              </div>
-            ) : (
-              <div
-                ref={setParentRef}
-                className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent mx-1 h-[500px] overflow-auto"
-              >
-                {filteredNodes.length === 0 ? (
-                  <div className="flex justify-center text-gray-500 text-sm">
-                    No custom nodes found.
-                  </div>
-                ) : (
-                  <div
+                    key={nodeRefLower}
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    className={cn(
+                      "flex items-center rounded-[6px] text-sm hover:bg-gray-100",
+                      index % 2 === 0 && "bg-gray-50",
+                    )}
                     style={{
-                      height: `${rowVirtualizer.getTotalSize()}px`,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
                       width: "100%",
-                      position: "relative",
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
                     }}
                   >
-                    {rowVirtualizer
-                      .getVirtualItems()
-                      .map((virtualRow, index) => {
-                        const node = filteredNodes[virtualRow.index];
-                        const nodeRefLower = node.reference.toLowerCase();
-
-                        return (
-                          <div
-                            key={nodeRefLower}
-                            data-index={virtualRow.index}
-                            ref={rowVirtualizer.measureElement}
-                            className={cn(
-                              "flex items-center rounded-[6px] text-sm hover:bg-gray-100",
-                              index % 2 === 0 && "bg-gray-50",
-                            )}
-                            style={{
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              width: "100%",
-                              height: `${virtualRow.size}px`,
-                              transform: `translateY(${virtualRow.start}px)`,
-                            }}
-                          >
-                            <div
-                              className={cn(
-                                "w-full px-2",
-                                validation.docker_command_steps.steps.some(
-                                  (n) =>
-                                    isCustomNodeData(n) &&
-                                    n.data.url.toLowerCase() === nodeRefLower,
-                                ) && "opacity-30",
-                              )}
+                    <div
+                      className={cn(
+                        "w-full px-2",
+                        validation.docker_command_steps.steps.some(
+                          (n) =>
+                            isCustomNodeData(n) &&
+                            n.data.url.toLowerCase() === nodeRefLower,
+                        ) && "opacity-30",
+                      )}
+                    >
+                      <div className="flex flex-row items-center justify-between">
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate font-medium">
+                            {POPULAR_NODES.some(
+                              (p) =>
+                                p.toLowerCase() ===
+                                node.reference.toLowerCase(),
+                            ) && "🔥 "}
+                            {node.title}
+                          </span>
+                          <div className="flex items-center">
+                            <span className="text-2xs text-gray-500 leading-snug">
+                              {node.author}
+                            </span>
+                            <Link
+                              to={node.reference}
+                              target="_blank"
+                              className="ml-1 inline-flex items-center text-gray-500 hover:text-gray-700"
                             >
-                              <div className="flex flex-row items-center justify-between">
-                                <div className="flex min-w-0 flex-1 flex-col">
-                                  <span className="truncate font-medium">
-                                    {POPULAR_NODES.some(
-                                      (p) =>
-                                        p.toLowerCase() ===
-                                        node.reference.toLowerCase(),
-                                    ) && "🔥 "}
-                                    {node.title}
-                                  </span>
-                                  <div className="flex items-center">
-                                    <span className="text-2xs text-gray-500 leading-snug">
-                                      {node.author}
-                                    </span>
-                                    <Link
-                                      to={node.reference}
-                                      target="_blank"
-                                      className="ml-1 inline-flex items-center text-gray-500 hover:text-gray-700"
-                                    >
-                                      <ExternalLink size={12} />
-                                    </Link>
-                                    <span className="mx-2 text-muted-foreground">
-                                      •
-                                    </span>
-                                    <Star
-                                      size={12}
-                                      className="mr-1 fill-yellow-400 text-yellow-400"
-                                    />
-                                    <span className="text-2xs text-gray-500 leading-snug">
-                                      {
-                                        defaultCustomNodeStats?.[
-                                          Object.keys(
-                                            defaultCustomNodeStats || {},
-                                          ).find(
-                                            (key) =>
-                                              key.toLowerCase() ===
-                                              nodeRefLower,
-                                          ) ?? ""
-                                        ]?.stars
-                                      }
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="hover:bg-gray-200"
-                                    onClick={async () => {
-                                      await handleAddNode(
-                                        filteredNodes[virtualRow.index],
-                                      );
-                                    }}
-                                    disabled={validation.docker_command_steps.steps.some(
-                                      (n) =>
-                                        isCustomNodeData(n) &&
-                                        n.data.url.toLowerCase() ===
-                                          nodeRefLower,
-                                    )}
-                                  >
-                                    <Plus size={12} />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
+                              <ExternalLink size={12} />
+                            </Link>
+                            <span className="mx-2 text-muted-foreground">
+                              •
+                            </span>
+                            <Star
+                              size={12}
+                              className="mr-1 fill-yellow-400 text-yellow-400"
+                            />
+                            <span className="text-2xs text-gray-500 leading-snug">
+                              {
+                                defaultCustomNodeStats?.[
+                                  Object.keys(
+                                    defaultCustomNodeStats || {},
+                                  ).find(
+                                    (key) => key.toLowerCase() === nodeRefLower,
+                                  ) ?? ""
+                                ]?.stars
+                              }
+                            </span>
                           </div>
-                        );
-                      })}
+                        </div>
+                        <div className="flex flex-col">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="hover:bg-gray-200"
+                            onClick={async () => {
+                              await handleAddNode(
+                                filteredNodes[virtualRow.index],
+                              );
+                            }}
+                            disabled={validation.docker_command_steps.steps.some(
+                              (n) =>
+                                isCustomNodeData(n) &&
+                                n.data.url.toLowerCase() === nodeRefLower,
+                            )}
+                          >
+                            <Plus size={12} />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        </ResizablePanel>
-        <ResizableHandle className="mx-2" withHandle />
-        <ResizablePanel defaultSize={50} minSize={40} collapsible>
-          <SelectedNodeList
-            validation={validation}
-            setValidation={setValidation}
-            handleRemoveNode={handleRemoveNode}
-          />
-        </ResizablePanel>
-      </ResizablePanelGroup>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -464,9 +521,11 @@ export function CustomNodeSetup({
 function SelectedNodeList({
   validation,
   setValidation,
-  handleRemoveNode,
+  mobileDrawerOpen,
+  setMobileDrawerOpen,
 }: StepComponentProps<MachineStepValidation> & {
-  handleRemoveNode: (node: DockerCommandStep) => void;
+  mobileDrawerOpen?: boolean;
+  setMobileDrawerOpen?: (open: boolean) => void;
 }) {
   const [editingHash, setEditingHash] = useState<string | null>(null);
   const [editingCommand, setEditingCommand] = useState<string | null>(null);
@@ -511,6 +570,17 @@ function SelectedNodeList({
         };
       });
     }
+  };
+
+  const handleRemoveNode = (node: DockerCommandStep) => {
+    setValidation((prev) => ({
+      ...prev,
+      docker_command_steps: {
+        steps: prev.docker_command_steps.steps.filter(
+          (step) => step.id !== node.id,
+        ),
+      },
+    }));
   };
 
   const handleStartEdit = (node: DockerCommandStep) => {
@@ -590,12 +660,13 @@ function SelectedNodeList({
         <h2 className="font-medium text-md">
           Selected Nodes ({validation.docker_command_steps.steps.length})
         </h2>
-        <div className="flex flex-row items-center gap-2">
+        <div className="flex flex-col items-end gap-2 md:flex-row">
           {!scriptMode && (
             <Button
               size={"xs"}
               type="button"
               variant={"outline"}
+              className="hidden lg:flex lg:flex-row"
               onClick={() => {
                 setShowNewCommand(true);
                 setValidation((prev) => ({
@@ -621,6 +692,43 @@ function SelectedNodeList({
               <ToggleLeft className="ml-2 h-4 w-4" />
             )}
           </Button>
+          {!scriptMode && (
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button
+                  size={"xs"}
+                  type="button"
+                  variant={"outline"}
+                  className="flex flex-row lg:hidden"
+                >
+                  Add Node
+                  <Plus size={12} className="ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[200px]">
+                <DropdownMenuLabel>Add Node</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setMobileDrawerOpen?.(true);
+                  }}
+                >
+                  Custom Node
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setShowNewCommand(true);
+                    setValidation((prev) => ({
+                      ...prev,
+                      isEditingHashOrAddingCommands: true,
+                    }));
+                  }}
+                >
+                  Command
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 

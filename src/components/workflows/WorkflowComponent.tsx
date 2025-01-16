@@ -29,7 +29,7 @@ import { useProgressUpdates } from "@/hooks/use-progress-update";
 import { useAuthStore } from "@/lib/auth-store";
 import { getRelativeTime } from "@/lib/get-relative-time";
 import { EventSourcePolyfill } from "event-source-polyfill";
-import { ExternalLink, Info, Settings2Icon } from "lucide-react";
+import { AlertCircle, ExternalLink, Info, Settings2Icon } from "lucide-react";
 import { parseAsString, useQueryState } from "nuqs";
 import { type ReactNode, useMemo } from "react";
 import { useEffect, useState } from "react";
@@ -40,6 +40,7 @@ import { useMachine } from "@/hooks/use-machine";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
+import { Alert, AlertDescription } from "../ui/alert";
 
 export default function WorkflowComponent() {
   const [runId, setRunId] = useQueryState("run-id");
@@ -171,8 +172,7 @@ function RunDetails(props: {
                   variant="outline"
                   onClick={() => {
                     window.open(
-                      "https://modal.com/apps/comfy-deploy/main/deployed/" +
-                        run.machine_id,
+                      `https://modal.com/apps/comfy-deploy/main/deployed/${run.machine_id}`,
                       "_blank",
                     );
                   }}
@@ -294,7 +294,18 @@ function RunDetails(props: {
             </TabsContent>
             <TabsContent value="logs">
               <ErrorBoundary fallback={() => <div>Error loading logs</div>}>
-                <LogsTab runId={run.id} />
+                {run.modal_function_call_id && <LogsTab runId={run.id} />}
+                {!run.modal_function_call_id && (
+                  <Alert
+                    variant="default"
+                    className="w-auto max-w-md border-muted bg-muted/50"
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-muted-foreground text-sm">
+                      We're unable to display logs for runs from the workspace.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </ErrorBoundary>
             </TabsContent>
           </Tabs>

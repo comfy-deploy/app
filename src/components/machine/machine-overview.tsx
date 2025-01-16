@@ -316,7 +316,7 @@ export function MachineCostEstimate({ machineId }: { machineId: string }) {
   }, [usage, machineId]);
 
   return (
-    <Link to={"/usage"} className="flex items-center">
+    <Link to={"/usage"} className="hidden items-center md:flex">
       <Badge variant="outline" className="flex h-6 items-center gap-2 px-2">
         <DollarSign className="h-3 w-3 text-gray-600" />
         <span className="text-gray-600 text-xs">
