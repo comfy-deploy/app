@@ -314,6 +314,10 @@ export default function Workspace({
           if (workflowJson) {
             console.log("sending workflow");
             sendWorkflow(workflowJson);
+          } else {
+            sendWorkflow({
+              nodes: [],
+            });
           }
           setCDSetup(true);
           setProgress(100);

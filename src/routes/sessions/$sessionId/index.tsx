@@ -25,22 +25,29 @@ function RouteComponent() {
   return (
     <div className="h-full w-full">
       <Portal targetId="nav-bar-items">
-        <div className="text-muted-foreground">Select a workflow</div>
-        <WorkflowDropdown
-          className="min-h-[60px] w-[300px] border"
-          workflow_id={""}
-          onNavigate={(workflowId) => {
-            router.navigate({
-              to: "/sessions/$sessionId",
-              params: {
-                sessionId: sessionId,
-              },
-              search: {
-                workflowId: workflowId,
-              },
-            });
-          }}
-        />
+        <div className="flex flex-row gap-2 items-center">
+          <WorkflowDropdown
+            className="w-[200px] h-full"
+            workflow_id={workflowId ?? ""}
+            onNavigate={(workflowId) => {
+              router.navigate({
+                to: "/sessions/$sessionId",
+                params: {
+                  sessionId: sessionId,
+                },
+                search: {
+                  workflowId: workflowId,
+                },
+              });
+            }}
+          />
+          {workflowId && (
+            <VersionSelectV2
+              workflow_id={workflowId ?? ""}
+              className="w-20 flex-shrink-0"
+            />
+          )}
+        </div>
       </Portal>
       <WorkspaceClientWrapper
         workflow_id={workflowId ?? undefined}
@@ -74,6 +81,7 @@ import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list"
 import { WorkflowDropdown } from "@/components/workflow-dropdown";
 import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
 import { Portal } from "@/components/ui/custom/portal";
+import { VersionSelectV2 } from "@/components/version-select";
 // import { MachineBuildSettingsDialog } from "./MachineBuildSettingsDialog";
 
 export function MachineSelect({
