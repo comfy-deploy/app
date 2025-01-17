@@ -691,17 +691,7 @@ function RebuildMachineDialog({
   setDialogOpen,
 }: MachineDialogProps) {
   const navigate = useNavigate();
-  const { data } = useQuery<{
-    version: string;
-    changelog: string;
-  }>({
-    queryKey: ["modal", "version"],
-  });
-
-  const isNewerVersion = semver.gt(
-    data?.version ?? "0.0.0",
-    machine.machine_version ?? "0.0.0",
-  );
+  const oldVersion = machine.machine_builder_version < 4;
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -713,26 +703,30 @@ function RebuildMachineDialog({
           <DialogDescription className="text-primary">
             Rebuild the machine to get the latest version of the machine builder
             or resolve any build issues.
-            {isNewerVersion && (
-              <div className="mt-2 border-t bg-gray-50 p-2 text-sm opacity-80">
-                New version available{" "}
-                <Badge variant={"green"}>v{data?.version}</Badge>, rebuilding
-                will upgrade your machine version{" "}
-                {machine.machine_version && (
-                  <>
-                    from{" "}
-                    <Badge variant={"rose"}>v{machine.machine_version}</Badge>
-                  </>
-                )}
-                , suggest creating a new machine for experimentation
-                <div className="prose mt-2 text-xs">
-                  Changelog
-                  <ul>
-                    {data?.changelog?.split("\n").map((change, index) => (
-                      <li key={index}>{change}</li>
-                    ))}
-                  </ul>
+            {oldVersion && (
+              <div className="mt-4 rounded-md border-2 border-yellow-500/20 bg-yellow-500/10 p-3">
+                <div className="flex items-center gap-2 text-yellow-700">
+                  <CloudCog className="h-5 w-5" />
+                  <span className="font-semibold">Version Update Required</span>
                 </div>
+                <p className="mt-1 text-yellow-700">
+                  Your current version{" "}
+                  <Badge
+                    variant="red"
+                    className="border-yellow-500 text-yellow-700"
+                  >
+                    v{machine.machine_builder_version}
+                  </Badge>{" "}
+                  is <span className="font-semibold">no longer supported</span>.
+                  The machine will be automatically upgraded to{" "}
+                  <Badge
+                    variant="green"
+                    className="border-yellow-500 text-yellow-700"
+                  >
+                    v4
+                  </Badge>{" "}
+                  after rebuild.
+                </p>
               </div>
             )}
           </DialogDescription>
@@ -763,6 +757,7 @@ function RebuildMachineDialog({
                         method: "PATCH",
                         body: JSON.stringify({
                           is_trigger_rebuild: true,
+                          machine_builder_version: 4,
                         }),
                       },
                     }),

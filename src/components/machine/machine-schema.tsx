@@ -35,11 +35,67 @@ export const machineGPUOptions = [
 
 const machineBuilderVersionTypes = ["2", "3", "4"] as const;
 
+// First, define a type for the step structure
+const dockerCommandStep = z.discriminatedUnion("type", [
+  z.object({
+    id: z.string(),
+    type: z.literal("custom-node"),
+    data: z.object({
+      url: z.string().url(),
+      hash: z
+        .string()
+        .min(1, "Hash cannot be empty")
+        .regex(
+          /^[a-z0-9]+$/,
+          "Hash can only contain lowercase letters and numbers",
+        ),
+      meta: z.any(),
+      name: z.string(),
+      files: z.array(z.string()),
+      install_type: z.string(),
+    }),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal("commands"),
+    data: z.string(),
+  }),
+]);
+
 export const serverlessFormSchema = z.object({
   name: z.string().default("My Machine").describe("Name"),
   comfyui_version: z.string().default(comfyui_hash).describe("ComfyUI Version"),
   gpu: z.enum(machineGPUOptions).default("A10G"),
-  docker_command_steps: z.any().describe("Environment"),
+  docker_command_steps: z
+    .object({
+      steps: z.array(dockerCommandStep),
+    })
+    .refine((data): data is typeof data => {
+      const urlCounts = new Map<string, number>();
+      for (const step of data.steps) {
+        if (step.type === "custom-node") {
+          const url = step.data.url.toLowerCase();
+          try {
+            const urlObj = new URL(url);
+            if (urlObj.hostname === "github.com") {
+              const [, author, repo] = urlObj.pathname.split("/");
+              const repoKey = `${author}/${repo}`;
+              urlCounts.set(repoKey, (urlCounts.get(repoKey) || 0) + 1);
+            } else {
+              urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
+            }
+          } catch {
+            urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
+          }
+        }
+      }
+
+      // Store the urlCounts in a custom property so we can access it in the error message
+      (data as any)._urlCounts = urlCounts;
+
+      // Return false if there are duplicates
+      return !Array.from(urlCounts.values()).some((count) => count > 1);
+    }),
   concurrency_limit: z.number().default(2),
   install_custom_node_with_gpu: z
     .boolean()
