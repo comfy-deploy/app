@@ -90,9 +90,6 @@ export const serverlessFormSchema = z.object({
         }
       }
 
-      // Store the urlCounts in a custom property so we can access it in the error message
-      (data as any)._urlCounts = urlCounts;
-
       // Return false if there are duplicates
       return !Array.from(urlCounts.values()).some((count) => count > 1);
     }),
