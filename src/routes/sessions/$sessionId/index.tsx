@@ -1,5 +1,47 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
+import { usePostHog } from "posthog-js/react";
+
+import { MachineStatus } from "@/components/machines/machine-status";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { useMachine, useMachines } from "@/hooks/use-machine";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
+import { cn } from "@/lib/utils";
+import {
+  AlertTriangle,
+  ChevronDown,
+  Diff,
+  ExternalLink,
+  RefreshCcw,
+  Save,
+  Search,
+} from "lucide-react";
+import * as React from "react";
+import { useDebounce } from "use-debounce";
+import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
+import { WorkflowDropdown } from "@/components/workflow-dropdown";
+import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
+import { Portal } from "@/components/ui/custom/portal";
+import {
+  useSelectedVersion,
+  VersionSelectV2,
+} from "@/components/version-select";
+import { WorkflowCommitVersion } from "@/components/workspace/WorkflowCommitVersion";
+import { WorkflowDiff } from "@/components/workspace/WorkflowDiff";
+import { AnimatePresence, motion } from "framer-motion";
+import { sendWorkflow } from "@/components/workspace/sendEventToCD";
+import { toast } from "sonner";
+import { useWorkflowStore } from "@/components/workspace/Workspace";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/sessions/$sessionId/")({
   component: RouteComponent,
@@ -22,25 +64,38 @@ function RouteComponent() {
     );
   }
 
+  const { data: session } = useQuery<any>({
+    enabled: !!sessionId,
+    queryKey: ["session", sessionId],
+  });
+
   return (
     <div className="h-full w-full">
       <Portal targetId="nav-bar-items">
-        <div className="flex flex-row gap-2 items-center">
-          <WorkflowDropdown
-            className="w-[200px] h-full"
-            workflow_id={workflowId ?? ""}
-            onNavigate={(workflowId) => {
-              router.navigate({
-                to: "/sessions/$sessionId",
-                params: {
-                  sessionId: sessionId,
-                },
-                search: {
-                  workflowId: workflowId,
-                },
-              });
-            }}
-          />
+        <div className="flex flex-row justify-between items-center gap-2">
+          <div className="flex flex-row">
+            <WorkflowDropdown
+              className="h-full w-[200px]"
+              workflow_id={workflowId ?? ""}
+              onNavigate={(workflowId) => {
+                router.navigate({
+                  to: "/sessions/$sessionId",
+                  params: {
+                    sessionId: sessionId,
+                  },
+                  search: {
+                    workflowId: workflowId,
+                  },
+                });
+              }}
+            />
+            {workflowId && (
+              <WorkspaceStatusBar
+                endpoint={session?.tunnel_url ?? ""}
+                workflowId={workflowId}
+              />
+            )}
+          </div>
           {workflowId && (
             <VersionSelectV2
               workflow_id={workflowId ?? ""}
@@ -57,31 +112,109 @@ function RouteComponent() {
   );
 }
 
-import { usePostHog } from "posthog-js/react";
+function WorkspaceStatusBar({
+  endpoint,
+  className,
+  btnsClassName,
+  workflowId,
+}: {
+  endpoint: string;
+  className?: string;
+  btnsClassName?: string;
+  workflowId: string;
+}) {
+  // const { workflowId, readonly } = use(WorkspaceContext);
+  const readonly = false;
+  const { value: selectedVersion } = useSelectedVersion(workflowId);
+  const hasChanged = useWorkflowStore((state) => state.hasChanged);
+  const setHasChanged = useWorkflowStore((state) => state.setHasChanged);
 
-import { MachineStatus } from "@/components/machines/machine-status";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useMachine, useMachines } from "@/hooks/use-machine";
-import { api } from "@/lib/api";
-import { callServerPromise } from "@/lib/call-server-promise";
-import { cn } from "@/lib/utils";
-import { ChevronDown, ExternalLink, Search } from "lucide-react";
-import * as React from "react";
-import { useDebounce } from "use-debounce";
-import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
-import { WorkflowDropdown } from "@/components/workflow-dropdown";
-import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
-import { Portal } from "@/components/ui/custom/portal";
-import { VersionSelectV2 } from "@/components/version-select";
+  const [displayDiff, setDisplayDiff] = React.useState(false);
+  const [displayCommit, setDisplayCommit] = React.useState(false);
+
+  return (
+    <>
+      {displayCommit && !readonly && (
+        <WorkflowCommitVersion setOpen={setDisplayCommit} endpoint={endpoint} />
+      )}
+
+      {displayDiff && !readonly && (
+        <WorkflowDiff
+          workflowId={workflowId}
+          onClose={() => setDisplayDiff(false)}
+          onSave={() => {
+            setDisplayDiff(false);
+            setDisplayCommit(true);
+          }}
+        />
+      )}
+      <AnimatePresence>
+        {hasChanged && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className={cn("overflow-hidden", className)}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-yellow-100/80 px-2 py-1 text-xs">
+              {/* <div className="flex items-center gap-2">
+                <AlertTriangle size={12} className="text-yellow-800" />
+                <span className="text-yellow-800">Unsaved changes</span>
+              </div> */}
+
+              <div className={cn("flex items-center gap-2", btnsClassName)}>
+                <Button
+                  className="pointer-events-auto"
+                  disabled={readonly}
+                  variant="outline"
+                  size="xs"
+                  onClick={() => {
+                    sendWorkflow(selectedVersion.workflow);
+                    setHasChanged(false);
+                    toast.success("Discarded changes");
+                  }}
+                  Icon={RefreshCcw}
+                  iconPlacement="right"
+                  confirm
+                >
+                  {/* Revert */}
+                </Button>
+                {/* <Button
+                  className="pointer-events-auto"
+                  disabled={readonly}
+                  variant="outline"
+                  size="xs"
+                  onClick={() => {
+                    setDisplayDiff(true);
+                  }}
+                  Icon={Diff}
+                  iconPlacement="right"
+                >
+                  Diff
+                </Button> */}
+                <Button
+                  className="pointer-events-auto"
+                  disabled={readonly}
+                  variant="outline"
+                  size="xs"
+                  onClick={() => {
+                    setDisplayCommit(true);
+                  }}
+                  Icon={Save}
+                  iconPlacement="right"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 // import { MachineBuildSettingsDialog } from "./MachineBuildSettingsDialog";
 
 export function MachineSelect({

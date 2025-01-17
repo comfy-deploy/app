@@ -165,8 +165,8 @@ export function SessionCreator(props: {
 
   const { cdSetup, setCDSetup } = useCDStore();
 
-  const { createSession, listSession, deleteSession } =
-    useSessionAPI(machineId);
+  // const { createSession, listSession, deleteSession } =
+  //   useSessionAPI(machineId);
 
   const [_sessionId, setSessionId] = useQueryState("sessionId", {
     defaultValue: props.sessionIdOverride || "",
@@ -226,7 +226,6 @@ export function SessionCreator(props: {
   if (sessionId === "preview") {
     return (
       <>
-        {ui}
         <UploadZone
           className="relative flex h-full w-full"
           iframeEndpoint={staticUrl}
