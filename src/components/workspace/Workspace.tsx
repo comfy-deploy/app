@@ -102,13 +102,13 @@ export default function Workspace({
   workflowId,
 }: {
   endpoint: string;
-  workflowJson: any;
+  workflowJson?: any;
   nativeMode?: boolean;
-  workflowId: string;
+  workflowId?: string;
 }) {
   // const workflowId = useWorkflowIdInWorkflowPage();
 
-  const { workflow } = useCurrentWorkflow(workflowId);
+  const { workflow } = useCurrentWorkflow(workflowId ?? null);
 
   const machineId = workflow?.selected_machine_id;
 
@@ -143,7 +143,7 @@ export default function Workspace({
     currentWorkflowRef.current = workflowJson;
   }, [workflowId, workflowJson]);
 
-  const { value: selectedVersion } = useSelectedVersion(workflowId);
+  const { value: selectedVersion } = useSelectedVersion(workflowId ?? null);
 
   const [sessionId] = useQueryState("sessionId", {
     defaultValue: "",
@@ -213,14 +213,9 @@ export default function Workspace({
 
   useEffect(() => {
     if (!cdSetup) return;
-    const deployInterval = setInterval(
-      () => {
-        // console.log('sending')
-        sendEventToCD("deploy");
-      },
-      // connection ? 1000 : 5000,
-      1000,
-    ); // Send event every 5 seconds
+    const deployInterval = setInterval(() => {
+      sendEventToCD("deploy");
+    }, 1000);
 
     return () => clearInterval(deployInterval);
   }, [cdSetup]);
@@ -315,9 +310,11 @@ export default function Workspace({
         }
 
         // console.log(data);
-        if (data.type === "cd_plugin_setup" && workflowJson) {
-          sendWorkflow(workflowJson);
-          console.log("sending workflow");
+        if (data.type === "cd_plugin_setup") {
+          if (workflowJson) {
+            console.log("sending workflow");
+            sendWorkflow(workflowJson);
+          }
           setCDSetup(true);
           setProgress(100);
           sendEventToCD("configure_queue_buttons", [

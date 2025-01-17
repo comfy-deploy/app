@@ -1,23 +1,17 @@
-import { comfyui_hash } from "@/utils/comfydeploy-hash";
-import {
-  ComfyUIVersionSelectBox,
-  GPUSelectBox,
-} from "@/components/machine/machine-settings";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 export const Route = createFileRoute("/sessions/$sessionId/")({
   component: RouteComponent,
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      machineId: search.machineId as string | undefined | null,
-    };
-  },
+  validateSearch: z.object({
+    machineId: z.string().optional(),
+    workflowId: z.string().optional(),
+  }),
 });
 
 function RouteComponent() {
   const { sessionId } = Route.useParams();
-  const { machineId } = Route.useSearch();
+  const { machineId, workflowId } = Route.useSearch();
   const router = useRouter();
 
   if (sessionId === "new" && machineId) {
@@ -29,20 +23,28 @@ function RouteComponent() {
   }
 
   return (
-    <div className="flex h-full flex-col items-start justify-center">
-      <div className="text-muted-foreground">Select a workflow</div>
-      <WorkflowDropdown
-        className="min-h-[60px] w-[300px] border"
-        workflow_id={""}
-        onNavigate={(workflowId) => {
-          router.navigate({
-            to: "/sessions/$sessionId/$workflowId",
-            params: {
-              sessionId: sessionId,
-              workflowId: workflowId,
-            },
-          });
-        }}
+    <div className="h-full w-full">
+      <Portal targetId="nav-bar-items">
+        <div className="text-muted-foreground">Select a workflow</div>
+        <WorkflowDropdown
+          className="min-h-[60px] w-[300px] border"
+          workflow_id={""}
+          onNavigate={(workflowId) => {
+            router.navigate({
+              to: "/sessions/$sessionId",
+              params: {
+                sessionId: sessionId,
+              },
+              search: {
+                workflowId: workflowId,
+              },
+            });
+          }}
+        />
+      </Portal>
+      <WorkspaceClientWrapper
+        workflow_id={workflowId ?? undefined}
+        sessionIdOverride={sessionId}
       />
     </div>
   );
@@ -61,19 +63,17 @@ import {
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine, useMachines } from "@/hooks/use-machine";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ExternalLink, Search, Settings } from "lucide-react";
+import { ChevronDown, ExternalLink, Search } from "lucide-react";
 import * as React from "react";
 import { useDebounce } from "use-debounce";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
-import { MachineBuildSettingsDialog } from "@/components/workspace/MachineBuildSettingsDialog";
-import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
 import { WorkflowDropdown } from "@/components/workflow-dropdown";
+import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
+import { Portal } from "@/components/ui/custom/portal";
 // import { MachineBuildSettingsDialog } from "./MachineBuildSettingsDialog";
 
 export function MachineSelect({

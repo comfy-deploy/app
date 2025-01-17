@@ -11,20 +11,21 @@ import { SessionCreator } from "./SessionView";
 import { WorkspaceLoading, WorkspaceMachineLoading } from "./WorkspaceLoading";
 
 interface WorkspaceClientWrapperProps {
-  workflow_id: string;
+  workflow_id?: string;
   className?: string;
   isPublic?: boolean;
   sessionIdOverride?: string;
 }
 
 export function WorkspaceClientWrapper({
+  sessionIdOverride,
   ...props
 }: WorkspaceClientWrapperProps) {
   const {
     workflow,
     mutateWorkflow,
     isLoading: isLoadingWorkflow,
-  } = useCurrentWorkflow(props.workflow_id);
+  } = useCurrentWorkflow(props.workflow_id ?? null);
 
   const { data: versions, isLoading: isLoadingVersions } = useQuery({
     enabled: !!props.workflow_id,
@@ -39,7 +40,10 @@ export function WorkspaceClientWrapper({
     workflow?.selected_machine_id,
   );
 
-  if (isLoadingWorkflow || isLoading || isLoadingVersions || !versions) {
+  if (
+    !sessionIdOverride &&
+    (isLoadingWorkflow || isLoading || isLoadingVersions || !versions)
+  ) {
     // return <WorkspaceLoading />;
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -48,7 +52,7 @@ export function WorkspaceClientWrapper({
     );
   }
 
-  if (!machine && !isLoading && !isLoadingWorkflow)
+  if (!sessionIdOverride && !machine && !isLoading && !isLoadingWorkflow)
     return (
       <div
         className={cn(
@@ -61,6 +65,7 @@ export function WorkspaceClientWrapper({
     );
 
   if (
+    !sessionIdOverride &&
     machine?.type === "comfy-deploy-serverless" &&
     machine?.status === "building"
   )
@@ -73,12 +78,12 @@ export function WorkspaceClientWrapper({
 
   const machineBuilderVersion = machine?.machine_builder_version;
 
-  if (Number.parseInt(machineBuilderVersion) >= 4) {
+  if (!!sessionIdOverride || Number.parseInt(machineBuilderVersion) >= 4) {
     return (
       <SessionCreator
         workflowId={props.workflow_id}
-        workflowLatestVersion={versions[0]}
-        sessionIdOverride={props.sessionIdOverride}
+        workflowLatestVersion={versions?.[0]}
+        sessionIdOverride={sessionIdOverride}
       />
     );
   }

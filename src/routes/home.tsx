@@ -5,7 +5,7 @@ import { useMachine, useMachines } from "@/hooks/use-machine";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { Cog, Play, Settings, Trash } from "lucide-react";
+import { ChevronRight, Cog, Play, Settings, Trash } from "lucide-react";
 import {
   ComfyUIVersionSelectBox,
   GPUSelectBox,
@@ -228,9 +228,7 @@ function SessionsList() {
                 params: {
                   sessionId: response.session_id,
                 },
-                search: {
-                  machineId: null,
-                },
+                search: {},
               });
             }}
           >
@@ -311,6 +309,15 @@ function SessionsList() {
         }}
         estimateSize={80}
       />
+      <div className="w-full flex justify-end text-muted-foreground text-sm px-2">
+        <Link
+          to="/machines"
+          className="hover:underline flex items-center gap-1"
+        >
+          View all machines
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
     </div>
   );
 }

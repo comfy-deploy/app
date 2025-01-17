@@ -152,124 +152,27 @@ export function ModelsButton(props: {
 }
 
 export function SessionCreator(props: {
-  workflowId: string;
-  workflowLatestVersion: any;
+  workflowId?: string;
+  workflowLatestVersion?: any;
   sessionIdOverride?: string;
 }) {
-  const { workflow } = useCurrentWorkflow(props.workflowId);
+  const { workflow } = useCurrentWorkflow(props.workflowId ?? null);
   const machineId = workflow?.selected_machine_id;
 
   const { data: machine } = useMachine(machineId);
 
   const machineBuilderVersion = machine?.machine_builder_version;
-  // console.log("machineBuilderVersion", machineBuilderVersion);
-
-  // const [machineId] = useSelectedMachine(undefined, workflow, true);
 
   const { cdSetup, setCDSetup } = useCDStore();
 
   const { createSession, listSession, deleteSession } =
     useSessionAPI(machineId);
 
-  // const { data: sessions } = listSession;
-
-  // const sessions = [
-  //   {
-  //     user_id: "user_2ZA6vuKD3IJXju16oJVQGLBcWwg",
-  //     org_id: "org_2bWQ1FoWC3Wro391TurkeVG77pC",
-  //     id: "0aa3a0b0-200d-444b-a2c7-7c8edb84bcdd",
-  //     gpu: "A10G",
-  //     gpu_provider: "modal",
-  //     updated_at: "2024-09-24T23:56:18.819Z",
-  //     modal_function_id: "fc-01J8K7DRZHDBX7WG54HR59M5RX",
-  //     start_time: "2024-09-24T23:56:25.878Z",
-  //     machine_id: "5641fb6c-8a19-47aa-aa1c-1a98194f3b5f",
-  //     end_time: null,
-  //     ws_gpu: null,
-  //     created_at: "2024-09-24T23:56:26.337Z",
-  //     session_id: "77f275fe-2f55-4e74-8072-b27cdd2700c9",
-  //     tunnel_url: null,
-  //   },
-  //   {
-  //     user_id: "user_2ZA6vuKD3IJXju16oJVQGLBcWwg",
-  //     org_id: "org_2bWQ1FoWC3Wro391TurkeVG77pC",
-  //     id: "c68adef1-c712-4258-a1c3-4e3eb4d108dc",
-  //     gpu: "A10G",
-  //     gpu_provider: "modal",
-  //     updated_at: "2024-09-24T23:56:23.859Z",
-  //     modal_function_id: "fc-01J8K7DM27Y1GJW176TA5FBB6F",
-  //     start_time: "2024-09-24T23:56:20.740Z",
-  //     machine_id: "5641fb6c-8a19-47aa-aa1c-1a98194f3b5f",
-  //     end_time: null,
-  //     ws_gpu: null,
-  //     created_at: "2024-09-24T23:56:23.122Z",
-  //     session_id: "abda3ab2-cb78-45ad-b3ef-78f33e3ed4fb",
-  //     tunnel_url: "https://mpyfls0cgmucem.r8.modal.host",
-  //   },
-  // ];
-
   const [_sessionId, setSessionId] = useQueryState("sessionId", {
     defaultValue: props.sessionIdOverride || "",
   });
 
   const sessionId = props.sessionIdOverride || _sessionId;
-
-  const { open, ui, setOpen } = useUpdateServerActionDialog({
-    title: "Create Session",
-    description: "Create a new session",
-    formSchema: z.object({
-      gpu: z.enum(machineGPUOptions).describe("GPU"),
-      timeout: z.number().min(5).describe("Timeout in minutes"),
-    }),
-    buttonTitle: "Create Session",
-    data: {
-      gpu: (localStorage.getItem("lastGPUSelection") ||
-        "A10G") as (typeof machineGPUOptions)[number],
-      timeout: Number.parseInt(
-        localStorage.getItem("lastTimeoutSelection") || "15",
-      ),
-    },
-    fieldConfig: {
-      gpu: {
-        fieldType: "timeoutPicker",
-        inputProps: {
-          optionsForTier: [
-            ["CPU", , "CPU"],
-            ["T4", , "T4 (16GB)"],
-            ["A10G", , "A10G (24GB)"],
-            ["L4", , "L4 (24GB)"],
-            ["L40S", , "L40S (48GB)"],
-            ["A100", "business", "A100 (40GB)"],
-            ["A100-80GB", "business", "A100-80GB (80GB)"],
-            ["H100", "business", "H100 (80GB)"],
-          ],
-        },
-      },
-      timeout: {
-        inputProps: {
-          value: 15,
-          min: 1,
-          max: 60,
-        },
-        fieldType: "slider",
-        description: "Set the timeout for the session",
-      },
-    },
-    serverAction: async (data) => {
-      try {
-        localStorage.setItem("lastGPUSelection", data.gpu);
-        localStorage.setItem("lastTimeoutSelection", data.timeout.toString());
-
-        const response = await createSession.mutateAsync(data);
-        console.log("response", response);
-        useLogStore.getState().clearLogs();
-        await listSession.refetch();
-        setSessionId(response.session_id);
-      } catch (e) {
-        toast.error(`Failed to create session: ${e}`);
-      }
-    },
-  });
 
   const { data: session } = useQuery<any>({
     enabled: !!sessionId,
@@ -320,29 +223,6 @@ export function SessionCreator(props: {
     refetchInterval: 2000,
   });
 
-  // const sessionUI = (
-  //   <div className="flex h-full w-full flex-col items-center justify-center">
-  //     {!sessions || sessions?.length === 0 ? (
-  //       create
-  //     ) : (
-  //       <SessionList
-  //         sessions={sessions}
-  //         onOpenSession={async (session) => {
-  //           setSessionId(session);
-  //         }}
-  //         onCancelSession={async (session) => {
-  //           setSessionId("preview");
-  //           await deleteSession.mutateAsync({
-  //             sessionId: session,
-  //           });
-  //         }}
-  //       >
-  //         {create}
-  //       </SessionList>
-  //     )}
-  //   </div>
-  // );
-
   if (sessionId === "preview") {
     return (
       <>
@@ -357,7 +237,7 @@ export function SessionCreator(props: {
               key={props.workflowId}
               nativeMode={false}
               endpoint={staticUrl}
-              workflowJson={props.workflowLatestVersion.workflow}
+              workflowJson={props.workflowLatestVersion?.workflow}
             />
             <App endpoint={staticUrl}>
               <div className="flex w-full justify-between gap-2">
@@ -434,22 +314,15 @@ export function SessionCreator(props: {
   if (sessionId && url && isLive) {
     return (
       <>
-        {/* <UploadZone
-          className="relative flex h-full w-full"
-          iframeEndpoint={url}
-        > */}
         <div className="flex h-full w-full flex-col">
           <Workspace
             workflowId={props.workflowId}
             key={props.workflowId}
             nativeMode={true}
             endpoint={url}
-            workflowJson={props.workflowLatestVersion.workflow}
+            workflowJson={props.workflowLatestVersion?.workflow}
           />
         </div>
-        {/* <AssetsPanel /> */}
-        {/* </UploadZone> */}
-        {ui}
       </>
     );
   }
@@ -464,7 +337,7 @@ export function SessionCreator(props: {
           <p className="text-center text-muted-foreground text-xs">
             Your session is being prepared. This may take a few moments.
           </p>
-          <LogDisplay />
+          {isLive && <LogDisplay />}
         </Card>
       </div>
     );
