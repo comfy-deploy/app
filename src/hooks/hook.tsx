@@ -1,13 +1,22 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMatchRoute } from "@tanstack/react-router";
+import { useMatchRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 
 export function useWorkflowIdInWorkflowPage() {
   const matchRoute = useMatchRoute();
   const params = matchRoute({ to: "/workflows/$workflowId/$view" });
+
+  const search = useSearch({
+    // from: "/sessions/$sessionId/",
+    strict: false,
+  });
+
+  if (search.workflowId) {
+    return search.workflowId;
+  }
 
   if (!params) {
     return null;

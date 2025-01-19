@@ -1,8 +1,12 @@
 import { GalleryView } from "@/components/GalleryView";
 import { PaddingLayout } from "@/components/PaddingLayout";
 import { LoadingWrapper } from "@/components/loading-wrapper";
+import { NavItem } from "@/components/nav-bar";
 import { useIsAdminAndMember } from "@/components/permissions";
-import { SharePageComponent } from "@/components/run/SharePageComponent";
+import {
+  SharePageComponent,
+  UserIcon,
+} from "@/components/run/SharePageComponent";
 import { SessionItem } from "@/components/sessions/SessionItem";
 import {
   Breadcrumb,
@@ -62,7 +66,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Terminal } from "lucide-react";
+import { ImageIcon, Plus, Terminal, Workflow } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 
@@ -319,6 +323,43 @@ function WorkflowPageComponent() {
             </SidebarMenu>
           </motion.div>
         </AnimatePresence>
+      </Portal>
+
+      <Portal targetId="nav-bar-items">
+        <div className="flex flex-row gap-2 w-full justify-between items-center">
+          <div className="flex flex-row gap-2 items-center">
+            <UserIcon user_id={workflow?.user_id} className="w-6 h-6" />
+            {workflow?.name && (
+              <div className="text-xs font-bold">{workflow.name}</div>
+            )}
+          </div>
+          <div className="flex flex-row gap-2">
+            <NavItem
+              to="/workflows/$workflowId/requests"
+              label="Requests"
+              // icon={Workflow}
+              params={{ workflowId }}
+            />
+            <NavItem
+              to="/workflows/$workflowId/deployment"
+              label="API"
+              // icon={Workflow}
+              params={{ workflowId }}
+            />
+            <NavItem
+              to="/workflows/$workflowId/playground"
+              label="Playground"
+              // icon={Workflow}
+              params={{ workflowId }}
+            />
+            <NavItem
+              to="/workflows/$workflowId/gallery"
+              // label="Gallery"
+              icon={ImageIcon}
+              params={{ workflowId }}
+            />
+          </div>
+        </div>
       </Portal>
       {mountedViews.has("workspace") ? (
         <div

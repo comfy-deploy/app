@@ -1,4 +1,9 @@
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { useSidebar } from "./ui/sidebar";
 import { OrganizationSwitcher, UserButton } from "@clerk/clerk-react";
 import { UserMenu } from "./app-sidebar";
@@ -29,13 +34,27 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BreadcrumbSeparator } from "./ui/breadcrumb";
+import { useEffect, useRef, useState } from "react";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const router = useRouter();
 
   const isRootLevel = pathname.split("/").filter(Boolean).length === 1;
+  const previousIsRootLevel = useRef(isRootLevel);
+  const previousPathname = useRef(pathname);
+
+  const [currentRootLevel, setCurrentRootLevel] = useState("/");
+
+  useEffect(() => {
+    if (!isRootLevel && previousIsRootLevel.current) {
+      setCurrentRootLevel(previousPathname.current);
+    }
+    previousIsRootLevel.current = isRootLevel;
+    previousPathname.current = pathname;
+  }, [isRootLevel, pathname]);
 
   return (
     <>
@@ -60,11 +79,7 @@ export function NavBar() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() =>
-                      navigate({
-                        to: "/",
-                      })
-                    }
+                    onClick={() => router.history.push(currentRootLevel)}
                   >
                     <ArrowLeftIcon className="w-4 h-4" />
                   </Button>
@@ -79,7 +94,11 @@ export function NavBar() {
                       label="Workflows"
                       icon={Workflow}
                     />
-                    <NavItem to="/machines" label="Machines" icon={Server} />
+                    <NavItem
+                      to="/deployments"
+                      label="Deployments"
+                      icon={Server}
+                    />
                     <NavItem to="/storage" label="Storage" icon={Database} />
                   </div>
                   <DropdownMenu>
@@ -95,6 +114,14 @@ export function NavBar() {
                     <DropdownMenuContent>
                       {/* <DropdownMenuLabel>My Account</DropdownMenuLabel> */}
                       {/* <DropdownMenuSeparator /> */}
+                      <DropdownMenuItem asChild>
+                        <Link
+                          to="/machines"
+                          className="flex items-center gap-2"
+                        >
+                          <Server className="w-4 h-4" /> Machines
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/assets" className="flex items-center gap-2">
                           <Folder className="w-4 h-4" /> Assets
@@ -174,18 +201,21 @@ export function NavBar() {
   );
 }
 
-function NavItem({
+export function NavItem({
   to,
   label,
+  params,
   icon: Icon,
 }: {
   to: string;
-  label: string;
+  label?: string;
   icon?: LucideIcon;
+  params?: Record<string, string>;
 }) {
   return (
     <Link
       to={to}
+      params={params}
       activeProps={{
         className: "bg-gray-100 border-b-2 border-gray-200",
       }}

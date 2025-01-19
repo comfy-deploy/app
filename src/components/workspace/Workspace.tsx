@@ -100,11 +100,13 @@ export default function Workspace({
   workflowJson,
   nativeMode = false,
   workflowId,
+  sessionIdOverride,
 }: {
   endpoint: string;
   workflowJson?: any;
   nativeMode?: boolean;
   workflowId?: string;
+  sessionIdOverride?: string;
 }) {
   // const workflowId = useWorkflowIdInWorkflowPage();
 
@@ -185,13 +187,13 @@ export default function Workspace({
   // }, [turbo]);
 
   useEffect(() => {
-    if (machineId) {
+    if (machineId && !sessionIdOverride) {
       console.log("reloading iframe");
       setCDSetup(false);
       setProgress(0);
       reloadIframe();
     }
-  }, [machineId]);
+  }, [machineId, sessionIdOverride]);
 
   useEffect(() => {
     const interval = setInterval(() => {

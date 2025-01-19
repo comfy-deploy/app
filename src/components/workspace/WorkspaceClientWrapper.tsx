@@ -9,6 +9,8 @@ import { LoadingIcon } from "../ui/custom/loading-icon";
 import { useWorkflowVersion } from "../workflow-list";
 import { SessionCreator } from "./SessionView";
 import { WorkspaceLoading, WorkspaceMachineLoading } from "./WorkspaceLoading";
+import { useEffect } from "react";
+import { sendWorkflow } from "./sendEventToCD";
 
 interface WorkspaceClientWrapperProps {
   workflow_id?: string;
@@ -26,6 +28,13 @@ export function WorkspaceClientWrapper({
     mutateWorkflow,
     isLoading: isLoadingWorkflow,
   } = useCurrentWorkflow(props.workflow_id ?? null);
+
+  useEffect(() => {
+    if (props.workflow_id && workflow) {
+      console.log("workflow", workflow);
+      sendWorkflow(workflow.versions[0].workflow);
+    }
+  }, [props.workflow_id, workflow]);
 
   const { data: versions, isLoading: isLoadingVersions } = useQuery({
     enabled: !!props.workflow_id,
