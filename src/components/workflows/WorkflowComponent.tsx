@@ -149,9 +149,7 @@ function RunDetails(props: {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <h2 className="font-bold text-2xl">Run Details</h2>
-          {"number" in run && (
-            <p className="text-muted-foreground">{run.number as number}</p>
-          )}
+          <p className="text-muted-foreground">#{run.id.slice(0, 8)}</p>
           {run.batch_id && (
             <Link
               href={`/batch/${run.batch_id}`}

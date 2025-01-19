@@ -46,12 +46,9 @@ import WorkflowComponent from "@/components/workflows/WorkflowComponent";
 import { ContainersTable } from "@/components/workspace/ContainersTable";
 import { APIDocs } from "@/components/workspace/DeploymentDisplay";
 import { LogDisplay } from "@/components/workspace/LogDisplay";
-import { MachineSelect } from "@/components/workspace/MachineSelect";
 import { useSelectedVersion } from "@/components/workspace/Workspace";
 import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
 import { WorkspaceStatusBar } from "@/components/workspace/WorkspaceStatusBar";
-import { SessionCreate } from "@/components/workspace/session-create";
-import { WorkspaceSubmenuActions } from "@/components/workspace/workspace-submenu-actions";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useSessionAPI } from "@/hooks/use-session-api";
 import {
@@ -330,7 +327,9 @@ function WorkflowPageComponent() {
           <div className="flex flex-row gap-2 items-center">
             <UserIcon user_id={workflow?.user_id} className="w-6 h-6" />
             {workflow?.name && (
-              <div className="text-xs font-bold">{workflow.name}</div>
+              <div className="text-sm font-bold truncate max-w-[120px]">
+                {workflow.name}
+              </div>
             )}
           </div>
           <div className="flex flex-row gap-2">

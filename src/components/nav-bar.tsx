@@ -88,12 +88,12 @@ export function NavBar() {
               {isRootLevel && (
                 <div className="flex w-full justify-between gap-1">
                   <div className="flex w-full items-center gap-1">
-                    <NavItem to="/home" label="Workspace" icon={Monitor} />
                     <NavItem
                       to="/workflows"
                       label="Workflows"
                       icon={Workflow}
                     />
+                    <NavItem to="/home" label="Workspace" icon={Monitor} />
                     <NavItem
                       to="/deployments"
                       label="Deployments"
