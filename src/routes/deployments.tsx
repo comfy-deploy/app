@@ -1,5 +1,6 @@
 import { UserIcon } from "@/components/run/SharePageComponent";
 import { Badge } from "@/components/ui/badge";
+import { DisplayWorkflowVersion } from "@/components/workflows/RunsTable";
 import { getRelativeTime } from "@/lib/get-relative-time";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -40,7 +41,9 @@ function RouteComponent() {
             </Link>
             <div className="flex flex-col w-full divide-y">
               {deployments.map((deployment: any) => (
-                <div
+                <Link
+                  to="/workflows/$workflowId/$view"
+                  params={{ workflowId, view: "deployment" }}
                   key={deployment.id}
                   className="flex items-center gap-2 justify-between w-full hover:bg-gray-50 py-2 cursor-pointer"
                 >
@@ -58,6 +61,10 @@ function RouteComponent() {
 
                       <CopyIcon className="w-3 h-3" />
                     </div>
+                    <DisplayWorkflowVersion
+                      versionId={deployment.workflow_version_id}
+                      className="text-xs py-0"
+                    />
                     <Badge
                       variant={
                         deployment.environment === "production"
@@ -77,7 +84,7 @@ function RouteComponent() {
                       className="w-6 h-6"
                     />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>

@@ -422,7 +422,7 @@ function RunRow({
           #{truncatedId}
         </span>
         <span className="col-span-2">
-          <DisplayVersion versionId={run.workflow_version_id} />
+          <DisplayWorkflowVersion versionId={run.workflow_version_id} />
         </span>
         <span className="col-span-2">
           {run.gpu && (
@@ -458,9 +458,14 @@ function LoadingSpinner() {
   );
 }
 
-function DisplayVersion(props: { versionId?: string }) {
+export function DisplayWorkflowVersion(props: {
+  versionId?: string;
+  className?: string;
+  variant?: any;
+}) {
   const { data: version, isLoading } = useQuery({
     queryKey: ["workflow-version", props.versionId],
+    enabled: !!props.versionId,
     queryFn: async ({ queryKey }) => {
       const response = await api({ url: queryKey.join("/") });
       return response;
@@ -471,11 +476,22 @@ function DisplayVersion(props: { versionId?: string }) {
 
   if (!version)
     return (
-      <Badge className="w-fit rounded-[10px] px-2 py-1 text-xs">N/A</Badge>
+      <Badge
+        className={cn(
+          "w-fit rounded-[10px] px-2 py-1 text-xs",
+          props.className,
+        )}
+        variant={props.variant}
+      >
+        N/A
+      </Badge>
     );
 
   return (
-    <Badge className="w-fit rounded-[10px] px-2 py-1 text-xs">
+    <Badge
+      className={cn("w-fit rounded-[10px] px-2 py-1 text-xs", props.className)}
+      variant={props.variant}
+    >
       v{version?.version}
     </Badge>
   );

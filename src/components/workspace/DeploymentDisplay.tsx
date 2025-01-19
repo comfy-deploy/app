@@ -610,8 +610,8 @@ export function APIDocs({
       {/* {selectedDeployment && ( */}
       <Tabs defaultValue={"client2"} className="w-full gap-2 text-sm">
         <TabsList className="mb-2">
-          <TabsTrigger value="client">V1</TabsTrigger>
-          <TabsTrigger value="client2">V2</TabsTrigger>
+          {/* <TabsTrigger value="client">V1</TabsTrigger> */}
+          <TabsTrigger value="client2">TypeScript</TabsTrigger>
           <TabsTrigger value="client3">REST</TabsTrigger>
           <TabsTrigger value="js">Other SDKs</TabsTrigger>
           {/* <TabsTrigger value="curl">CURL</TabsTrigger> */}

@@ -62,8 +62,8 @@ export function NavBar() {
         <nav className="flex w-full items-center justify-between ">
           <div
             className={cn(
-              "mx-auto h-[46px] w-full max-w-[500px] rounded-lg border border-gray-200 bg-white",
-              !isRootLevel && "max-w-[500px]",
+              "mx-auto h-[46px] w-full max-w-[520px] rounded-lg border border-gray-200 bg-white",
+              !isRootLevel && "max-w-[520px]",
               !isRootLevel && "shadow-md",
             )}
           >
