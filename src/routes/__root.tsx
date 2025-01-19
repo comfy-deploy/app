@@ -46,11 +46,8 @@ export const Route = createRootRouteWithContext<Context>()({
         // 	redirect: location.href,
         // },
       });
-    } else if (
-      context.auth &&
-      context.auth.isSignedIn &&
-      location.pathname === "/"
-    ) {
+    }
+    if (context.auth?.isSignedIn && location.pathname === "/") {
       throw redirect({
         to: "/home",
       });
@@ -79,7 +76,9 @@ function RootComponent() {
           </div>
           <SidebarTrigger className="fixed top-4 left-2 z-50 h-8 w-8 rounded-full bg-secondary p-2 md:hidden" />
           <NavBar />
-          <Outlet />
+          <div className="h-[calc(100%-62px)] w-full">
+            <Outlet />
+          </div>
           <ComfyCommand />
           <Toaster richColors closeButton={true} />
         </div>

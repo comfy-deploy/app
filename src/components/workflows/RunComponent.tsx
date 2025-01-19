@@ -22,8 +22,8 @@ export default function RunComponent(props: {
 
   return (
     <motion.div className="w-full" layout>
-      <div className="relative h-fit w-full min-w-0">
-        <CardContent className="px-0 pt-6">
+      <div className="relative h-full w-full min-w-0">
+        <CardContent className="h-full px-0 pt-6">
           <h2 className="mb-4 font-bold text-2xl">Requests</h2>
           <LoadingWrapper tag="runs">
             <>

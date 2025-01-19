@@ -66,6 +66,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ImageIcon, Plus, Terminal, Workflow } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useMachine } from "@/hooks/use-machine";
+import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 
 const pages = [
   "workspace",
@@ -174,6 +177,8 @@ function WorkflowPageComponent() {
   const sessionSelected = sessions?.find(
     (session) => session.session_id === sessionId,
   );
+
+  const { data: selectedMachine } = useMachine(workflow?.selected_machine_id);
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -323,11 +328,11 @@ function WorkflowPageComponent() {
       </Portal>
 
       <Portal targetId="nav-bar-items">
-        <div className="flex flex-row gap-2 w-full justify-between items-center">
-          <div className="flex flex-row gap-2 items-center">
-            <UserIcon user_id={workflow?.user_id} className="w-6 h-6" />
+        <div className="flex w-full flex-row items-center justify-between gap-2">
+          <div className="flex flex-row items-center gap-2">
+            <UserIcon user_id={workflow?.user_id} className="h-6 w-6" />
             {workflow?.name && (
-              <div className="text-sm font-bold truncate max-w-[120px]">
+              <div className="max-w-[120px] truncate font-bold text-sm">
                 {workflow.name}
               </div>
             )}
@@ -360,6 +365,15 @@ function WorkflowPageComponent() {
           </div>
         </div>
       </Portal>
+      <div className="h-full">
+        <div className="fixed inset-x-0 bottom-4 z-20 mx-auto max-w-[520px] overflow-hidden rounded-lg border border-gray-200 shadow-md">
+          {selectedMachine && (
+            <MachineWorkspaceItem machine={selectedMachine} index={0} />
+          )}
+        </div>
+        {view}
+      </div>
+
       {mountedViews.has("workspace") ? (
         <div
           className="h-full w-full"
@@ -370,7 +384,6 @@ function WorkflowPageComponent() {
           <WorkspaceClientWrapper workflow_id={workflowId} />
         </div>
       ) : null}
-      {view}
     </div>
   );
 }

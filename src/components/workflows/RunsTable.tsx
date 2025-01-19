@@ -304,7 +304,7 @@ export function RunsTableVirtualized(props: {
       <div
         ref={parentRef}
         className={cn(
-          "scrollbar scrollbar-thumb-gray-200 scrollbar-track-transparent h-[calc(100vh-10rem)] overflow-y-scroll",
+          "scrollbar scrollbar-thumb-gray-200 scrollbar-track-transparent h-[calc(100vh-14rem)] overflow-y-scroll",
           props.className,
         )}
       >

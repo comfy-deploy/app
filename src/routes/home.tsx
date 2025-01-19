@@ -1,11 +1,10 @@
-import { MachineListItem } from "@/components/machines/machine-list-item";
 import { cn } from "@/lib/utils";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
 import { useMachine, useMachines } from "@/hooks/use-machine";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Cog, Play, Settings, Trash } from "lucide-react";
+import { ChevronRight, Play, Settings, Trash } from "lucide-react";
 import {
   ComfyUIVersionSelectBox,
   GPUSelectBox,
@@ -17,6 +16,7 @@ import { useLogStore } from "@/components/workspace/LogContext";
 import { UserIcon } from "@/components/run/SharePageComponent";
 import { Badge } from "@/components/ui/badge";
 import { getRelativeTime } from "@/lib/get-relative-time";
+import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -128,9 +128,9 @@ function SessionsList() {
   const router = useRouter();
 
   return (
-    <div className="mx-auto w-full max-w-screen-lg pt-10 flex flex-col gap-2">
-      <div className="text-sm font-medium">Active ComfyUI</div>
-      <div className="flex flex-col  divide-y divide-border overflow-hidden  rounded-3xl  border">
+    <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-2 pt-10">
+      <div className="font-medium text-sm">Active ComfyUI</div>
+      <div className="flex flex-col divide-y divide-border overflow-hidden rounded-3xl border">
         {data?.map((session) => {
           return (
             <Link
@@ -144,11 +144,11 @@ function SessionsList() {
               key={session.session_id}
               className="flex h-[60px] flex-row items-center gap-2 bg-background px-4 hover:bg-slate-50"
             >
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <div className="text-muted-foreground text-xs bg-background ">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+              <div className="bg-background text-muted-foreground text-xs ">
                 {session.id.slice(0, 6)}
               </div>
-              <UserIcon user_id={session.user_id} className="w-6 h-6" />
+              <UserIcon user_id={session.user_id} className="h-6 w-6" />
               <MachineNameDisplay machineId={session.machine_id} />
               <Badge variant="green" className="py-1">
                 {session.gpu}
@@ -168,7 +168,7 @@ function SessionsList() {
                   });
                 }}
               >
-                <Trash className="w-4 h-4 stroke-red-500 fill-red-200" />
+                <Trash className="h-4 w-4 fill-red-200 stroke-red-500" />
               </Button>
             </Link>
           );
@@ -180,9 +180,9 @@ function SessionsList() {
           </div>
         )}
       </div>
-      <div className="text-sm font-medium mt-5">Configurations</div>
+      <div className="mt-5 font-medium text-sm">Configurations</div>
       <div className="-mb-6 flex flex-row items-center justify-between rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 p-4 pb-8">
-        <div className="flex flex-row gap-2 items-center ">
+        <div className="flex flex-row items-center gap-2 ">
           ComfyUI
           <ComfyUIVersionSelectBox
             className="mt-0"
@@ -191,7 +191,7 @@ function SessionsList() {
           />
         </div>
         <div className="flex flex-row gap-2">
-          <div className="flex gap-2 flex-row items-center">
+          <div className="flex flex-row items-center gap-2">
             <GPUSelectBox
               className="mt-0"
               value={gpu}
@@ -242,43 +242,7 @@ function SessionsList() {
         containerClassName="divide-y divide-border"
         queryResult={query}
         renderItem={(machine, index) => (
-          <MachineListItem
-            key={machine.id}
-            index={index}
-            machine={machine}
-            // isExpanded={expandedMachineId === machine.id}
-            // setIsExpanded={(expanded) =>
-            //   setExpandedMachineId(expanded ? machine.id : null)
-            // }
-            overrideRightSide={
-              <Button
-                variant="outline"
-                Icon={Play}
-                iconPlacement="right"
-                onClick={async () => {
-                  const response = await createSession.mutateAsync({
-                    machine_id: machine.id,
-                    gpu: machine.gpu,
-                    timeout: 15,
-                  });
-                  useLogStore.getState().clearLogs();
-
-                  router.navigate({
-                    to: "/sessions/$sessionId",
-                    params: {
-                      sessionId: response.session_id,
-                    },
-                    search: {
-                      machineId: machine.id,
-                    },
-                  });
-                }}
-              >
-                Start
-              </Button>
-            }
-            machineActionItemList={<></>}
-          />
+          <MachineWorkspaceItem machine={machine} index={index} />
         )}
         renderItemClassName={(machine) => cn("z-0 transition-all duration-200")}
         renderLoading={() => {
@@ -309,13 +273,13 @@ function SessionsList() {
         }}
         estimateSize={80}
       />
-      <div className="w-full flex justify-end text-muted-foreground text-sm px-2">
+      <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
         <Link
           to="/machines"
-          className="hover:underline flex items-center gap-1"
+          className="flex items-center gap-1 hover:underline"
         >
           View all machines
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
     </div>

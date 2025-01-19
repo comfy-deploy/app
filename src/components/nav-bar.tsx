@@ -67,7 +67,7 @@ export function NavBar() {
               !isRootLevel && "shadow-md",
             )}
           >
-            <div className="flex h-full w-full items-center gap-1 pl-1 pr-2">
+            <div className="flex h-full w-full items-center gap-1 pr-2 pl-1">
               {!isRootLevel && (
                 <motion.div
                   layout
@@ -81,7 +81,7 @@ export function NavBar() {
                     size="icon"
                     onClick={() => router.history.push(currentRootLevel)}
                   >
-                    <ArrowLeftIcon className="w-4 h-4" />
+                    <ArrowLeftIcon className="h-4 w-4" />
                   </Button>
                 </motion.div>
               )}
@@ -108,7 +108,7 @@ export function NavBar() {
                         size="icon"
                         onClick={toggleSidebar}
                       >
-                        <MenuIcon className="w-4 h-4" />
+                        <MenuIcon className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
@@ -119,12 +119,12 @@ export function NavBar() {
                           to="/machines"
                           className="flex items-center gap-2"
                         >
-                          <Server className="w-4 h-4" /> Machines
+                          <Server className="h-4 w-4" /> Machines
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/assets" className="flex items-center gap-2">
-                          <Folder className="w-4 h-4" /> Assets
+                          <Folder className="h-4 w-4" /> Assets
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -132,7 +132,7 @@ export function NavBar() {
                           to="/settings"
                           className="flex items-center gap-2"
                         >
-                          <Settings className="w-4 h-4" /> Settings
+                          <Settings className="h-4 w-4" /> Settings
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -140,12 +140,12 @@ export function NavBar() {
                           to="/api-keys"
                           className="flex items-center gap-2"
                         >
-                          <KeyRound className="w-4 h-4" /> API Keys
+                          <KeyRound className="h-4 w-4" /> API Keys
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/usage" className="flex items-center gap-2">
-                          <CircleGauge className="w-4 h-4" /> Usage
+                          <CircleGauge className="h-4 w-4" /> Usage
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -153,12 +153,12 @@ export function NavBar() {
                           to="/analytics"
                           className="flex items-center gap-2"
                         >
-                          <LineChart className="w-4 h-4" /> Analytics
+                          <LineChart className="h-4 w-4" /> Analytics
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/pricing" className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4" /> Plan
+                          <CreditCard className="h-4 w-4" /> Plan
                         </Link>
                       </DropdownMenuItem>
                       {/* <DropdownMenuItem>Billing</DropdownMenuItem>
@@ -222,7 +222,7 @@ export function NavItem({
       inactiveProps={{
         className: "text-gray-600 hover:text-gray-900 hover:bg-gray-50",
       }}
-      className="flex items-center gap-1 rounded-md px-3 py-1 font-medium text-sm hover:bg-gray-100 transition-all"
+      className="flex items-center gap-1 rounded-md px-3 py-1 font-medium text-sm transition-all hover:bg-gray-100"
     >
       {Icon && <Icon className="h-4 w-4" />}
       {label}
