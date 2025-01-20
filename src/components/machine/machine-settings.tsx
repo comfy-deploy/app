@@ -6,14 +6,7 @@ import {
   useGPUConfig,
 } from "@/components/machine/machine-schema";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { SelectionBox } from "@/components/ui/custom/selection-box";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   type SubscriptionPlan,
@@ -25,18 +18,10 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useSearch } from "@tanstack/react-router";
 import { useBlocker } from "@tanstack/react-router";
 import { AnimatePresence, easeOut, motion, useAnimation } from "framer-motion";
 import { isEqual } from "lodash";
-import {
-  AlertCircleIcon,
-  ExternalLinkIcon,
-  Info,
-  Loader2,
-  Lock,
-  Save,
-} from "lucide-react";
+import { ExternalLinkIcon, Info, Loader2, Lock, Save } from "lucide-react";
 import { useQueryState } from "nuqs";
 import {
   type ReactNode,
@@ -48,7 +33,6 @@ import {
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
-import type { MachineStepValidation } from "../machines/machine-create";
 import { CustomNodeSetup } from "../onboarding/custom-node-setup";
 import {
   Accordion,
@@ -56,7 +40,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "../ui/accordion";
-import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Label } from "../ui/label";
 import {
@@ -69,6 +52,7 @@ import {
 import { Slider } from "../ui/slider";
 import { Switch } from "../ui/switch";
 import { ExtraDockerCommands } from "./extra-docker-commands";
+import type { StepValidation } from "../onboarding/workflow-import";
 
 export function MachineSettingsWrapper({
   machine,
@@ -242,7 +226,11 @@ function ClassicSettings({
               setIsLoading(false);
             }
           }}
-        />
+        >
+          <div className="flex justify-end">
+            <Button type="submit">Save</Button>
+          </div>
+        </AutoForm>
       )}
     </>
   );
@@ -322,7 +310,7 @@ function ServerlessSettings({
       return !disableUnsavedChangesWarning && !!isFormDirty && !isNew;
     },
     shouldBlockFn: () => {
-      if (isNew) return false;
+      if (isNew || disableUnsavedChangesWarning) return false;
 
       if (isFormDirty) {
         controls.start({
@@ -799,7 +787,7 @@ function CustomNodeSetupWrapper({
   value: any;
   onChange: (value: any) => void;
 }) {
-  const [validation, setValidation] = useState<MachineStepValidation>(() => ({
+  const [validation, setValidation] = useState<StepValidation>(() => ({
     docker_command_steps: value || { steps: [] },
     machineName: "",
     gpuType: "A10G",
@@ -818,9 +806,7 @@ function CustomNodeSetupWrapper({
 
   // Handle outgoing changes
   const handleValidationChange = (
-    newValidation:
-      | MachineStepValidation
-      | ((prev: MachineStepValidation) => MachineStepValidation),
+    newValidation: StepValidation | ((prev: StepValidation) => StepValidation),
   ) => {
     const nextValidation =
       typeof newValidation === "function"
@@ -852,7 +838,9 @@ export function GPUSelectBox({
 }) {
   const { gpuConfig } = useGPUConfig();
   const sub = useCurrentPlan() as SubscriptionPlan;
-  const isBusiness = sub?.plans?.plans?.includes("business");
+  const isBusiness =
+    sub?.plans?.plans?.includes("business") ||
+    sub?.plans?.plans?.includes("creator");
 
   return (
     <div className={cn("mt-2", className)}>

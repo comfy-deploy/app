@@ -66,8 +66,6 @@ export function FileURLRender({
 }
 
 export function OutputRender(props: {
-  run_id: string;
-  filename: string;
   url: string;
 }) {
   const url = props.url;

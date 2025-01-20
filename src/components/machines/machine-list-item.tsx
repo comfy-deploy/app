@@ -485,12 +485,15 @@ function MigrateOldMachineDialog({ machine }: { machine: any }) {
         ...machine.docker_command_steps,
         steps: machine.docker_command_steps.steps.filter(
           (step) =>
-            !step.data.url
-              .toLowerCase()
-              .includes("github.com/bennykok/comfyui-deploy"),
+            step?.type !== "custom-node" ||
+            !step?.data?.url
+              ?.toLowerCase()
+              ?.includes("github.com/bennykok/comfyui-deploy"),
         ),
       },
     };
+
+    console.log("updatedMachine", updatedMachine);
 
     try {
       await callServerPromise(

@@ -13,7 +13,7 @@ export const customFormSchema = z.object({
       "classic",
       "runpod-serverless",
       "modal-serverless",
-      "comfy-deploy-serverless",
+      // "comfy-deploy-serverless",
       "workspace",
       "workspace-v2",
     ])

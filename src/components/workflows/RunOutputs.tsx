@@ -121,6 +121,9 @@ export function RunOutputs({ run }: { run: any }) {
             ...(run.data.files || []),
             ...(run.data.gifs || []),
             ...(run.data.mesh || []),
+
+            // for klingAI video outputs
+            ...(run.data.video_url || []),
           ];
 
           if (files.length === 0) {
@@ -157,25 +160,27 @@ export function RunOutputs({ run }: { run: any }) {
             );
           }
 
-          return files.map((file, index) => (
-            <TableRow key={`${run.id}-${index}`}>
-              <TableCell className="break-words">
-                {file.filename}
-                {run.node_meta && (
-                  <Badge>
-                    {run.node_meta.node_class} - {run.node_meta.node_id}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                <OutputRender
-                  run_id={run.run_id}
-                  filename={file.filename}
-                  url={file.url}
-                />
-              </TableCell>
-            </TableRow>
-          ));
+          return files.map((file, index) => {
+            return (
+              <TableRow key={`${run.id}-${index}`}>
+                <TableCell className="break-words">
+                  {file.filename}
+                  {run.node_meta && (
+                    <Badge>
+                      {run.node_meta.node_class} - {run.node_meta.node_id}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {typeof file === "string" ? (
+                    <OutputRender url={file} />
+                  ) : (
+                    <OutputRender url={file.url} />
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          });
         })}
       </TableBody>
     </Table>

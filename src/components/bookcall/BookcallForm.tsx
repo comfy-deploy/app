@@ -27,7 +27,7 @@ import Calendar from "./Cal";
 async function submitOnboardingForm(prevState: any, formData: FormData) {
   try {
     const result = await api({
-      url: "/form/onboarding",
+      url: "form/onboarding",
       init: {
         method: "POST",
         body: JSON.stringify({

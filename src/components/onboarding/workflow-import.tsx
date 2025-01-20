@@ -33,7 +33,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { Circle, CircleCheckBig } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { DockerCommandSteps } from "../machines/machine-create";
 
 // Add these interfaces
 export interface StepValidation {
@@ -62,6 +61,35 @@ export interface StepValidation {
 
   docker_command_steps?: DockerCommandSteps;
   isEditingHashOrAddingCommands?: boolean;
+}
+interface DockerCommandSteps {
+  steps: DockerCommandStep[];
+}
+
+interface DockerCommandStep {
+  id: string;
+  type: "custom-node" | "commands";
+  data: CustomNodeData | string;
+}
+
+interface CustomNodeData {
+  name: string;
+  hash?: string;
+  url: string;
+  files: string[];
+  install_type: "git-clone";
+  pip?: string[];
+  meta?: {
+    message: string;
+    latest_hash?: string;
+    committer?: {
+      name: string;
+      email: string;
+      date: string;
+    };
+    commit_url?: string;
+    stargazers_count?: number;
+  };
 }
 
 interface StepNavigation {

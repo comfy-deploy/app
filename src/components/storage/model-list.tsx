@@ -342,7 +342,11 @@ function ModelItemHoverDetails(props: { model: Model }) {
         </div>
         <div className="flex items-center justify-between">
           <span className="font-medium text-sm">Size:</span>
-          <span className="text-sm">{formatFileSize(model.size)}</span>
+          <span className="text-sm">
+            {formatFileSize(model.size) === "0 bytes"
+              ? "-"
+              : formatFileSize(model.size)}
+          </span>
         </div>
         {model.error_log && (
           <div className="mt-2 rounded-md bg-red-100 p-2">
@@ -592,9 +596,9 @@ export function ModelList(props: { apiEndpoint: string }) {
           url: `file/${data.fileEntry.model.id}/rename`,
           init: {
             method: "POST",
-          },
-          params: {
-            filename: data.newFilename,
+            body: JSON.stringify({
+              filename: data.newFilename,
+            }),
           },
         }),
         {
@@ -604,7 +608,10 @@ export function ModelList(props: { apiEndpoint: string }) {
     },
     mutateFn: () => refetchPrivateVolume(),
     formSchema: z.object({
-      newFilename: z.string().min(1),
+      newFilename: z
+        .string()
+        .min(1, "Filename is required")
+        .regex(CustomModelFilenameRegex, CustomModelFilenameError),
       fileEntry: z.object({
         path: z.string().min(1),
         type: z.number(),
@@ -670,11 +677,13 @@ export function ModelList(props: { apiEndpoint: string }) {
                 tail={
                   <div className="flex items-center gap-1">
                     {/* NOTE: currently not returning size on initial*/}
-                    {element.model.size && (
-                      <span className="@lg:flex hidden text-muted-foreground text-xs">
-                        {formatFileSize(element.model.size)}
-                      </span>
-                    )}
+                    <span className="@lg:flex hidden text-muted-foreground text-xs">
+                      {element.model.size ? (
+                        formatFileSize(element.model.size)
+                      ) : (
+                        <>-</>
+                      )}
+                    </span>
                     {element.isPrivate && (
                       <div className="flex h-fit min-h-0 w-0 items-center gap-1 p-1 opacity-0 transition-all group-hover:w-[60px] group-hover:opacity-100">
                         <div

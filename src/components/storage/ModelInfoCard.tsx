@@ -248,13 +248,17 @@ export function ModelInfo({
                   </div>
                 </dd>
               </div>
-              {selectedModel.size && (
+              {selectedModel.size !== undefined && (
                 <div className="flex items-center justify-between" key="size">
                   <dt className="flex items-center gap-1 text-muted-foreground">
                     <Ruler className="h-4 w-4" />
                     Size
                   </dt>
-                  <dd>{formatFileSize(selectedModel.size)}</dd>
+                  <dd>
+                    {formatFileSize(selectedModel.size) === "0 bytes"
+                      ? "-"
+                      : formatFileSize(selectedModel.size)}
+                  </dd>
                 </div>
               )}
               <div className="flex items-center justify-between" key="type">
