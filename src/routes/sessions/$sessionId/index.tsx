@@ -72,7 +72,7 @@ function RouteComponent() {
   return (
     <div className="h-full w-full">
       <Portal targetId="nav-bar-items">
-        <div className="flex flex-row justify-between items-center gap-2">
+        <div className="flex flex-row items-center justify-between gap-2">
           <div className="flex flex-row">
             <WorkflowDropdown
               className="h-full w-[200px]"
@@ -102,6 +102,24 @@ function RouteComponent() {
               className="w-20 flex-shrink-0"
             />
           )}
+        </div>
+      </Portal>
+      <Portal targetId="nav-bar-items-right">
+        <div className="flex flex-row items-center justify-between gap-2">
+          <Button
+            onClick={async () => {
+              await callServerPromise(
+                api({
+                  url: `session/${sessionId}/snapshot`,
+                  init: {
+                    method: "POST",
+                  },
+                }),
+              );
+            }}
+          >
+            Save
+          </Button>
         </div>
       </Portal>
       <WorkspaceClientWrapper

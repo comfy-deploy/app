@@ -183,6 +183,8 @@ export function NavBar() {
               {/* </AnimatePresence> */}
             </div>
           </div>
+
+          <div id="nav-bar-items-right" />
         </nav>
       </div>
 

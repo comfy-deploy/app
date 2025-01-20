@@ -10,7 +10,7 @@ export function MachineWorkspaceItem({
   index,
 }: { machine: any; index: number }) {
   const router = useRouter();
-  const { createSession } = useSessionAPI();
+  const { createDynamicSession } = useSessionAPI();
   return (
     <MachineListItem
       key={machine.id}
@@ -22,10 +22,14 @@ export function MachineWorkspaceItem({
           Icon={Play}
           iconPlacement="right"
           onClick={async () => {
-            const response = await createSession.mutateAsync({
+            const response = await createDynamicSession.mutateAsync({
               machine_id: machine.id,
               gpu: machine.gpu,
               timeout: 15,
+              // dependencies: {
+              //   docker_command_steps: machine.docker_command_steps,
+              //   comfyui_version: machine.comfyui_version,
+              // },
             });
             useLogStore.getState().clearLogs();
 

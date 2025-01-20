@@ -338,7 +338,7 @@ export function SessionCreator(props: {
           <p className="text-center text-muted-foreground text-xs">
             Your session is being prepared. This may take a few moments.
           </p>
-          {isLive && <LogDisplay />}
+          <LogDisplay />
         </Card>
       </div>
     );
