@@ -1,8 +1,15 @@
-import { useRouter } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useSessionAPI } from "@/hooks/use-session-api";
 import { MachineListItem } from "@/components/machines/machine-list-item";
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, Play, ChevronRight, Search, X } from "lucide-react";
+import {
+  ChevronsUpDown,
+  Play,
+  ChevronRight,
+  Search,
+  X,
+  Trash,
+} from "lucide-react";
 import { useLogStore } from "@/components/workspace/LogContext";
 import {
   Tooltip,
@@ -22,6 +29,9 @@ import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
+import { useQuery } from "@tanstack/react-query";
+import { UserIcon } from "./run/SharePageComponent";
+import { getRelativeTime } from "@/lib/get-relative-time";
 
 export function MachineWorkspaceItem({
   machine,
@@ -29,37 +39,27 @@ export function MachineWorkspaceItem({
   isInWorkspace = false,
 }: { machine: any; index: number; isInWorkspace: boolean }) {
   const router = useRouter();
-  const { createDynamicSession } = useSessionAPI();
+  const { createDynamicSession, deleteSession } = useSessionAPI();
   const [openFocus, setOpenFocus] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
-  const StartSessionButton = () => {
-    return (
-      <Button
-        variant="outline"
-        className="rounded-[9px]"
-        onClick={async () => {
-          const response = await createDynamicSession.mutateAsync({
-            machine_id: machine.id,
-            gpu: machine.gpu,
-            timeout: 15,
-          });
-          useLogStore.getState().clearLogs();
+  const handleStartSession = async () => {
+    const response = await createDynamicSession.mutateAsync({
+      machine_id: machine.id,
+      gpu: machine.gpu,
+      timeout: 15,
+    });
+    useLogStore.getState().clearLogs();
 
-          router.navigate({
-            to: "/sessions/$sessionId",
-            params: {
-              sessionId: response.session_id,
-            },
-            search: {
-              machineId: machine.id,
-            },
-          });
-        }}
-      >
-        Start
-        <Play className="ml-2 h-3 w-3" />
-      </Button>
-    );
+    router.navigate({
+      to: "/sessions/$sessionId",
+      params: {
+        sessionId: response.session_id,
+      },
+      search: {
+        machineId: machine.id,
+      },
+    });
   };
 
   return (
@@ -79,21 +79,55 @@ export function MachineWorkspaceItem({
         )}
       </AnimatePresence>
 
-      <AnimatePresence mode="wait">
-        {openFocus && (
-          <MachineSelectList
-            currentMachine={machine}
-            setOpenFocus={setOpenFocus}
-          />
-        )}
-      </AnimatePresence>
+      {isInWorkspace && (
+        <AnimatePresence>
+          {!openFocus && (
+            <MachineSessionList
+              isHovered={isHovered}
+              currentMachine={machine}
+              deleteSession={deleteSession}
+            />
+          )}
+          {openFocus && (
+            <MachineSelectList
+              currentMachine={machine}
+              setOpenFocus={setOpenFocus}
+            />
+          )}
+        </AnimatePresence>
+      )}
 
-      <div
-        className={cn(
-          "fixed inset-x-0 bottom-4 z-50 mx-auto max-w-[520px] overflow-hidden rounded-md border border-gray-200 shadow-md transition-all",
-          openFocus && "drop-shadow-md",
-        )}
-      >
+      {isInWorkspace ? (
+        <div
+          className="fixed inset-x-0 bottom-4 z-50 mx-auto max-w-[520px] overflow-hidden rounded-md border border-gray-200 drop-shadow-md transition-all"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <MachineListItem
+            key={machine.id}
+            index={index}
+            machine={machine}
+            showMigrateDialog={false}
+            overrideRightSide={
+              <div className="flex flex-row items-center gap-2">
+                <SwitchMachineButton
+                  openFocus={openFocus}
+                  setOpenFocus={setOpenFocus}
+                />
+                <Button
+                  variant="outline"
+                  className="rounded-[9px]"
+                  onClick={handleStartSession}
+                >
+                  Start
+                  <Play className="ml-2 h-3 w-3" />
+                </Button>
+              </div>
+            }
+            machineActionItemList={<></>}
+          />
+        </div>
+      ) : (
         <MachineListItem
           key={machine.id}
           index={index}
@@ -101,18 +135,19 @@ export function MachineWorkspaceItem({
           showMigrateDialog={false}
           overrideRightSide={
             <div className="flex flex-row items-center gap-2">
-              {isInWorkspace && (
-                <SwitchMachineButton
-                  openFocus={openFocus}
-                  setOpenFocus={setOpenFocus}
-                />
-              )}
-              <StartSessionButton />
+              <Button
+                variant="outline"
+                className="rounded-[9px]"
+                onClick={handleStartSession}
+              >
+                Start
+                <Play className="ml-2 h-3 w-3" />
+              </Button>
             </div>
           }
           machineActionItemList={<></>}
         />
-      </div>
+      )}
     </div>
   );
 }
@@ -140,6 +175,122 @@ function SwitchMachineButton({
   );
 }
 
+function MachineSessionList({
+  currentMachine,
+  deleteSession,
+  isHovered,
+}: { currentMachine: any; deleteSession: any; isHovered: boolean }) {
+  const navigate = useNavigate();
+  const { data: activeSessions } = useQuery<any[]>({
+    queryKey: ["sessions"],
+    refetchInterval: 2000,
+    select: (data) =>
+      data?.filter((session) => session.machine_id === currentMachine.id),
+  });
+
+  const [isListHovered, setIsListHovered] = useState(false);
+  const shouldShowList = isHovered || isListHovered;
+
+  if (!activeSessions?.length) {
+    return null;
+  }
+
+  return (
+    <div
+      className="-translate-x-1/2 fixed bottom-[45px] left-1/2 z-50 w-[520px] overflow-hidden rounded-lg border border-blue-200 bg-blue-50 pb-10 shadow-lg"
+      onMouseEnter={() => setIsListHovered(true)}
+      onMouseLeave={() => setIsListHovered(false)}
+    >
+      <div className="flex flex-row items-center gap-2 px-4 py-1">
+        <div className="mt-0.5 h-2 w-2 animate-pulse rounded-full bg-green-500" />
+        <span className="text-2xs text-blue-900">
+          Active ComfyUI: {activeSessions.length}
+        </span>
+      </div>
+      <AnimatePresence>
+        {shouldShowList && (
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: "auto" }}
+            exit={{ height: 0 }}
+            transition={{ duration: 0.2, ease: "circOut", delay: 0.2 }}
+            className="mx-2 rounded-t-md bg-white shadow-inner"
+          >
+            {activeSessions.map((session, index) => (
+              <div
+                key={session.id}
+                className={cn(
+                  "flex items-center justify-between border-blue-200/50 border-b px-4 py-1",
+                  index === 0 && "rounded-t-md pt-2",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+                  <UserIcon user_id={session.user_id} className="h-5 w-5" />
+                  <span className="font-mono text-2xs text-muted-foreground">
+                    {session.id.slice(0, 6)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs">
+                    {getRelativeTime(session.start_time)}
+                  </span>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          e.nativeEvent.preventDefault();
+                          navigate({
+                            to: "/sessions/$sessionId",
+                            params: {
+                              sessionId: session.session_id,
+                            },
+                            search: {
+                              machineId: session.machine_id,
+                            },
+                          });
+                        }}
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Resume</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          e.nativeEvent.preventDefault();
+                          await deleteSession.mutateAsync({
+                            sessionId: session.session_id,
+                          });
+                        }}
+                      >
+                        <Trash className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function MachineSelectList({
   currentMachine,
   setOpenFocus,
@@ -155,7 +306,8 @@ function MachineSelectList({
     () =>
       machines?.filter(
         (machine) =>
-          machine.name.toLowerCase().includes(search.toLowerCase()) &&
+          (machine.name.toLowerCase().includes(search.toLowerCase()) ||
+            machine.id.includes(search)) &&
           machine.id !== currentMachine.id,
       ) ?? [],
     [machines, search, currentMachine.id],
@@ -206,7 +358,7 @@ function MachineSelectList({
             />
           )}
           <Input
-            placeholder="Search machines..."
+            placeholder="Search machines or IDs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-none border-gray-200 border-x-transparent border-t-transparent bg-transparent pl-10 focus-visible:ring-0"
