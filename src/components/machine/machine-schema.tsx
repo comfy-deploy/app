@@ -12,10 +12,10 @@ export const customFormSchema = z.object({
     .enum([
       "classic",
       "runpod-serverless",
-      "modal-serverless",
+      // "modal-serverless",
       // "comfy-deploy-serverless",
-      "workspace",
-      "workspace-v2",
+      // "workspace",
+      // "workspace-v2",
     ])
     .default("classic")
     .describe("Type"),

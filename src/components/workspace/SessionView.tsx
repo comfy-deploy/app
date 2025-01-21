@@ -355,7 +355,7 @@ export function SessionCreator(props: {
           btnText="Start ComfyUI"
         />
         {/* </SidebarMenuButton> */}
-        <Button
+        {/* <Button
           variant="outline"
           size="sm"
           className="flex flex-row gap-1"
@@ -364,7 +364,7 @@ export function SessionCreator(props: {
           }}
         >
           Preview Workflow <Eye size={16} />
-        </Button>
+        </Button> */}
       </div>
     </div>
   );
