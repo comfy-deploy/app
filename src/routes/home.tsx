@@ -50,7 +50,7 @@ function SessionsList() {
   });
 
   // console.log(data);
-  const query = useMachines(undefined, 5, 5);
+  const query = useMachines(undefined, 6, 6);
 
   const { createDynamicSession, createSession, listSession, deleteSession } =
     useSessionAPI();
@@ -271,7 +271,7 @@ function SessionsList() {
             </div>
           ));
         }}
-        estimateSize={80}
+        estimateSize={72}
       />
       <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
         <Link

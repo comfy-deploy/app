@@ -59,21 +59,21 @@ export default function MachinePage({
         {/* <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm"></div> */}
 
         <Portal targetId="nav-bar-items">
-          <div className="flex flex-row gap-2 w-full justify-between">
-            <div className="flex flex-row items-center gap-4">
+          <div className="flex w-full flex-row justify-between gap-2">
+            <div className="flex flex-row items-center gap-2">
               <Link
                 to={`/machines/${machine.id}`}
                 params={{ machineId: machine.id }}
-                className="flex flex-row items-center gap-2 font-medium text-md"
+                className="flex flex-row items-center gap-2 text-sm"
               >
                 {machine.name}
                 {machine.machine_version_id && (
                   <MachineVersionBadge machine={machine} isExpanded={true} />
                 )}
               </Link>
-				{machine.type === "comfy-deploy-serverless" && (
-              		<MachineRenameButton machine={machine} />
-            	)}
+              {machine.type === "comfy-deploy-serverless" && (
+                <MachineRenameButton machine={machine} />
+              )}
             </div>
             <div className="flex flex-row gap-2">
               <MachineCostEstimate machineId={machine.id} />
