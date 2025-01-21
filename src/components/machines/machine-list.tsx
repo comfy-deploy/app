@@ -5,8 +5,6 @@ import {
   serverlessFormSchema,
   sharedMachineConfig,
 } from "@/components/machine/machine-schema";
-import { ActiveMachineProvider } from "@/components/machines/active-machine-context";
-import { ActiveMachineList } from "@/components/machines/active-machine-list";
 import { MachineListItem } from "@/components/machines/machine-list-item";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +60,7 @@ export function MachineList() {
   const query = useMachines(debouncedSearchValue);
 
   return (
-    <div className="mx-auto h-[calc(100vh-60px)] max-h-full w-full max-w-[1500px] px-2 py-4 md:px-10">
+    <div className="mx-auto h-[calc(100vh-80px)] max-h-full w-full max-w-[1500px] px-2 py-4 md:px-10">
       <div className="flex items-center justify-between gap-2 pb-4">
         <div className="relative max-w-sm flex-1 hidden">
           <Input
@@ -127,7 +125,7 @@ export function MachineList() {
         ))
       ) : (
         <VirtualizedInfiniteList
-          className="!h-full fab-machine-list mx-auto w-full max-w-[1200px] rounded-3xl border"
+          className="!h-full fab-machine-list mx-auto w-full max-w-[1200px] rounded-xl border"
           containerClassName="divide-y divide-border"
           queryResult={query}
           renderItem={(machine, index) => (
@@ -182,7 +180,7 @@ export function MachineList() {
               </div>
             ));
           }}
-          estimateSize={80}
+          estimateSize={72}
         />
       )}
 

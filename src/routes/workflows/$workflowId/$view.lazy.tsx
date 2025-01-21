@@ -366,11 +366,14 @@ function WorkflowPageComponent() {
         </div>
       </Portal>
       <div className="h-full">
-        <div className="fixed inset-x-0 bottom-4 z-20 mx-auto max-w-[520px] overflow-hidden rounded-lg border border-gray-200 shadow-md">
-          {selectedMachine && (
-            <MachineWorkspaceItem machine={selectedMachine} index={0} />
-          )}
-        </div>
+        {selectedMachine && currentView !== "playground" && (
+          <MachineWorkspaceItem
+            machine={selectedMachine}
+            index={0}
+            isInWorkspace={true}
+          />
+        )}
+
         {view}
       </div>
 

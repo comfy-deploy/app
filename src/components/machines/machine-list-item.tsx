@@ -145,6 +145,7 @@ export function MachineListItem({
   index,
   className,
   overrideRightSide,
+  showMigrateDialog = true,
 }: {
   machine: any;
   isExpanded?: boolean;
@@ -153,6 +154,7 @@ export function MachineListItem({
   index: number;
   className?: string;
   overrideRightSide?: React.ReactNode;
+  showMigrateDialog?: boolean;
 }) {
   const { data: events, isLoading } = useMachineEvents(machine.id);
   const { hasActiveEvents } = useHasActiveEvents(machine.id);
@@ -173,7 +175,7 @@ export function MachineListItem({
   const content = (
     <div
       className={cn(
-        "group relative flex min-h-[80px] w-full flex-col items-center overflow-hidden rounded-none bg-white p-4",
+        "group relative flex w-full flex-col items-center overflow-hidden rounded-none bg-white px-4 py-3",
         isStale && "bg-gray-50 contrast-75",
         index % 2 !== 0 && "bg-gray-50",
         className,
@@ -214,7 +216,7 @@ export function MachineListItem({
                 }}
                 search={{ view: undefined }}
               >
-                <h2 className="whitespace-nowrap font-medium text-base">
+                <h2 className="whitespace-nowrap font-normal text-sm tracking-normal">
                   {machine.name}
                 </h2>
               </Link>
@@ -261,7 +263,7 @@ export function MachineListItem({
             )}
           </div>
 
-          <MigrateOldMachineDialog machine={machine} />
+          {showMigrateDialog && <MigrateOldMachineDialog machine={machine} />}
         </div>
         <Link
           to={"/machines/$machineId"}
