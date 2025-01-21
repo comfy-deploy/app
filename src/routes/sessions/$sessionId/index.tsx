@@ -91,7 +91,7 @@ function RouteComponent() {
             />
             {workflowId && (
               <WorkspaceStatusBar
-                endpoint={session?.tunnel_url ?? ""}
+                endpoint={session?.url ?? ""}
                 workflowId={workflowId}
               />
             )}

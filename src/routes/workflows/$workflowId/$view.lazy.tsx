@@ -174,9 +174,14 @@ function WorkflowPageComponent() {
   const router = useRouter();
 
   const [sessionId, setSessionId] = useQueryState("sessionId");
-  const sessionSelected = sessions?.find(
-    (session) => session.session_id === sessionId,
-  );
+
+  const { data: sessionSelected } = useQuery({
+    queryKey: ["session", sessionId],
+    enabled: !!sessionId,
+  });
+  // const sessionSelected = sessions?.find(
+  //   (session) => session.session_id === sessionId,
+  // );
 
   const { data: selectedMachine } = useMachine(workflow?.selected_machine_id);
 
@@ -225,7 +230,7 @@ function WorkflowPageComponent() {
                       >
                         <WorkspaceStatusBar
                           endpoint={
-                            sessionSelected?.tunnel_url ||
+                            sessionSelected?.url ||
                             process.env.COMFYUI_FRONTEND_URL
                           }
                           className=""

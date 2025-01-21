@@ -65,6 +65,8 @@ export function WorkflowCommitVersion({
   //   console.log("turbo", endpoint);
   // }
 
+  console.log("endpoint", endpoint);
+
   const getPromptWithTimeout = useCallback(
     async (timeoutMs = 5000) => {
       const getPrompt = new Promise<any>((resolve, reject) => {
