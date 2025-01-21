@@ -194,7 +194,9 @@ function MachineSelectList({
       className="-translate-x-1/2 fixed bottom-10 left-1/2 z-50 w-[520px] overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-lg"
     >
       <div className="px-3 py-2">
-        <h3 className="mx-3 my-2 font-medium">Switch Machine</h3>
+        <div className="mx-3 my-2 flex flex-row items-center justify-between">
+          <h3 className="font-medium">Switch Machine</h3>
+        </div>
         <div className="relative">
           <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-gray-400" />
           {search && (
@@ -214,7 +216,7 @@ function MachineSelectList({
 
       <div
         ref={parentRef}
-        className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent mb-12 max-h-[300px] overflow-y-auto px-3"
+        className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent max-h-[250px] overflow-y-auto px-3"
       >
         {isLoading ? (
           Array.from({ length: 10 }).map((_, index) => (
