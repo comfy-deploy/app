@@ -83,7 +83,10 @@ function RunDetails(props: {
     queryKey: ["run", run_id],
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
     refetchInterval: (query) => {
-      if (query.state.data?.status === "running") {
+      if (
+        query.state.data?.status === "running" ||
+        query.state.data?.status === "uploading"
+      ) {
         return 2000;
       }
       return false;

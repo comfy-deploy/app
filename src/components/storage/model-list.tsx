@@ -1461,7 +1461,10 @@ export function AnyModelRegistry(props: {
                 : selected[0].save_path,
           }}
           formSchema={z.object({
-            filename: z.string(),
+            filename: z
+              .string()
+              .min(1, { message: "Filename is required" })
+              .regex(CustomModelFilenameRegex, CustomModelFilenameError),
             url: z.string().readonly(),
             customPath: z
               .string()

@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { RebuildMachineDialog } from "../machines/machine-list";
 
 export function formatExactTime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -415,6 +416,7 @@ function InstantRollback({
   isBusinessOrEnterprise: boolean;
 }) {
   const [rollbackAlertOpen, setRollbackAlertOpen] = useState(false);
+  const [rebuildAlertOpen, setRebuildAlertOpen] = useState(false);
   const { data: currentMachineVersion } = useMachineVersion(
     machine.id,
     machine.machine_version_id,
@@ -485,6 +487,16 @@ function InstantRollback({
               <CircleArrowUp className="w-4 h-4" />
             </DropdownMenuShortcut>
           </DropdownMenuItem> */}
+          <DropdownMenuItem
+            disabled={machineVersion.id !== machine.machine_version_id}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setRebuildAlertOpen(true);
+            }}
+          >
+            Rebuild
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={(e) => {
               e.preventDefault();
@@ -608,6 +620,12 @@ function InstantRollback({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RebuildMachineDialog
+        machine={machine}
+        dialogOpen={rebuildAlertOpen}
+        setDialogOpen={setRebuildAlertOpen}
+      />
     </>
   );
 }
