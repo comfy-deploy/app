@@ -242,7 +242,11 @@ function SessionsList() {
         containerClassName="divide-y divide-border"
         queryResult={query}
         renderItem={(machine, index) => (
-          <MachineWorkspaceItem machine={machine} index={index} />
+          <MachineWorkspaceItem
+            machine={machine}
+            index={index}
+            isInWorkspace={false}
+          />
         )}
         renderItemClassName={(machine) => cn("z-0 transition-all duration-200")}
         renderLoading={() => {

@@ -151,6 +151,22 @@ export function ModelsButton(props: {
   );
 }
 
+export function SessionLoading() {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center">
+      <Card className="flex flex-col items-center gap-4 p-6">
+        <h2 className="flex items-center gap-2 font-semibold">
+          Warming Up <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        </h2>
+        <p className="text-center text-muted-foreground text-xs">
+          Your session is being prepared. This may take a few moments.
+        </p>
+        <LogDisplay />
+      </Card>
+    </div>
+  );
+}
+
 export function SessionCreator(props: {
   workflowId?: string;
   workflowLatestVersion?: any;
@@ -215,6 +231,7 @@ export function SessionCreator(props: {
         const prevIsLive = queryKey[3] as boolean | undefined;
         if (prevIsLive) {
           toast.error("Session disconnected");
+          setCDSetup(false);
         }
         return false;
       }
@@ -311,37 +328,27 @@ export function SessionCreator(props: {
     );
   }
 
-  if (sessionId && url && isLive) {
-    return (
-      <>
-        <div className="flex h-full w-full flex-col">
-          <Workspace
-            sessionIdOverride={props.sessionIdOverride}
-            workflowId={props.workflowId}
-            // key={props.workflowId}
-            nativeMode={true}
-            endpoint={url}
-            workflowJson={props.workflowLatestVersion?.workflow}
-          />
-        </div>
-      </>
-    );
-  }
+  if (sessionId) {
+    if (!url || !isLive) {
+      return <SessionLoading />;
+    }
 
-  if (sessionId && (!url || !isLive)) {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center">
-        <Card className="flex flex-col items-center gap-4 p-6">
-          <h2 className="flex items-center gap-2 font-semibold">
-            Warming Up <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          </h2>
-          <p className="text-center text-muted-foreground text-xs">
-            Your session is being prepared. This may take a few moments.
-          </p>
-          <LogDisplay />
-        </Card>
-      </div>
-    );
+    if (url && isLive) {
+      return (
+        <>
+          <div className="flex h-full w-full flex-col">
+            <Workspace
+              sessionIdOverride={props.sessionIdOverride}
+              workflowId={props.workflowId}
+              // key={props.workflowId}
+              nativeMode={true}
+              endpoint={url}
+              workflowJson={props.workflowLatestVersion?.workflow}
+            />
+          </div>
+        </>
+      );
+    }
   }
 
   return (

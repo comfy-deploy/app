@@ -69,7 +69,7 @@ export function WorkspaceClientWrapper({
           props.className,
         )}
       >
-        No machine selected, please select a machine at the bottom left.
+        No machine selected, please select a machine.
       </div>
     );
 
