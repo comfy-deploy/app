@@ -121,6 +121,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
             >
               <FileURLRender
                 url={outputUrl}
+                lazyLoading={true}
                 imgClasses="w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none"
               />
               <div className="absolute bottom-0 left-0 w-full bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
