@@ -8,7 +8,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import { diff } from "json-diff-ts";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WorkspaceLoading } from "./WorkspaceLoading";
 import {
@@ -69,6 +69,7 @@ import {
   SessionIncrementDialog,
   useSessionIncrementStore,
 } from "./increase-session";
+import { WorkspaceControls } from "./workspace-control";
 
 // import { useCurrentWorkflow } from "@/components/useCurrentWorkflow";
 // import { useMachineStore } from "@/repo/components/ui/custom/workspace/DevSelectMachine";
@@ -94,6 +95,10 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
   differences: [],
   setDifferences: (differences) => set({ differences }),
 }));
+
+function handleEvent(event: string, data?: any) {
+  console.log("handleEvent", event, data);
+}
 
 export default function Workspace({
   endpoint: _endpoint,
@@ -311,6 +316,8 @@ export default function Workspace({
           useSessionIncrementStore.getState().setSessionId(sessionId);
         }
 
+        // handleEvent(data.type, data.data);
+
         // console.log(data);
         if (data.type === "cd_plugin_setup") {
           if (workflowJson) {
@@ -323,25 +330,19 @@ export default function Workspace({
           }
           setCDSetup(true);
           setProgress(100);
-          sendEventToCD("configure_queue_buttons", [
-            {
-              id: "assets",
-              icon: "pi-image",
-              tooltip: "Assets",
-              event: "assets",
-            },
-          ]);
-          sendEventToCD("configure_menu_right_buttons", [
-            {
-              id: "session",
-              icon: "pi-clock",
-              tooltip: "Increase the timeout of your current session",
-              label: "Increase Timeout",
-              btnClasses: "p-button-success",
-              event: "increase-session",
-              eventData: {},
-            },
-          ]);
+
+          // configureWorkspaceButtons();
+          // sendEventToCD("configure_menu_right_buttons", [
+          //   {
+          //     id: "session",
+          //     icon: "pi-clock",
+          //     tooltip: "Increase the timeout of your current session",
+          //     label: "Increase Timeout",
+          //     btnClasses: "p-button-success",
+          //     event: "increase-session",
+          //     eventData: {},
+          //   },
+          // ]);
         } else if (data.type === "cd_plugin_onAfterChange") {
         } else if (data.type === "cd_plugin_onDeployChanges") {
           const differences = diff(
@@ -457,6 +458,8 @@ export default function Workspace({
       </AnimatePresence>
 
       <AssetsBrowserPopup />
+
+      <WorkspaceControls endpoint={endpoint} />
 
       {hasSetupEventListener && (
         <iframe

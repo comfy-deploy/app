@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Diff,
   ExternalLink,
+  Plus,
   RefreshCcw,
   Save,
   Search,
@@ -106,20 +107,45 @@ function RouteComponent() {
       </Portal>
       <Portal targetId="nav-bar-items-right">
         <div className="flex flex-row items-center justify-between gap-2">
-          <Button
-            onClick={async () => {
-              await callServerPromise(
-                api({
-                  url: `session/${sessionId}/snapshot`,
-                  init: {
-                    method: "POST",
-                  },
-                }),
-              );
-            }}
-          >
-            Save
-          </Button>
+          {session?.machine_id && (
+            <Button
+              Icon={Save}
+              variant="secondary"
+              iconPlacement="right"
+              onClick={async () => {
+                await callServerPromise(
+                  api({
+                    url: `session/${sessionId}/snapshot`,
+                    init: {
+                      method: "POST",
+                    },
+                  }),
+                );
+              }}
+            >
+              Environment
+            </Button>
+          )}
+
+          {!session?.machine_id && (
+            <Button
+              Icon={Plus}
+              variant="outline"
+              iconPlacement="right"
+              onClick={async () => {
+                await callServerPromise(
+                  api({
+                    url: `session/${sessionId}/snapshot`,
+                    init: {
+                      method: "POST",
+                    },
+                  }),
+                );
+              }}
+            >
+              Create Environment
+            </Button>
+          )}
         </div>
       </Portal>
       <WorkspaceClientWrapper

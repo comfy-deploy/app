@@ -92,24 +92,25 @@ export function useSelectedVersion(workflow_id: string) {
   };
 }
 
-export function VersionSelectV2({
+export function VersionList({
   workflow_id,
-  path,
   onSelect,
+  onClose,
   selectedVersion,
   className,
 }: {
   workflow_id: string;
-  path?: string;
   onSelect?: (version: WorkflowType) => void;
-  selectedVersion?: any;
+  onClose?: () => void;
+  selectedVersion?: WorkflowType;
   className?: string;
 }) {
-  const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
   const [debouncedSearchValue] = useDebounce(searchValue, 250);
 
   const query = useWorkflowVersion(workflow_id, debouncedSearchValue);
+  const { hasChanged } = useWorkflowStore();
+  const isAdminAndMember = useIsAdminAndMember();
 
   const flatData = React.useMemo(
     () => query.data?.pages.flat() ?? [],
@@ -118,45 +119,97 @@ export function VersionSelectV2({
 
   React.useEffect(() => {
     query.refetch();
-  }, [debouncedSearchValue]);
+  }, [query, debouncedSearchValue]);
 
   const [_version, setVersion] = useQueryState("version", {
     defaultValue: selectedVersion?.version ?? flatData[0]?.version ?? 1,
     ...parseAsInteger,
   });
 
+  // _version = selectedVersion?.version || _version;
+
   const version = selectedVersion?.version || _version;
 
-  const value = useMemo<any>(() => {
+  const { dialog, setOpen: setOpenDialog } =
+    useConfirmServerActionDialog<WorkflowType>({
+      title: "Load to workspace",
+      description:
+        "This will load the workflow from the selected version to workspace, which will override the current workflow",
+      action: async (value) => {
+        sendWorkflow(value.workflow);
+        setVersion(value.version);
+        onClose?.();
+      },
+    });
+
+  return (
+    <div className={cn("w-[375px] overflow-hidden", className)}>
+      {dialog}
+      <div className="relative p-2">
+        <Search className="-translate-y-1/2 absolute top-1/2 left-6 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search versions..."
+          className="pl-12 text-sm"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+        />
+      </div>
+      <VirtualizedInfiniteList
+        queryResult={query}
+        renderItem={(item) => (
+          <VersionRow
+            item={item as WorkflowType}
+            selected={version}
+            onSelect={(item) => {
+              if (onSelect) {
+                onSelect(item);
+              } else {
+                if (hasChanged) {
+                  setOpenDialog(item);
+                } else {
+                  setVersion(item.version);
+                  sendWorkflow(item.workflow);
+                  onClose?.();
+                }
+              }
+            }}
+            isAdminAndMember={isAdminAndMember}
+            setOpen={setOpenDialog}
+          />
+        )}
+        renderLoading={() => <LoadingRow />}
+        estimateSize={100}
+      />
+    </div>
+  );
+}
+
+export function VersionSelectV2({
+  workflow_id,
+  onSelect,
+  selectedVersion,
+  className,
+}: {
+  workflow_id: string;
+  onSelect?: (version: WorkflowType) => void;
+  selectedVersion?: WorkflowType;
+  className?: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  const flatData = useWorkflowVersion(workflow_id, "").data?.pages.flat() ?? [];
+  const version = selectedVersion?.version || flatData[0]?.version;
+
+  const value = React.useMemo<WorkflowType>(() => {
     if (selectedVersion) return selectedVersion;
-
     return flatData?.find((x) => x.version === version);
-  }, [flatData !== undefined, version, selectedVersion]);
-
-  const { dialog, setOpen: setOpenDialog } = useConfirmServerActionDialog<any>({
-    title: "Load to workspace",
-    description:
-      "This will load the workflow from the selected version to workspace, which will override the current workflow",
-    action: async (value) => {
-      sendWorkflow(value.workflow);
-      setVersion(value.version);
-      // setHasChanged(false);
-    },
-  });
-
-  const { hasChanged } = useWorkflowStore();
-
-  const isAdminOnly = useIsAdminOnly();
-  const isAdminAndMember = useIsAdminAndMember();
-
-  const setHasChanged = useWorkflowStore((state) => state.setHasChanged);
+  }, [flatData, version, selectedVersion]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
-          role="combobox"
           aria-expanded={open}
           className={cn(
             "flex w-full justify-between border-0 bg-transparent px-2 py-1 hover:bg-gray-2000",
@@ -166,51 +219,17 @@ export function VersionSelectV2({
           <span className="flex w-full gap-2 truncate text-ellipsis text-start text-sm">
             <Badge className="relative inline-block">
               v{value?.version || version}
-              {hasChanged && "*"}
             </Badge>
           </span>
           <ChevronDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[375px] overflow-hidden p-0" side="bottom">
-        {dialog}
-
-        <div className="relative p-2">
-          <Search className="-translate-y-1/2 absolute top-1/2 left-6 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search versions..."
-            className="pl-12 text-sm"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
-        </div>
-        <VirtualizedInfiniteList
-          queryResult={query}
-          renderItem={(item) => (
-            <VersionRow
-              item={item as any}
-              selected={version}
-              onSelect={(item) => {
-                if (onSelect) {
-                  onSelect(item);
-                } else {
-                  if (hasChanged) {
-                    setOpenDialog(item);
-                  } else {
-                    setVersion(item.version);
-                    sendWorkflow(item.workflow);
-                    // setHasChanged(false);
-                  }
-                }
-              }}
-              isAdminAndMember={isAdminAndMember}
-              setOpen={setOpenDialog}
-            />
-          )}
-          renderLoading={() => <LoadingRow />}
-          estimateSize={100}
+        <VersionList
+          workflow_id={workflow_id}
+          onSelect={onSelect}
+          selectedVersion={selectedVersion}
         />
-        {/* )} */}
       </PopoverContent>
     </Popover>
   );

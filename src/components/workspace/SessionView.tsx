@@ -154,7 +154,7 @@ export function ModelsButton(props: {
 export function SessionLoading() {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
-      <Card className="flex flex-col items-center gap-4 p-6">
+      <div className="flex flex-col items-center gap-4 p-6">
         <h2 className="flex items-center gap-2 font-semibold">
           Warming Up <Loader2 className="h-4 w-4 animate-spin text-primary" />
         </h2>
@@ -162,7 +162,7 @@ export function SessionLoading() {
           Your session is being prepared. This may take a few moments.
         </p>
         <LogDisplay />
-      </Card>
+      </div>
     </div>
   );
 }
@@ -184,11 +184,13 @@ export function SessionCreator(props: {
   // const { createSession, listSession, deleteSession } =
   //   useSessionAPI(machineId);
 
-  const [_sessionId, setSessionId] = useQueryState("sessionId", {
-    defaultValue: props.sessionIdOverride || "",
-  });
+  // const [_sessionId, setSessionId] = useQueryState("sessionId", {
+  //   defaultValue: props.sessionIdOverride || "",
+  // });
 
-  const sessionId = props.sessionIdOverride || _sessionId;
+  // || _sessionId
+
+  const sessionId = props.sessionIdOverride;
 
   const { data: session } = useQuery<any>({
     enabled: !!sessionId,
@@ -202,21 +204,21 @@ export function SessionCreator(props: {
     setCDSetup(false);
   }, [sessionId]);
 
-  useLogListener({ sessionId });
+  useLogListener({ sessionId: sessionId || "" });
 
-  // probably session closed
-  useEffect(() => {
-    if (sessionId === "preview") {
-      return;
-    }
-    if (sessionId && !session) {
-      setSessionId("");
-    }
+  // // probably session closed
+  // useEffect(() => {
+  //   if (sessionId === "preview") {
+  //     return;
+  //   }
+  //   if (sessionId && !session) {
+  //     setSessionId("");
+  //   }
 
-    // if (session) {
-    //   useGPUStore.getState().setGpuEventId(session.id);
-    // }
-  }, [session, sessionId]);
+  //   // if (session) {
+  //   //   useGPUStore.getState().setGpuEventId(session.id);
+  //   // }
+  // }, [session, sessionId]);
 
   const { data: isLive } = useQuery({
     queryKey: ["session", "live", url],
@@ -352,32 +354,33 @@ export function SessionCreator(props: {
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center">
-      <div className="flex items-center gap-2">
-        {/* <SidebarMenuButton> */}
-        <SessionCreate
-          btnSize="sm"
-          workflowId={props.workflowId}
-          setSessionId={setSessionId}
-          btnText="Start ComfyUI"
-        />
-        {/* </SidebarMenuButton> */}
-        {/* <Button
-          variant="outline"
-          size="sm"
-          className="flex flex-row gap-1"
-          onClick={() => {
-            setSessionId("preview");
-          }}
-        >
-          Preview Workflow <Eye size={16} />
-        </Button> */}
-      </div>
-    </div>
+    <></>
+    // <div className="flex h-full w-full items-center justify-center">
+    //   <div className="flex items-center gap-2">
+    //     {/* <SidebarMenuButton> */}
+    //     <SessionCreate
+    //       btnSize="sm"
+    //       // workflowId={props.workflowId}
+    //       // setSessionId={setSessionId}
+    //       btnText="Start ComfyUI"
+    //     />
+    //     {/* </SidebarMenuButton> */}
+    //     {/* <Button
+    //       variant="outline"
+    //       size="sm"
+    //       className="flex flex-row gap-1"
+    //       onClick={() => {
+    //         setSessionId("preview");
+    //       }}
+    //     >
+    //       Preview Workflow <Eye size={16} />
+    //     </Button> */}
+    //   </div>
+    // </div>
   );
 }
 
-function useLogListener({ sessionId }: { sessionId: string }) {
+function useLogListener({ sessionId }: { sessionId?: string }) {
   const fetchToken = useAuthStore((state) => state.fetchToken);
 
   useEffect(() => {

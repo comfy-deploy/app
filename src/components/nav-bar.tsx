@@ -184,7 +184,10 @@ export function NavBar() {
             </div>
           </div>
 
-          <div id="nav-bar-items-right" />
+          <div
+            id="nav-bar-items-right"
+            className="absolute top-1 right-0 mr-2"
+          />
         </nav>
       </div>
 

@@ -16,56 +16,91 @@ import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useWorkflowList } from "@/hooks/use-workflow-list";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
-import { useMatch, useMatchRoute, useRouter } from "@tanstack/react-router";
+import { useMatch, useRouter } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, ExternalLink, Search } from "lucide-react";
 import * as React from "react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 import { VirtualizedInfiniteList } from "./virtualized-infinite-list";
 import { renameWorkflow } from "./workflow-api";
 
-export function WorkflowDropdown({
-  workflow_id,
-  path,
-  path_suffix,
-  className,
-  onNavigate,
-}: {
+interface WorkflowListProps {
   workflow_id: string;
-  path?: string;
-  path_suffix?: string;
-  className?: string;
   onNavigate?: (workflow_id: string) => void;
-}) {
+  className?: string;
+}
+
+export function WorkflowList({
+  workflow_id,
+  onNavigate,
+  className,
+}: WorkflowListProps) {
+  const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearchValue] = useDebounce(searchValue, 250);
   const match = useMatch({
     from: "/workflows/$workflowId/$view",
     shouldThrow: false,
   });
 
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
-  const [debouncedSearchValue] = useDebounce(searchValue, 250);
-  const [renameModalOpen, setRenameModalOpen] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
-
   const router = useRouter();
-
   const query = useWorkflowList(debouncedSearchValue);
-
   const workflows = useMemo(() => query.data?.pages.flat() ?? [], [query.data]);
-
   const { workflow } = useCurrentWorkflow(workflow_id);
-
-  // const value = useMemo(
-  //   () => workflows.find((x) => x?.id === workflow_id),
-  //   [workflow_id, workflows],
-  // );
 
   React.useEffect(() => {
     query.refetch();
-  }, [debouncedSearchValue]);
+  }, [query, debouncedSearchValue]);
 
-  // const containerRef = useRef<HTMLDivElement>(null);
+  return (
+    <div className={cn("w-[375px] overflow-hidden", className)}>
+      <div className="relative p-2">
+        <Search className="-translate-y-1/2 absolute top-1/2 left-6 h-4 w-4 text-muted-foreground" />
+        <Input
+          className="pl-12 text-sm"
+          placeholder="Search workflows"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+        />
+      </div>
+      <VirtualizedInfiniteList
+        queryResult={query}
+        renderItem={(item) => (
+          <WorkflowItem
+            key={item.id}
+            item={item}
+            selected={workflow}
+            onSelect={(selectedItem) => {
+              onNavigate?.(selectedItem.id);
+
+              if (!onNavigate) {
+                router.navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: {
+                    workflowId: selectedItem.id,
+                    view: match?.params.view || "workspace",
+                  },
+                });
+              }
+            }}
+          />
+        )}
+        renderLoading={() => <LoadingWorkflowItem />}
+        estimateSize={68}
+      />
+    </div>
+  );
+}
+
+export function WorkflowDropdown({
+  workflow_id,
+  className,
+  onNavigate,
+}: WorkflowListProps) {
+  const [open, setOpen] = useState(false);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const { workflow } = useCurrentWorkflow(workflow_id);
+  const query = useWorkflowList("");
 
   const openRenameDialog = () => {
     setRenameValue(workflow?.name || "");
@@ -92,44 +127,7 @@ export function WorkflowDropdown({
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-[375px] overflow-hidden p-0" side="bottom">
-          <div className="relative p-2">
-            <Search className="-translate-y-1/2 absolute top-1/2 left-6 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-12 text-sm"
-              placeholder="Search workflows"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-          </div>
-          <VirtualizedInfiniteList
-            queryResult={query}
-            renderItem={(item) => (
-              <WorkflowItem
-                key={item.id}
-                item={item}
-                selected={workflow}
-                onSelect={(selectedItem) => {
-                  // const href =
-                  //   (path ? path : "/workflows/") +
-                  //   selectedItem.id +
-                  //   (path_suffix ? path_suffix : "");
-                  onNavigate?.(selectedItem.id);
-
-                  if (!onNavigate) {
-                    router.navigate({
-                      to: "/workflows/$workflowId/$view",
-                      params: {
-                        workflowId: selectedItem.id,
-                        view: match?.params.view || "workspace",
-                      },
-                    });
-                  }
-                }}
-              />
-            )}
-            renderLoading={() => <LoadingWorkflowItem />}
-            estimateSize={68}
-          />
+          <WorkflowList workflow_id={workflow_id} onNavigate={onNavigate} />
         </PopoverContent>
       </Popover>
 
@@ -168,23 +166,28 @@ export function WorkflowDropdown({
   );
 }
 
-function WorkflowItem({
-  item,
-  selected,
-  onSelect,
-}: {
-  item: { id: string; name: string; user_name: string };
+interface WorkflowItemProps {
+  item: { id: string; name: string; user_name: string; user_icon?: string };
   selected: { id: string } | undefined;
   onSelect: (item: {
     id: string;
     name: string;
     user_name: string;
   }) => void;
-}) {
+}
+
+function WorkflowItem({ item, selected, onSelect }: WorkflowItemProps) {
   return (
     <div
       className="flex items-center overflow-hidden transition-colors hover:bg-gray-200"
       onClick={() => onSelect(item)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          onSelect(item);
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       <div className="relative flex h-full w-[375px] max-w-[calc(100%-48px)] flex-shrink items-center gap-2 px-4 py-2 text-xs">
         <div className="flex w-full flex-col gap-1">
@@ -198,7 +201,7 @@ function WorkflowItem({
           </div>
           <div className="flex items-center gap-2">
             <Avatar className="h-5 w-5">
-              <AvatarImage src={(item as any).user_icon} alt={item.user_name} />
+              <AvatarImage src={item.user_icon} alt={item.user_name} />
               <AvatarFallback>{item.user_name.charAt(0)}</AvatarFallback>
             </Avatar>
             <Badge className="w-fit max-w-full truncate whitespace-nowrap">
@@ -217,7 +220,7 @@ function WorkflowItem({
       </div>
       <div className="h-full flex-col items-center justify-center">
         <Button variant="ghost" asChild>
-          <a href={"/workflows/" + item.id} target="_blank" rel="noreferrer">
+          <a href={`/workflows/${item.id}`} target="_blank" rel="noreferrer">
             <ExternalLink size={14} />
           </a>
         </Button>

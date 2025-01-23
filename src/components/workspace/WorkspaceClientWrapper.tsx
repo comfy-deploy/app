@@ -34,7 +34,7 @@ export function WorkspaceClientWrapper({
       console.log("workflow", workflow);
       sendWorkflow(workflow.versions[0].workflow);
     }
-  }, [props.workflow_id, workflow]);
+  }, [props.workflow_id]);
 
   const { data: versions, isLoading: isLoadingVersions } = useQuery({
     enabled: !!props.workflow_id,

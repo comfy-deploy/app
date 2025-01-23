@@ -198,7 +198,7 @@ function SessionsList() {
               onChange={(value) => form.setValue("gpu", value)}
             />
           </div>
-          <Button
+          {/* <Button
             variant="outline"
             Icon={Settings}
             iconPlacement="right"
@@ -210,7 +210,7 @@ function SessionsList() {
                 },
               });
             }}
-          />
+          /> */}
           <Button
             variant="shine"
             Icon={Play}
