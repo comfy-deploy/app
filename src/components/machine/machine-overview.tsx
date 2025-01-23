@@ -153,6 +153,7 @@ function MachineAlert({
         )}
       {!isLatestVersion &&
         machine.machine_version_id &&
+        machine.status !== "building" &&
         renderAlert(
           showRollback,
           setShowRollback,

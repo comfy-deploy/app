@@ -412,7 +412,7 @@ export function RunWorkflowButton({
           onSubmit={onSubmit}
           actionArea={
             <div className="flex items-center justify-end gap-2 pr-3">
-              <Input
+              {/* <Input
                 type="number"
                 min="1"
                 value={batchNumber}
@@ -421,7 +421,7 @@ export function RunWorkflowButton({
                 }
                 className="w-20"
                 placeholder="Batch"
-              />
+              /> */}
               <AutoFormSubmit disabled={isLoading} className="gap-2">
                 Run
                 {isLoading ? <LoadingIcon /> : <Play size={14} />}

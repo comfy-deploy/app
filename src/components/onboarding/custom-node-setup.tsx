@@ -70,6 +70,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "../ui/drawer";
+import { useCurrentPlan } from "@/hooks/use-current-plan";
 
 export type DefaultCustomNodeData = {
   title: string;
@@ -533,6 +534,7 @@ function SelectedNodeList({
   const [scriptMode, setScriptMode] = useState(false);
   const [showNewCommand, setShowNewCommand] = useState(false);
   const [commandText, setCommandText] = useState("");
+  const sub = useCurrentPlan();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -661,76 +663,78 @@ function SelectedNodeList({
         <h2 className="font-medium text-md">
           Selected Nodes ({validation.docker_command_steps.steps.length})
         </h2>
-        <div className="flex flex-col items-end gap-2 md:flex-row">
-          {!scriptMode && (
-            <Button
-              size={"xs"}
-              type="button"
-              variant={"outline"}
-              className="hidden lg:flex lg:flex-row"
-              onClick={() => {
-                setShowNewCommand(true);
-                setValidation((prev) => ({
-                  ...prev,
-                  isEditingHashOrAddingCommands: true,
-                }));
-              }}
-            >
-              Commands
-              <Plus size={12} className="ml-2" />
-            </Button>
-          )}
-          <Button
-            type="button"
-            size={"xs"}
-            variant={scriptMode ? "default" : "outline"}
-            onClick={() => setScriptMode(!scriptMode)}
-          >
-            View JSON
-            {scriptMode ? (
-              <ToggleRight className="ml-2 h-4 w-4" />
-            ) : (
-              <ToggleLeft className="ml-2 h-4 w-4" />
+        {sub?.sub?.plan && (
+          <div className="flex flex-col items-end gap-2 md:flex-row">
+            {!scriptMode && (
+              <Button
+                size={"xs"}
+                type="button"
+                variant={"outline"}
+                className="hidden lg:flex lg:flex-row"
+                onClick={() => {
+                  setShowNewCommand(true);
+                  setValidation((prev) => ({
+                    ...prev,
+                    isEditingHashOrAddingCommands: true,
+                  }));
+                }}
+              >
+                Commands
+                <Plus size={12} className="ml-2" />
+              </Button>
             )}
-          </Button>
-          {!scriptMode && (
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button
-                  size={"xs"}
-                  type="button"
-                  variant={"outline"}
-                  className="flex flex-row lg:hidden"
-                >
-                  Add Node
-                  <Plus size={12} className="ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuLabel>Add Node</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setMobileDrawerOpen?.(true);
-                  }}
-                >
-                  Custom Node
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setShowNewCommand(true);
-                    setValidation((prev) => ({
-                      ...prev,
-                      isEditingHashOrAddingCommands: true,
-                    }));
-                  }}
-                >
-                  Command
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+            <Button
+              type="button"
+              size={"xs"}
+              variant={scriptMode ? "default" : "outline"}
+              onClick={() => setScriptMode(!scriptMode)}
+            >
+              View JSON
+              {scriptMode ? (
+                <ToggleRight className="ml-2 h-4 w-4" />
+              ) : (
+                <ToggleLeft className="ml-2 h-4 w-4" />
+              )}
+            </Button>
+            {!scriptMode && (
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <Button
+                    size={"xs"}
+                    type="button"
+                    variant={"outline"}
+                    className="flex flex-row lg:hidden"
+                  >
+                    Add Node
+                    <Plus size={12} className="ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[200px]">
+                  <DropdownMenuLabel>Add Node</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setMobileDrawerOpen?.(true);
+                    }}
+                  >
+                    Custom Node
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setShowNewCommand(true);
+                      setValidation((prev) => ({
+                        ...prev,
+                        isEditingHashOrAddingCommands: true,
+                      }));
+                    }}
+                  >
+                    Command
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
       </div>
 
       {showNewCommand && (

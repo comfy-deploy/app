@@ -30,9 +30,6 @@ export default function MachinePage({
 }: {
   params: { machine_id: string };
 }) {
-  const navigate = useNavigate();
-  const { view } = useSearch({ from: "/machines/$machineId/" });
-
   const {
     data: machine,
     isLoading,

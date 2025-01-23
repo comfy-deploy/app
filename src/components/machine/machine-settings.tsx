@@ -18,7 +18,7 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useBlocker } from "@tanstack/react-router";
+import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, easeOut, motion, useAnimation } from "framer-motion";
 import { isEqual } from "lodash";
 import { ExternalLinkIcon, Info, Loader2, Lock, Save } from "lucide-react";
@@ -257,6 +257,7 @@ function ServerlessSettings({
 }) {
   const [isFormDirty, setIsFormDirty] = useState(false);
   const controls = useAnimation();
+  const navigate = useNavigate();
 
   const isNew = machine.id === "new";
 
@@ -342,7 +343,7 @@ function ServerlessSettings({
 
   useEffect(() => {
     const errors = form.formState.errors;
-    console.log(errors);
+    // console.log(errors);
     for (const [field, error] of Object.entries(errors)) {
       if (error?.message) {
         toast.error(`${field}: ${error.message}`);
@@ -354,15 +355,23 @@ function ServerlessSettings({
     try {
       setIsLoading(true);
       const { name, ...filteredData } = data;
-      await api({
+      const response = await api({
         url: `machine/serverless/${machine.id}`,
         init: {
           method: "PATCH",
           body: JSON.stringify(filteredData),
         },
       });
-      toast.success("Updated successfully!");
       setIsFormDirty(false);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      toast.success("Updated successfully!");
+      navigate({
+        to: "/machines/$machineId/$machineVersionId",
+        params: {
+          machineId: machine.id,
+          machineVersionId: response.machine_version_id,
+        },
+      });
     } catch (error: any) {
       console.error("API Error:", error);
       // If the error response contains validation details, show them

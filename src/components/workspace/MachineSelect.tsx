@@ -24,6 +24,7 @@ import * as React from "react";
 import { useDebounce } from "use-debounce";
 import { VirtualizedInfiniteList } from "../virtualized-infinite-list";
 import { MachineBuildSettingsDialog } from "./MachineBuildSettingsDialog";
+import { Link } from "@tanstack/react-router";
 // import { MachineBuildSettingsDialog } from "./MachineBuildSettingsDialog";
 
 export function MachineSelect({
@@ -148,21 +149,14 @@ export function MachineSelect({
         </Popover>
       </div>
       <Separator orientation="vertical" className="z-10 h-[40px] flex-none" />
-      {value ? (
-        <MachineBuildSettingsDialog
-          machineId={value.id}
-          buttonVariant={"ghost"}
-          className="flex-none border-none bg-transparent"
-        />
-      ) : (
+      <Link to="/machines/$machineId" params={{ machineId: value?.id }}>
         <Button
           variant={"ghost"}
           className="flex-none border-none hover:bg-transparent"
-          // disabled={valueId === shareMachine?.id}
         >
           <Settings size={14} />
         </Button>
-      )}
+      </Link>
     </div>
   );
 }

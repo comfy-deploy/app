@@ -1,12 +1,13 @@
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useSessionAPI } from "@/hooks/use-session-api";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useUpdateServerActionDialog } from "../auto-form/auto-form-dialog";
 import { machineGPUOptions } from "../machine/machine-schema";
 import { Button } from "../ui/button";
 import { useLogStore } from "./LogContext";
+import { useMachine } from "@/hooks/use-machine";
 
 type SessionCreateProps = {
   workflowId: string;
@@ -26,6 +27,7 @@ export function SessionCreate({
 }: SessionCreateProps) {
   const { workflow } = useCurrentWorkflow(workflowId);
   const machineId = workflow?.selected_machine_id;
+  const { data: machine, isLoading: machineLoading } = useMachine(machineId);
   const { createSession, listSession, deleteSession } =
     useSessionAPI(machineId);
   const { open, ui, setOpen } = useUpdateServerActionDialog({
@@ -82,42 +84,45 @@ export function SessionCreate({
       }
     },
   });
+
+  const handleOpenDialog = () => {
+    if (!machine || machineLoading) return;
+    if (machine.status === "error") {
+      toast.error("Machine is in a failed state. Please rebuild the machine.");
+      return;
+    }
+
+    setOpen({
+      gpu: (localStorage.getItem("lastGPUSelection") ||
+        "A10G") as (typeof machineGPUOptions)[number],
+      timeout: Number.parseInt(
+        localStorage.getItem("lastTimeoutSelection") || "15",
+      ),
+    });
+  };
+
   return (
     <>
       {ui}
       {asChild && (
         // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-        <div
-          className="flex-auto"
-          onClick={() =>
-            setOpen({
-              gpu: (localStorage.getItem("lastGPUSelection") ||
-                "A10G") as (typeof machineGPUOptions)[number],
-              timeout: Number.parseInt(
-                localStorage.getItem("lastTimeoutSelection") || "15",
-              ),
-            })
-          }
-        >
+        <div className="flex-auto" onClick={handleOpenDialog}>
           {children}
         </div>
       )}
       {!asChild && (
         <Button
-          className="flex-auto gap-1"
-          onClick={() =>
-            setOpen({
-              gpu: (localStorage.getItem("lastGPUSelection") ||
-                "A10G") as (typeof machineGPUOptions)[number],
-              timeout: Number.parseInt(
-                localStorage.getItem("lastTimeoutSelection") || "15",
-              ),
-            })
-          }
+          className="flex-auto gap-2"
+          disabled={!machine || machineLoading}
+          onClick={handleOpenDialog}
           size={btnSize}
         >
           {btnText}
-          <Plus size={16} />
+          {machineLoading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Plus size={16} />
+          )}
         </Button>
       )}
     </>
