@@ -12,12 +12,23 @@ import { useWorkflowVersion } from "../workflow-list";
 import { useWorkflowStore } from "./Workspace";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useMachine } from "@/hooks/use-machine";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { callServerPromise } from "@/lib/call-server-promise";
+import { api } from "@/lib/api";
 
 interface WorkspaceButtonProps {
   endpoint: string;
 }
 
 export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
+  const match = useMatch({
+    from: "/sessions/$sessionId/",
+    shouldThrow: false,
+  });
+
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const data = useMemo(() => {
     return {
@@ -36,12 +47,71 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
     };
   }, []);
 
+  const { data: session, refetch } = useQuery<any>({
+    queryKey: ["session", match?.params.sessionId],
+    enabled: !!match?.params.sessionId,
+  });
+
+  const { data: machine } = useMachine(session?.machine_id);
+
   useWorkspaceButtons(data, endpoint);
+
+  const [machineName, setMachineName] = useState(machine?.name);
 
   return (
     <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>
       <DialogContent hideOverlay className="sm:max-w-[425px]">
-        hi
+        {machine && <>{machine.name}</>}
+
+        {!machine && (
+          <div className="flex flex-col gap-2">
+            <p>No machine</p>
+            <Input
+              placeholder="Machine Name"
+              value={machineName}
+              onChange={(e) => setMachineName(e.target.value)}
+            />
+            <Button
+              onClick={async () => {
+                await callServerPromise(
+                  api({
+                    url: `session/${match?.params.sessionId}/snapshot`,
+                    init: {
+                      method: "POST",
+                      body: JSON.stringify({
+                        machine_name: machineName,
+                      }),
+                    },
+                  }),
+                );
+                await refetch();
+              }}
+            >
+              Create Machine
+            </Button>
+          </div>
+        )}
+
+        {machine && (
+          <div>
+            <p>Machine</p>
+            <p>{machine.name}</p>
+            <Button
+              onClick={async () => {
+                await callServerPromise(
+                  api({
+                    url: `session/${match?.params.sessionId}/snapshot`,
+                    init: {
+                      method: "POST",
+                    },
+                  }),
+                );
+              }}
+            >
+              Save Snapshot
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
