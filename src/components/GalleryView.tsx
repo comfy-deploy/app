@@ -1,9 +1,9 @@
-"use client";
-
 import { FileURLRender } from "@/components/workflows/OutputRender";
-import { cn } from "@/lib/utils";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { VirtualizedInfiniteGrid } from "./VirtualizedInfiniteGrid";
+import { Button } from "@/components/ui/button";
+import { useEffect, useRef } from "react";
+import { Search } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 
 type GalleryViewProps = {
   workflowID: string;
@@ -35,35 +35,108 @@ export function useGalleryData(workflow_id: string) {
   });
 }
 
-export function GalleryView({
-  workflowID,
-  className,
-  paginationClassName,
-}: GalleryViewProps) {
+export function GalleryView({ workflowID }: GalleryViewProps) {
   const query = useGalleryData(workflowID);
+  const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate({
+    from: "/workflows/$workflowId/$view",
+  });
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && query.hasNextPage && !query.isFetching) {
+          query.fetchNextPage();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (loadMoreButtonRef.current) {
+      observer.observe(loadMoreButtonRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [query.hasNextPage, query.isFetching, query.fetchNextPage]);
 
   return (
-    <VirtualizedInfiniteGrid
-      queryResult={query}
-      renderItem={(output) => {
-        const outputUrl =
-          output.data?.images?.[0]?.url ||
-          output.data?.gifs?.[0]?.url ||
-          output.data?.mesh?.[0]?.url ||
-          "";
+    <div className="mx-auto w-full max-w-[1200px]">
+      <div className="m-4 columns-2 gap-0.5 overflow-clip rounded-xl sm:columns-3 lg:columns-4">
+        {query.data?.pages.flat().map((page) => {
+          const outputUrl =
+            page.data?.images?.[0]?.url ||
+            page.data?.gifs?.[0]?.url ||
+            page.data?.mesh?.[0]?.url ||
+            "";
 
-        return (
-          <FileURLRender
-            onLoad={output.onLoad}
-            url={outputUrl}
-            imgClasses="w-full h-full object-contain max-w-full"
-          />
-        );
-      }}
-      renderLoading={() => <div>Loading more...</div>}
-      estimateSize={200} // Adjust this based on your expected row height
-      // className="w-[calc(100%+5rem)] h-full -mx-6 md:-mx-10"
-      className={cn("h-full w-full", className)}
-    />
+          const totalTime =
+            Math.round((page.run_duration + page.queue_time) * 10) / 10;
+
+          return (
+            // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+            <div
+              key={page.output_id}
+              className="group relative cursor-pointer"
+              onClick={() => {
+                navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: {
+                    workflowId: workflowID,
+                    view: "requests",
+                  },
+                  search: {
+                    "run-id": page.run_id,
+                  },
+                });
+              }}
+            >
+              <FileURLRender
+                url={outputUrl}
+                imgClasses="w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none"
+              />
+              <div className="absolute bottom-0 left-0 w-full bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                <div className="flex items-center justify-between px-4 py-3 drop-shadow-md">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/90 text-xs">{totalTime}s</span>
+                    {page.data?.images?.[0]?.filename && (
+                      <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] text-white/90">
+                        {page.data?.images?.[0]?.filename}
+                      </span>
+                    )}
+                  </div>
+                  <Search className="h-3.5 w-3.5 text-white/90" />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="fixed top-0 left-0 h-20 w-full bg-gradient-to-b from-white to-transparent" />
+
+      <div className="flex items-center justify-center gap-2 pb-4">
+        {query.hasNextPage ? (
+          <Button
+            ref={loadMoreButtonRef}
+            variant="outline"
+            onClick={() => query.fetchNextPage()}
+            disabled={!query.hasNextPage || query.isFetching}
+          >
+            {query.isFetching
+              ? "Loading..."
+              : query.hasNextPage
+                ? "Load More"
+                : "No More Results"}
+          </Button>
+        ) : (
+          <div className="mt-2 border-gray-200 border-t-2 pt-2">
+            <span className="text-muted-foreground text-xs">
+              Total: {query.data?.pages.flat().length} results
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
