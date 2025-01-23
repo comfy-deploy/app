@@ -20,6 +20,7 @@ type setOpenImage = {
 const BATCH_SIZE = 20;
 
 export function useGalleryData(workflow_id: string) {
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   return useInfiniteQuery<any[]>({
     queryKey: ["workflow", workflow_id, "gallery"],
     meta: {
@@ -33,6 +34,25 @@ export function useGalleryData(workflow_id: string) {
     },
     initialPageParam: 0,
   });
+}
+
+function GallerySkeleton() {
+  const heights = [200, 400, 300, 600, 400, 200, 400, 200, 200, 400, 300, 200];
+
+  return (
+    <div className="m-4 columns-2 gap-0.5 overflow-clip rounded-xl sm:columns-3 lg:columns-4">
+      {heights.map((height, index) => (
+        <div
+          // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+          key={index}
+          className={
+            "mb-0.5 w-full animate-pulse break-inside-avoid rounded-[4px] bg-gray-200"
+          }
+          style={{ height: `${height}px` }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export function GalleryView({ workflowID }: GalleryViewProps) {
@@ -59,6 +79,14 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
 
     return () => observer.disconnect();
   }, [query.hasNextPage, query.isFetching, query.fetchNextPage]);
+
+  if (query.isLoading) {
+    return (
+      <div className="mx-auto w-full max-w-[1200px]">
+        <GallerySkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1200px]">
