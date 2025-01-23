@@ -29,14 +29,7 @@ export function WorkspaceClientWrapper({
     isLoading: isLoadingWorkflow,
   } = useCurrentWorkflow(props.workflow_id ?? null);
 
-  useEffect(() => {
-    if (props.workflow_id && workflow) {
-      console.log("workflow", workflow);
-      sendWorkflow(workflow.versions[0].workflow);
-    }
-  }, [props.workflow_id]);
-
-  const { data: versions, isLoading: isLoadingVersions } = useQuery({
+  const { data: versions, isLoading: isLoadingVersions } = useQuery<any>({
     enabled: !!props.workflow_id,
     queryKey: ["workflow", props.workflow_id, "versions"],
     queryKeyHashFn: (queryKey) => [...queryKey, "latest"].toString(),
@@ -44,6 +37,13 @@ export function WorkspaceClientWrapper({
       limit: 1,
     },
   });
+
+  useEffect(() => {
+    if (props.workflow_id && versions) {
+      console.log("workflow", versions);
+      sendWorkflow(versions[0].workflow);
+    }
+  }, [props.workflow_id, versions]);
 
   const { data: machine, isLoading } = useMachine(
     workflow?.selected_machine_id,

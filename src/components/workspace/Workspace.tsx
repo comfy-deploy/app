@@ -470,6 +470,9 @@ export default function Workspace({
               ? `${endpoint}?native_mode=true`
               : `${endpoint}?workspace_mode=true`
           }
+          style={{
+            userSelect: "none",
+          }}
           className={cn(
             "inset-0 h-full w-full border-none transition-opacity ",
             !cdSetup && "opacity-0",
