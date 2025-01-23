@@ -1,6 +1,6 @@
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useWorkspaceButtons } from "./workspace-control";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { WorkflowList } from "@/components/workflow-dropdown";
 import { VersionList } from "@/components/version-select";
 import { WorkflowCommitVersion } from "./WorkflowCommitVersion";
@@ -13,11 +13,13 @@ import { useWorkflowStore } from "./Workspace";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useMachine } from "@/hooks/use-machine";
+import { useMachine, useMachineVersions } from "@/hooks/use-machine";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { api } from "@/lib/api";
+import { ExternalLink } from "lucide-react";
+import { MachineVersionListItem } from "../machine/machine-deployment";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -58,58 +60,85 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
 
   const [machineName, setMachineName] = useState(machine?.name);
 
+  const { data: machineVersions, isLoading: isLoadingMachineVersions } =
+    useMachineVersions(machine?.id);
+
+  const versions = machineVersions?.pages[0] || [];
+
   return (
     <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>
-      <DialogContent hideOverlay className="sm:max-w-[425px]">
-        {machine && <>{machine.name}</>}
+      <DialogContent hideOverlay className="sm:max-w-[600px]">
+        <DialogTitle>Snapshot</DialogTitle>
 
         {!machine && (
           <div className="flex flex-col gap-2">
-            <p>No machine</p>
+            <div className="text-muted-foreground text-sm">
+              No existing machine, create a new one.
+            </div>
             <Input
               placeholder="Machine Name"
               value={machineName}
               onChange={(e) => setMachineName(e.target.value)}
             />
-            <Button
-              onClick={async () => {
-                await callServerPromise(
-                  api({
-                    url: `session/${match?.params.sessionId}/snapshot`,
-                    init: {
-                      method: "POST",
-                      body: JSON.stringify({
-                        machine_name: machineName,
-                      }),
-                    },
-                  }),
-                );
-                await refetch();
-              }}
-            >
-              Create Machine
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                className="w-fit"
+                onClick={async () => {
+                  await callServerPromise(
+                    api({
+                      url: `session/${match?.params.sessionId}/snapshot`,
+                      init: {
+                        method: "POST",
+                        body: JSON.stringify({
+                          machine_name: machineName,
+                        }),
+                      },
+                    }),
+                  );
+                  await refetch();
+                }}
+              >
+                Create Machine
+              </Button>
+            </div>
           </div>
         )}
 
         {machine && (
-          <div>
-            <p>Machine</p>
-            <p>{machine.name}</p>
-            <Button
-              onClick={async () => {
-                await callServerPromise(
-                  api({
-                    url: `session/${match?.params.sessionId}/snapshot`,
-                    init: {
-                      method: "POST",
-                    },
-                  }),
-                );
-              }}
+          <div className="flex flex-col gap-2">
+            <Link
+              target="_blank"
+              to="/machines/$machineId"
+              className="flex items-center gap-2 hover:underline"
+              params={{ machineId: machine.id }}
             >
-              Save Snapshot
-            </Button>
+              {machine.name}
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+            {versions?.map((version) => (
+              <MachineVersionListItem
+                key={version.id}
+                machineVersion={version}
+                machine={machine}
+                target={"_blank"}
+              />
+            ))}
+            <div className="flex justify-end">
+              <Button
+                onClick={async () => {
+                  await callServerPromise(
+                    api({
+                      url: `session/${match?.params.sessionId}/snapshot`,
+                      init: {
+                        method: "POST",
+                      },
+                    }),
+                  );
+                }}
+              >
+                Create new Snapshot
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
