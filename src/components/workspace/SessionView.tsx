@@ -321,7 +321,7 @@ export function SessionCreator(props: {
     );
   }
 
-  if (Number.parseInt(machineBuilderVersion) < 4) {
+  if (!!props.sessionIdOverride && Number.parseInt(machineBuilderVersion) < 4) {
     return (
       <div className={cn("flex h-full w-full items-center justify-center")}>
         Machine builder version {machineBuilderVersion} is not supported for

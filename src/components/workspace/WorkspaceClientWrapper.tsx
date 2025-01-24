@@ -86,8 +86,8 @@ export function WorkspaceClientWrapper({
     );
 
   const machineBuilderVersion = machine?.machine_builder_version;
-
-  if (!!sessionIdOverride || Number.parseInt(machineBuilderVersion) >= 4) {
+  // || Number.parseInt(machineBuilderVersion) >= 4
+  if (sessionIdOverride) {
     return (
       <SessionCreator
         workflowId={props.workflow_id}
