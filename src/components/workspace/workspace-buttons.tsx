@@ -60,7 +60,9 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
         },
         {
           id: "assets",
-          icon: "pi-image",
+          icon: "pi-box",
+          label: "Assets",
+          //   icon: "pi-image",
           tooltip: "Assets",
           event: "assets",
           //   btnClasses:
@@ -484,6 +486,18 @@ export function ClearContainerButtons({ endpoint }: WorkspaceButtonProps) {
     {
       containerSelector:
         "body > div.comfyui-body-top > div > div.flex-grow.min-w-0.app-drag.h-full",
+      buttonConfigs: [],
+      buttonIdPrefix: "cd-button-p-",
+      containerStyle: { order: "-1" },
+      clearContainer: true,
+    },
+    endpoint,
+  );
+
+  useWorkspaceButtons(
+    {
+      containerSelector:
+        "body > div.graph-canvas-container > div > div.p-splitterpanel.p-splitterpanel-nested > div > div.p-splitterpanel.graph-canvas-panel.relative > div",
       buttonConfigs: [],
       buttonIdPrefix: "cd-button-p-",
       containerStyle: { order: "-1" },
