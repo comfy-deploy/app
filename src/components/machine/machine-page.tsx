@@ -63,7 +63,7 @@ export default function MachinePage({
                 params={{ machineId: machine.id }}
                 className="flex flex-row items-center gap-2 text-sm"
               >
-                {machine.name}
+                <span className="max-w-[100px] truncate">{machine.name}</span>
                 {machine.machine_version_id && (
                   <MachineVersionBadge machine={machine} isExpanded={true} />
                 )}
