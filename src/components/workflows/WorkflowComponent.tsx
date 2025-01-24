@@ -85,7 +85,9 @@ function RunDetails(props: {
     refetchInterval: (query) => {
       if (
         query.state.data?.status === "running" ||
-        query.state.data?.status === "uploading"
+        query.state.data?.status === "uploading" ||
+        query.state.data?.status === "not-started" ||
+        query.state.data?.status === "queued"
       ) {
         return 2000;
       }

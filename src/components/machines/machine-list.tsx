@@ -607,15 +607,16 @@ export function RebuildMachineDialog({
                     }),
                     {
                       loadingText: "Rebuilding machine",
+                      successMessage: "Redirecting to machine page...",
+                      onSuccess: () => {
+                        navigate({
+                          to: "/machines/$machineId",
+                          params: { machineId: machine.id },
+                        });
+                      },
                     },
                   );
-                  toast.success("Rebuild machine successfully");
-                  toast.info("Redirecting to machine page...");
                   await new Promise((resolve) => setTimeout(resolve, 1000));
-                  navigate({
-                    to: "/machines/$machineId",
-                    params: { machineId: machine.id },
-                  });
                 } catch {
                   toast.error("Failed to rebuild machine");
                 }

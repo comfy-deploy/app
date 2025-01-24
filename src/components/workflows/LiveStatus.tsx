@@ -110,7 +110,7 @@ export function LiveStatus({
               realtimeStatus={realtimeStatus}
             />
           </ErrorBoundary>
-          <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xs">
+          {/* <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xs">
             {!ended &&
               !liveStatus &&
               (run.queued_at !== undefined ? (
@@ -118,7 +118,7 @@ export function LiveStatus({
               ) : (
                 <Badge>In Queue</Badge>
               ))}
-          </div>
+          </div> */}
         </div>
         {/* <div className="flex justify-end items-center col-span-3 space-x-2">
           <div className="flex items-start flex-col">
@@ -165,7 +165,7 @@ export function LiveStatus({
         </div>
       )}
       <div className="col-span-3 flex items-center justify-end space-x-2">
-        <div className="flex flex-col items-start">
+        {/* <div className="flex flex-col items-start">
           <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xs">
             {!ended &&
               !liveStatus &&
@@ -175,7 +175,7 @@ export function LiveStatus({
                 <Badge className="text-2xs">In Queue</Badge>
               ))}
           </div>
-        </div>
+        </div> */}
         <ErrorBoundary
           fallback={(error) => (
             <Tooltip>

@@ -12,6 +12,7 @@ export async function callServerPromise<T>(
       name: string;
       action: () => void;
     };
+    onSuccess?: () => void;
   },
 ) {
   let id: string | number;
@@ -24,6 +25,7 @@ export async function callServerPromise<T>(
       setTimeout(() => {
         if ((x as { message: string })?.message !== undefined) {
           toast.success((x as { message: string }).message);
+          props?.onSuccess?.();
         } else if ((x as { error: string })?.error !== undefined) {
           const error = (x as { error: string }).error;
           reportError(error);
