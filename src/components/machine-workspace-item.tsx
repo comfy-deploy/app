@@ -42,7 +42,7 @@ export function MachineWorkspaceItem({
   const { createDynamicSession, deleteSession } = useSessionAPI();
   const [openFocus, setOpenFocus] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-
+  const workflowId = useWorkflowIdInWorkflowPage();
   const handleStartSession = async () => {
     const response = await createDynamicSession.mutateAsync({
       machine_id: machine.id,
@@ -57,7 +57,8 @@ export function MachineWorkspaceItem({
         sessionId: response.session_id,
       },
       search: {
-        machineId: machine.id,
+        ...(isInWorkspace && { workflowId: workflowId || undefined }),
+        ...(!isInWorkspace && { machineId: machine.id }),
       },
     });
   };
@@ -181,6 +182,7 @@ function MachineSessionList({
   isHovered,
 }: { currentMachine: any; deleteSession: any; isHovered: boolean }) {
   const navigate = useNavigate();
+  const workflowId = useWorkflowIdInWorkflowPage();
   const { data: activeSessions } = useQuery<any[]>({
     queryKey: ["sessions"],
     refetchInterval: 2000,
@@ -201,12 +203,9 @@ function MachineSessionList({
       onMouseEnter={() => setIsListHovered(true)}
       onMouseLeave={() => setIsListHovered(false)}
     >
-      <div className="flex flex-row items-center gap-2 px-4 py-1">
-        <div className="mt-0.5 h-2 w-2 animate-pulse rounded-full bg-green-500" />
-        <span className="text-2xs text-blue-900">
-          Active ComfyUI: {activeSessions.length}
-        </span>
-      </div>
+      <span className="px-4 text-2xs text-blue-900">
+        Active ComfyUI: {activeSessions.length}
+      </span>
       <AnimatePresence>
         {shouldShowList && (
           <motion.div
@@ -250,9 +249,7 @@ function MachineSessionList({
                             params: {
                               sessionId: session.session_id,
                             },
-                            search: {
-                              machineId: session.machine_id,
-                            },
+                            search: { workflowId: workflowId || undefined },
                           });
                         }}
                       >
