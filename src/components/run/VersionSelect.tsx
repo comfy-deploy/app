@@ -195,6 +195,7 @@ export function RunWorkflowButton({
   });
   const [runID, setRunID] = useQueryState("runID");
   const machine = workflow?.selected_machine_id;
+  const { data: currentMachine } = useMachine(machine);
   const [isLoading, setIsLoading] = useState(false);
   const [isVersionDisabled, setIsVersionDisabled] = useState(false);
 
@@ -359,7 +360,14 @@ export function RunWorkflowButton({
               className={cn("appearance-none hover:cursor-pointer", className)}
               ref={ref}
             >
-              <Button className={cn("gap-2")} disabled={isLoading || !machine}>
+              <Button
+                className={cn("gap-2")}
+                disabled={
+                  isLoading ||
+                  !currentMachine ||
+                  currentMachine.status === "error"
+                }
+              >
                 Run {isLoading ? <LoadingIcon /> : <Play size={14} />}
               </Button>
             </DialogTrigger>
@@ -367,6 +375,14 @@ export function RunWorkflowButton({
           {!machine && (
             <TooltipContent>
               <p>Select a machine to run the workflow</p>
+            </TooltipContent>
+          )}
+          {currentMachine?.status === "error" && (
+            <TooltipContent>
+              <p>
+                There is some issue with your machine. Please rebuild your
+                machine.
+              </p>
             </TooltipContent>
           )}
         </Tooltip>
