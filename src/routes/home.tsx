@@ -243,7 +243,7 @@ function SessionsList() {
             onClick={async () => {
               const response = await createDynamicSession.mutateAsync({
                 gpu: gpu,
-                comfyui_version: comfyui_version,
+                comfyui_hash: comfyui_version,
                 timeout: timeout,
               });
               useLogStore.getState().clearLogs();

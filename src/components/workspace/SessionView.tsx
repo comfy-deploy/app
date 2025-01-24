@@ -174,8 +174,8 @@ export function getSessionStatus(session: any, isLive: boolean | undefined) {
 
   if (isLive === false) {
     return {
-      message: "Reconnecting",
-      description: "Attempting to reconnect to your session...",
+      message: "Connecting",
+      description: "Attempting to connect to your session...",
       isError: false,
     };
   }
