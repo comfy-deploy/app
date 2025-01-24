@@ -104,7 +104,7 @@ export function SessionIncrementDialog() {
               </span>
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center justify-between rounded-none bg-muted/50 px-0 px-2 py-3">
+              <div className="flex items-center justify-between rounded-none bg-muted/50 px-2 py-3">
                 <div className="flex items-center gap-2">
                   <History className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium text-sm">Execution</span>

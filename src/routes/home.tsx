@@ -17,6 +17,13 @@ import { UserIcon } from "@/components/run/SharePageComponent";
 import { Badge } from "@/components/ui/badge";
 import { getRelativeTime } from "@/lib/get-relative-time";
 import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -59,11 +66,13 @@ function SessionsList() {
     defaultValues: {
       gpu: "A10G",
       comfyui_version: comfyui_hash,
+      timeout: 15,
     },
   });
 
   const gpu = form.watch("gpu");
   const comfyui_version = form.watch("comfyui_version");
+  const timeout = form.watch("timeout");
 
   // const data = [
   //   {
@@ -198,6 +207,22 @@ function SessionsList() {
               onChange={(value) => form.setValue("gpu", value)}
             />
           </div>
+          <div className="flex flex-row items-center gap-2">
+            <Select
+              value={timeout.toString()}
+              onValueChange={(value) => form.setValue("timeout", Number(value))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select GPU">{timeout}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2 minutes</SelectItem>
+                <SelectItem value="15">15 minutes</SelectItem>
+                <SelectItem value="30">30 minutes</SelectItem>
+                <SelectItem value="60">1 hour</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {/* <Button
             variant="outline"
             Icon={Settings}
@@ -219,7 +244,7 @@ function SessionsList() {
               const response = await createDynamicSession.mutateAsync({
                 gpu: gpu,
                 comfyui_version: comfyui_version,
-                timeout: 15,
+                timeout: timeout,
               });
               useLogStore.getState().clearLogs();
 

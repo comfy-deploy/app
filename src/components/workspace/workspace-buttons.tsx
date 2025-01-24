@@ -1,25 +1,39 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { useWorkspaceButtons } from "./workspace-control";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogHeader,
+} from "@/components/ui/dialog";
 import { WorkflowList } from "@/components/workflow-dropdown";
 import { VersionList } from "@/components/version-select";
 import { WorkflowCommitVersion } from "./WorkflowCommitVersion";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMatch } from "@tanstack/react-router";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useWorkflowVersion } from "../workflow-list";
 import { useWorkflowStore } from "./Workspace";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useMachine, useMachineVersions } from "@/hooks/use-machine";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { api } from "@/lib/api";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, History, Plus } from "lucide-react";
 import { MachineVersionListItem } from "../machine/machine-deployment";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Progress } from "../ui/progress";
+import { Timer } from "../workflows/Timer";
+import { toast } from "sonner";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -43,6 +57,14 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
           tooltip: "Save the current image to your output directory.",
           event: "save_image",
           onClick: (_: string, __: unknown) => setIsWorkflowDialogOpen(true),
+        },
+        {
+          id: "assets",
+          icon: "pi-image",
+          tooltip: "Assets",
+          event: "assets",
+          //   btnClasses:
+          //     "p-button p-component p-button-icon-only p-button-secondary p-button-text",
         },
       ],
       buttonIdPrefix: "cd-button-",
@@ -178,26 +200,174 @@ export function LeftMenuButtons({ endpoint }: WorkspaceButtonProps) {
 }
 
 export function QueueButtons({ endpoint }: WorkspaceButtonProps) {
+  const match = useMatch({
+    from: "/sessions/$sessionId/",
+    shouldThrow: false,
+  });
+
+  const { data: session, refetch } = useQuery<any>({
+    queryKey: ["session", match?.params.sessionId],
+    enabled: !!match?.params.sessionId,
+    refetchInterval: 1000,
+  });
+
+  const [timerDialogOpen, setTimerDialogOpen] = useState(false);
+  const [selectedIncrement, setSelectedIncrement] = useState("5");
+
+  const [countdown, setCountdown] = useState("");
+
+  useEffect(() => {
+    if (!session?.timeout_end) return;
+
+    const targetTime = new Date(session.timeout_end).getTime();
+
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const distance = targetTime - now;
+
+      if (distance < 0) {
+        setCountdown("00:00:00");
+        return;
+      }
+
+      const hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setCountdown(
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+      );
+    };
+
+    const intervalId = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [session?.timeout_end]);
+
   const data = useMemo(() => {
+    const targetTime = session?.timeout_end
+      ? new Date(session.timeout_end).getTime()
+      : 0;
+    const now = new Date().getTime();
+    const distance = targetTime - now;
+    const isLessThan10Seconds = distance > 0 && distance < 20000;
+
     return {
       containerSelector: ".queue-button-group.flex",
       buttonConfigs: [
         {
-          id: "assets",
-          icon: "pi-image",
-          tooltip: "Assets",
-          event: "assets",
-          btnClasses:
-            "p-button p-component p-button-icon-only p-button-secondary p-button-text",
+          id: "timeout",
+          label: `${countdown} left`,
+          icon: "pi-stopwatch",
+          tooltip: "Timeout",
+          event: "timeout",
+          style: {
+            backgroundColor: isLessThan10Seconds
+              ? "oklch(.476 .114 61.907)"
+              : "",
+          },
+          btnClasses: "p-button p-component p-button-text",
+          onClick: (_: string, __: unknown) => setTimerDialogOpen(true),
         },
       ],
       buttonIdPrefix: "cd-button-queue-",
     };
-  }, []);
+  }, [countdown, session?.timeout_end]);
+
+  const timeIncrements = [
+    { value: "1", label: "1 minute" },
+    { value: "5", label: "5 minutes" },
+    { value: "10", label: "10 minutes" },
+    { value: "15", label: "15 minutes" },
+  ];
+
+  const incrementTime = async () => {
+    if (!session) {
+      toast.error("Session details not found");
+      return;
+    }
+
+    await callServerPromise(
+      api({
+        url: `session/${match?.params.sessionId}/increase-timeout`,
+        init: {
+          method: "POST",
+          body: JSON.stringify({
+            minutes: Number(selectedIncrement),
+          }),
+        },
+      }),
+    );
+
+    await refetch();
+    // toast.success(`Session time increased by ${selectedIncrement} minutes`);
+    setTimerDialogOpen(false);
+  };
 
   useWorkspaceButtons(data, endpoint);
 
-  return <></>;
+  return (
+    <Dialog open={timerDialogOpen} onOpenChange={setTimerDialogOpen}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>Increase Session Time</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center text-muted-foreground text-sm">
+              <span className="flex items-center space-x-2">
+                Instance:{" "}
+                <span className="ml-1 font-medium">{session?.gpu}</span>
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between rounded-none bg-muted/50 px-0 px-2 py-3">
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium text-sm">Time Remaining</span>
+                </div>
+                <span className="font-medium text-sm">{countdown}</span>
+              </div>
+              {session?.timeout && session?.created_at && (
+                <Progress
+                  value={
+                    ((new Date(session.timeout_end).getTime() -
+                      new Date().getTime()) /
+                      (new Date(session.timeout_end).getTime() -
+                        new Date(session.created_at).getTime())) *
+                    100
+                  }
+                  className="h-2"
+                />
+              )}
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Select
+              value={selectedIncrement}
+              onValueChange={setSelectedIncrement}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Minutes" />
+              </SelectTrigger>
+              <SelectContent>
+                {timeIncrements.map((increment) => (
+                  <SelectItem key={increment.value} value={increment.value}>
+                    {increment.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={incrementTime} className="flex-1">
+              <Plus className="mr-2 h-4 w-4" /> Add Time
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 interface WorkflowButtonsProps extends WorkspaceButtonProps {}

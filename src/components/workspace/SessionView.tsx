@@ -151,15 +151,67 @@ export function ModelsButton(props: {
   );
 }
 
-export function SessionLoading() {
+export function getSessionStatus(session: any, isLive: boolean | undefined) {
+  if (!session) {
+    return {
+      message: "Session Not Found",
+      description: "The session may have expired or been terminated.",
+      isError: true,
+    };
+  }
+
+  if (session.timeout_end) {
+    const timeoutDate = new Date(session.timeout_end);
+    const now = new Date();
+    if (now > timeoutDate) {
+      return {
+        message: "Session Timeout",
+        description: `Session timed out at ${timeoutDate.toLocaleTimeString()}`,
+        isError: true,
+      };
+    }
+  }
+
+  if (isLive === false) {
+    return {
+      message: "Reconnecting",
+      description: "Attempting to reconnect to your session...",
+      isError: false,
+    };
+  }
+
+  if (session.status === "error") {
+    return {
+      message: "Session Error",
+      description: session.error || "An error occurred with your session.",
+      isError: true,
+    };
+  }
+
+  return {
+    message: "Warming Up",
+    description: "Your session is being prepared. This may take a few moments.",
+    isError: false,
+  };
+}
+
+export function SessionLoading({
+  session,
+  isLive,
+}: { session?: any; isLive?: boolean }) {
+  const status = getSessionStatus(session, isLive);
+
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
       <div className="flex flex-col items-center gap-4 p-6">
         <h2 className="flex items-center gap-2 font-semibold">
-          Warming Up <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          {status.message}{" "}
+          {!status.isError && (
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          )}
         </h2>
         <p className="text-center text-muted-foreground text-xs">
-          Your session is being prepared. This may take a few moments.
+          {status.description}
         </p>
         <LogDisplay />
       </div>
@@ -332,7 +384,7 @@ export function SessionCreator(props: {
 
   if (sessionId) {
     if (!url || !isLive) {
-      return <SessionLoading />;
+      return <SessionLoading session={session} isLive={isLive} />;
     }
 
     if (url && isLive) {
