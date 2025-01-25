@@ -98,12 +98,20 @@ export function VersionList({
   onClose,
   selectedVersion,
   className,
+  height,
+  renderItem,
+  hideSearch,
+  containerClassName,
 }: {
   workflow_id: string;
   onSelect?: (version: WorkflowType) => void;
   onClose?: () => void;
   selectedVersion?: WorkflowType;
   className?: string;
+  renderItem?: (item: WorkflowType) => React.ReactNode;
+  height?: number;
+  hideSearch?: boolean;
+  containerClassName?: string;
 }) {
   const [searchValue, setSearchValue] = React.useState("");
   const [debouncedSearchValue] = useDebounce(searchValue, 250);
@@ -145,40 +153,47 @@ export function VersionList({
   return (
     <div className={cn("w-[375px] overflow-hidden", className)}>
       {dialog}
-      <div className="relative p-2">
-        <Search className="-translate-y-1/2 absolute top-1/2 left-6 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search versions..."
-          className="pl-12 text-sm"
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-        />
-      </div>
+      {!hideSearch && (
+        <div className="relative p-2">
+          <Search className="-translate-y-1/2 absolute top-1/2 left-6 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search versions..."
+            className="pl-12 text-sm"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+          />
+        </div>
+      )}
       <VirtualizedInfiniteList
         queryResult={query}
-        renderItem={(item) => (
-          <VersionRow
-            item={item as WorkflowType}
-            selected={version}
-            onSelect={(item) => {
-              if (onSelect) {
-                onSelect(item);
-              } else {
-                if (hasChanged) {
-                  setOpenDialog(item);
+        className={containerClassName}
+        renderItem={(item) =>
+          renderItem ? (
+            renderItem(item)
+          ) : (
+            <VersionRow
+              item={item as WorkflowType}
+              selected={version}
+              onSelect={(item) => {
+                if (onSelect) {
+                  onSelect(item);
                 } else {
-                  setVersion(item.version);
-                  sendWorkflow(item.workflow);
-                  onClose?.();
+                  if (hasChanged) {
+                    setOpenDialog(item);
+                  } else {
+                    setVersion(item.version);
+                    sendWorkflow(item.workflow);
+                    onClose?.();
+                  }
                 }
-              }
-            }}
-            isAdminAndMember={isAdminAndMember}
-            setOpen={setOpenDialog}
-          />
-        )}
+              }}
+              isAdminAndMember={isAdminAndMember}
+              setOpen={setOpenDialog}
+            />
+          )
+        }
         renderLoading={() => <LoadingRow />}
-        estimateSize={100}
+        estimateSize={height ?? 100}
       />
     </div>
   );

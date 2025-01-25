@@ -37,6 +37,7 @@ import {
   useQuery,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { getTotalUrlCountAndUrls } from "./OutputRender";
 
 interface RunsTableState {
   selectedRun: any | null;
@@ -59,6 +60,7 @@ export function RunsTable(props: {
   filterWorkspace?: boolean;
   loadingIndicatorClassName?: string;
   defaultData?: any;
+  className?: string;
 }) {
   const selectedRun = useRunsTableStore((state) => state.selectedRun);
 
@@ -88,6 +90,7 @@ export function RunsTable(props: {
         )}
       >
         <RunsTableVirtualized
+          className={props.className}
           defaultData={props.defaultData}
           workflow_id={props.workflow_id}
           minimal={props.minimal}
@@ -275,7 +278,7 @@ export function RunsTableVirtualized(props: {
 
   return (
     <div>
-      <div className="relative">
+      {/* <div className="relative">
         <div className="-top-10 absolute right-28 z-10 flex flex-row gap-2 p-2">
           <Tooltip>
             <TooltipTrigger>
@@ -296,11 +299,10 @@ export function RunsTableVirtualized(props: {
                   ? "Connected"
                   : "Disconnected"}
               </p>
-              {/* <p>Socket: {socket?.active ? "Connected" : "Disconnected"}</p> */}
             </TooltipContent>
           </Tooltip>
         </div>
-      </div>
+      </div> */}
       <div
         ref={parentRef}
         className={cn(
@@ -313,8 +315,8 @@ export function RunsTableVirtualized(props: {
             height: `${rowVirtualizer.getTotalSize()}px`,
             width: "100%",
             position: "relative",
-            marginBottom: "16px",
-            marginTop: "16px",
+            // marginBottom: "16px",
+            // marginTop: "16px",
           }}
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -367,7 +369,7 @@ export function RunsTableVirtualized(props: {
             <LoadingSpinner />
           </div>
         )}
-        <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-full rounded-b-md bg-gradient-to-b from-transparent to-white" />
+        {/* <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-full rounded-b-md bg-gradient-to-b from-transparent to-white" /> */}
         {/* <ScrollBar orientation="vertical" /> */}
       </div>
     </div>
@@ -434,12 +436,51 @@ function RunRow({
         <span className="col-span-3 text-2xs text-gray-500">
           {getRelativeTime(run.created_at)}
         </span>
-        <div className="col-span-4 flex items-center justify-end gap-2">
+        <div className="col-span-2">
+          <OutputPreview runId={run.id} />
+        </div>
+        <div className="col-span-2 flex items-center justify-end gap-2">
           <LiveStatus run={run} refetch={refetch} />
         </div>
       </div>
     </div>
   );
+}
+
+function OutputPreview(props: {
+  runId: string;
+}) {
+  const { data: run, isLoading } = useQuery<any>({
+    queryKey: ["run", props.runId],
+    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+    refetchInterval: (query) => {
+      if (
+        query.state.data?.status === "running" ||
+        query.state.data?.status === "uploading" ||
+        query.state.data?.status === "not-started" ||
+        query.state.data?.status === "queued"
+      ) {
+        return 2000;
+      }
+      return false;
+    },
+  });
+
+  if (isLoading) return <Skeleton className="h-6 w-24" />;
+
+  const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
+    run.outputs || [],
+  );
+
+  const urlsToDisplay = 2 && urlList.length > 0 ? urlList.slice(0, 2) : urlList;
+
+  if (urlsToDisplay.length === 0) return null;
+
+  return urlsToDisplay.map((url) => (
+    <div key={url.url}>
+      <img className="h-8 w-8 rounded-[8px]" src={url.url} alt="Output" />
+    </div>
+  ));
 }
 
 function LoadingState() {

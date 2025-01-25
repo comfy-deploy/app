@@ -229,7 +229,7 @@ function FileURLRenderMulti({
   );
 }
 
-function getTotalUrlCountAndUrls(outputs: any[]) {
+export function getTotalUrlCountAndUrls(outputs: any[]) {
   const urls: any[] = [];
   const total: number =
     outputs?.reduce((total, output) => {

@@ -43,7 +43,11 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { RealtimeWorkflowProvider } from "@/components/workflows/RealtimeRunUpdate";
 import RunComponent from "@/components/workflows/RunComponent";
 import WorkflowComponent from "@/components/workflows/WorkflowComponent";
-import { ContainersTable } from "@/components/workspace/ContainersTable";
+import {
+  ContainersTable,
+  getEnvColor,
+  useWorkflowDeployments,
+} from "@/components/workspace/ContainersTable";
 import { APIDocs } from "@/components/workspace/DeploymentDisplay";
 import { LogDisplay } from "@/components/workspace/LogDisplay";
 import { useSelectedVersion } from "@/components/workspace/Workspace";
@@ -69,6 +73,9 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useMachine } from "@/hooks/use-machine";
 import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
+import { VersionList } from "@/components/version-select";
+import { Badge } from "@/components/ui/badge";
+import { getRelativeTime } from "@/lib/get-relative-time";
 
 const pages = [
   "workspace",
@@ -179,9 +186,6 @@ function WorkflowPageComponent() {
     queryKey: ["session", sessionId],
     enabled: !!sessionId,
   });
-  // const sessionSelected = sessions?.find(
-  //   (session) => session.session_id === sessionId,
-  // );
 
   const { data: selectedMachine } = useMachine(workflow?.selected_machine_id);
 
@@ -345,7 +349,7 @@ function WorkflowPageComponent() {
           <div className="flex flex-row gap-2">
             <NavItem
               to="/workflows/$workflowId/requests"
-              label="Requests"
+              label="Overview"
               // icon={Workflow}
               params={{ workflowId }}
             />
@@ -384,7 +388,7 @@ function WorkflowPageComponent() {
         {view}
       </div>
 
-      {mountedViews.has("workspace") ? (
+      {/* {mountedViews.has("workspace") ? (
         <div
           className="h-full w-full"
           style={{
@@ -393,26 +397,74 @@ function WorkflowPageComponent() {
         >
           <WorkspaceClientWrapper workflow_id={workflowId} />
         </div>
-      ) : null}
+      ) : null} */}
     </div>
   );
 }
 
 function RequestPage() {
   const { workflowId, view: currentView } = Route.useParams();
+  const { data: deployments } = useWorkflowDeployments(workflowId);
 
   return (
-    <>
+    <div className="flex flex-col gap-2 max-w-screen-lg mx-auto">
+      <div className="text-sm font-bold">Versions</div>
+      <VersionList
+        hideSearch
+        workflow_id={workflowId || ""}
+        className="w-full ring-1 ring-gray-200 rounded-md p-1"
+        containerClassName="max-h-[200px]"
+        height={40}
+        renderItem={(item) => {
+          const deployment = deployments?.find(
+            (deployment) => deployment.workflow_version_id === item.id,
+          );
+          return (
+            <div className="flex flex-row items-center justify-between gap-2 hover:bg-gray-100 py-2 px-4 rounded-md">
+              <div className="grid grid-cols-[38px_auto_1fr] items-center gap-4">
+                <Badge className="rounded-sm text-xs whitespace-nowrap w-fit">
+                  v{item.version}
+                </Badge>
+
+                <div className="text-muted-foreground text-xs truncate">
+                  {item.comment}
+                </div>
+              </div>
+              <div className="grid grid-cols-[auto_auto_100px] items-center gap-4">
+                {deployment ? (
+                  <Badge
+                    className={cn(
+                      "w-fit whitespace-nowrap rounded-sm text-xs",
+                      getEnvColor(deployment.environment),
+                    )}
+                  >
+                    {deployment?.environment}
+                  </Badge>
+                ) : (
+                  <div />
+                )}
+                <UserIcon user_id={item.user_id} className="h-5 w-5" />
+                <div className="text-muted-foreground text-xs">
+                  {getRelativeTime(item.created_at)}
+                </div>
+              </div>
+            </div>
+          );
+        }}
+      />
+      <div className="text-sm font-bold mt-4">Queues</div>
       <motion.div
         layout
-        className={cn("flex h-full w-full flex-col gap-4 pt-4 lg:flex-row")}
+        className={cn(
+          "flex h-full w-full flex-row gap-4 lg:flex-row ring-1 ring-gray-200 rounded-md",
+        )}
       >
         <RealtimeWorkflowProvider workflowId={workflowId}>
           <RunComponent />
           <WorkflowComponent />
         </RealtimeWorkflowProvider>
       </motion.div>
-    </>
+    </div>
   );
 }
 
