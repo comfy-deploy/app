@@ -44,12 +44,13 @@ export function WorkflowList({
 
   const router = useRouter();
   const query = useWorkflowList(debouncedSearchValue);
-  const workflows = useMemo(() => query.data?.pages.flat() ?? [], [query.data]);
+  // const workflows = useMemo(() => query.data?.pages.flat() ?? [], [query.data]);
   const { workflow } = useCurrentWorkflow(workflow_id);
 
   React.useEffect(() => {
+    console.log("refetch");
     query.refetch();
-  }, [query, debouncedSearchValue]);
+  }, [debouncedSearchValue]);
 
   return (
     <div className={cn("w-[375px] overflow-hidden", className)}>

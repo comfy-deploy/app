@@ -119,7 +119,7 @@ export function VersionList({
 
   React.useEffect(() => {
     query.refetch();
-  }, [query, debouncedSearchValue]);
+  }, [debouncedSearchValue]);
 
   const [_version, setVersion] = useQueryState("version", {
     defaultValue: selectedVersion?.version ?? flatData[0]?.version ?? 1,

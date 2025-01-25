@@ -38,12 +38,12 @@ export function WorkspaceClientWrapper({
     },
   });
 
-  useEffect(() => {
-    if (props.workflow_id && versions) {
-      console.log("workflow", versions);
-      sendWorkflow(versions[0].workflow);
-    }
-  }, [props.workflow_id, versions]);
+  // useEffect(() => {
+  //   if (props.workflow_id && versions) {
+  //     console.log("workflow", versions);
+  //     sendWorkflow(versions[0].workflow);
+  //   }
+  // }, [props.workflow_id, versions]);
 
   const { data: machine, isLoading } = useMachine(
     workflow?.selected_machine_id,

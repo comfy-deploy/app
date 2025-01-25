@@ -18,6 +18,7 @@ import { useWorkflowVersion } from "../workflow-list";
 type WorkflowCommitVersionProps = {
   setOpen: (b: boolean) => void;
   endpoint: string;
+  machine_id?: string;
 };
 
 async function createNewWorkflowVersion(data: {
@@ -28,6 +29,7 @@ async function createNewWorkflowVersion(data: {
   user_id: string;
   workflow_id: string;
   comment: string;
+  machine_id?: string;
 }) {
   return api({
     url: `workflow/${data.workflow_id}/version`,
@@ -37,6 +39,7 @@ async function createNewWorkflowVersion(data: {
         workflow: data.workflow_data.workflow,
         workflow_api: data.workflow_data.workflow_api,
         comment: data.comment,
+        machine_id: data.machine_id,
       }),
     },
   });
@@ -45,8 +48,10 @@ async function createNewWorkflowVersion(data: {
 export function WorkflowCommitVersion({
   setOpen,
   endpoint: _endpoint,
+  machine_id,
 }: WorkflowCommitVersionProps) {
   const { userId } = useAuth();
+
   // const { turbo } = useTurboStore();
 
   // const { workflowId, machineAPIEndPoint, readonly } = use(WorkspaceContext);
@@ -65,7 +70,7 @@ export function WorkflowCommitVersion({
   //   console.log("turbo", endpoint);
   // }
 
-  console.log("endpoint", endpoint);
+  // console.log("endpoint", endpoint);
 
   const getPromptWithTimeout = useCallback(
     async (timeoutMs = 5000) => {
@@ -132,6 +137,7 @@ export function WorkflowCommitVersion({
               user_id: userId,
               workflow_id: workflowId,
               comment: data.comment,
+              machine_id: machine_id,
               workflow_data: {
                 workflow: prompt.workflow,
                 workflow_api: prompt.output,

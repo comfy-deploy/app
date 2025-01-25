@@ -435,6 +435,11 @@ export default function Workspace({
     };
   }, [iframeLoaded, cdSetup, endpoint]);
 
+  const { data: session } = useQuery<any>({
+    enabled: !!sessionIdOverride,
+    queryKey: ["session", sessionIdOverride],
+  });
+
   return (
     <>
       {sessionId !== "preview" && <SessionIncrementDialog />}
@@ -459,7 +464,7 @@ export default function Workspace({
 
       <AssetsBrowserPopup />
 
-      <WorkspaceControls endpoint={endpoint} />
+      <WorkspaceControls endpoint={endpoint} machine_id={session?.machine_id} />
 
       {hasSetupEventListener && (
         <iframe
