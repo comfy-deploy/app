@@ -353,7 +353,7 @@ function WorkflowPageComponent() {
               // icon={Workflow}
               params={{ workflowId }}
             />
-            <NavItem
+            {/* <NavItem
               to="/workflows/$workflowId/deployment"
               label="API"
               // icon={Workflow}
@@ -364,10 +364,10 @@ function WorkflowPageComponent() {
               label="Playground"
               // icon={Workflow}
               params={{ workflowId }}
-            />
+            /> */}
             <NavItem
               to="/workflows/$workflowId/gallery"
-              // label="Gallery"
+              label="Gallery"
               icon={ImageIcon}
               params={{ workflowId }}
             />
@@ -407,63 +407,75 @@ function RequestPage() {
   const { data: deployments } = useWorkflowDeployments(workflowId);
 
   return (
-    <div className="flex flex-col gap-2 max-w-screen-lg mx-auto">
-      <div className="text-sm font-bold">Versions</div>
-      <VersionList
-        hideSearch
-        workflow_id={workflowId || ""}
-        className="w-full ring-1 ring-gray-200 rounded-md p-1"
-        containerClassName="max-h-[200px]"
-        height={40}
-        renderItem={(item) => {
-          const deployment = deployments?.find(
-            (deployment) => deployment.workflow_version_id === item.id,
-          );
-          return (
-            <div className="flex flex-row items-center justify-between gap-2 hover:bg-gray-100 py-2 px-4 rounded-md">
-              <div className="grid grid-cols-[38px_auto_1fr] items-center gap-4">
-                <Badge className="rounded-sm text-xs whitespace-nowrap w-fit">
-                  v{item.version}
-                </Badge>
+    <div className="flex flex-row mx-auto">
+      <div className="h-full w-full flex flex-col gap-2 max-w-screen-lg mx-auto">
+        <div className="text-sm font-bold">Description</div>
+        <div
+          contentEditable
+          className="min-h-[100px] w-full text-muted-foreground text-lg focus:bg-muted/50 p-2 -m-2 outline-none rounded-md"
+          role="textbox"
+          aria-multiline="true"
+        >
+          Baisc workflow for cloth swapping..
+        </div>
 
-                <div className="text-muted-foreground text-xs truncate">
-                  {item.comment}
-                </div>
-              </div>
-              <div className="grid grid-cols-[auto_auto_100px] items-center gap-4">
-                {deployment ? (
-                  <Badge
-                    className={cn(
-                      "w-fit whitespace-nowrap rounded-sm text-xs",
-                      getEnvColor(deployment.environment),
-                    )}
-                  >
-                    {deployment?.environment}
+        <div className="text-sm font-bold mt-4">Versions</div>
+        <VersionList
+          hideSearch
+          workflow_id={workflowId || ""}
+          className="w-full ring-1 ring-gray-200 rounded-md p-1"
+          containerClassName="max-h-[200px]"
+          height={40}
+          renderItem={(item) => {
+            const deployment = deployments?.find(
+              (deployment) => deployment.workflow_version_id === item.id,
+            );
+            return (
+              <div className="flex flex-row items-center justify-between gap-2 hover:bg-gray-100 py-2 px-4 rounded-md">
+                <div className="grid grid-cols-[38px_auto_1fr] items-center gap-4">
+                  <Badge className="rounded-sm text-xs whitespace-nowrap w-fit">
+                    v{item.version}
                   </Badge>
-                ) : (
-                  <div />
-                )}
-                <UserIcon user_id={item.user_id} className="h-5 w-5" />
-                <div className="text-muted-foreground text-xs">
-                  {getRelativeTime(item.created_at)}
+
+                  <div className="text-muted-foreground text-xs truncate">
+                    {item.comment}
+                  </div>
+                </div>
+                <div className="grid grid-cols-[auto_auto_130px] items-center gap-4">
+                  {deployment ? (
+                    <Badge
+                      className={cn(
+                        "w-fit whitespace-nowrap rounded-sm text-xs",
+                        getEnvColor(deployment.environment),
+                      )}
+                    >
+                      {deployment?.environment}
+                    </Badge>
+                  ) : (
+                    <div />
+                  )}
+                  <UserIcon user_id={item.user_id} className="h-5 w-5" />
+                  <div className="text-muted-foreground text-xs">
+                    {getRelativeTime(item.created_at)}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        }}
-      />
-      <div className="text-sm font-bold mt-4">Queues</div>
-      <motion.div
-        layout
-        className={cn(
-          "flex h-full w-full flex-row gap-4 lg:flex-row ring-1 ring-gray-200 rounded-md",
-        )}
-      >
-        <RealtimeWorkflowProvider workflowId={workflowId}>
-          <RunComponent />
-          <WorkflowComponent />
-        </RealtimeWorkflowProvider>
-      </motion.div>
+            );
+          }}
+        />
+        <div className="text-sm font-bold mt-4">Queues</div>
+        <motion.div
+          layout
+          className={cn(
+            "flex h-full w-full flex-row gap-4 rounded-md ring-1 ring-gray-200 lg:flex-row",
+          )}
+        >
+          <RealtimeWorkflowProvider workflowId={workflowId}>
+            <RunComponent />
+          </RealtimeWorkflowProvider>
+        </motion.div>
+      </div>
+      <WorkflowComponent />
     </div>
   );
 }
