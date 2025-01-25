@@ -415,7 +415,7 @@ export function RunWorkflowInline({
             </Button>
           )
         }
-        scrollAreaClassName="[&>[data-radix-scroll-area-viewport]]:max-h-[500px]"
+        scrollAreaClassName="[&>[data-radix-scroll-area-viewport]]:max-h-[80vh]"
       >
         {!hideInputs &&
           inputs?.map((item) => {
