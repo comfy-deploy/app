@@ -476,11 +476,15 @@ function OutputPreview(props: {
 
   if (urlsToDisplay.length === 0) return null;
 
-  return urlsToDisplay.map((url) => (
-    <div key={url.url}>
-      <img className="h-8 w-8 rounded-[8px]" src={url.url} alt="Output" />
+  return (
+    <div className="flex flex-row gap-2">
+      {urlsToDisplay.map((url) => (
+        <div key={url.url}>
+          <img className="h-8 w-8 rounded-[8px]" src={url.url} alt="Output" />
+        </div>
+      ))}
     </div>
-  ));
+  );
 }
 
 function LoadingState() {
