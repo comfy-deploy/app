@@ -49,6 +49,7 @@ export const Route = createFileRoute("/sessions/$sessionId/")({
   validateSearch: z.object({
     machineId: z.string().optional(),
     workflowId: z.string().optional(),
+    workflowLink: z.string().optional(),
   }),
 });
 

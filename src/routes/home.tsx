@@ -4,7 +4,7 @@ import { useMachine, useMachines } from "@/hooks/use-machine";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Play, Settings, Trash } from "lucide-react";
+import { ChevronRight, Play, Trash } from "lucide-react";
 import {
   ComfyUIVersionSelectBox,
   GPUSelectBox,
@@ -24,10 +24,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { z } from "zod";
+import { GPU } from "@/constants/run-data-enum";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
+  validateSearch: z.object({
+    gpu: z
+      .string()
+      .transform((val) => val.toUpperCase())
+      .pipe(z.enum(GPU))
+      .optional(),
+    comfyui_version: z.string().optional(),
+    timeout: z.number().int().min(2).max(60).optional(),
+    nodes: z.string().optional(),
+    workflowLink: z.string().optional(),
+  }),
 });
+
+// ltdrdata/ComfyUI-Impact-Pack@d8738ee,cubiq/ComfyUI_IPAdapter_plus@b188a6c,rgthree/rgthree-comfy@5d771b8
+
+// test:
+// http://localhost:3001/home?nodes=cubiq/ComfyUI_IPAdapter_plus@b188a6c&workflowLink=https://raw.githubusercontent.com/cubiq/ComfyUI_IPAdapter_plus/refs/heads/main/examples/ipadapter_simple.json
 
 function RouteComponent() {
   return (
@@ -50,17 +70,75 @@ function MachineNameDisplay({ machineId }: { machineId: string }) {
   );
 }
 
+const validateNodes = (nodes: string) => {
+  const regex = /^([^\/]+\/[^@]+@[^,]+)(,[^\/]+\/[^@]+@[^,]+)*$/;
+  return regex.test(nodes);
+};
+
 function SessionsList() {
   const { data, isLoading } = useQuery<any[]>({
     queryKey: ["sessions"],
     refetchInterval: 2000,
   });
+  const {
+    gpu: gpuSearch = "A10G",
+    comfyui_version: comfyuiVersionSearch = comfyui_hash,
+    timeout: timeoutSearch = 15,
+    nodes: nodesSearch = "",
+    workflowLink: workflowLinkSearch = "",
+  } = Route.useSearch();
 
-  // console.log(data);
   const query = useMachines(undefined, 6, 6);
 
   const { createDynamicSession, createSession, listSession, deleteSession } =
     useSessionAPI();
+
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (nodesSearch && !validateNodes(nodesSearch)) {
+        toast.error(
+          "Invalid nodes format. Each node must contain '/' and '@'.",
+        );
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const loading = toast.loading(
+        `Creating session ${nodesSearch ? `with ${nodesSearch}` : ""}...`,
+      );
+      const response = await createDynamicSession.mutateAsync({
+        gpu: gpuSearch,
+        comfyui_hash: comfyuiVersionSearch,
+        timeout: timeoutSearch,
+        ...(nodesSearch ? { dependencies: nodesSearch.split(",") } : {}),
+      });
+      toast.dismiss(loading);
+      toast.success("Session created successfully!");
+      useLogStore.getState().clearLogs();
+      router.navigate({
+        to: "/sessions/$sessionId",
+        params: {
+          sessionId: response.session_id,
+        },
+        search: {
+          workflowLink: workflowLinkSearch,
+        },
+      });
+    };
+
+    if (workflowLinkSearch) {
+      setTimeout(() => {
+        toast("Detected workflow link, creating session?", {
+          action: {
+            label: "Create",
+            onClick: () => fetchData(),
+          },
+          duration: Number.POSITIVE_INFINITY,
+        });
+      }, 100);
+    }
+  }, [workflowLinkSearch]);
 
   const form = useForm({
     defaultValues: {
@@ -133,8 +211,6 @@ function SessionsList() {
   //     cost: 0,
   //   },
   // ];
-
-  const router = useRouter();
 
   return (
     <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-2 pt-10">
@@ -245,6 +321,7 @@ function SessionsList() {
                 gpu: gpu,
                 comfyui_hash: comfyui_version,
                 timeout: timeout,
+                dependencies: nodesSearch ? nodesSearch.split(",") : [],
               });
               useLogStore.getState().clearLogs();
 

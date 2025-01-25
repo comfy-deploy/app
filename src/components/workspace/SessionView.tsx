@@ -26,7 +26,7 @@ import { EventSourcePolyfill } from "event-source-polyfill";
 import { Eye, Folder, Image, List, Plus, Wrench, X } from "lucide-react";
 import { Info } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { useQueryState } from "nuqs";
+import { parseAsString, useQueryState } from "nuqs";
 import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -233,20 +233,28 @@ export function SessionCreator(props: {
 
   const { cdSetup, setCDSetup } = useCDStore();
 
-  // const { createSession, listSession, deleteSession } =
-  //   useSessionAPI(machineId);
-
-  // const [_sessionId, setSessionId] = useQueryState("sessionId", {
-  //   defaultValue: props.sessionIdOverride || "",
-  // });
-
-  // || _sessionId
-
   const sessionId = props.sessionIdOverride;
 
   const { data: session } = useQuery<any>({
     enabled: !!sessionId,
     queryKey: ["session", sessionId],
+  });
+
+  const [workflowLink, setWorkflowLink] = useQueryState(
+    "workflowLink",
+    parseAsString,
+  );
+
+  const { data: workflowLinkJson, isFetching } = useQuery({
+    queryKey: ["workflowLink", workflowLink],
+    queryFn: async () => {
+      if (!workflowLink) return;
+      console.log("fetching workflowLink", workflowLink);
+      const response = await fetch(workflowLink);
+      if (!response.ok) throw new Error("Failed to fetch workflow");
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
   // const session = sessions?.find((session) => session.session_id === sessionId);
@@ -397,7 +405,11 @@ export function SessionCreator(props: {
               // key={props.workflowId}
               nativeMode={true}
               endpoint={url}
-              workflowJson={props.workflowLatestVersion?.workflow}
+              workflowJson={
+                workflowLinkJson
+                  ? workflowLinkJson
+                  : props.workflowLatestVersion?.workflow
+              }
             />
           </div>
         </>

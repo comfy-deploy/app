@@ -116,7 +116,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                 lazyLoading={true}
                 imgClasses="w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none"
               />
-              <div className="absolute bottom-0 left-0 w-full bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <div className="absolute bottom-0 left-0 w-full rounded-b-[4px] bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 <div className="flex items-center justify-between px-4 py-3 drop-shadow-md">
                   <div className="flex items-center gap-2">
                     <span className="text-white/90 text-xs">{totalTime}s</span>
