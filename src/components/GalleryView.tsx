@@ -3,7 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef } from "react";
 import { Search } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 
 type GalleryViewProps = {
   workflowID: string;
@@ -58,9 +58,6 @@ function GallerySkeleton() {
 export function GalleryView({ workflowID }: GalleryViewProps) {
   const query = useGalleryData(workflowID);
   const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
-  const navigate = useNavigate({
-    from: "/workflows/$workflowId/$view",
-  });
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -102,21 +99,16 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
             Math.round((page.run_duration + page.queue_time) * 10) / 10;
 
           return (
-            // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-            <div
+            <Link
               key={page.output_id}
               className="group relative cursor-pointer"
-              onClick={() => {
-                navigate({
-                  to: "/workflows/$workflowId/$view",
-                  params: {
-                    workflowId: workflowID,
-                    view: "requests",
-                  },
-                  search: {
-                    "run-id": page.run_id,
-                  },
-                });
+              to="/workflows/$workflowId/$view"
+              params={{
+                workflowId: workflowID,
+                view: "requests",
+              }}
+              search={{
+                "run-id": page.run_id,
               }}
             >
               <FileURLRender
@@ -137,7 +129,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                   <Search className="h-3.5 w-3.5 text-white/90" />
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
