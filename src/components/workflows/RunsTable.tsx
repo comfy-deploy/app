@@ -480,7 +480,11 @@ function OutputPreview(props: {
     <div className="flex flex-row gap-2">
       {urlsToDisplay.map((url) => (
         <div key={url.url}>
-          <img className="h-8 w-8 rounded-[8px]" src={url.url} alt="Output" />
+          <img
+            className="h-8 w-8 rounded-[8px] object-cover"
+            src={url.url}
+            alt="Output"
+          />
         </div>
       ))}
     </div>

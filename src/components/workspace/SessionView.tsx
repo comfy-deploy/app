@@ -266,20 +266,6 @@ export function SessionCreator(props: {
 
   useLogListener({ sessionId: sessionId || "" });
 
-  // // probably session closed
-  // useEffect(() => {
-  //   if (sessionId === "preview") {
-  //     return;
-  //   }
-  //   if (sessionId && !session) {
-  //     setSessionId("");
-  //   }
-
-  //   // if (session) {
-  //   //   useGPUStore.getState().setGpuEventId(session.id);
-  //   // }
-  // }, [session, sessionId]);
-
   const { data: isLive } = useQuery({
     queryKey: ["session", "live", url],
     queryFn: async ({ queryKey }) => {

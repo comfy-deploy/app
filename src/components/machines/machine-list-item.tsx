@@ -146,6 +146,7 @@ export function MachineListItem({
   className,
   overrideRightSide,
   showMigrateDialog = true,
+  children,
 }: {
   machine: any;
   isExpanded?: boolean;
@@ -155,6 +156,7 @@ export function MachineListItem({
   className?: string;
   overrideRightSide?: React.ReactNode;
   showMigrateDialog?: boolean;
+  children?: React.ReactNode;
 }) {
   const { data: events, isLoading } = useMachineEvents(machine.id);
   const { hasActiveEvents } = useHasActiveEvents(machine.id);
@@ -461,6 +463,8 @@ export function MachineListItem({
           )}
         </div>
       </div>
+
+      {children}
     </div>
   );
 

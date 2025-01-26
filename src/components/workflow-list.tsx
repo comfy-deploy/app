@@ -259,6 +259,42 @@ function WorkflowCardSkeleton() {
   );
 }
 
+export function WorkflowLatestOutput({
+  workflow,
+  className,
+}: {
+  workflow: any;
+  className?: string;
+}) {
+  const { data: latest_runs } = useQuery<any[]>({
+    queryKey: ["workflow", workflow.id, "run", "latest"],
+    queryKeyHashFn: (queryKey) => [...queryKey, "latest"].toString(),
+  });
+
+  const latest_output = latest_runs?.[0]?.outputs?.[0]?.data;
+  const lastest_run_at = latest_runs?.[0]?.created_at;
+  const status = latest_runs?.[0]?.status;
+  return (
+    <>
+      {latest_output?.images?.[0]?.url ? (
+        <FileURLRender
+          url={latest_output.images[0].url}
+          imgClasses={cn("w-full h-full rounded-[8px] object-cover", className)}
+        />
+      ) : (
+        <div
+          className={cn(
+            "flex h-full flex-col items-center justify-center",
+            className,
+          )}
+        >
+          <Workflow size={20} strokeWidth={1.5} className=" text-gray-400" />
+        </div>
+      )}
+    </>
+  );
+}
+
 function WorkflowCard({
   workflow,
   mutate,
