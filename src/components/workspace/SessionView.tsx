@@ -229,8 +229,6 @@ export function SessionCreator(props: {
 
   const { data: machine } = useMachine(machineId);
 
-  const machineBuilderVersion = machine?.machine_builder_version;
-
   const { cdSetup, setCDSetup } = useCDStore();
 
   const sessionId = props.sessionIdOverride;
@@ -240,7 +238,6 @@ export function SessionCreator(props: {
     queryKey: ["session", sessionId],
   });
 
-  // const session = sessions?.find((session) => session.session_id === sessionId);
   const url = session?.tunnel_url || session?.url;
 
   useEffect(() => {
@@ -271,94 +268,6 @@ export function SessionCreator(props: {
     refetchInterval: 2000,
   });
 
-  if (sessionId === "preview") {
-    return (
-      <>
-        <UploadZone
-          className="relative flex h-full w-full"
-          iframeEndpoint={staticUrl}
-        >
-          <div className="flex h-full w-full flex-col">
-            <Workspace
-              sessionIdOverride={sessionId}
-              workflowId={props.workflowId}
-              // key={props.workflowId}
-              nativeMode={false}
-              endpoint={staticUrl}
-              workflowJson={props.workflowLatestVersion?.workflow}
-            />
-            <App endpoint={staticUrl}>
-              <div className="flex w-full justify-between gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="mx-2 flex cursor-help items-center gap-1">
-                        <span className="text-gray-600 text-sm">
-                          Preview Mode
-                        </span>
-                        <Info className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>
-                        You're currently viewing a edit-only preview of this
-                        workflow. To run the workflow, you'll need to create a
-                        new ComfyUI session.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="flex items-center gap-1"
-                  Icon={X}
-                  iconPlacement="left"
-                  onClick={() => {
-                    setSessionId("");
-                  }}
-                >
-                  Close Preview
-                </Button>
-
-                {/* <Button
-                  variant="default"
-                  size="sm"
-                  className="flex items-center gap-1"
-                  Icon={Plus}
-                  iconPlacement="left"
-                  onClick={() => {
-                    setOpen({
-                      gpu: (localStorage.getItem("lastGPUSelection") ||
-                        "A10G") as (typeof machineGPUOptions)[number],
-                      timeout: Number.parseInt(
-                        localStorage.getItem("lastTimeoutSelection") || "15",
-                      ),
-                    });
-                  }}
-                >
-                  Session
-                </Button> */}
-                {/* <ModelsButton isPreview={true} /> */}
-              </div>
-            </App>
-          </div>
-          {/* <AssetsPanel /> */}
-        </UploadZone>
-      </>
-    );
-  }
-
-  if (!!props.sessionIdOverride && Number.parseInt(machineBuilderVersion) < 4) {
-    return (
-      <div className={cn("flex h-full w-full items-center justify-center")}>
-        Machine builder version {machineBuilderVersion} is not supported for
-        workspace.
-      </div>
-    );
-  }
-
   if (sessionId) {
     if (!url || !isLive) {
       return <SessionLoading session={session} isLive={isLive} />;
@@ -382,31 +291,7 @@ export function SessionCreator(props: {
     }
   }
 
-  return (
-    <></>
-    // <div className="flex h-full w-full items-center justify-center">
-    //   <div className="flex items-center gap-2">
-    //     {/* <SidebarMenuButton> */}
-    //     <SessionCreate
-    //       btnSize="sm"
-    //       // workflowId={props.workflowId}
-    //       // setSessionId={setSessionId}
-    //       btnText="Start ComfyUI"
-    //     />
-    //     {/* </SidebarMenuButton> */}
-    //     {/* <Button
-    //       variant="outline"
-    //       size="sm"
-    //       className="flex flex-row gap-1"
-    //       onClick={() => {
-    //         setSessionId("preview");
-    //       }}
-    //     >
-    //       Preview Workflow <Eye size={16} />
-    //     </Button> */}
-    //   </div>
-    // </div>
-  );
+  return <></>;
 }
 
 function useLogListener({ sessionId }: { sessionId?: string }) {

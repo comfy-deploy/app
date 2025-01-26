@@ -38,13 +38,6 @@ export function WorkspaceClientWrapper({
     },
   });
 
-  // useEffect(() => {
-  //   if (props.workflow_id && versions) {
-  //     console.log("workflow", versions);
-  //     sendWorkflow(versions[0].workflow);
-  //   }
-  // }, [props.workflow_id, versions]);
-
   const { data: machine, isLoading } = useMachine(
     workflow?.selected_machine_id,
   );
@@ -86,7 +79,7 @@ export function WorkspaceClientWrapper({
     );
 
   const machineBuilderVersion = machine?.machine_builder_version;
-  // || Number.parseInt(machineBuilderVersion) >= 4
+
   if (sessionIdOverride) {
     return (
       <SessionCreator
