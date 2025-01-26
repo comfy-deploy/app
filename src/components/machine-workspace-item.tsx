@@ -1,4 +1,4 @@
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useSessionAPI } from "@/hooks/use-session-api";
 import { MachineListItem } from "@/components/machines/machine-list-item";
 import { Button } from "@/components/ui/button";
@@ -157,21 +157,26 @@ export function MachineWorkspaceItem({
           }
           machineActionItemList={<></>}
         >
-          {/* <Badge>hi{machine.has_workflows ? "true" : "false"}</Badge> */}
           {relatedWorkflows?.length > 0 && (
             <div className="z-[4] mt-4 flex w-full flex-row items-center justify-start gap-2 text-xs">
               {relatedWorkflows.map((workflow) => (
-                <Badge
-                  key={workflow.id}
-                  className="flex flex-row items-center gap-2 pr-4 pl-0"
+                <Link
+                  to="/workflows/$workflowId/$view"
+                  params={{ workflowId: workflow.id, view: "requests" }}
                 >
-                  <WorkflowLatestOutput
-                    workflow={workflow}
-                    className="h-12 w-12"
-                  />
-                  <UserIcon user_id={workflow.user_id} className="h-4 w-4" />
-                  {workflow.name}
-                </Badge>
+                  <Badge
+                    key={workflow.id}
+                    variant="outline"
+                    className="flex flex-row items-center gap-2 pr-4 pl-0 hover:bg-gray-200"
+                  >
+                    <WorkflowLatestOutput
+                      workflow={workflow}
+                      className="h-12 w-12"
+                    />
+                    <UserIcon user_id={workflow.user_id} className="h-4 w-4" />
+                    {workflow.name}
+                  </Badge>
+                </Link>
               ))}
             </div>
           )}

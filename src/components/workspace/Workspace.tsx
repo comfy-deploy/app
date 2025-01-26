@@ -1,14 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-// import { PreventNavigation } from "@/repo/components/ui/custom/prevent-navigation";
-// import { createNewDraftVersion } from "@/server/actions/cdActions";
 import { useAuth } from "@clerk/clerk-react";
-// import { uploadFile } from "@repo/lib/uploadFile";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import { diff } from "json-diff-ts";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WorkspaceLoading } from "./WorkspaceLoading";
 import {
@@ -52,27 +49,19 @@ export function useSelectedVersion(workflow_id: string | null) {
   };
 }
 
-import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
 import { useAuthStore } from "@/lib/auth-store";
 import { useQuery } from "@tanstack/react-query";
 // import { usePathname, useRouter } from "next/navigation";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { useMediaQuery } from "usehooks-ts";
-import { Drawer } from "vaul";
 import { create } from "zustand";
-import { AssetBrowser } from "../asset-browser";
-import { UploadZone } from "../upload/upload-zone";
 import { AssetsBrowserPopup } from "./assets-browser-drawer";
 import {
   SessionIncrementDialog,
   useSessionIncrementStore,
 } from "./increase-session";
 import { WorkspaceControls } from "./workspace-control";
-
-// import { useCurrentWorkflow } from "@/components/useCurrentWorkflow";
-// import { useMachineStore } from "@/repo/components/ui/custom/workspace/DevSelectMachine";
 
 interface WorkflowState {
   workflow: any;
@@ -113,15 +102,11 @@ export default function Workspace({
   workflowId?: string;
   sessionIdOverride?: string;
 }) {
-  // const workflowId = useWorkflowIdInWorkflowPage();
-
   const { workflow } = useCurrentWorkflow(workflowId ?? null);
 
   const machineId = workflow?.selected_machine_id;
 
   const { data: machine } = useMachine(machineId);
-
-  // const newPythonEndpoint = process.env.NEXT_PUBLIC_CD_API_URL;
   const isLocal = process.env.NODE_ENV === "development";
 
   const newPythonEndpoint = isLocal
@@ -168,13 +153,6 @@ export default function Workspace({
 
     setDifferences(differences);
 
-    // console.log(
-    //   "differences",
-    //   differences,
-    //   selectedVersion?.workflow,
-    //   currentWorkflow,
-    // );
-
     return Object.keys(differences).length > 0;
   }, [selectedVersion?.version, currentWorkflow]);
 
@@ -183,13 +161,6 @@ export default function Workspace({
   }, [isDraftDifferent]);
 
   const endpoint = _endpoint;
-
-  // useEffect(() => {
-  //   console.log("reloading iframe");
-  //   setCDSetup(false);
-  //   setProgress(0);
-  //   reloadIframe();
-  // }, [turbo]);
 
   useEffect(() => {
     if (machineId && !sessionIdOverride) {
