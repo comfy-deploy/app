@@ -85,10 +85,6 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
   setDifferences: (differences) => set({ differences }),
 }));
 
-function handleEvent(event: string, data?: any) {
-  console.log("handleEvent", event, data);
-}
-
 export default function Workspace({
   endpoint: _endpoint,
   workflowJson,
@@ -201,7 +197,9 @@ export default function Workspace({
   useEffect(() => {
     if (!cdSetup) return;
 
-    console.log("sending workflow");
+    console.log("sending workflow", currentWorkflowRef.current);
+
+    if (!currentWorkflowRef.current) return;
     sendWorkflow(currentWorkflowRef.current);
 
     return;

@@ -6,11 +6,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "../ui/badge";
 import { LoadingIcon } from "../ui/custom/loading-icon";
-import { useWorkflowVersion } from "../workflow-list";
 import { SessionCreator } from "./SessionView";
-import { WorkspaceLoading, WorkspaceMachineLoading } from "./WorkspaceLoading";
-import { useEffect } from "react";
-import { sendWorkflow } from "./sendEventToCD";
 
 interface WorkspaceClientWrapperProps {
   workflow_id?: string;
@@ -23,11 +19,9 @@ export function WorkspaceClientWrapper({
   sessionIdOverride,
   ...props
 }: WorkspaceClientWrapperProps) {
-  const {
-    workflow,
-    mutateWorkflow,
-    isLoading: isLoadingWorkflow,
-  } = useCurrentWorkflow(props.workflow_id ?? null);
+  const { workflow, isLoading: isLoadingWorkflow } = useCurrentWorkflow(
+    props.workflow_id ?? null,
+  );
 
   const { data: versions, isLoading: isLoadingVersions } = useQuery<any>({
     enabled: !!props.workflow_id,
@@ -46,37 +40,12 @@ export function WorkspaceClientWrapper({
     !sessionIdOverride &&
     (isLoadingWorkflow || isLoading || isLoadingVersions || !versions)
   ) {
-    // return <WorkspaceLoading />;
     return (
       <div className="flex h-full w-full items-center justify-center">
         <LoadingIcon />
       </div>
     );
   }
-
-  if (!sessionIdOverride && !machine && !isLoading && !isLoadingWorkflow)
-    return (
-      <div
-        className={cn(
-          "flex h-full w-full items-center justify-center",
-          props.className,
-        )}
-      >
-        No machine selected, please select a machine.
-      </div>
-    );
-
-  if (
-    !sessionIdOverride &&
-    machine?.type === "comfy-deploy-serverless" &&
-    machine?.status === "building"
-  )
-    return (
-      <WorkspaceMachineLoading
-        machine={machine}
-        endpoint={`${process.env.NEXT_PUBLIC_CD_API_URL}/api/machine`}
-      />
-    );
 
   const machineBuilderVersion = machine?.machine_builder_version;
 

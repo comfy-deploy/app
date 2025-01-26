@@ -1,155 +1,19 @@
 "use client";
 
-import { useUpdateServerActionDialog } from "@/components/auto-form/auto-form-dialog";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { UploadZone } from "@/components/upload/upload-zone";
-import { AssetsPanel } from "@/components/workspace/assets-panel";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
-import { useSessionAPI } from "@/hooks/use-session-api";
 import { useAuthStore } from "@/lib/auth-store";
-import { machineGPUOptions } from "@/lib/schema";
-import { cn } from "@/lib/utils";
 import { EventSourcePolyfill } from "event-source-polyfill";
-import { Eye, Folder, Image, List, Plus, Wrench, X } from "lucide-react";
-import { Info } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { parseAsString, useQueryState } from "nuqs";
 import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-import { AssetBrowser } from "../asset-browser";
-import { ModelList } from "../storage/model-list";
-import { ModelListHeader, ModelListView } from "../storage/model-list-view";
-import { SidebarMenuButton } from "../ui/sidebar";
-import { Skeleton } from "../ui/skeleton";
-import { App } from "./App";
 import { useLogStore } from "./LogContext";
 import { LogDisplay } from "./LogDisplay";
-import Workspace, { useAssetsBrowserStore } from "./Workspace";
-// import { OnBoardingDialog } from "@/repo/components/ui/custom/workspace/OnBoardingDialog";
-// import { SessionList } from "@/repo/components/ui/custom/workspace/SessionList";
-// import { ModelsListLayout } from "@/repo/components/ui/custom/workspace/Windows";
-// import { WorkspaceProvider } from "./WorkspaceContext";
+import Workspace from "./Workspace";
 import { useCDStore } from "./Workspace";
-import { sendEventToCD } from "./sendEventToCD";
-import { SessionCreate } from "./session-create";
 import { useQuery } from "@tanstack/react-query";
-
-const staticUrl = process.env.COMFYUI_FRONTEND_URL!;
-console.log(staticUrl);
-
-export function ModelsButton(props: {
-  isPreview: boolean;
-}) {
-  const handleAssetClick = (asset: {
-    url: string;
-    name: string;
-    id: string;
-  }) => {
-    if (asset.url) {
-      sendEventToCD("add_node", {
-        type: "ComfyUIDeployExternalImage",
-        widgets_values: [asset.url],
-      });
-    }
-  };
-
-  return (
-    <>
-      {!props.isPreview && (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="gap-1"
-              size="sm"
-              Icon={List}
-              iconPlacement="left"
-            >
-              <span className="hidden lg:block">Logs</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-fit p-2">
-            <LogDisplay />
-          </PopoverContent>
-        </Popover>
-      )}
-      {/* <Popover>
-        <PopoverTrigger asChild> */}
-      <Button
-        variant="outline"
-        className="gap-1"
-        size="sm"
-        Icon={Image}
-        onClick={() => {
-          useAssetsBrowserStore.getState().setOpen(true);
-        }}
-        iconPlacement="left"
-      >
-        <span className="hidden lg:block">Assets</span>
-      </Button>
-      {/* </PopoverTrigger>
-        <PopoverContent className="w-fit p-2">
-          <div className="h-[300px] w-[250px]">
-            <AssetBrowser
-              className="h-full w-full"
-              showNewFolderButton={false}
-              onItemClick={handleAssetClick}
-            />
-          </div>
-        </PopoverContent>
-      </Popover> */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="gap-1"
-            size="sm"
-            Icon={Folder}
-            iconPlacement="left"
-          >
-            <span className="hidden lg:block">Models</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-fit p-2">
-          <Suspense
-            fallback={
-              <div className="h-[540px] w-[300px]">
-                <div className="flex items-center justify-start gap-2 pb-2 font-semibold">
-                  <ModelListHeader />
-                </div>
-                <div className="flex h-full w-full flex-col gap-3">
-                  {Array.from({ length: 10 }).map((_, i) => (
-                    <Skeleton key={i} className="h-[18px] w-full" />
-                  ))}
-                </div>
-              </div>
-            }
-          >
-            <ModelListView className="h-[540px] w-[300px]">
-              <ModelList
-                apiEndpoint={process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL}
-              />
-            </ModelListView>
-          </Suspense>
-        </PopoverContent>
-      </Popover>
-    </>
-  );
-}
+import { sendWorkflow } from "./sendEventToCD";
 
 export function getSessionStatus(session: any, isLive: boolean | undefined) {
   if (!session) {
@@ -224,11 +88,6 @@ export function SessionCreator(props: {
   workflowLatestVersion?: any;
   sessionIdOverride?: string;
 }) {
-  const { workflow } = useCurrentWorkflow(props.workflowId ?? null);
-  const machineId = workflow?.selected_machine_id;
-
-  const { data: machine } = useMachine(machineId);
-
   const { cdSetup, setCDSetup } = useCDStore();
 
   const sessionId = props.sessionIdOverride;
@@ -244,7 +103,8 @@ export function SessionCreator(props: {
   );
 
   const { data: workflowLinkJson, isFetching } = useQuery({
-    queryKey: ["workflowLink", workflowLink],
+    queryKey: ["workflow", "link", workflowLink],
+    enabled: !!workflowLink,
     queryFn: async () => {
       if (!workflowLink) return;
       console.log("fetching workflowLink", workflowLink);
@@ -253,7 +113,17 @@ export function SessionCreator(props: {
       return response.json();
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
+
+  useEffect(() => {
+    if (!cdSetup) return;
+    if (!workflowLinkJson) return;
+
+    console.log("sending workflow", workflowLinkJson);
+    sendWorkflow(workflowLinkJson);
+  }, [workflowLinkJson, cdSetup]);
 
   // const session = sessions?.find((session) => session.session_id === sessionId);
   const url = session?.tunnel_url || session?.url;
@@ -286,34 +156,44 @@ export function SessionCreator(props: {
     refetchInterval: 2000,
   });
 
-  if (sessionId) {
-    if (!url || !isLive) {
-      return <SessionLoading session={session} isLive={isLive} />;
-    }
+  if (!sessionId) return <>No session id</>;
 
-    if (url && isLive) {
-      return (
-        <>
-          <div className="flex h-full w-full flex-col">
-            <Workspace
-              sessionIdOverride={props.sessionIdOverride}
-              workflowId={props.workflowId}
-              // key={props.workflowId}
-              nativeMode={true}
-              endpoint={url}
-              workflowJson={
-                workflowLinkJson
-                  ? workflowLinkJson
-                  : props.workflowLatestVersion?.workflow
-              }
-            />
-          </div>
-        </>
-      );
-    }
+  if (!url || !isLive) {
+    return <SessionLoading session={session} isLive={isLive} />;
   }
 
-  return <></>;
+  if (url && isLive) {
+    return (
+      <>
+        <div className="flex h-full w-full flex-col">
+          <Workspace
+            sessionIdOverride={props.sessionIdOverride}
+            workflowId={props.workflowId}
+            // key={props.workflowId}
+            nativeMode={true}
+            endpoint={url}
+            workflowJson={props.workflowLatestVersion?.workflow}
+          />
+        </div>
+      </>
+    );
+  }
+
+  if (!url || !isLive) {
+    return <SessionLoading session={session} isLive={isLive} />;
+  }
+
+  return (
+    <div className="flex h-full w-full flex-col">
+      <Workspace
+        sessionIdOverride={props.sessionIdOverride}
+        workflowId={props.workflowId}
+        nativeMode={true}
+        endpoint={url}
+        workflowJson={props.workflowLatestVersion?.workflow}
+      />
+    </div>
+  );
 }
 
 function useLogListener({ sessionId }: { sessionId?: string }) {
