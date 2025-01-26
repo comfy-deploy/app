@@ -45,9 +45,9 @@ export function VirtualizedInfiniteList<T>({
     overscan: 5,
   });
 
-  // useEffect(() => {
-  //   rowVirtualizer.measure();
-  // }, [isLoading]);
+  useEffect(() => {
+    rowVirtualizer.measure();
+  }, [data, isLoading]);
 
   useEffect(() => {
     const lastItem = rowVirtualizer.getVirtualItems().at(-1);

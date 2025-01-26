@@ -166,8 +166,8 @@ export function MachineWorkspaceItem({
                 >
                   <Badge
                     key={workflow.id}
-                    variant="outline"
-                    className="flex flex-row items-center gap-2 pr-4 pl-0 hover:bg-gray-200"
+                    variant="secondary"
+                    className="bg-background ring-1 ring-border flex flex-row items-center gap-2 pr-4 pl-0 shadow-lg hover:bg-gray-200"
                   >
                     <WorkflowLatestOutput
                       workflow={workflow}

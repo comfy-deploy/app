@@ -131,7 +131,7 @@ export function RunsTable(props: {
   );
 }
 
-const DEFAULT_ITEM_HEIGHT = 40; // Keep the default, but allow it to be overridden
+const DEFAULT_ITEM_HEIGHT = 49; // Keep the default, but allow it to be overridden
 const BATCH_SIZE = 20; // Adjust this value based on your needs
 
 // Create a new prop type for the custom row renderer
@@ -271,7 +271,11 @@ export function RunsTableVirtualized(props: {
   }
 
   if (!data || flatData.length === 0) {
-    return <>No runs available</>;
+    return (
+      <div className="flex h-full items-center justify-center p-4 text-muted-foreground text-xs">
+        No runs available
+      </div>
+    );
   }
 
   const { workflow_api, workflow_inputs, run_log, ...rest } = run ?? {};
