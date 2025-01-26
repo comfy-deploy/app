@@ -16,6 +16,7 @@ interface VirtualizedInfiniteListProps<T> {
   className?: string;
   containerClassName?: string;
   autoFetch?: boolean;
+  estimateSizeFn?: (index: number) => number;
 }
 
 export function VirtualizedInfiniteList<T>({
@@ -25,11 +26,13 @@ export function VirtualizedInfiniteList<T>({
   renderLoading = () => <div>Loading...</div>,
   header,
   estimateSize = 50,
+  estimateSizeFn,
   className,
   containerClassName,
   autoFetch = true,
 }: VirtualizedInfiniteListProps<T>) {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = queryResult;
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    queryResult;
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -38,9 +41,13 @@ export function VirtualizedInfiniteList<T>({
   const rowVirtualizer = useVirtualizer({
     count: autoFetch && hasNextPage ? flatData.length + 1 : flatData.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => estimateSize,
+    estimateSize: estimateSizeFn ?? (() => estimateSize),
     overscan: 5,
   });
+
+  // useEffect(() => {
+  //   rowVirtualizer.measure();
+  // }, [isLoading]);
 
   useEffect(() => {
     const lastItem = rowVirtualizer.getVirtualItems().at(-1);

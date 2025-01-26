@@ -57,7 +57,9 @@ function SessionsList() {
   });
 
   // console.log(data);
-  const query = useMachines(undefined, 6, 6);
+  const query = useMachines(undefined, 6, 6, true);
+
+  // console.log(query.data);
 
   const { createDynamicSession, createSession, listSession, deleteSession } =
     useSessionAPI();
@@ -213,7 +215,9 @@ function SessionsList() {
               onValueChange={(value) => form.setValue("timeout", Number(value))}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select GPU">{timeout}</SelectValue>
+                <SelectValue placeholder="Select GPU">
+                  {timeout} mins
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="2">2 minutes</SelectItem>
@@ -265,6 +269,10 @@ function SessionsList() {
         autoFetch={false}
         className=" fab-machine-list mx-auto w-full max-w-[1200px] rounded-3xl border "
         containerClassName="divide-y divide-border"
+        estimateSizeFn={(index) => {
+          const allItems = query.data?.pages.flat() ?? [];
+          return allItems[index]?.has_workflows ? 140 : 74;
+        }}
         queryResult={query}
         renderItem={(machine, index) => (
           <MachineWorkspaceItem
@@ -300,7 +308,6 @@ function SessionsList() {
             </div>
           ));
         }}
-        estimateSize={72}
       />
       <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
         <Link

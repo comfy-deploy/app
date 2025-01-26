@@ -236,6 +236,11 @@ export default function Workspace({
     return;
   }, [cdSetup]);
 
+  useEffect(() => {
+    if (!cdSetup) return;
+    sendWorkflow(workflowJson);
+  }, [workflowId, workflowJson]);
+
   const { fetchToken } = useAuthStore();
 
   const getAPIInfo = () => {

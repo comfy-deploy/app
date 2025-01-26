@@ -233,15 +233,6 @@ export function SessionCreator(props: {
 
   const { cdSetup, setCDSetup } = useCDStore();
 
-  // const { createSession, listSession, deleteSession } =
-  //   useSessionAPI(machineId);
-
-  // const [_sessionId, setSessionId] = useQueryState("sessionId", {
-  //   defaultValue: props.sessionIdOverride || "",
-  // });
-
-  // || _sessionId
-
   const sessionId = props.sessionIdOverride;
 
   const { data: session } = useQuery<any>({
@@ -257,20 +248,6 @@ export function SessionCreator(props: {
   }, [sessionId]);
 
   useLogListener({ sessionId: sessionId || "" });
-
-  // // probably session closed
-  // useEffect(() => {
-  //   if (sessionId === "preview") {
-  //     return;
-  //   }
-  //   if (sessionId && !session) {
-  //     setSessionId("");
-  //   }
-
-  //   // if (session) {
-  //   //   useGPUStore.getState().setGpuEventId(session.id);
-  //   // }
-  // }, [session, sessionId]);
 
   const { data: isLive } = useQuery({
     queryKey: ["session", "live", url],

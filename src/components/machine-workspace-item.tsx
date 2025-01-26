@@ -32,6 +32,7 @@ import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useQuery } from "@tanstack/react-query";
 import { UserIcon } from "./run/SharePageComponent";
 import { getRelativeTime } from "@/lib/get-relative-time";
+import { WorkflowLatestOutput } from "./workflow-list";
 
 export function MachineWorkspaceItem({
   machine,
@@ -63,24 +64,13 @@ export function MachineWorkspaceItem({
     });
   };
 
-  return (
-    <div>
-      <AnimatePresence mode="wait">
-        {openFocus && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 bg-black/80"
-            onClick={() => {
-              setOpenFocus(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
+  const { data: relatedWorkflows } = useQuery({
+    queryKey: ["machine", machine.id, "workflows"],
+  });
 
-      {isInWorkspace && (
+  if (isInWorkspace) {
+    return (
+      <div>
         <AnimatePresence>
           {!openFocus && (
             <MachineSessionList
@@ -96,9 +86,6 @@ export function MachineWorkspaceItem({
             />
           )}
         </AnimatePresence>
-      )}
-
-      {isInWorkspace ? (
         <div
           className="fixed inset-x-0 bottom-4 z-50 mx-auto max-w-[520px] overflow-hidden rounded-md border border-gray-200 drop-shadow-md transition-all"
           onMouseEnter={() => setIsHovered(true)}
@@ -128,11 +115,33 @@ export function MachineWorkspaceItem({
             machineActionItemList={<></>}
           />
         </div>
-      ) : (
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full">
+      <AnimatePresence mode="wait">
+        {openFocus && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-50 bg-black/80"
+            onClick={() => {
+              setOpenFocus(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-col items-center justify-between gap-2 h-full">
         <MachineListItem
           key={machine.id}
           index={index}
           machine={machine}
+          className="h-full"
           showMigrateDialog={false}
           overrideRightSide={
             <div className="flex flex-row items-center gap-2">
@@ -147,8 +156,27 @@ export function MachineWorkspaceItem({
             </div>
           }
           machineActionItemList={<></>}
-        />
-      )}
+        >
+          {/* <Badge>hi{machine.has_workflows ? "true" : "false"}</Badge> */}
+          {relatedWorkflows?.length > 0 && (
+            <div className="z-[4] mt-4 flex w-full flex-row items-center justify-start gap-2 text-xs">
+              {relatedWorkflows.map((workflow) => (
+                <Badge
+                  key={workflow.id}
+                  className="flex flex-row items-center gap-2 pr-4 pl-0"
+                >
+                  <WorkflowLatestOutput
+                    workflow={workflow}
+                    className="h-12 w-12"
+                  />
+                  <UserIcon user_id={workflow.user_id} className="h-4 w-4" />
+                  {workflow.name}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </MachineListItem>
+      </div>
     </div>
   );
 }
