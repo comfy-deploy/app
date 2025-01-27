@@ -47,7 +47,12 @@ export const Route = createFileRoute("/home")({
       .optional(),
     comfyui_version: z.string().optional(),
     timeout: z.number().int().min(2).max(60).optional(),
-    nodes: z.string().optional(),
+    nodes: z
+      .string()
+      .refine((val) => validateNodes(val), {
+        message: "Invalid nodes format",
+      })
+      .optional(),
     workflowLink: z.string().optional(),
   }),
 });
@@ -104,7 +109,7 @@ function SessionsList() {
     if (workflowLinkSearch) {
       setTimeout(() => {
         setShowSettings(true);
-      }, 100);
+      }, 500);
       setTimeout(() => {
         setShowGuide(true);
       }, 1000);
@@ -113,9 +118,9 @@ function SessionsList() {
 
   const form = useForm({
     defaultValues: {
-      gpu: "A10G",
-      comfyui_version: comfyui_hash,
-      timeout: 15,
+      gpu: gpuSearch,
+      comfyui_version: comfyuiVersionSearch,
+      timeout: timeoutSearch,
     },
   });
 
