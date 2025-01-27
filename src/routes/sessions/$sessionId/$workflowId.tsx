@@ -1,4 +1,4 @@
-import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
+import { SessionCreator } from "@/components/workspace/SessionView";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/sessions/$sessionId/$workflowId")({
@@ -10,10 +10,7 @@ function RouteComponent() {
 
   return (
     <div className="h-full w-full">
-      <WorkspaceClientWrapper
-        workflow_id={workflowId}
-        sessionIdOverride={sessionId}
-      />
+      <SessionCreator workflowId={workflowId} sessionIdOverride={sessionId} />
     </div>
   );
 }

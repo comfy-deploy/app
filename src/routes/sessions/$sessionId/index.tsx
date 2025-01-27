@@ -30,7 +30,6 @@ import * as React from "react";
 import { useDebounce } from "use-debounce";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
 import { WorkflowDropdown } from "@/components/workflow-dropdown";
-import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
 import { Portal } from "@/components/ui/custom/portal";
 import {
   useSelectedVersion,
@@ -43,6 +42,7 @@ import { sendWorkflow } from "@/components/workspace/sendEventToCD";
 import { toast } from "sonner";
 import { useWorkflowStore } from "@/components/workspace/Workspace";
 import { useQuery } from "@tanstack/react-query";
+import { SessionCreator } from "@/components/workspace/SessionView";
 
 export const Route = createFileRoute("/sessions/$sessionId/")({
   component: RouteComponent,
@@ -149,8 +149,8 @@ function RouteComponent() {
           )}
         </div>
       </Portal>
-      <WorkspaceClientWrapper
-        workflow_id={workflowId ?? undefined}
+      <SessionCreator
+        workflowId={workflowId ?? undefined}
         sessionIdOverride={sessionId}
       />
     </div>

@@ -51,7 +51,6 @@ import {
 import { APIDocs } from "@/components/workspace/DeploymentDisplay";
 import { LogDisplay } from "@/components/workspace/LogDisplay";
 import { useSelectedVersion } from "@/components/workspace/Workspace";
-import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
 import { WorkspaceStatusBar } from "@/components/workspace/WorkspaceStatusBar";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useSessionAPI } from "@/hooks/use-session-api";

@@ -14,6 +14,9 @@ import Workspace from "./Workspace";
 import { useCDStore } from "./Workspace";
 import { useQuery } from "@tanstack/react-query";
 import { sendWorkflow } from "./sendEventToCD";
+import { cn } from "@/lib/utils";
+import { Badge } from "../ui/badge";
+import { LoadingIcon } from "../ui/custom/loading-icon";
 
 export function getSessionStatus(session: any, isLive: boolean | undefined) {
   if (!session) {
@@ -97,6 +100,14 @@ export function SessionCreator(props: {
     queryKey: ["session", sessionId],
   });
 
+  const { workflow, isLoading: isLoadingWorkflow } = useCurrentWorkflow(
+    props.workflowId ?? null,
+  );
+
+  const { data: machine, isLoading } = useMachine(
+    workflow?.selected_machine_id,
+  );
+
   const [workflowLink, setWorkflowLink] = useQueryState(
     "workflowLink",
     parseAsString,
@@ -125,7 +136,6 @@ export function SessionCreator(props: {
     sendWorkflow(workflowLinkJson);
   }, [workflowLinkJson, cdSetup]);
 
-  // const session = sessions?.find((session) => session.session_id === sessionId);
   const url = session?.tunnel_url || session?.url;
 
   useEffect(() => {
@@ -156,10 +166,26 @@ export function SessionCreator(props: {
     refetchInterval: 2000,
   });
 
-  if (!sessionId) return <>No session id</>;
+  if (isLoadingWorkflow || isLoading) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <LoadingIcon />
+      </div>
+    );
+  }
+
+  if (!sessionId)
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        Machine builder version{" "}
+        <Badge className="mx-2">{machine?.machine_builder_version}</Badge> and{" "}
+        <Badge className="mx-2">{machine?.type}</Badge> is not supported for
+        workflow preview.
+      </div>
+    );
 
   if (!url || !isLive) {
-    return <SessionLoading session={session} isLive={isLive} />;
+    return <SessionLoading session={session} isLive={isLive ?? false} />;
   }
 
   if (url && isLive) {
@@ -169,7 +195,6 @@ export function SessionCreator(props: {
           <Workspace
             sessionIdOverride={props.sessionIdOverride}
             workflowId={props.workflowId}
-            // key={props.workflowId}
             nativeMode={true}
             endpoint={url}
             workflowJson={props.workflowLatestVersion?.workflow}
@@ -178,22 +203,6 @@ export function SessionCreator(props: {
       </>
     );
   }
-
-  if (!url || !isLive) {
-    return <SessionLoading session={session} isLive={isLive} />;
-  }
-
-  return (
-    <div className="flex h-full w-full flex-col">
-      <Workspace
-        sessionIdOverride={props.sessionIdOverride}
-        workflowId={props.workflowId}
-        nativeMode={true}
-        endpoint={url}
-        workflowJson={props.workflowLatestVersion?.workflow}
-      />
-    </div>
-  );
 }
 
 function useLogListener({ sessionId }: { sessionId?: string }) {
