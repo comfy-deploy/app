@@ -54,7 +54,7 @@ import { useMachine } from "@/hooks/use-machine";
 import { useAuthStore } from "@/lib/auth-store";
 import { useQuery } from "@tanstack/react-query";
 // import { usePathname, useRouter } from "next/navigation";
-import { parseAsInteger, useQueryState } from "nuqs";
+import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
 import { create } from "zustand";
 import { AssetsBrowserPopup } from "./assets-browser-drawer";
 import {
@@ -87,18 +87,18 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
 
 export default function Workspace({
   endpoint: _endpoint,
-  workflowJson,
   nativeMode = false,
   workflowId,
   sessionIdOverride,
 }: {
   endpoint: string;
-  workflowJson?: any;
   nativeMode?: boolean;
   workflowId?: string;
   sessionIdOverride?: string;
 }) {
   const { workflow } = useCurrentWorkflow(workflowId ?? null);
+  const { value: versionData, isLoading: isLoadingVersion } =
+    useSelectedVersion(workflowId ?? null);
 
   const machineId = workflow?.selected_machine_id;
 
@@ -115,7 +115,7 @@ export default function Workspace({
   const { cdSetup, setCDSetup } = useCDStore();
   const [progress, setProgress] = useState(0);
   const [hasSetupEventListener, setHasSetupEventListener] = useState(false);
-  const currentWorkflowRef = useRef(workflowJson);
+  const currentWorkflowRef = useRef(null);
   const {
     setWorkflow,
     setWorkflowAPI,
@@ -126,16 +126,33 @@ export default function Workspace({
     setDifferences,
   } = useWorkflowStore();
 
-  useEffect(() => {
-    setWorkflow(workflowJson);
-    currentWorkflowRef.current = workflowJson;
-  }, [workflowId, workflowJson]);
-
   const { value: selectedVersion } = useSelectedVersion(workflowId ?? null);
 
   const [sessionId] = useQueryState("sessionId", {
     defaultValue: "",
   });
+
+  const [workflowLink, setWorkflowLink] = useQueryState(
+    "workflowLink",
+    parseAsString,
+  );
+
+  const { data: workflowLinkJson, isLoading: isLoadingWorkflowLink } = useQuery(
+    {
+      queryKey: ["workflow", "link", workflowLink],
+      enabled: !!workflowLink,
+      queryFn: async () => {
+        if (!workflowLink) return;
+        console.log("fetching workflowLink", workflowLink);
+        const response = await fetch(workflowLink);
+        if (!response.ok) throw new Error("Failed to fetch workflow");
+        return response.json();
+      },
+      staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  );
 
   const isDraftDifferent = useMemo(() => {
     if (!selectedVersion || !currentWorkflow) return false;
@@ -194,21 +211,39 @@ export default function Workspace({
     return () => clearInterval(deployInterval);
   }, [cdSetup]);
 
-  useEffect(() => {
-    if (!cdSetup) return;
-
-    console.log("sending workflow", currentWorkflowRef.current);
-
-    if (!currentWorkflowRef.current) return;
-    sendWorkflow(currentWorkflowRef.current);
-
-    return;
-  }, [cdSetup]);
+  const setComfyUIWorkflow = (workflowJson: any, delayTimeout = 0) => {
+    setTimeout(() => {
+      currentWorkflowRef.current = workflowJson;
+      setWorkflow(workflowJson);
+      sendWorkflow(workflowJson);
+    }, delayTimeout);
+  };
 
   useEffect(() => {
     if (!cdSetup) return;
-    sendWorkflow(workflowJson);
-  }, [workflowId, workflowJson]);
+
+    if (workflowId && !isLoadingVersion) {
+      console.log("using workflowId", versionData.workflow);
+      setComfyUIWorkflow(versionData.workflow);
+    } else if (workflowLink && !isLoadingWorkflowLink) {
+      console.log("using workflowLink", workflowLinkJson);
+      setComfyUIWorkflow(workflowLinkJson, 500);
+    } else {
+      console.log("no workflow, setting empty");
+      setComfyUIWorkflow(
+        {
+          nodes: [],
+        },
+        500,
+      );
+    }
+  }, [
+    workflowId,
+    workflowLink,
+    cdSetup,
+    isLoadingVersion,
+    isLoadingWorkflowLink,
+  ]);
 
   const { fetchToken } = useAuthStore();
 
@@ -294,14 +329,6 @@ export default function Workspace({
 
         // console.log(data);
         if (data.type === "cd_plugin_setup") {
-          if (workflowJson) {
-            console.log("sending workflow");
-            sendWorkflow(workflowJson);
-          } else {
-            sendWorkflow({
-              nodes: [],
-            });
-          }
           setCDSetup(true);
           setProgress(100);
 
@@ -368,7 +395,7 @@ export default function Workspace({
         capture: true,
       });
     };
-  }, [workflowJson, volumeName, machineId, endpoint]);
+  }, [volumeName, machineId, endpoint]);
 
   useEffect(() => {
     if (!iframeLoaded) return;

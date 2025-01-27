@@ -108,33 +108,33 @@ export function SessionCreator(props: {
     workflow?.selected_machine_id,
   );
 
-  const [workflowLink, setWorkflowLink] = useQueryState(
-    "workflowLink",
-    parseAsString,
-  );
+  // const [workflowLink, setWorkflowLink] = useQueryState(
+  //   "workflowLink",
+  //   parseAsString,
+  // );
 
-  const { data: workflowLinkJson, isFetching } = useQuery({
-    queryKey: ["workflow", "link", workflowLink],
-    enabled: !!workflowLink,
-    queryFn: async () => {
-      if (!workflowLink) return;
-      console.log("fetching workflowLink", workflowLink);
-      const response = await fetch(workflowLink);
-      if (!response.ok) throw new Error("Failed to fetch workflow");
-      return response.json();
-    },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  });
+  // const { data: workflowLinkJson, isFetching } = useQuery({
+  //   queryKey: ["workflow", "link", workflowLink],
+  //   enabled: !!workflowLink,
+  //   queryFn: async () => {
+  //     if (!workflowLink) return;
+  //     console.log("fetching workflowLink", workflowLink);
+  //     const response = await fetch(workflowLink);
+  //     if (!response.ok) throw new Error("Failed to fetch workflow");
+  //     return response.json();
+  //   },
+  //   staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  //   refetchOnWindowFocus: false,
+  //   refetchOnReconnect: false,
+  // });
 
-  useEffect(() => {
-    if (!cdSetup) return;
-    if (!workflowLinkJson) return;
+  // useEffect(() => {
+  //   if (!cdSetup) return;
+  //   if (!workflowLinkJson) return;
 
-    console.log("sending workflow", workflowLinkJson);
-    sendWorkflow(workflowLinkJson);
-  }, [workflowLinkJson, cdSetup]);
+  //   console.log("sending workflow", workflowLinkJson);
+  //   sendWorkflow(workflowLinkJson);
+  // }, [workflowLinkJson, cdSetup]);
 
   const url = session?.tunnel_url || session?.url;
 
@@ -166,14 +166,6 @@ export function SessionCreator(props: {
     refetchInterval: 2000,
   });
 
-  if (isLoadingWorkflow || isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <LoadingIcon />
-      </div>
-    );
-  }
-
   if (!sessionId)
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -197,7 +189,6 @@ export function SessionCreator(props: {
             workflowId={props.workflowId}
             nativeMode={true}
             endpoint={url}
-            workflowJson={props.workflowLatestVersion?.workflow}
           />
         </div>
       </>
