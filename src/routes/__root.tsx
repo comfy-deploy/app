@@ -60,11 +60,6 @@ export const Route = createRootRouteWithContext<Context>()({
 function RootComponent() {
   const { pathname } = useLocation();
   const isSession = pathname.includes("/sessions/");
-  const isButton = pathname.includes("/button");
-
-  if (isButton) {
-    return <Outlet />;
-  }
 
   return (
     <SidebarProvider defaultOpen={false}>
