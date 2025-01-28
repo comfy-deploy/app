@@ -8,8 +8,11 @@ import {
   CornerRightUp,
   ExternalLink,
   Play,
+  Plus,
   Settings,
+  Share2,
   Trash,
+  Check,
 } from "lucide-react";
 import {
   ComfyUIVersionSelectBox,
@@ -36,6 +39,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Spotlight } from "@/components/spotlight-guide";
 import { SpotlightTooltip } from "@/components/spotlight-guide";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -49,9 +54,9 @@ export const Route = createFileRoute("/home")({
     timeout: z.number().int().min(2).max(60).optional(),
     nodes: z
       .string()
-      .refine((val) => validateNodes(val), {
-        message: "Invalid nodes format",
-      })
+      // .refine((val) => validateNodes(val), {
+      //   message: "Invalid nodes format",
+      // })
       .optional(),
     workflowLink: z.string().optional(),
   }),
@@ -104,9 +109,10 @@ function SessionsList() {
 
   const [showSettings, setShowSettings] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (workflowLinkSearch) {
+    if (workflowLinkSearch && !showSettings) {
       setTimeout(() => {
         setShowSettings(true);
       }, 500);
@@ -121,72 +127,61 @@ function SessionsList() {
       gpu: gpuSearch,
       comfyui_version: comfyuiVersionSearch,
       timeout: timeoutSearch,
+      workflowLink: workflowLinkSearch,
     },
   });
 
   const gpu = form.watch("gpu");
   const comfyui_version = form.watch("comfyui_version");
   const timeout = form.watch("timeout");
+  const workflowLink = form.watch("workflowLink");
 
-  // const data = [
-  //   {
-  //     id: "1d6d37d2-3ac6-4e06-9b0e-fc484a606c4f",
-  //     user_id: "user_2ZA6vuKD3IJXju16oJVQGLBcWwg",
-  //     org_id: "org_2bWQ1FoWC3Wro391TurkeVG77pC",
-  //     machine_id: "f9de318e-4903-42e3-a98c-d0463f813fdc",
-  //     start_time: "2025-01-15T10:21:06.028Z",
-  //     end_time: null,
-  //     gpu: "T4",
-  //     ws_gpu: null,
-  //     gpu_provider: "modal",
-  //     created_at: "2025-01-15T10:21:05.934Z",
-  //     updated_at: "2025-01-15T10:21:16.014Z",
-  //     session_timeout: 15,
-  //     session_id: "015085cf-dcc0-4f31-8342-40dc6bc8ea3e",
-  //     modal_function_id: "fc-01JHMQP41WQJXCT0QG1D59DDKV",
-  //     tunnel_url: "https://4t78bugi4bpaj9.r12.modal.host",
-  //     cost_item_title: null,
-  //     cost: 0,
-  //   },
-  //   {
-  //     id: "1d6d37d2-3ac6-4e06-9b0e-fc484a606c4f",
-  //     user_id: "user_2ZA6vuKD3IJXju16oJVQGLBcWwg",
-  //     org_id: "org_2bWQ1FoWC3Wro391TurkeVG77pC",
-  //     machine_id: "f9de318e-4903-42e3-a98c-d0463f813fdc",
-  //     start_time: "2025-01-15T10:21:06.028Z",
-  //     end_time: null,
-  //     gpu: "T4",
-  //     ws_gpu: null,
-  //     gpu_provider: "modal",
-  //     created_at: "2025-01-15T10:21:05.934Z",
-  //     updated_at: "2025-01-15T10:21:16.014Z",
-  //     session_timeout: 15,
-  //     session_id: "015085cf-dcc0-4f31-8342-40dc6bc8ea3e",
-  //     modal_function_id: "fc-01JHMQP41WQJXCT0QG1D59DDKV",
-  //     tunnel_url: "https://4t78bugi4bpaj9.r12.modal.host",
-  //     cost_item_title: null,
-  //     cost: 0,
-  //   },
-  //   {
-  //     id: "1d6d37d2-3ac6-4e06-9b0e-fc484a606c4f",
-  //     user_id: "user_2ZA6vuKD3IJXju16oJVQGLBcWwg",
-  //     org_id: "org_2bWQ1FoWC3Wro391TurkeVG77pC",
-  //     machine_id: "f9de318e-4903-42e3-a98c-d0463f813fdc",
-  //     start_time: "2025-01-15T10:21:06.028Z",
-  //     end_time: null,
-  //     gpu: "T4",
-  //     ws_gpu: null,
-  //     gpu_provider: "modal",
-  //     created_at: "2025-01-15T10:21:05.934Z",
-  //     updated_at: "2025-01-15T10:21:16.014Z",
-  //     session_timeout: 15,
-  //     session_id: "015085cf-dcc0-4f31-8342-40dc6bc8ea3e",
-  //     modal_function_id: "fc-01JHMQP41WQJXCT0QG1D59DDKV",
-  //     tunnel_url: "https://4t78bugi4bpaj9.r12.modal.host",
-  //     cost_item_title: null,
-  //     cost: 0,
-  //   },
-  // ];
+  // Define default values
+  const DEFAULT_VALUES = {
+    gpu: "A10G",
+    comfyui_version: comfyui_hash, // Your default comfyui hash
+    timeout: 15,
+    workflowLink: "",
+    nodes: "",
+  };
+
+  // Modify the useEffect to only include changed values
+  useEffect(() => {
+    router.navigate({
+      search: (prev) => {
+        const searchParams: Record<string, any> = {};
+
+        // Only include values that differ from defaults
+        if (gpu !== DEFAULT_VALUES.gpu) searchParams.gpu = gpu;
+        if (comfyui_version !== DEFAULT_VALUES.comfyui_version)
+          searchParams.comfyui_version = comfyui_version;
+        if (timeout !== DEFAULT_VALUES.timeout) searchParams.timeout = timeout;
+        if (workflowLink) searchParams.workflowLink = workflowLink;
+        if (nodesSearch) searchParams.nodes = nodesSearch;
+
+        return {
+          ...prev,
+          ...searchParams,
+        };
+      },
+    });
+  }, [gpu, comfyui_version, timeout, workflowLink, nodesSearch]);
+
+  const handleCopy = async () => {
+    if (copied) return;
+    const url = new URL(window.location.href);
+
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-2 pt-10">
@@ -300,6 +295,11 @@ function SessionsList() {
                 variant="shine"
                 className="rounded-[9px]"
                 onClick={async () => {
+                  if (nodesSearch && !validateNodes(nodesSearch)) {
+                    toast.error("Invalid nodes format");
+                    return;
+                  }
+
                   const response = await createDynamicSession.mutateAsync({
                     gpu: gpu,
                     comfyui_hash: comfyui_version,
@@ -353,7 +353,15 @@ function SessionsList() {
                       <GPUSelectBox
                         className="w-full"
                         value={gpu}
-                        onChange={(value) => form.setValue("gpu", value)}
+                        onChange={(value) => {
+                          form.setValue("gpu", value);
+                          router.navigate({
+                            search: (prev) => ({
+                              ...prev,
+                              gpu: value,
+                            }),
+                          });
+                        }}
                       />
                     </div>
                     <div className="space-y-2">
@@ -362,9 +370,15 @@ function SessionsList() {
                       </span>
                       <Select
                         value={timeout.toString()}
-                        onValueChange={(value) =>
-                          form.setValue("timeout", Number(value))
-                        }
+                        onValueChange={(value) => {
+                          form.setValue("timeout", Number(value));
+                          router.navigate({
+                            search: (prev) => ({
+                              ...prev,
+                              timeout: Number(value),
+                            }),
+                          });
+                        }}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select duration">
@@ -379,55 +393,203 @@ function SessionsList() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-2 space-y-2">
+                    <div className="space-y-2">
                       <span className="font-medium text-gray-700 text-xs">
                         ComfyUI Version
                       </span>
                       <ComfyUIVersionSelectBox
                         className="w-full"
                         value={comfyui_version}
-                        onChange={(value) =>
-                          form.setValue("comfyui_version", value)
-                        }
+                        onChange={(value) => {
+                          form.setValue("comfyui_version", value);
+                          router.navigate({
+                            search: (prev) => ({
+                              ...prev,
+                              comfyui_version: value,
+                            }),
+                          });
+                        }}
                       />
+                    </div>
+                    <div>
+                      <div className="space-y-2">
+                        <span className="font-medium text-gray-700 text-xs">
+                          Workflow Link (JSON)
+                        </span>
+                        <div className="relative">
+                          <Input
+                            className="w-full"
+                            placeholder="Enter workflow json link..."
+                            value={workflowLink}
+                            onChange={(e) => {
+                              form.setValue("workflowLink", e.target.value);
+                              router.navigate({
+                                search: (prev) => ({
+                                  ...prev,
+                                  workflowLink: e.target.value,
+                                }),
+                              });
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {nodesSearch && (
-                    <div className="mt-4">
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between">
                       <span className="font-medium text-gray-700 text-xs">
                         Custom Nodes
                       </span>
-                      <div className="mt-2 rounded-sm border border-gray-200 bg-gray-50 p-2">
-                        {nodesSearch.split(",").map((node, index) => {
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          const newNodes = [
+                            ...nodesSearch.split(",").filter(Boolean),
+                            "/@",
+                          ];
+                          router.navigate({
+                            search: (prev) => ({
+                              ...prev,
+                              nodes: newNodes.join(","),
+                            }),
+                          });
+                        }}
+                      >
+                        Add Node <Plus className="ml-1 h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent mt-2 max-h-[200px] space-y-1 overflow-y-auto rounded-sm border border-gray-200 bg-gray-50 p-2">
+                      {nodesSearch
+                        .split(",")
+                        .filter(Boolean)
+                        .map((node, index) => {
                           const [author, repoWithVersion] = node.split("/");
-                          const [repo, version] = repoWithVersion.split("@");
+                          const [repo, version] =
+                            repoWithVersion?.split("@") ?? [];
+
                           return (
-                            <Link
-                              key={version}
-                              target="_blank"
-                              to={`https://github.com/${author}/${repo}`}
-                              className="flex items-center justify-between rounded-[9px] px-2 py-1 transition-colors duration-100 hover:bg-gray-100"
+                            <div
+                              key={index}
+                              className="flex items-center justify-between gap-2 rounded-[9px] bg-white px-2 py-1 shadow-sm"
                             >
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-700 text-xs">
-                                  {author}
-                                </span>
-                                <span className="text-gray-400 text-xs">/</span>
-                                <span className="text-gray-600 text-xs">
-                                  {repo}
-                                </span>
-                                <span className="rounded-full bg-gray-200 px-2 py-0.5 font-mono text-[11px] text-gray-600">
-                                  {version}
-                                </span>
+                              <div className="flex flex-row items-center gap-2">
+                                <Input
+                                  className="h-8 w-24 rounded-[10px]"
+                                  placeholder="owner"
+                                  value={author}
+                                  onChange={(e) => {
+                                    const nodes = nodesSearch
+                                      .split(",")
+                                      .filter(Boolean);
+                                    nodes[index] =
+                                      `${e.target.value}/${repo || ""}@${version || ""}`.replace(
+                                        /\/+@/,
+                                        "/@",
+                                      );
+                                    router.navigate({
+                                      search: (prev) => ({
+                                        ...prev,
+                                        nodes: nodes.join(","),
+                                      }),
+                                    });
+                                  }}
+                                />
+                                <span className="text-gray-400">/</span>
+                                <Input
+                                  className="h-8 w-40 rounded-[10px]"
+                                  placeholder="repository"
+                                  value={repo}
+                                  onChange={(e) => {
+                                    const nodes = nodesSearch
+                                      .split(",")
+                                      .filter(Boolean);
+                                    nodes[index] =
+                                      `${author || ""}/${e.target.value}@${version || ""}`.replace(
+                                        /\/+@/,
+                                        "/@",
+                                      );
+                                    router.navigate({
+                                      search: (prev) => ({
+                                        ...prev,
+                                        nodes: nodes.join(","),
+                                      }),
+                                    });
+                                  }}
+                                />
+                                <span className="text-gray-400">@</span>
+                                <Input
+                                  className="h-8 w-24 rounded-[10px] font-mono text-xs"
+                                  placeholder="hash"
+                                  maxLength={7}
+                                  value={version}
+                                  onChange={(e) => {
+                                    const nodes = nodesSearch
+                                      .split(",")
+                                      .filter(Boolean);
+                                    nodes[index] =
+                                      `${author || ""}/${repo || ""}@${e.target.value}`.replace(
+                                        /\/+@/,
+                                        "/@",
+                                      );
+                                    router.navigate({
+                                      search: (prev) => ({
+                                        ...prev,
+                                        nodes: nodes.join(","),
+                                      }),
+                                    });
+                                  }}
+                                />
                               </div>
-                              <ExternalLink className="h-3 w-3" />
-                            </Link>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500"
+                                onClick={() => {
+                                  const nodes = nodesSearch
+                                    .split(",")
+                                    .filter(Boolean);
+                                  nodes.splice(index, 1);
+                                  router.navigate({
+                                    search: (prev) => ({
+                                      ...prev,
+                                      nodes: nodes.join(","),
+                                    }),
+                                  });
+                                }}
+                              >
+                                <Trash className="h-3 w-3" />
+                              </Button>
+                            </div>
                           );
                         })}
-                      </div>
+                      {nodesSearch.split(",").filter(Boolean).length === 0 && (
+                        <div className="flex items-center justify-center py-4 text-gray-500 text-xs">
+                          No custom nodes added
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      onClick={handleCopy}
+                      className="transition-all duration-200"
+                    >
+                      {copied ? (
+                        <>
+                          Copied! <Check className="ml-2 h-3 w-3" />
+                        </>
+                      ) : (
+                        <>
+                          Share <Share2 className="ml-2 h-3 w-3" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             )}
