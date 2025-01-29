@@ -187,7 +187,7 @@ function SessionsList() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-2 pt-10">
+    <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-2 py-10">
       <div className="font-medium text-sm">Active ComfyUI</div>
       <div className="flex flex-col divide-y divide-border overflow-hidden rounded-3xl border">
         {data?.map((session) => {
