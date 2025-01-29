@@ -30,7 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { motion } from "framer-motion";
+import { delay, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { Icon as IconWord } from "@/components/icon-word";
@@ -246,6 +246,21 @@ export function NavItem({
   );
 }
 
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05, // Delay between each item
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 2 },
+  show: { opacity: 1, y: 0 },
+};
+
 export function SignedOutNavBar() {
   const clerk = useClerk();
 
@@ -263,103 +278,127 @@ export function SignedOutNavBar() {
 
           {/* Main Navigation */}
           <NavigationMenu>
-            <NavigationMenuList>
-              {/* Blog */}
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  className={navigationMenuTriggerStyle()}
-                  href="https://comfydeploy.com/blog"
-                >
-                  Blog
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+            <motion.div variants={container} initial="hidden" animate="show">
+              <NavigationMenuList>
+                {/* Blog */}
+                <motion.div variants={item}>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                      href="https://comfydeploy.com/blog"
+                    >
+                      Blog
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </motion.div>
 
-              {/* Developers Dropdown */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Developers</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[250px] gap-1 p-2">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          href="https://comfydeploy.com/docs"
-                          className="flex items-center gap-4 rounded-md p-2 hover:bg-gray-50"
-                        >
-                          <BookOpen className="h-4 w-4 shrink-0" />
-                          <div>
-                            <div className="font-medium text-sm">
-                              Documentation
-                            </div>
-                            <p className="text-muted-foreground text-xs">
-                              Start integrating our APIs
-                            </p>
-                          </div>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <a
-                          href="https://demo2.comfydeploy.com/"
-                          className="flex items-center gap-4 rounded-md p-2 hover:bg-gray-50"
-                        >
-                          <PlayCircle className="h-4 w-4 shrink-0" />
-                          <div>
-                            <div className="font-medium text-sm">Demo</div>
-                            <p className="text-muted-foreground text-xs">
-                              See it in action
-                            </p>
-                          </div>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+                {/* Nodes */}
+                <motion.div variants={item}>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                      href="https://comfydeploy.com/ai"
+                    >
+                      Nodes
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </motion.div>
 
-              {/* Community Dropdown */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Community</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[250px] gap-2 p-2">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          to="https://github.com/BennyKok/comfyui-deploy"
-                          className="flex items-center gap-4 rounded-md p-2 hover:bg-gray-50"
-                        >
-                          <Github className="h-4 w-4 shrink-0" />
-                          <div>
-                            <div className="font-medium text-sm">GitHub</div>
-                            <p className="text-muted-foreground text-xs">
-                              Check our open source work
-                            </p>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          to="https://discord.com/invite/c222Cwyget"
-                          rel="noopener noreferrer"
-                          target="_blank"
-                          className="flex items-center gap-4 rounded-md p-2 hover:bg-gray-50"
-                        >
-                          <DiscordIcon />
-                          <div>
-                            <div className="font-medium text-sm">Discord</div>
-                            <p className="text-muted-foreground text-xs">
-                              Join our community
-                            </p>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
+                {/* Developers Dropdown */}
+                <motion.div variants={item}>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Developers</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[250px] gap-1 p-2">
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <a
+                              href="https://comfydeploy.com/docs"
+                              className="flex items-center gap-4 rounded-md p-2 hover:bg-gray-50"
+                            >
+                              <BookOpen className="h-4 w-4 shrink-0" />
+                              <div>
+                                <div className="font-medium text-sm">
+                                  Documentation
+                                </div>
+                                <p className="text-muted-foreground text-xs">
+                                  Start integrating our APIs
+                                </p>
+                              </div>
+                            </a>
+                          </NavigationMenuLink>
+                        </li>
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <a
+                              href="https://demo2.comfydeploy.com/"
+                              className="flex items-center gap-4 rounded-md p-2 hover:bg-gray-50"
+                            >
+                              <PlayCircle className="h-4 w-4 shrink-0" />
+                              <div>
+                                <div className="font-medium text-sm">Demo</div>
+                                <p className="text-muted-foreground text-xs">
+                                  See it in action
+                                </p>
+                              </div>
+                            </a>
+                          </NavigationMenuLink>
+                        </li>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </motion.div>
+
+                {/* Community Dropdown */}
+                <motion.div variants={item}>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Community</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[250px] gap-2 p-2">
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              to="https://github.com/BennyKok/comfyui-deploy"
+                              className="flex items-center gap-4 rounded-md p-2 hover:bg-gray-50"
+                            >
+                              <Github className="h-4 w-4 shrink-0" />
+                              <div>
+                                <div className="font-medium text-sm">
+                                  GitHub
+                                </div>
+                                <p className="text-muted-foreground text-xs">
+                                  Check our open source work
+                                </p>
+                              </div>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              to="https://discord.com/invite/c222Cwyget"
+                              rel="noopener noreferrer"
+                              target="_blank"
+                              className="flex items-center gap-4 rounded-md p-2 hover:bg-gray-50"
+                            >
+                              <DiscordIcon />
+                              <div>
+                                <div className="font-medium text-sm">
+                                  Discord
+                                </div>
+                                <p className="text-muted-foreground text-xs">
+                                  Join our community
+                                </p>
+                              </div>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </motion.div>
+              </NavigationMenuList>
+            </motion.div>
           </NavigationMenu>
         </div>
 
