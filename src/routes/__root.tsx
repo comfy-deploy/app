@@ -23,7 +23,7 @@ import { RedirectToSignIn, SignedOut } from "@clerk/clerk-react";
 import React from "react";
 import { Toaster } from "sonner";
 import { Providers } from "../lib/providers";
-import { NavBar } from "@/components/nav-bar";
+import { NavBar, SignedOutNavBar } from "@/components/nav-bar";
 import { cn } from "@/lib/utils";
 
 type Context = {
@@ -59,19 +59,12 @@ export const Route = createRootRouteWithContext<Context>()({
 function RootComponent() {
   const { pathname } = useLocation();
   const isSession = pathname.includes("/sessions/");
-  const isPublic = publicRoutes.includes(pathname);
+  const isHome = pathname.includes("/home");
 
   return (
     <SidebarProvider defaultOpen={false}>
       <Providers>
-        {!isPublic && (
-          <SignedOut>
-            <RedirectToSignIn />
-          </SignedOut>
-        )}
-        {/* <SignedIn>
-          <AppSidebar />
-        </SignedIn> */}
+        <SignedOut>{!isHome && <RedirectToSignIn />}</SignedOut>
         <div
           className="flex max-h-[100dvh] w-full flex-col items-center justify-start overflow-x-auto "
           style={{
@@ -81,7 +74,7 @@ function RootComponent() {
           <div className="fixed z-[-1] h-full w-full bg-white">
             <div className="absolute h-full w-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
           </div>
-          <SidebarTrigger className="fixed top-4 left-2 z-50 h-8 w-8 rounded-full bg-secondary p-2 md:hidden" />
+          <SignedOut>{isHome && <SignedOutNavBar />}</SignedOut>
           <SignedIn>{!isSession && <NavBar />}</SignedIn>
           <div
             className={cn(
@@ -91,7 +84,9 @@ function RootComponent() {
           >
             <Outlet />
           </div>
-          <ComfyCommand />
+          <SignedIn>
+            <ComfyCommand />
+          </SignedIn>
           <Toaster richColors closeButton={true} />
         </div>
       </Providers>
