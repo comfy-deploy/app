@@ -1,4 +1,4 @@
-import { getBranchInfo, useBranchInfo } from "@/hooks/use-github-branch-info";
+import { getBranchInfo } from "@/hooks/use-github-branch-info";
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { DependencyGraphType } from "comfyui-json";

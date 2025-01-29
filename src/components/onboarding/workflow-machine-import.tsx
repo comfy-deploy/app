@@ -28,10 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
 import { useCurrentPlan } from "@/hooks/use-current-plan";
-import {
-  getBranchInfo,
-  useGithubBranchInfo,
-} from "@/hooks/use-github-branch-info";
+import { getBranchInfo } from "@/hooks/use-github-branch-info";
 import { useMachines } from "@/hooks/use-machine";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
