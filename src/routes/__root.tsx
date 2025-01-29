@@ -30,6 +30,8 @@ type Context = {
   auth?: ReturnType<typeof useAuth>;
 };
 
+const publicRoutes = ["/home", "/auth/sign-in"];
+
 export const Route = createRootRouteWithContext<Context>()({
   component: RootComponent,
   beforeLoad: ({ context, location }) => {
@@ -37,18 +39,15 @@ export const Route = createRootRouteWithContext<Context>()({
       return;
     }
 
-    if (
-      context.auth &&
-      !context.auth.isSignedIn &&
-      location.pathname !== "/auth/sign-in"
-    ) {
+    // Define public routes that don't require authentication
+
+    if (!context.auth.isSignedIn && !publicRoutes.includes(location.pathname)) {
       throw redirect({
         to: "/auth/sign-in",
-        // search: {
-        // 	redirect: location.href,
-        // },
       });
     }
+
+    // Only redirect from root to home if user is signed in
     if (context.auth?.isSignedIn && location.pathname === "/") {
       throw redirect({
         to: "/home",
@@ -60,13 +59,16 @@ export const Route = createRootRouteWithContext<Context>()({
 function RootComponent() {
   const { pathname } = useLocation();
   const isSession = pathname.includes("/sessions/");
+  const isPublic = publicRoutes.includes(pathname);
 
   return (
     <SidebarProvider defaultOpen={false}>
       <Providers>
-        <SignedOut>
-          <RedirectToSignIn />
-        </SignedOut>
+        {!isPublic && (
+          <SignedOut>
+            <RedirectToSignIn />
+          </SignedOut>
+        )}
         {/* <SignedIn>
           <AppSidebar />
         </SignedIn> */}

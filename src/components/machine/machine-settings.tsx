@@ -692,13 +692,16 @@ export function ComfyUIVersionSelectBox({
   value,
   onChange,
   className,
+  isAnnoymous = false, // for disable latest option for anonymous users
 }: {
   value?: string;
   onChange: (value: string) => void;
   className?: string;
+  isAnnoymous?: boolean;
 }) {
   const { data: latestComfyUI, isLoading } = useGithubBranchInfo(
     "https://github.com/comfyanonymous/ComfyUI",
+    !isAnnoymous,
   );
   useEffect(() => {
     setCustomValue(value || "");
@@ -758,7 +761,11 @@ export function ComfyUIVersionSelectBox({
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
-            <SelectItem key={option.label} value={option.value}>
+            <SelectItem
+              key={option.label}
+              value={option.value}
+              disabled={isAnnoymous && option.label === "Latest"}
+            >
               <div className="flex w-full items-center justify-between">
                 <span>{option.label}</span>
                 {option.value !== "custom" && (

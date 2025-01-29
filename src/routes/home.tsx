@@ -41,6 +41,7 @@ import { Spotlight } from "@/components/spotlight-guide";
 import { SpotlightTooltip } from "@/components/spotlight-guide";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useAuth, useClerk } from "@clerk/clerk-react";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -106,6 +107,8 @@ function SessionsList() {
     useSessionAPI();
 
   const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const clerk = useClerk();
 
   const [showSettings, setShowSettings] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -229,7 +232,7 @@ function SessionsList() {
             </Link>
           );
         })}
-        {data?.length === 0 && (
+        {(!data || data?.length === 0) && (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <div className="text-sm">No active ComfyUI sessions</div>
           </div>
@@ -295,6 +298,13 @@ function SessionsList() {
                 variant="shine"
                 className="rounded-[9px]"
                 onClick={async () => {
+                  if (!isSignedIn) {
+                    clerk.openSignIn({
+                      fallbackRedirectUrl: window.location.href,
+                    });
+                    return;
+                  }
+
                   if (nodesSearch && !validateNodes(nodesSearch)) {
                     toast.error("Invalid nodes format");
                     return;
@@ -399,6 +409,7 @@ function SessionsList() {
                       </span>
                       <ComfyUIVersionSelectBox
                         className="w-full"
+                        isAnnoymous={true}
                         value={comfyui_version}
                         onChange={(value) => {
                           form.setValue("comfyui_version", value);
@@ -597,7 +608,7 @@ function SessionsList() {
         </div>
       </Spotlight>
 
-      {query.data?.pages.flat().length === 0 ? (
+      {!query.data || query.data?.pages.flat().length === 0 ? (
         <div className="mx-auto h-[400px] w-full max-w-[1200px] rounded-3xl border bg-white drop-shadow-sm">
           <div className="flex h-full flex-col items-center justify-center py-8 text-muted-foreground">
             <div className="text-sm">No machines found</div>
@@ -608,56 +619,58 @@ function SessionsList() {
           </div>
         </div>
       ) : (
-        <VirtualizedInfiniteList
-          autoFetch={false}
-          className="mx-auto w-full max-w-[1200px] rounded-3xl border bg-white drop-shadow-sm"
-          containerClassName="divide-y divide-border"
-          estimateSizeFn={(index) => {
-            const allItems = query.data?.pages.flat() ?? [];
-            return allItems[index]?.has_workflows ? 140 : 74;
-          }}
-          queryResult={query}
-          renderItem={(machine, index) => (
-            <MachineWorkspaceItem
-              machine={machine}
-              index={index}
-              isInWorkspace={false}
-            />
-          )}
-          renderLoading={() => {
-            return [...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="mb-2 flex h-[80px] w-full animate-pulse items-center justify-between rounded-md border bg-white p-4"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex flex-row items-center gap-2">
-                      <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
-                      <div className="h-4 w-60 rounded bg-gray-200" />
+        <>
+          <VirtualizedInfiniteList
+            autoFetch={false}
+            className="mx-auto w-full max-w-[1200px] rounded-3xl border bg-white drop-shadow-sm"
+            containerClassName="divide-y divide-border"
+            estimateSizeFn={(index) => {
+              const allItems = query.data?.pages.flat() ?? [];
+              return allItems[index]?.has_workflows ? 140 : 74;
+            }}
+            queryResult={query}
+            renderItem={(machine, index) => (
+              <MachineWorkspaceItem
+                machine={machine}
+                index={index}
+                isInWorkspace={false}
+              />
+            )}
+            renderLoading={() => {
+              return [...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="mb-2 flex h-[80px] w-full animate-pulse items-center justify-between rounded-md border bg-white p-4"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-row items-center gap-2">
+                        <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
+                        <div className="h-4 w-60 rounded bg-gray-200" />
+                      </div>
+                      <div className="h-3 w-32 rounded bg-gray-200" />
                     </div>
-                    <div className="h-3 w-32 rounded bg-gray-200" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-12 rounded-md bg-gray-200" />
+                    <div className="h-5 w-20 rounded-md bg-gray-200" />
+                    <div className="h-5 w-12 rounded-md bg-gray-200" />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-5 w-12 rounded-md bg-gray-200" />
-                  <div className="h-5 w-20 rounded-md bg-gray-200" />
-                  <div className="h-5 w-12 rounded-md bg-gray-200" />
-                </div>
-              </div>
-            ));
-          }}
-        />
+              ));
+            }}
+          />
+          <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
+            <Link
+              to="/machines"
+              className="flex items-center gap-1 hover:underline"
+            >
+              View all machines
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </>
       )}
-      <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
-        <Link
-          to="/machines"
-          className="flex items-center gap-1 hover:underline"
-        >
-          View all machines
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-      </div>
     </div>
   );
 }
