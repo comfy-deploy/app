@@ -409,7 +409,7 @@ function SessionsList() {
                       </span>
                       <ComfyUIVersionSelectBox
                         className="w-full"
-                        isAnnoymous={true}
+                        isAnnoymous={!isSignedIn}
                         value={comfyui_version}
                         onChange={(value) => {
                           form.setValue("comfyui_version", value);
