@@ -63,7 +63,14 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { ImageIcon, Plus, Terminal, Workflow } from "lucide-react";
+import {
+  ImageIcon,
+  MoreHorizontal,
+  MoreVertical,
+  Plus,
+  Terminal,
+  Workflow,
+} from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -88,6 +95,8 @@ export const Route = createLazyFileRoute("/workflows/$workflowId/$view")({
 
 import { create } from "zustand";
 import { MyDrawer } from "@/components/drawer";
+import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
+import { toast } from "sonner";
 
 interface SelectedVersionState {
   selectedVersion: string | null;
@@ -465,7 +474,7 @@ function RequestPage() {
                     {item.comment}
                   </div>
                 </div>
-                <div className="grid grid-cols-[auto_auto_130px] items-center gap-4">
+                <div className="grid grid-cols-[auto_auto_110px_30px] items-center gap-4">
                   {deployment ? (
                     <Badge
                       className={cn(
@@ -482,6 +491,27 @@ function RequestPage() {
                   <div className="text-muted-foreground text-xs">
                     {getRelativeTime(item.created_at)}
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      asChild
+                      className="h-full w-full rounded-sm p-2 hover:bg-white"
+                    >
+                      <MoreVertical size={16} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.nativeEvent.preventDefault();
+                          e.nativeEvent.stopPropagation();
+                          toast.success("Dummy action");
+                        }}
+                      >
+                        Promote to Production
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             );
