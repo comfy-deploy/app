@@ -490,12 +490,13 @@ function RunRow({
             )}
           </div>
 
-          <ScrollArea className="grid min-h-[238px] flex-[1_0_230px] px-1">
-            {run.status === "running" ? (
-              <div className="flex flex-row gap-1 py-1" ref={scrollRef}>
-                <Skeleton className="aspect-square h-[250px] rounded-[8px]" />
-              </div>
-            ) : (
+          {run.status === "running" && (
+            <div className="flex flex-row gap-1 py-1" ref={scrollRef}>
+              <Skeleton className="aspect-square h-[250px] rounded-[8px]" />
+            </div>
+          )}
+          {run.status === "success" && (
+            <ScrollArea className="grid min-h-[238px] flex-[1_0_230px] px-1">
               <div
                 ref={scrollRef}
                 className={cn("flex max-h-[250px] flex-row gap-1 py-1")}
@@ -509,11 +510,12 @@ function RunRow({
                   canDownload={true}
                 />
               </div>
-            )}
-            {isScrollable && (
-              <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-12 rounded-r-[8px] bg-gradient-to-l from-10% from-white to-transparent" />
-            )}
-          </ScrollArea>
+
+              {isScrollable && (
+                <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-12 rounded-r-[8px] bg-gradient-to-l from-10% from-white to-transparent" />
+              )}
+            </ScrollArea>
+          )}
         </div>
 
         <div className="grid grid-rows-3 opacity-0 transition-opacity group-hover:opacity-100">
