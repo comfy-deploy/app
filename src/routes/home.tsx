@@ -284,7 +284,36 @@ function SessionsList() {
                   </div>
                 </motion.div>
               )}
+              {/* Quick settings when collapsed */}
+              {!showSettings && (
+                <div className="flex flex-row items-center gap-2">
+                  <GPUSelectBox
+                    className="mt-0 w-[100px]"
+                    value={gpu}
+                    onChange={(value) => form.setValue("gpu", value)}
+                  />
+                  <Select
+                    value={timeout.toString()}
+                    onValueChange={(value) =>
+                      form.setValue("timeout", Number(value))
+                    }
+                  >
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue placeholder="Duration">
+                        {timeout} mins
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2 mins</SelectItem>
+                      <SelectItem value="15">15 mins</SelectItem>
+                      <SelectItem value="30">30 mins</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
+
             <div className="flex flex-row items-center gap-2">
               <Button
                 variant="ghost"
@@ -294,43 +323,7 @@ function SessionsList() {
                 Custom
                 <Settings className="ml-2 h-3 w-3" />
               </Button>
-              <Button
-                variant="shine"
-                className="rounded-[9px]"
-                onClick={async () => {
-                  if (!isSignedIn) {
-                    clerk.openSignIn({
-                      fallbackRedirectUrl: window.location.href,
-                    });
-                    return;
-                  }
-
-                  if (nodesSearch && !validateNodes(nodesSearch)) {
-                    toast.error("Invalid nodes format");
-                    return;
-                  }
-
-                  const response = await createDynamicSession.mutateAsync({
-                    gpu: gpu,
-                    comfyui_hash: comfyui_version,
-                    timeout: timeout,
-                    dependencies: nodesSearch ? nodesSearch.split(",") : [],
-                  });
-                  useLogStore.getState().clearLogs();
-
-                  router.navigate({
-                    to: "/sessions/$sessionId",
-                    params: {
-                      sessionId: response.session_id,
-                    },
-                    search: {
-                      ...(workflowLinkSearch && {
-                        workflowLink: workflowLinkSearch,
-                      }),
-                    },
-                  });
-                }}
-              >
+              <Button variant="shine" className="rounded-[9px]">
                 Start
                 <Play className="ml-2 h-3 w-3" />
               </Button>
