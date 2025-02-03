@@ -35,12 +35,6 @@ import {
   useWorkflowDeployments,
 } from "../workspace/ContainersTable";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -134,7 +128,7 @@ export function Playground(props: {
                 />
               )}
               {!deployment && (
-                <div className="flex flex-col gap-2 text-muted-foreground text-sm text-center">
+                <div className="flex flex-col gap-2 text-center text-muted-foreground text-sm">
                   <p>No deployment selected</p>
                 </div>
               )}
@@ -252,7 +246,8 @@ function RunRow({
       Object.keys(run.workflow_inputs).length > 0
     ) {
       return run.workflow_inputs;
-    } else if (run.workflow_api) {
+    }
+    if (run.workflow_api) {
       return Object.entries(run.workflow_api).reduce(
         (acc, [nodeId, node]) => {
           if (
@@ -452,7 +447,7 @@ function RunRow({
                           ) {
                             setVersion(run.version?.version);
                             toast.warning(
-                              "Version updated to: v" + run.version?.version,
+                              `Version updated to: v${run.version?.version}`,
                             );
                           }
                         }}
