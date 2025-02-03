@@ -24,8 +24,9 @@ export function getEnvColor(env: string) {
   }
 }
 
-export function useWorkflowDeployments(workflow_id: string) {
+export function useWorkflowDeployments(workflow_id?: string | null) {
   return useQuery<any>({
+    enabled: !!workflow_id,
     queryKey: ["workflow", workflow_id, "deployments"],
   });
 }

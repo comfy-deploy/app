@@ -3,10 +3,7 @@ import { PaddingLayout } from "@/components/PaddingLayout";
 import { LoadingWrapper } from "@/components/loading-wrapper";
 import { NavItem } from "@/components/nav-bar";
 import { useIsAdminAndMember } from "@/components/permissions";
-import {
-  SharePageComponent,
-  UserIcon,
-} from "@/components/run/SharePageComponent";
+import { Playground, UserIcon } from "@/components/run/SharePageComponent";
 import { SessionItem } from "@/components/sessions/SessionItem";
 import {
   Breadcrumb,
@@ -159,16 +156,9 @@ function WorkflowPageComponent() {
       view = (
         <PaddingLayout>
           <div className={cn("h-full w-full")}>
-            {workflow?.selected_machine_id && version?.id && (
-              <RealtimeWorkflowProvider workflowId={workflowId}>
-                <SharePageComponent
-                  runOrigin={"manual"}
-                  machine_id={workflow?.selected_machine_id}
-                  workflow_version_id={version?.id}
-                  inputs={getInputsFromWorkflowAPI(version?.workflow_api)}
-                />
-              </RealtimeWorkflowProvider>
-            )}
+            <RealtimeWorkflowProvider workflowId={workflowId}>
+              <Playground runOrigin={"manual"} />
+            </RealtimeWorkflowProvider>
           </div>
         </PaddingLayout>
       );

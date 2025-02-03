@@ -211,8 +211,7 @@ export function WorkflowInputsForm({
 // For share page
 export function RunWorkflowInline({
   inputs,
-  workflow_version_id,
-  machine_id,
+  deployment_id,
   default_values = {},
   hideRunButton = false,
   hideInputs = false,
@@ -221,8 +220,7 @@ export function RunWorkflowInline({
   model_id,
 }: {
   inputs: z.infer<typeof WorkflowInputsType>;
-  workflow_version_id: string;
-  machine_id: string;
+  deployment_id: string;
   default_values?: Record<string, any>;
   hideRunButton?: boolean;
   hideInputs?: boolean;
@@ -295,8 +293,7 @@ export function RunWorkflowInline({
       const body = model_id
         ? { model_id: model_id, inputs: val }
         : {
-            workflow_version_id: workflow_version_id,
-            machine_id: machine_id,
+            deployment_id: deployment_id,
             inputs: val,
             origin: runOrigin,
             batch_number: 1,

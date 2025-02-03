@@ -30,114 +30,114 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 // import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { AssetsBrowserPopup } from "../workspace/assets-browser-drawer";
+import {
+  getEnvColor,
+  useWorkflowDeployments,
+} from "../workspace/ContainersTable";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
-export function SharePageComponent(props: {
-  inputs: any[];
+export function Playground(props: {
   title?: ReactNode;
-  deployment?: any;
-  machine_id?: string;
-  workflow_version_id?: string;
   runOrigin?: any;
 }) {
-  // const { v2RunApi } = useFeatureFlags();
-
   const workflow_id = useWorkflowIdInWorkflowPage();
 
-  const sharedDeployment = props.deployment;
-  // const default_values = getDefaultValuesFromWorkflow(props.inputs);
-  const [default_values, setDefaultValues] = useState(
-    getDefaultValuesFromWorkflow(props.inputs),
+  const { data: deployments } = useWorkflowDeployments(workflow_id);
+
+  const [selectedDeployment, setSelectedDeployment] = useQueryState(
+    "deployment",
+    { defaultValue: deployments?.[0]?.id },
   );
 
-  const [filterFavoritesPage, setFilterFavoritesPage] =
-    useQueryState("favorite");
+  const deployment = deployments?.find(
+    (deployment) => deployment.id === selectedDeployment,
+  );
+
+  const [default_values, setDefaultValues] = useState(
+    getDefaultValuesFromWorkflow(deployment?.input_types),
+  );
+
+  useEffect(() => {
+    setDefaultValues(getDefaultValuesFromWorkflow(deployment?.input_types));
+  }, [deployment?.id]);
 
   return (
     <div className="grid h-full w-full grid-rows-[1fr,1fr] gap-4 pt-4 lg:grid-cols-[1fr,minmax(auto,500px)]">
       <div className="flex flex-col gap-4">
-        {/* <Card className="w-full h-fit"> */}
-        <div className="pt-4 pl-4 text-gray-500 text-sm">
-          Run outputs
-          {/* TODO: bad practice. It is for the trigger of tweak it */}
-          {/* <RunWorkflowButton
-            className="pointer-events-none absolute top-0 left-0 opacity-0"
-            workflow_id={workflow_id}
-            filterWorkspace={false}
-          /> */}
-        </div>
-
         <div className="rounded-sm ring-1 ring-gray-200">
-          {/* TODO: make a better UI favorite swapping */}
-          {/* <div className="absolute top-20 right-20">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="favorite-filter"
-                defaultChecked={!!filterFavoritesPage} // Convert to boolean
-                checked={!!filterFavoritesPage} // Convert to boolean
-                onCheckedChange={(checked) => setFilterFavoritesPage(checked ? "true" : null)}
-              />
-              <Label htmlFor="favorite-filter">Favorites</Label>
-            </div>
-          </div> */}
-
           <RunsTableVirtualized
             className="h-[calc(100vh-7rem)]"
-            // defaultData={props.defaultData}
             workflow_id={workflow_id}
             itemHeight={400}
             RunRowComponent={RunRow}
             setInputValues={setDefaultValues}
           />
         </div>
-
-        {/* <CardContent className="p-2">
-          <PublicRunOutputs preview={sharedDeployment?.showcase_media} />
-        </CardContent> */}
-        {/* </Card> */}
-
-        {/* <Card className="w-full h-fit">
-          <div className="text-sm text-gray-500 pl-4 pt-4">Run Logs</div>
-
-          <CardContent className="p-2">
-            <SharedRunLogs />
-          </CardContent>
-        </Card> */}
       </div>
 
       <Card className="h-fit w-full">
         {props.title}
 
-        <CardContent className="flex w-full flex-col gap-4 p-4">
-          {sharedDeployment?.description && (
-            <ScrollArea className="relative rounded-md bg-slate-100 p-2 [&>[data-radix-scroll-area-viewport]]:max-h-36">
-              {/* <DisplaySharePageSheet
-                mdString={sharedDeployment.description || ""}
-              /> */}
-              {/* <Markdown remarkPlugins={[remarkGfm]} className="prose "> */}
-              {sharedDeployment?.description}
-              {/* </Markdown> */}
-            </ScrollArea>
-          )}
+        <CardContent className="flex w-full flex-col gap-4 px-3 py-2">
           <Tabs defaultValue="regular">
-            {/* <TabsList className="">
-              <TabsTrigger value="regular">Inputs</TabsTrigger>
-              <TabsTrigger value="batch">Batch Request</TabsTrigger>
-            </TabsList> */}
             <TabsContent value="regular">
-              <RunWorkflowInline
-                blocking={false}
-                default_values={default_values}
-                inputs={props.inputs}
-                machine_id={
-                  props.machine_id ?? sharedDeployment?.machine_id ?? ""
-                }
-                workflow_version_id={
-                  props.workflow_version_id ??
-                  sharedDeployment?.workflow_version_id ??
-                  ""
-                }
-                runOrigin={props.runOrigin}
-              />
+              <Select
+                value={deployment?.id}
+                defaultValue={deployment?.id}
+                onValueChange={(value) => {
+                  const deployment = deployments?.find((d) => d.id === value);
+                  if (deployment) {
+                    setSelectedDeployment(deployment.id);
+                  }
+                }}
+              >
+                <SelectTrigger className="mb-4 w-[200px] capitalize">
+                  <SelectValue placeholder="Select deployment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {deployments?.map((deployment) => (
+                    <SelectItem
+                      key={deployment.id}
+                      value={deployment.id}
+                      className="flex items-center justify-between capitalize"
+                    >
+                      {/* <span>{deployment.environment}</span> */}
+                      <Badge
+                        variant="outline"
+                        className={cn(getEnvColor(deployment.environment))}
+                      >
+                        {deployment.environment}
+                      </Badge>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {deployment && (
+                <RunWorkflowInline
+                  blocking={false}
+                  default_values={default_values}
+                  inputs={deployment?.input_types}
+                  runOrigin={props.runOrigin}
+                  deployment_id={deployment?.id}
+                />
+              )}
+              {!deployment && (
+                <div className="flex flex-col gap-2 text-muted-foreground text-sm text-center">
+                  <p>No deployment selected</p>
+                </div>
+              )}
             </TabsContent>
             {/* <TabsContent value="batch">
               <BatchRequestForm
