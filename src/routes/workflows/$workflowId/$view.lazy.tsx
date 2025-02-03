@@ -89,6 +89,19 @@ export const Route = createLazyFileRoute("/workflows/$workflowId/$view")({
   component: WorkflowPageComponent,
 });
 
+import { create } from "zustand";
+import { MyDrawer } from "@/components/drawer";
+
+interface SelectedVersionState {
+  selectedVersion: string | null;
+  setSelectedVersion: (version: string | null) => void;
+}
+
+export const useSelectedVersionStore = create<SelectedVersionState>((set) => ({
+  selectedVersion: null,
+  setSelectedVersion: (version) => set({ selectedVersion: version }),
+}));
+
 function WorkflowPageComponent() {
   const { workflowId, view: currentView } = Route.useParams();
 
@@ -357,13 +370,13 @@ function WorkflowPageComponent() {
               label="API"
               // icon={Workflow}
               params={{ workflowId }}
-            />
+            /> */}
             <NavItem
               to="/workflows/$workflowId/playground"
               label="Playground"
               // icon={Workflow}
               params={{ workflowId }}
-            /> */}
+            />
             <NavItem
               to="/workflows/$workflowId/gallery"
               label="Gallery"
@@ -401,12 +414,29 @@ function WorkflowPageComponent() {
   );
 }
 
+function VersionDrawer() {
+  const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
+  return (
+    <MyDrawer
+      open={!!selectedVersion}
+      onClose={() => {
+        setSelectedVersion(null);
+      }}
+    >
+      <div>VersionDrawer</div>
+    </MyDrawer>
+  );
+}
+
 function RequestPage() {
   const { workflowId, view: currentView } = Route.useParams();
   const { data: deployments } = useWorkflowDeployments(workflowId);
 
+  const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
+
   return (
     <div className="flex flex-row mx-auto">
+      <VersionDrawer />
       <div className="h-full w-full flex flex-col gap-2 max-w-screen-lg mx-auto">
         <div className="text-sm font-bold">Description</div>
         <div
@@ -430,7 +460,12 @@ function RequestPage() {
               (deployment) => deployment.workflow_version_id === item.id,
             );
             return (
-              <div className="flex flex-row items-center justify-between gap-2 hover:bg-gray-100 py-2 px-4 rounded-md">
+              <div
+                className="flex flex-row items-center justify-between gap-2 rounded-md px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setSelectedVersion(item.id);
+                }}
+              >
                 <div className="grid grid-cols-[38px_auto_1fr] items-center gap-4">
                   <Badge className="rounded-sm text-xs whitespace-nowrap w-fit">
                     v{item.version}
