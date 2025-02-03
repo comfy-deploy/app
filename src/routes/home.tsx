@@ -333,12 +333,18 @@ function SessionsList() {
           <AnimatePresence>
             {showSettings && (
               <motion.div
-                initial={{ opacity: 0.6, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0.6, height: 0 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: "auto", marginBottom: -24 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                transition={{
+                  duration: 0.2,
+                  ease: "easeOut",
+                  height: { duration: 0.2 },
+                  marginBottom: { duration: 0.2 },
+                }}
+                className="overflow-hidden"
               >
-                <div className="-mb-4 mx-2 mt-4 rounded-t-2xl border-gray-200/60 border-x border-t bg-white/50 p-4 shadow-inner">
+                <div className="mx-2 mt-4 rounded-t-2xl border-gray-200/60 border-x border-t bg-white/50 p-4 shadow-inner">
                   <div className="mb-6">
                     <h3 className="font-medium text-gray-800 text-sm">
                       Quick Launch
