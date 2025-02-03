@@ -214,7 +214,6 @@ export default function Workspace({
   const setComfyUIWorkflow = (workflowJson: any, delayTimeout = 0) => {
     setTimeout(() => {
       currentWorkflowRef.current = workflowJson;
-      setWorkflow(workflowJson);
       sendWorkflow(workflowJson);
     }, delayTimeout);
   };
@@ -222,13 +221,7 @@ export default function Workspace({
   useEffect(() => {
     if (!cdSetup) return;
 
-    if (workflowId && !isLoadingVersion) {
-      console.log("using workflowId", versionData.workflow);
-      setComfyUIWorkflow(versionData.workflow);
-    } else if (workflowLink && !isLoadingWorkflowLink) {
-      console.log("using workflowLink", workflowLinkJson);
-      setComfyUIWorkflow(workflowLinkJson, 500);
-    } else {
+    if (!workflowId && !workflowLink) {
       console.log("no workflow, setting empty");
       setComfyUIWorkflow(
         {
@@ -236,6 +229,12 @@ export default function Workspace({
         },
         500,
       );
+    } else if (workflowId && !isLoadingVersion && versionData?.workflow) {
+      console.log("using workflowId", versionData.workflow);
+      setComfyUIWorkflow(versionData.workflow);
+    } else if (workflowLink && !isLoadingWorkflowLink && workflowLinkJson) {
+      console.log("using workflowLink", workflowLinkJson);
+      setComfyUIWorkflow(workflowLinkJson, 500);
     }
   }, [
     workflowId,

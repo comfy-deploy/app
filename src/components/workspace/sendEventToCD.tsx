@@ -35,8 +35,12 @@ export function sendInetrnalEventToCD(data?: any) {
 }
 
 export function sendWorkflow(workflow_json: any) {
-  const state = useWorkflowStore.getState();
+  // Batch the state updates together
+  useWorkflowStore.setState({
+    workflow: workflow_json,
+    hasChanged: false,
+  });
+
+  // Send event after state is updated
   sendEventToCD("graph_load", workflow_json);
-  state.setWorkflow(workflow_json);
-  state.setHasChanged(false);
 }
