@@ -16,6 +16,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Download, SearchX } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "../ui/carousel";
 // import dynamic from "next/dynamic";
 
 // const ModelViewer = dynamic(
@@ -145,6 +152,8 @@ function FileURLRenderMulti({
   lazyLoading: boolean;
   canDownload: boolean;
 }) {
+  const [openOnIndex, setOpenOnIndex] = useState<number | null>(null);
+
   if (!canExpandToView) {
     return (
       <>
@@ -157,72 +166,100 @@ function FileURLRenderMulti({
 
   return (
     <>
+      <Dialog
+        open={openOnIndex !== null}
+        onOpenChange={() => setOpenOnIndex(null)}
+      >
+        <DialogContent className="max-h-fit max-w-fit">
+          <DialogHeader>
+            <DialogTitle />
+          </DialogHeader>
+          {urls.length === 1 && (
+            <FileURLRender
+              url={urls[0].url}
+              imgClasses="max-w-full rounded-[8px] max-h-[80vh]"
+              lazyLoading={lazyLoading}
+            />
+          )}
+          {urls.length > 1 && (
+            <Carousel className=" mx-9" opts={{ startIndex: openOnIndex || 0 }}>
+              <CarouselContent>
+                {urls.map((image, index) => (
+                  <CarouselItem
+                    key={index}
+                    className="flex aspect-square max-h-[80vh] max-w-full items-center justify-center"
+                  >
+                    <FileURLRender
+                      url={image.url}
+                      imgClasses="max-w-full rounded-[8px] max-h-[80vh]"
+                      lazyLoading={lazyLoading}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <>
+                <CarouselPrevious />
+                <CarouselNext />
+              </>
+            </Carousel>
+          )}
+        </DialogContent>
+      </Dialog>
       {urls.map((_, i) => {
         const urlImage = urls[i];
 
         return (
-          <Dialog key={i}>
-            <DialogTrigger>
-              <div className="group/item relative flex overflow-clip rounded-[8px] ">
-                <Skeleton
-                  key={i}
-                  className={cn("aspect-square min-w-[230px]")}
-                />
-                <FileURLRender
-                  url={urlImage.url}
-                  imgClasses={cn(
-                    imgClasses,
-                    "absolute top-0 left-0 pointer-events-none",
-                  )}
-                  lazyLoading={lazyLoading}
-                />
+          <button
+            key={i}
+            type="button"
+            className="group/item relative flex overflow-clip rounded-[8px] "
+            onClick={() => {
+              setOpenOnIndex(i);
+            }}
+          >
+            <Skeleton className={cn("aspect-square min-w-[230px]")} />
+            <FileURLRender
+              url={urlImage.url}
+              imgClasses={cn(
+                imgClasses,
+                "absolute top-0 left-0 pointer-events-none",
+              )}
+              lazyLoading={lazyLoading}
+            />
 
-                {urlImage.upload_duration && (
-                  <Badge className="absolute top-2 left-2 text-white opacity-0 transition-all duration-300 group-hover/item:bg-black group-hover/item:opacity-100">
-                    Upload time:{" "}
-                    {Math.round(urlImage.upload_duration * 100) / 100}s
-                  </Badge>
-                )}
+            {urlImage.upload_duration && (
+              <Badge className="absolute top-2 left-2 text-white opacity-0 transition-all duration-300 group-hover/item:bg-black group-hover/item:opacity-100">
+                Upload time: {Math.round(urlImage.upload_duration * 100) / 100}s
+              </Badge>
+            )}
 
-                {urlImage.node_meta && (
-                  <Badge className="absolute bottom-2 left-2 text-white opacity-0 transition-all duration-300 group-hover/item:bg-black/25 group-hover/item:opacity-100">
-                    {urlImage.node_meta.node_class}
-                  </Badge>
-                )}
+            {urlImage.node_meta && (
+              <Badge className="absolute bottom-2 left-2 text-white opacity-0 transition-all duration-300 group-hover/item:bg-black/25 group-hover/item:opacity-100">
+                {urlImage.node_meta.node_class}
+              </Badge>
+            )}
 
-                {canDownload && (
-                  <Button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      const url = urlImage;
-                      const a = document.createElement("a");
-                      a.href = url.url;
-                      a.download = `ComfyImage_${i}`;
-                      a.target = "_blank";
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                    }}
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 bg-black bg-opacity-50 text-white opacity-0 transition-all duration-300 hover:bg-black hover:bg-opacity-70 hover:text-white group-hover/item:opacity-100"
-                  >
-                    <Download size={16} />
-                  </Button>
-                )}
-              </div>
-            </DialogTrigger>
-            <DialogContent className="max-h-fit max-w-fit">
-              <DialogHeader>
-                <DialogTitle />
-              </DialogHeader>
-              <FileURLRender
-                url={urlImage.url}
-                imgClasses="max-w-full rounded-[8px] max-h-[80vh]"
-                lazyLoading={lazyLoading}
-              />
-            </DialogContent>
-          </Dialog>
+            {canDownload && (
+              <Button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const url = urlImage;
+                  const a = document.createElement("a");
+                  a.href = url.url;
+                  a.download = `ComfyImage_${i}`;
+                  a.target = "_blank";
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 bg-black bg-opacity-50 text-white opacity-0 transition-all duration-300 hover:bg-black hover:bg-opacity-70 hover:text-white group-hover/item:opacity-100"
+              >
+                <Download size={16} />
+              </Button>
+            )}
+          </button>
         );
       })}
     </>
