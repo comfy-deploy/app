@@ -47,7 +47,7 @@ export function useMachine(machine_id?: string) {
 export function useMachineEvents(machine_id: string) {
   return useQuery<any[]>({
     queryKey: ["machine", machine_id, "events"],
-    refetchInterval: 5000,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 
@@ -71,7 +71,7 @@ export function useMachineVersions(machine_id: string) {
 export function useMachineVersionsAll(machine_id: string) {
   return useQuery<any[]>({
     queryKey: ["machine", "serverless", machine_id, "versions", "all"],
-    refetchInterval: 5000,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 
@@ -88,6 +88,6 @@ export function useMachineVersion(
       "versions",
       machine_version_id,
     ],
-    refetchInterval: 5000,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
