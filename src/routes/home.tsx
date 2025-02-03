@@ -60,6 +60,8 @@ export const Route = createFileRoute("/home")({
       // })
       .optional(),
     workflowLink: z.string().optional(),
+    docker_image: z.string().optional(),
+    python: z.number().optional(),
   }),
 });
 
@@ -96,6 +98,8 @@ function SessionsList() {
     timeout: timeoutSearch = 15,
     nodes: nodesSearch = "",
     workflowLink: workflowLinkSearch = "",
+    docker_image: dockerImageSearch = "",
+    python: pythonSearch = "",
   } = Route.useSearch();
 
   // console.log(data);
@@ -344,6 +348,12 @@ function SessionsList() {
                     comfyui_hash: comfyui_version,
                     timeout: timeout,
                     dependencies: nodesSearch ? nodesSearch.split(",") : [],
+                    ...(dockerImageSearch && {
+                      base_docker_image: dockerImageSearch,
+                    }),
+                    ...(pythonSearch && {
+                      python_version: pythonSearch.toString(),
+                    }),
                   });
                   useLogStore.getState().clearLogs();
 
