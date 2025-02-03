@@ -185,9 +185,7 @@ export function LeftMenuButtons({ endpoint }: WorkspaceButtonProps) {
           tooltip: "Go back to the previous page.",
           event: "back",
           onClick: (_: string, __: unknown) => {
-            router.navigate({
-              to: "/home",
-            });
+            router.history.back();
           },
         },
       ],
