@@ -323,7 +323,43 @@ function SessionsList() {
                 Custom
                 <Settings className="ml-2 h-3 w-3" />
               </Button>
-              <Button variant="shine" className="rounded-[9px]">
+              <Button
+                variant="shine"
+                className="rounded-[9px]"
+                onClick={async () => {
+                  if (!isSignedIn) {
+                    clerk.openSignIn({
+                      fallbackRedirectUrl: window.location.href,
+                    });
+                    return;
+                  }
+
+                  if (nodesSearch && !validateNodes(nodesSearch)) {
+                    toast.error("Invalid nodes format");
+                    return;
+                  }
+
+                  const response = await createDynamicSession.mutateAsync({
+                    gpu: gpu,
+                    comfyui_hash: comfyui_version,
+                    timeout: timeout,
+                    dependencies: nodesSearch ? nodesSearch.split(",") : [],
+                  });
+                  useLogStore.getState().clearLogs();
+
+                  router.navigate({
+                    to: "/sessions/$sessionId",
+                    params: {
+                      sessionId: response.session_id,
+                    },
+                    search: {
+                      ...(workflowLinkSearch && {
+                        workflowLink: workflowLinkSearch,
+                      }),
+                    },
+                  });
+                }}
+              >
                 Start
                 <Play className="ml-2 h-3 w-3" />
               </Button>
