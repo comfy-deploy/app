@@ -6,6 +6,7 @@ import {
   QueueButtons,
   WorkflowButtons,
   ClearContainerButtons,
+  WorkflowTemplateButtons,
 } from "./workspace-buttons";
 
 interface ButtonConfig {
@@ -149,6 +150,7 @@ export function WorkspaceControls(props: {
         endpoint={props.endpoint}
         machine_id={props.machine_id}
       />
+      <WorkflowTemplateButtons endpoint={props.endpoint} />
       <ClearContainerButtons endpoint={props.endpoint} />
     </>
   );

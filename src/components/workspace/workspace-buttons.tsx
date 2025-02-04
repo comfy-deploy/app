@@ -1,10 +1,11 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useRouter, useSearch } from "@tanstack/react-router";
 import { useWorkspaceButtons } from "./workspace-control";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogHeader,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { WorkflowList } from "@/components/workflow-dropdown";
 import { VersionList } from "@/components/version-select";
@@ -14,7 +15,7 @@ import { useMatch } from "@tanstack/react-router";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useWorkflowVersion } from "../workflow-list";
-import { useWorkflowStore } from "./Workspace";
+import { useCDStore, useWorkflowStore } from "./Workspace";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useQuery } from "@tanstack/react-query";
 import { useMachine, useMachineVersions } from "@/hooks/use-machine";
@@ -22,7 +23,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { api } from "@/lib/api";
-import { ExternalLink, History, Plus } from "lucide-react";
+import { ExternalLink, History, Plus, X } from "lucide-react";
 import { MachineVersionListItem } from "../machine/machine-deployment";
 import {
   Select,
@@ -34,6 +35,8 @@ import {
 import { Progress } from "../ui/progress";
 import { Timer } from "../workflows/Timer";
 import { toast } from "sonner";
+import { defaultWorkflowTemplates } from "@/utils/default-workflow";
+import { sendWorkflow } from "./sendEventToCD";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -485,6 +488,100 @@ export function WorkflowButtons({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { workflowId, machineId, workflowLink } = useSearch({
+    from: "/sessions/$sessionId/",
+  });
+  const { cdSetup } = useCDStore();
+
+  useEffect(() => {
+    if (!cdSetup) return;
+    if (workflowId || machineId || workflowLink) return;
+
+    setTimeout(() => {
+      setIsDialogOpen(true);
+    }, 1000);
+  }, [cdSetup, workflowId, machineId, workflowLink]);
+
+  const data = useMemo(() => {
+    return {
+      containerSelector: "body > div.comfyui-body-top > div",
+      buttonConfigs: [
+        {
+          id: "workflow-template",
+          icon: "pi-plus",
+          tooltip: "Workflow Template",
+          event: "workflow_template",
+          style: {
+            height: "28px",
+            marginLeft: "10px",
+            borderRadius: "4px",
+          },
+          onClick: (_: string, __: unknown) => {
+            setIsDialogOpen(true);
+          },
+        },
+      ],
+      buttonIdPrefix: "cd-button-workflow-template-",
+      insertBefore: "body > div.comfyui-body-top > div > div.flex-grow",
+    };
+  }, []);
+
+  useWorkspaceButtons(data, endpoint);
+
+  return (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogContent
+        hideOverlay
+        className="border-zinc-800 bg-zinc-900 text-white drop-shadow-md sm:max-w-[850px]"
+      >
+        <DialogHeader>
+          <DialogTitle>Welcome to ComfyUI!</DialogTitle>
+          <DialogDescription className="text-zinc-400">
+            Choose a workflow template to kickstart your creative journey. Each
+            template is designed to help you explore different possibilities in
+            AI image generation.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-1 py-2 md:grid-cols-2 lg:grid-cols-3">
+          {defaultWorkflowTemplates.map((template) => (
+            // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+            <div
+              key={template.workflowId}
+              onClick={() => {
+                sendWorkflow(JSON.parse(template.workflowJson));
+              }}
+              className="group relative cursor-pointer overflow-hidden rounded-md border border-zinc-800 bg-zinc-950 p-4 transition-all hover:border-zinc-700"
+            >
+              <div className="mb-3 aspect-square overflow-hidden rounded-[10px]">
+                <img
+                  src={template.workflowImageUrl}
+                  alt={template.workflowName}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
+              <div>
+                <h3 className="mb-1 font-semibold text-sm text-white">
+                  {template.workflowName}
+                </h3>
+                <p className="line-clamp-2 text-xs text-zinc-400 leading-snug">
+                  {template.workflowDescription}
+                </p>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
+                  Use Template
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
