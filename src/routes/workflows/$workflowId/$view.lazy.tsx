@@ -153,20 +153,20 @@ function WorkflowPageComponent() {
         </PaddingLayout>
       );
       break;
-    case "deployment":
-      view = (
-        <PaddingLayout>
-          <div className="relative mx-auto my-10 w-full max-w-screen-lg">
-            <LoadingWrapper tag="api">
-              <APIDocs
-                domain={process.env.NEXT_PUBLIC_CD_API_URL!}
-                workflow_id={workflowId}
-              />
-            </LoadingWrapper>
-          </div>
-        </PaddingLayout>
-      );
-      break;
+    // case "deployment":
+    //   view = (
+    //     <PaddingLayout>
+    //       <div className="relative mx-auto my-10 w-full max-w-screen-lg">
+    //         <LoadingWrapper tag="api">
+    //           <APIDocs
+    //             domain={process.env.NEXT_PUBLIC_CD_API_URL!}
+    //             workflow_id={workflowId}
+    //           />
+    //         </LoadingWrapper>
+    //       </div>
+    //     </PaddingLayout>
+    //   );
+    //   break;
     case "playground":
       view = (
         <PaddingLayout>
@@ -434,6 +434,7 @@ export function VersionDrawer({ workflowId }: { workflowId: string }) {
           <APIDocs
             domain={process.env.NEXT_PUBLIC_CD_API_URL!}
             workflow_id={workflowId}
+            workflow_version_id={selectedVersion}
           />
         </LoadingWrapper>
       </div>
@@ -451,7 +452,8 @@ function RequestPage({
   const { workflowId } = Route.useParams();
   const { workflow: currentWorkflow, isLoading: isLoadingWorkflow } =
     useCurrentWorkflow(workflowId);
-  const { data: deployments } = useWorkflowDeployments(workflowId);
+  const { data: deployments, refetch: refetchDeployments } =
+    useWorkflowDeployments(workflowId);
   const { setSelectedVersion } = useSelectedVersionStore();
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -594,7 +596,7 @@ function RequestPage({
                     <div />
                   )}
                   <UserIcon user_id={item.user_id} className="h-5 w-5" />
-                  <div className="text-muted-foreground text-xs">
+                  <div className="whitespace-nowrap text-muted-foreground text-xs">
                     {getRelativeTime(item.created_at)}
                   </div>
                   <DropdownMenu>
