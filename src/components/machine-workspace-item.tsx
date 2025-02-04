@@ -373,7 +373,7 @@ function MachineSelectList({
       animate={{ height: "400px" }}
       exit={{ height: 0 }}
       transition={{ duration: 0.2, ease: "circOut" }}
-      className="-translate-x-1/2 fixed bottom-10 left-1/2 z-50 w-[520px] overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-lg"
+      className="-translate-x-1/2 fixed bottom-10 left-1/2 z-50 w-[520px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
     >
       <div className="px-3 py-2">
         <div className="mx-3 my-2 flex flex-row items-center justify-between">

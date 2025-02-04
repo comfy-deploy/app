@@ -53,6 +53,10 @@ import { Slider } from "../ui/slider";
 import { Switch } from "../ui/switch";
 import { ExtraDockerCommands } from "./extra-docker-commands";
 import type { StepValidation } from "../onboarding/workflow-import";
+import {
+  UnsavedChangesWarning,
+  useUnsavedChangesWarning,
+} from "../unsaved-changes-warning";
 
 export function MachineSettingsWrapper({
   machine,
@@ -256,10 +260,14 @@ function ServerlessSettings({
   disableUnsavedChangesWarning?: boolean;
 }) {
   const [isFormDirty, setIsFormDirty] = useState(false);
-  const controls = useAnimation();
-  const navigate = useNavigate();
-
   const isNew = machine.id === "new";
+  const { controls } = useUnsavedChangesWarning({
+    isDirty: isFormDirty,
+    isNew,
+    disabled: disableUnsavedChangesWarning,
+  });
+
+  const navigate = useNavigate();
 
   const form = useForm<FormData>({
     resolver: zodResolver(serverlessFormSchema),
@@ -305,41 +313,6 @@ function ServerlessSettings({
 
     return () => subscription.unsubscribe();
   }, [form, machine, onValueChange, disableUnsavedChangesWarning]);
-
-  useBlocker({
-    enableBeforeUnload: () => {
-      return !disableUnsavedChangesWarning && !!isFormDirty && !isNew;
-    },
-    shouldBlockFn: () => {
-      if (isNew || disableUnsavedChangesWarning) return false;
-
-      if (isFormDirty) {
-        controls.start({
-          x: [0, -8, 12, -15, 8, -10, 5, -3, 2, -1, 0],
-          y: [0, 4, -9, 6, -12, 8, -3, 5, -2, 1, 0],
-          filter: [
-            "blur(0px)",
-            "blur(2px)",
-            "blur(2px)",
-            "blur(3px)",
-            "blur(2px)",
-            "blur(2px)",
-            "blur(1px)",
-            "blur(2px)",
-            "blur(1px)",
-            "blur(1px)",
-            "blur(0px)",
-          ],
-          transition: {
-            duration: 0.4,
-            ease: easeOut,
-          },
-        });
-      }
-
-      return !!isFormDirty;
-    },
-  });
 
   useEffect(() => {
     const errors = form.formState.errors;
@@ -636,53 +609,17 @@ function ServerlessSettings({
         )}
       </form>
 
-      <AnimatePresence>
-        {!disableUnsavedChangesWarning && isFormDirty && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: "spring", bounce: 0.5, duration: 0.5 }}
-            className="fixed right-0 bottom-4 left-0 z-50 mx-auto w-fit"
-          >
-            <motion.div
-              animate={controls}
-              className="flex w-96 flex-row items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm shadow-md"
-            >
-              <div className="flex flex-row items-center gap-2">
-                <Info className="h-4 w-4" /> Unsaved changes
-              </div>
-              <div className="flex flex-row items-center gap-1">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    form.reset();
-                    setIsFormDirty(false);
-                  }}
-                >
-                  Reset
-                </Button>
-                <Button
-                  onClick={() => formRef.current?.requestSubmit()}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Save className="h-4 w-4" />
-                      Save
-                    </span>
-                  )}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <UnsavedChangesWarning
+        isDirty={isFormDirty}
+        isLoading={isLoading}
+        onReset={() => {
+          form.reset();
+          setIsFormDirty(false);
+        }}
+        onSave={() => formRef.current?.requestSubmit()}
+        controls={controls}
+        disabled={disableUnsavedChangesWarning}
+      />
     </>
   );
 }

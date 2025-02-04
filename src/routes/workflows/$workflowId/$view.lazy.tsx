@@ -72,13 +72,23 @@ import {
   Workflow,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useMachine } from "@/hooks/use-machine";
 import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 import { VersionList } from "@/components/version-select";
 import { Badge } from "@/components/ui/badge";
 import { getRelativeTime } from "@/lib/get-relative-time";
+import { useForm } from "react-hook-form";
+import {
+  UnsavedChangesWarning,
+  useUnsavedChangesWarning,
+} from "@/components/unsaved-changes-warning";
+import { toast } from "sonner";
+import { create } from "zustand";
+import { MyDrawer } from "@/components/drawer";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
 
 const pages = [
   "workspace",
@@ -93,13 +103,6 @@ export const Route = createLazyFileRoute("/workflows/$workflowId/$view")({
   component: WorkflowPageComponent,
 });
 
-import { create } from "zustand";
-import { MyDrawer } from "@/components/drawer";
-import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
-import { toast } from "sonner";
-import { api } from "@/lib/api";
-import { callServerPromise } from "@/lib/call-server-promise";
-
 interface SelectedVersionState {
   selectedVersion: string | null;
   setSelectedVersion: (version: string | null) => void;
@@ -112,6 +115,7 @@ export const useSelectedVersionStore = create<SelectedVersionState>((set) => ({
 
 function WorkflowPageComponent() {
   const { workflowId, view: currentView } = Route.useParams();
+  const [isEditing, setIsEditing] = useState(false);
 
   const [mountedViews, setMountedViews] = useState<Set<string>>(
     new Set([currentView]),
@@ -138,7 +142,7 @@ function WorkflowPageComponent() {
     case "requests":
       view = (
         <PaddingLayout>
-          <RequestPage />
+          <RequestPage setIsEditing={setIsEditing} />
         </PaddingLayout>
       );
       break;
@@ -389,6 +393,7 @@ function WorkflowPageComponent() {
       </Portal>
       <div className="h-full">
         {selectedMachine &&
+          !isEditing &&
           currentView !== "playground" &&
           currentView !== "gallery" && (
             <MachineWorkspaceItem
@@ -429,32 +434,125 @@ function VersionDrawer() {
   );
 }
 
-function RequestPage() {
-  const { workflowId, view: currentView } = Route.useParams();
-  const { data: deployments, refetch: refetchDeployments } =
-    useWorkflowDeployments(workflowId);
+interface WorkflowData {
+  description?: string;
+  [key: string]: any; // Allow for other unknown fields
+}
 
-  const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
+interface WorkflowDescriptionForm {
+  description: string;
+}
+
+function RequestPage({
+  setIsEditing,
+}: { setIsEditing: (isEditing: boolean) => void }) {
+  const { workflowId } = Route.useParams();
+  const { workflow: currentWorkflow, isLoading: isLoadingWorkflow } =
+    useCurrentWorkflow(workflowId);
+  const { data: deployments } = useWorkflowDeployments(workflowId);
+  const { setSelectedVersion } = useSelectedVersionStore();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const defaultValues = useMemo(
+    () => ({
+      description: currentWorkflow?.description ?? "",
+    }),
+    [currentWorkflow?.description],
+  );
+
+  const form = useForm<WorkflowDescriptionForm>({
+    defaultValues,
+  });
+
+  // Update form when workflow data is loaded
+  useEffect(() => {
+    if (!isLoadingWorkflow && currentWorkflow) {
+      form.reset({ description: currentWorkflow.description ?? "" });
+      setIsDirty(false);
+      setIsEditing(false);
+    }
+  }, [isLoadingWorkflow, currentWorkflow, form, setIsEditing]);
+
+  const { controls } = useUnsavedChangesWarning({
+    isDirty,
+    isNew: false,
+  });
+
+  // Watch for form changes and compare with initial values
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const subscription = form.watch((value) => {
+        const formValues = form.getValues();
+        const isDirty = Object.keys(formValues).some((key) => {
+          const formKey = key as keyof WorkflowDescriptionForm;
+          const currentValue = String(formValues[formKey]);
+          const defaultValue = String(defaultValues[formKey]);
+          return currentValue !== defaultValue;
+        });
+        setIsDirty(isDirty);
+        setIsEditing(isDirty);
+      });
+      return () => subscription.unsubscribe();
+    }, 0);
+
+    return () => clearTimeout(timeout);
+  }, [form, defaultValues, setIsEditing]);
+
+  const onSubmit = async (data: WorkflowDescriptionForm) => {
+    try {
+      setIsLoading(true);
+      await callServerPromise(
+        api({
+          url: `workflow/${workflowId}`,
+          init: {
+            method: "PATCH",
+            body: JSON.stringify({
+              description: data.description,
+            }),
+          },
+        }),
+      );
+      setIsDirty(false);
+      setIsEditing(false);
+    } catch (error) {
+      toast.error("Failed to update description");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="flex flex-row mx-auto">
-      {/* <VersionDrawer /> */}
-      <div className="h-full w-full flex flex-col gap-2 max-w-screen-lg mx-auto">
-        <div className="text-sm font-bold">Description</div>
-        <div
-          contentEditable
-          className="min-h-[100px] w-full text-muted-foreground text-lg focus:bg-muted/50 p-2 -m-2 outline-none rounded-md"
-          role="textbox"
-          aria-multiline="true"
-        >
-          Baisc workflow for cloth swapping..
-        </div>
+    <div className="mx-auto flex flex-row">
+      <VersionDrawer />
+      <div className="mx-auto flex h-full w-full max-w-screen-lg flex-col gap-2">
+        <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="font-bold text-sm">Description</div>
+          <textarea
+            {...form.register("description")}
+            className="min-h-[100px] w-full rounded-md p-2 text-muted-foreground outline-none focus:bg-muted/50"
+            placeholder="Type a description for your workflow..."
+          />
+        </form>
 
-        <div className="text-sm font-bold mt-4">Versions</div>
+        <UnsavedChangesWarning
+          isDirty={isDirty}
+          isLoading={isLoading}
+          onReset={() => {
+            form.reset();
+            setIsDirty(false);
+            setIsEditing(false);
+          }}
+          onSave={() => formRef.current?.requestSubmit()}
+          controls={controls}
+        />
+
+        <div className="mt-4 font-bold text-sm">Versions</div>
         <VersionList
           hideSearch
           workflow_id={workflowId || ""}
-          className="w-full ring-1 ring-gray-200 rounded-md p-1"
+          className="w-full rounded-md p-1 ring-1 ring-gray-200"
           containerClassName="max-h-[200px]"
           height={40}
           renderItem={(item) => {
