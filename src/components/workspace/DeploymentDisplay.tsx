@@ -528,14 +528,14 @@ export function APIDocs({
   return (
     <div className="flex flex-col gap-4">
       {!model && (
-        <h2 className="flex items-center justify-between gap-2 font-bold text-2xl">
+        <h2 className="mt-2 flex items-center justify-between gap-2 font-semibold text-xl">
           Deployment
-          <CreateDeploymentButtonV2 workflow_id={workflow_id} />
+          {/* <CreateDeploymentButtonV2 workflow_id={workflow_id} /> */}
         </h2>
       )}
 
       {!model && <VersionDetails workflow_id={workflow_id} />}
-      {!model && deployments && deployments.length > 0 && (
+      {/* {!model && deployments && deployments.length > 0 && (
         <Card className="p-4">
           <div className="space-y-2">
             {deployments
@@ -579,7 +579,7 @@ export function APIDocs({
               ))}
           </div>
         </Card>
-      )}
+      )} */}
 
       {!(!model && deployments && deployments.length > 0) && (
         <Card className="p-4">

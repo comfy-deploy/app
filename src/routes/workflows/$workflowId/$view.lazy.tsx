@@ -420,7 +420,7 @@ function WorkflowPageComponent() {
   );
 }
 
-function VersionDrawer() {
+export function VersionDrawer({ workflowId }: { workflowId: string }) {
   const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
   return (
     <MyDrawer
@@ -429,7 +429,14 @@ function VersionDrawer() {
         setSelectedVersion(null);
       }}
     >
-      <div>VersionDrawer</div>
+      <div className="overflow-y-auto">
+        <LoadingWrapper tag="api">
+          <APIDocs
+            domain={process.env.NEXT_PUBLIC_CD_API_URL!}
+            workflow_id={workflowId}
+          />
+        </LoadingWrapper>
+      </div>
     </MyDrawer>
   );
 }
@@ -520,7 +527,7 @@ function RequestPage({
 
   return (
     <div className="mx-auto flex flex-row">
-      <VersionDrawer />
+      <VersionDrawer workflowId={workflowId} />
       <div className="mx-auto flex h-full w-full max-w-screen-lg flex-col gap-2">
         <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)}>
           <div className="font-bold text-sm">Description</div>
@@ -555,18 +562,13 @@ function RequestPage({
               (deployment) => deployment.workflow_version_id === item.id,
             );
             return (
-              <div
-                className="flex flex-row items-center justify-between gap-2 rounded-md px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                onClick={() => {
-                  setSelectedVersion(item.id);
-                }}
-              >
+              <div className="flex flex-row items-center justify-between gap-2 rounded-md px-4 py-2 hover:bg-gray-100">
                 <div className="grid grid-cols-[38px_auto_1fr] items-center gap-4">
-                  <Badge className="rounded-sm text-xs whitespace-nowrap w-fit">
+                  <Badge className="w-fit whitespace-nowrap rounded-sm text-xs">
                     v{item.version}
                   </Badge>
 
-                  <div className="text-muted-foreground text-xs truncate">
+                  <div className="truncate text-muted-foreground text-xs">
                     {item.comment}
                   </div>
                 </div>
@@ -575,10 +577,14 @@ function RequestPage({
                     <div className="flex flex-row gap-2">
                       {myDeployments.map((deployment) => (
                         <Badge
+                          key={deployment.id}
                           className={cn(
-                            "w-fit whitespace-nowrap rounded-sm text-xs",
+                            "w-fit cursor-pointer whitespace-nowrap rounded-sm text-xs",
                             getEnvColor(deployment.environment),
                           )}
+                          onClick={() => {
+                            setSelectedVersion(item.id);
+                          }}
                         >
                           {deployment?.environment}
                         </Badge>
