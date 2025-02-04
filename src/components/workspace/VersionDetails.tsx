@@ -17,7 +17,7 @@ export function ExternalInputsDisplay(props: {
   const inputs = getInputsFromWorkflowAPI(props.workflow_api);
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 space-y-2">
       <div className="font-bold text-sm">
         Workflow Inputs{" "}
         <Badge>{props.version ? `(v${props.version})` : ""}</Badge>

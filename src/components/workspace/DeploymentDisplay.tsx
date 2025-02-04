@@ -489,26 +489,22 @@ export function APIDocs({
   workflow_id,
   domain,
   model,
+  workflow_version_id,
 }: {
   workflow_id: string;
   domain: string;
   model?: any;
+  workflow_version_id?: string;
 }) {
   const { data: deployments } = useWorkflowDeployments(workflow_id);
 
-  const [selectedDeployment, setSelectedDeployment] = useState<any | undefined>(
-    undefined,
+  const selectedDeployment = deployments?.find(
+    (deployment) => deployment.workflow_version_id === workflow_version_id,
   );
 
-  useEffect(() => {
-    if (deployments && deployments.length > 0) {
-      // Find the first deployment that doesn't end with "share"
-      const firstNonShareDeployment = deployments.find(
-        (deployment) => !deployment.environment.endsWith("share"),
-      );
-      setSelectedDeployment(firstNonShareDeployment || deployments[0]);
-    }
-  }, [deployments]);
+  if (!selectedDeployment) {
+    return <div>Deployment not found</div>;
+  }
 
   const workflowInput = selectedDeployment
     ? getInputsFromWorkflow(selectedDeployment.version)
@@ -528,14 +524,14 @@ export function APIDocs({
   return (
     <div className="flex flex-col gap-4">
       {!model && (
-        <h2 className="flex items-center justify-between gap-2 font-bold text-2xl">
+        <h2 className="mt-2 flex items-center justify-between gap-2 font-semibold text-xl">
           Deployment
-          <CreateDeploymentButtonV2 workflow_id={workflow_id} />
+          {/* <CreateDeploymentButtonV2 workflow_id={workflow_id} /> */}
         </h2>
       )}
 
       {!model && <VersionDetails workflow_id={workflow_id} />}
-      {!model && deployments && deployments.length > 0 && (
+      {/* {!model && deployments && deployments.length > 0 && (
         <Card className="p-4">
           <div className="space-y-2">
             {deployments
@@ -579,7 +575,7 @@ export function APIDocs({
               ))}
           </div>
         </Card>
-      )}
+      )} */}
 
       {!(!model && deployments && deployments.length > 0) && (
         <Card className="p-4">
@@ -624,7 +620,7 @@ export function APIDocs({
             steps={[
               {
                 title: "Install the typescript comfydeploy SDK",
-                content: <CodeBlock lang="bash" code={`npm i comfydeploy`} />,
+                content: <CodeBlock lang="bash" code={"npm i comfydeploy"} />,
               },
               {
                 title: "Initialize your client ",
@@ -655,42 +651,13 @@ export function APIDocs({
                 title: (
                   <div className="flex w-full items-center justify-between gap-2">
                     Create a run via deployment id{" "}
-                    {!model && (
-                      <Select
-                        value={selectedDeployment?.id}
-                        onValueChange={(value) => {
-                          const deployment = deployments?.find(
-                            (d) => d.id === value,
-                          );
-                          if (deployment) {
-                            setSelectedDeployment(deployment);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[200px] capitalize">
-                          <SelectValue placeholder="Select a deployment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {deployments?.map((deployment) => (
-                            <SelectItem
-                              key={deployment.id}
-                              value={deployment.id}
-                              className="flex items-center justify-between capitalize"
-                            >
-                              {/* <span>{deployment.environment}</span> */}
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  getEnvColor(deployment.environment),
-                                )}
-                              >
-                                {deployment.environment}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Badge
+                      className={cn(
+                        getEnvColor(selectedDeployment?.environment),
+                      )}
+                    >
+                      {selectedDeployment?.environment}
+                    </Badge>
                   </div>
                 ),
                 content: (
@@ -812,7 +779,7 @@ export function APIDocs({
             steps={[
               {
                 title: "Install the typescript comfydeploy SDK",
-                content: <CodeBlock lang="bash" code={`npm i comfydeploy`} />,
+                content: <CodeBlock lang="bash" code={"npm i comfydeploy"} />,
               },
               {
                 title: "Initialize your client",
@@ -843,42 +810,13 @@ export function APIDocs({
                 title: (
                   <div className="flex w-full items-center justify-between gap-2">
                     Create a run via deployment id{" "}
-                    {!model && (
-                      <Select
-                        value={selectedDeployment?.id}
-                        onValueChange={(value) => {
-                          const deployment = deployments?.find(
-                            (d) => d.id === value,
-                          );
-                          if (deployment) {
-                            setSelectedDeployment(deployment);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[200px] capitalize">
-                          <SelectValue placeholder="Select a deployment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {deployments?.map((deployment) => (
-                            <SelectItem
-                              key={deployment.id}
-                              value={deployment.id}
-                              className="flex items-center justify-between capitalize"
-                            >
-                              {/* <span>{deployment.environment}</span> */}
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  getEnvColor(deployment.environment),
-                                )}
-                              >
-                                {deployment.environment}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Badge
+                      className={cn(
+                        getEnvColor(selectedDeployment?.environment),
+                      )}
+                    >
+                      {selectedDeployment?.environment}
+                    </Badge>
                   </div>
                 ),
                 content: (
@@ -956,42 +894,14 @@ export function APIDocs({
                 title: (
                   <div className="flex w-full items-center justify-between gap-2">
                     Create a run via deployment id{" "}
-                    {!model && (
-                      <Select
-                        value={selectedDeployment?.id}
-                        onValueChange={(value) => {
-                          const deployment = deployments?.find(
-                            (d) => d.id === value,
-                          );
-                          if (deployment) {
-                            setSelectedDeployment(deployment);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[200px] capitalize">
-                          <SelectValue placeholder="Select a deployment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {deployments?.map((deployment) => (
-                            <SelectItem
-                              key={deployment.id}
-                              value={deployment.id}
-                              className="flex items-center justify-between capitalize"
-                            >
-                              {/* <span>{deployment.environment}</span> */}
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  getEnvColor(deployment.environment),
-                                )}
-                              >
-                                {deployment.environment}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        getEnvColor(selectedDeployment?.environment),
+                      )}
+                    >
+                      {selectedDeployment?.environment}
+                    </Badge>
                   </div>
                 ),
                 content: (
