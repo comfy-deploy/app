@@ -464,7 +464,11 @@ export default function Workspace({
 
       <AssetsBrowserPopup />
 
-      <WorkspaceControls endpoint={endpoint} machine_id={session?.machine_id} />
+      <WorkspaceControls
+        endpoint={endpoint}
+        machine_id={session?.machine_id}
+        machine_version_id={session?.machine_version_id}
+      />
 
       {hasSetupEventListener && (
         <iframe

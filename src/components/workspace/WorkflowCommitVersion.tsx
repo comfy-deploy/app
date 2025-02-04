@@ -19,6 +19,7 @@ type WorkflowCommitVersionProps = {
   setOpen: (b: boolean) => void;
   endpoint: string;
   machine_id?: string;
+  machine_version_id?: string;
 };
 
 async function createNewWorkflowVersion(data: {
@@ -30,6 +31,7 @@ async function createNewWorkflowVersion(data: {
   workflow_id: string;
   comment: string;
   machine_id?: string;
+  machine_version_id?: string;
 }) {
   return api({
     url: `workflow/${data.workflow_id}/version`,
@@ -40,6 +42,7 @@ async function createNewWorkflowVersion(data: {
         workflow_api: data.workflow_data.workflow_api,
         comment: data.comment,
         machine_id: data.machine_id,
+        machine_version_id: data.machine_version_id,
       }),
     },
   });
@@ -49,6 +52,7 @@ export function WorkflowCommitVersion({
   setOpen,
   endpoint: _endpoint,
   machine_id,
+  machine_version_id,
 }: WorkflowCommitVersionProps) {
   const { userId } = useAuth();
 
@@ -138,6 +142,7 @@ export function WorkflowCommitVersion({
               workflow_id: workflowId,
               comment: data.comment,
               machine_id: machine_id,
+              machine_version_id: machine_version_id,
               workflow_data: {
                 workflow: prompt.workflow,
                 workflow_api: prompt.output,

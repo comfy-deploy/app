@@ -375,11 +375,13 @@ export function QueueButtons({ endpoint }: WorkspaceButtonProps) {
 
 interface WorkflowButtonsProps extends WorkspaceButtonProps {
   machine_id?: string;
+  machine_version_id?: string;
 }
 
 export function WorkflowButtons({
   endpoint,
   machine_id,
+  machine_version_id,
 }: WorkflowButtonsProps) {
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
@@ -462,6 +464,7 @@ export function WorkflowButtons({
           setOpen={setDisplayCommit}
           endpoint={endpoint}
           machine_id={machine_id}
+          machine_version_id={machine_version_id}
         />
       )}
 

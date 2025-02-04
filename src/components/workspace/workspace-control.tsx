@@ -140,6 +140,7 @@ export function useWorkspaceButtons(
 export function WorkspaceControls(props: {
   endpoint: string;
   machine_id?: string;
+  machine_version_id?: string;
 }) {
   return (
     <>
@@ -149,6 +150,7 @@ export function WorkspaceControls(props: {
       <WorkflowButtons
         endpoint={props.endpoint}
         machine_id={props.machine_id}
+        machine_version_id={props.machine_version_id}
       />
       <WorkflowTemplateButtons endpoint={props.endpoint} />
       <ClearContainerButtons endpoint={props.endpoint} />

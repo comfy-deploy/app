@@ -97,6 +97,8 @@ import { create } from "zustand";
 import { MyDrawer } from "@/components/drawer";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
 
 interface SelectedVersionState {
   selectedVersion: string | null;
@@ -429,13 +431,14 @@ function VersionDrawer() {
 
 function RequestPage() {
   const { workflowId, view: currentView } = Route.useParams();
-  const { data: deployments } = useWorkflowDeployments(workflowId);
+  const { data: deployments, refetch: refetchDeployments } =
+    useWorkflowDeployments(workflowId);
 
   const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
 
   return (
     <div className="flex flex-row mx-auto">
-      <VersionDrawer />
+      {/* <VersionDrawer /> */}
       <div className="h-full w-full flex flex-col gap-2 max-w-screen-lg mx-auto">
         <div className="text-sm font-bold">Description</div>
         <div
@@ -455,7 +458,7 @@ function RequestPage() {
           containerClassName="max-h-[200px]"
           height={40}
           renderItem={(item) => {
-            const deployment = deployments?.find(
+            const myDeployments = deployments?.filter(
               (deployment) => deployment.workflow_version_id === item.id,
             );
             return (
@@ -475,15 +478,19 @@ function RequestPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-[auto_auto_110px_30px] items-center gap-4">
-                  {deployment ? (
-                    <Badge
-                      className={cn(
-                        "w-fit whitespace-nowrap rounded-sm text-xs",
-                        getEnvColor(deployment.environment),
-                      )}
-                    >
-                      {deployment?.environment}
-                    </Badge>
+                  {myDeployments?.length > 0 ? (
+                    <div className="flex flex-row gap-2">
+                      {myDeployments.map((deployment) => (
+                        <Badge
+                          className={cn(
+                            "w-fit whitespace-nowrap rounded-sm text-xs",
+                            getEnvColor(deployment.environment),
+                          )}
+                        >
+                          {deployment?.environment}
+                        </Badge>
+                      ))}
+                    </div>
                   ) : (
                     <div />
                   )}
@@ -499,17 +506,42 @@ function RequestPage() {
                       <MoreVertical size={16} />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem
-                        onClick={(e) => {
+                      <Button
+                        variant={"ghost"}
+                        disabled={!item.machine_version_id}
+                        onClick={async (e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           e.nativeEvent.preventDefault();
                           e.nativeEvent.stopPropagation();
-                          toast.success("Dummy action");
+
+                          await callServerPromise(
+                            api({
+                              url: "deployment",
+                              init: {
+                                method: "POST",
+                                body: JSON.stringify({
+                                  workflow_id: workflowId,
+                                  workflow_version_id: item.id,
+                                  machine_version_id: item.machine_version_id,
+                                  environment: "production",
+                                }),
+                              },
+                            }),
+                          );
+
+                          await refetchDeployments();
                         }}
                       >
                         Promote to Production
-                      </DropdownMenuItem>
+                      </Button>
+                      {item.machine_version_id ? (
+                        <></>
+                      ) : (
+                        <div className="text-xs text-gray-500 px-2">
+                          Please commit a version from a new machine
+                        </div>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

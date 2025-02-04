@@ -186,7 +186,7 @@ export function RunsTableVirtualized(props: {
 
   const [filterFavorites, setFilterFavorites] = useQueryState("favorite");
 
-  const { socket, workflowId, connectionStatus } = useRealtimeWorkflow();
+  // const { socket, workflowId, connectionStatus } = useRealtimeWorkflow();
 
   const {
     data,

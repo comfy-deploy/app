@@ -103,11 +103,11 @@ export function MachineWorkspaceItem({
                   setOpenFocus={setOpenFocus}
                 />
                 <Button
-                  variant="outline"
+                  variant="default"
                   className="rounded-[9px]"
                   onClick={handleStartSession}
                 >
-                  Start
+                  Start ComfyUI
                   <Play className="ml-2 h-3 w-3" />
                 </Button>
               </div>
