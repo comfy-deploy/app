@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogHeader,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { WorkflowList } from "@/components/workflow-dropdown";
 import { VersionList } from "@/components/version-select";
@@ -23,7 +24,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { api } from "@/lib/api";
-import { ExternalLink, History, Plus, X } from "lucide-react";
+import { ExternalLink, History, Loader2, Plus, X } from "lucide-react";
 import { MachineVersionListItem } from "../machine/machine-deployment";
 import {
   Select,
@@ -37,6 +38,7 @@ import { Timer } from "../workflows/Timer";
 import { toast } from "sonner";
 import { defaultWorkflowTemplates } from "@/utils/default-workflow";
 import { sendWorkflow } from "./sendEventToCD";
+import { Label } from "../ui/label";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -495,7 +497,8 @@ export function WorkflowButtons({
 }
 
 export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const [isNewWorkflowOpen, setIsNewWorkflowOpen] = useState(false);
   const { workflowId, machineId, workflowLink } = useSearch({
     from: "/sessions/$sessionId/",
   });
@@ -506,7 +509,7 @@ export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
     if (workflowId || machineId || workflowLink) return;
 
     setTimeout(() => {
-      setIsDialogOpen(true);
+      setIsTemplateOpen(true);
     }, 1000);
   }, [cdSetup, workflowId, machineId, workflowLink]);
 
@@ -521,11 +524,29 @@ export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
           event: "workflow_template",
           style: {
             height: "28px",
-            marginLeft: "10px",
+            marginLeft: "7px",
             borderRadius: "4px",
+            display: workflowId || workflowLink ? "none" : "flex",
           },
           onClick: (_: string, __: unknown) => {
-            setIsDialogOpen(true);
+            setIsTemplateOpen(true);
+          },
+        },
+        {
+          id: "save-new-workflow",
+          icon: "pi-save",
+          label: "New Workflow",
+          tooltip: "New Workflow",
+          event: "save_new_workflow",
+          onClick: (_: string, __: unknown) => {
+            setIsNewWorkflowOpen(true);
+          },
+          style: {
+            backgroundColor: "oklch(.476 .114 61.907)",
+            height: "28px",
+            marginLeft: "7px",
+            borderRadius: "4px",
+            display: workflowId || workflowLink ? "none" : "flex",
           },
         },
       ],
@@ -537,54 +558,62 @@ export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
   useWorkspaceButtons(data, endpoint);
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent
-        hideOverlay
-        className="border-zinc-800 bg-zinc-900 text-white drop-shadow-md sm:max-w-[850px]"
-      >
-        <DialogHeader>
-          <DialogTitle>Welcome to ComfyUI!</DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Choose a workflow template to kickstart your creative journey. Each
-            template is designed to help you explore different possibilities in
-            AI image generation.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-1 gap-1 py-2 md:grid-cols-2 lg:grid-cols-3">
-          {defaultWorkflowTemplates.map((template) => (
-            // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-            <div
-              key={template.workflowId}
-              onClick={() => {
-                sendWorkflow(JSON.parse(template.workflowJson));
-              }}
-              className="group relative cursor-pointer overflow-hidden rounded-md border border-zinc-800 bg-zinc-950 p-4 transition-all hover:border-zinc-700"
-            >
-              <div className="mb-3 aspect-square overflow-hidden rounded-[10px]">
-                <img
-                  src={template.workflowImageUrl}
-                  alt={template.workflowName}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                />
+    <>
+      {/* New Workflow Dialog */}
+      <NewWorkflowDialog
+        open={isNewWorkflowOpen}
+        setOpen={setIsNewWorkflowOpen}
+      />
+      {/* Template Dialog */}
+      <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
+        <DialogContent
+          hideOverlay
+          className="border-zinc-800 bg-zinc-900 text-white drop-shadow-md sm:max-w-[850px]"
+        >
+          <DialogHeader>
+            <DialogTitle>Welcome to ComfyDeploy!</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Choose a workflow template to kickstart your creative journey.
+              Each template is designed to help you explore different
+              possibilities in AI image generation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-1 py-2 md:grid-cols-2 lg:grid-cols-3">
+            {defaultWorkflowTemplates.map((template) => (
+              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+              <div
+                key={template.workflowId}
+                onClick={() => {
+                  sendWorkflow(JSON.parse(template.workflowJson));
+                }}
+                className="group relative cursor-pointer overflow-hidden rounded-md border border-zinc-800 bg-zinc-950 p-4 transition-all hover:border-zinc-700"
+              >
+                <div className="mb-3 aspect-square overflow-hidden rounded-[10px]">
+                  <img
+                    src={template.workflowImageUrl}
+                    alt={template.workflowName}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                </div>
+                <div>
+                  <h3 className="mb-1 font-semibold text-sm text-white">
+                    {template.workflowName}
+                  </h3>
+                  <p className="line-clamp-2 text-xs text-zinc-400 leading-snug">
+                    {template.workflowDescription}
+                  </p>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
+                    Use Template
+                  </span>
+                </div>
               </div>
-              <div>
-                <h3 className="mb-1 font-semibold text-sm text-white">
-                  {template.workflowName}
-                </h3>
-                <p className="line-clamp-2 text-xs text-zinc-400 leading-snug">
-                  {template.workflowDescription}
-                </p>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 opacity-0 transition-opacity group-hover:opacity-100">
-                <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
-                  Use Template
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -614,4 +643,108 @@ export function ClearContainerButtons({ endpoint }: WorkspaceButtonProps) {
   );
 
   return <></>;
+}
+
+function NewWorkflowDialog({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
+  const [newName, setNewName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { workflow } = useWorkflowStore();
+  const router = useRouter();
+  const match = useMatch({
+    from: "/sessions/$sessionId/",
+    shouldThrow: false,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    if (!newName || newName.trim() === "") {
+      toast.error("Workflow name cannot be empty");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const requestBody = {
+        name: newName.trim(),
+        workflow_json: JSON.stringify(workflow),
+      };
+
+      const result = await api({
+        url: "workflow",
+        init: {
+          method: "POST",
+          body: JSON.stringify(requestBody),
+        },
+      });
+
+      toast.success("Workflow created successfully");
+      router.navigate({
+        to: "/sessions/$sessionId",
+        params: {
+          sessionId: match?.params.sessionId || "",
+        },
+        search: {
+          workflowId: result.workflow_id,
+        },
+      });
+      setOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create new workflow");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent>
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle className="flex flex-row items-center gap-2">
+              Create New Workflow
+            </DialogTitle>
+            <DialogDescription>
+              Save your workflow to prevent it from being lost.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={newName}
+                placeholder="Enter a new name"
+                className="col-span-3"
+                onChange={(e) => setNewName(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={isLoading || !newName.trim()}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Create"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }

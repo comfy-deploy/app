@@ -434,11 +434,6 @@ function VersionDrawer() {
   );
 }
 
-interface WorkflowData {
-  description?: string;
-  [key: string]: any; // Allow for other unknown fields
-}
-
 interface WorkflowDescriptionForm {
   description: string;
 }
