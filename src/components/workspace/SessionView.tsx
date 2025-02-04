@@ -121,6 +121,7 @@ export function SessionCreator(props: {
   const { data: session } = useQuery<any>({
     enabled: !!sessionId,
     queryKey: ["session", sessionId],
+    refetchInterval: 1000,
   });
 
   const { workflow, isLoading: isLoadingWorkflow } = useCurrentWorkflow(
