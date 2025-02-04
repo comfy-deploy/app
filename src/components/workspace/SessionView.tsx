@@ -1,22 +1,18 @@
-"use client";
-
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
 import { useAuthStore } from "@/lib/auth-store";
 import { EventSourcePolyfill } from "event-source-polyfill";
-import { Loader2 } from "lucide-react";
-import { parseAsString, useQueryState } from "nuqs";
-import { Suspense, useEffect } from "react";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { useLogStore } from "./LogContext";
 import { LogDisplay } from "./LogDisplay";
 import Workspace from "./Workspace";
 import { useCDStore } from "./Workspace";
 import { useQuery } from "@tanstack/react-query";
-import { sendWorkflow } from "./sendEventToCD";
-import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
-import { LoadingIcon } from "../ui/custom/loading-icon";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Button } from "../ui/button";
 
 export function getSessionStatus(session: any, isLive: boolean | undefined) {
   if (!session) {
@@ -67,6 +63,12 @@ export function SessionLoading({
   isLive,
 }: { session?: any; isLive?: boolean }) {
   const status = getSessionStatus(session, isLive);
+  const now = new Date();
+  const isTimeout = now > new Date(session?.timeout_end);
+  const navigate = useNavigate();
+  const { workflowId } = useSearch({
+    from: "/sessions/$sessionId/",
+  });
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
@@ -80,7 +82,28 @@ export function SessionLoading({
         <p className="text-center text-muted-foreground text-xs">
           {status.description}
         </p>
-        <LogDisplay />
+
+        {!session || isTimeout ? (
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (workflowId) {
+                navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: { workflowId, view: "requests" },
+                });
+              } else {
+                navigate({
+                  to: "/home",
+                });
+              }
+            }}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" /> Back
+          </Button>
+        ) : (
+          <LogDisplay />
+        )}
       </div>
     </div>
   );
