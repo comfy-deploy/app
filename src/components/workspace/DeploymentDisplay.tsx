@@ -484,6 +484,7 @@ export function DeploymentDisplay({
 }
 import { CreateDeploymentButtonV2 } from "../run/VersionSelect";
 import { useWorkflowDeployments } from "./ContainersTable";
+import { LoadingIcon } from "../ui/custom/loading-icon";
 
 export function APIDocs({
   workflow_id,
@@ -514,7 +515,11 @@ export function APIDocs({
   }, [deployments]);
 
   if (!selectedDeployment) {
-    return <div />;
+    return (
+      <div className="flex items-center justify-center">
+        <LoadingIcon />
+      </div>
+    );
   }
 
   const workflowInput = selectedDeployment
