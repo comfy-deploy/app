@@ -177,8 +177,12 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
 
 export function LeftMenuButtons({ endpoint }: WorkspaceButtonProps) {
   const router = useRouter();
+  const { workflowId } = useSearch({
+    from: "/sessions/$sessionId/",
+  });
 
   const data = useMemo(() => {
+    console.log("=====", "re calculating left menu buttons");
     return {
       containerSelector: "body > div.comfyui-body-top > div",
       buttonConfigs: [
@@ -190,14 +194,23 @@ export function LeftMenuButtons({ endpoint }: WorkspaceButtonProps) {
           tooltip: "Go back to the previous page.",
           event: "back",
           onClick: (_: string, __: unknown) => {
-            router.history.back();
+            if (workflowId) {
+              router.navigate({
+                to: "/workflows/$workflowId/$view",
+                params: { workflowId, view: "requests" },
+              });
+            } else {
+              router.navigate({
+                to: "/home",
+              });
+            }
           },
         },
       ],
       buttonIdPrefix: "cd-button-left-",
       containerStyle: { order: "-1" },
     };
-  }, [router]);
+  }, [router, workflowId]);
 
   useWorkspaceButtons(data, endpoint);
 
