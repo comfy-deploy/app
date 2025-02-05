@@ -43,8 +43,8 @@ export function WorkflowLastEditTime({
   return <div>{getRelativeTime(workflow?.updated_at)}</div>;
 }
 
-export function useSelectedVersion(workflow_id: string) {
-  const { workflow } = useCurrentWorkflow(workflow_id);
+export function useSelectedVersion(workflow_id?: string) {
+  const { workflow } = useCurrentWorkflow(workflow_id ?? null);
 
   const [version, setVersion] = useQueryState("version", {
     defaultValue: workflow?.versions?.[0].version ?? 1,

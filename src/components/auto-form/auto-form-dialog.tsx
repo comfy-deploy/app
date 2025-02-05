@@ -265,6 +265,7 @@ export function InsertModal<
           values={props.data}
           fieldConfig={props.fieldConfig}
           formSchema={props.formSchema}
+          extraUI={props.extraUI}
           onSubmit={async (data) => {
             setIsLoading(true);
             await props.serverAction(data);

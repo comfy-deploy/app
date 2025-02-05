@@ -6,8 +6,8 @@ import {
   QueueButtons,
   WorkflowButtons,
   ClearContainerButtons,
-  WorkflowTemplateButtons,
 } from "./workspace-buttons";
+import React from "react";
 
 interface ButtonConfig {
   id: string;
@@ -137,7 +137,7 @@ export function useWorkspaceButtons(
   return null;
 }
 
-export function WorkspaceControls(props: {
+export const WorkspaceControls = React.memo(function WorkspaceControls(props: {
   endpoint: string;
   machine_id?: string;
   machine_version_id?: string;
@@ -152,8 +152,8 @@ export function WorkspaceControls(props: {
         machine_id={props.machine_id}
         machine_version_id={props.machine_version_id}
       />
-      <WorkflowTemplateButtons endpoint={props.endpoint} />
+      {/* <WorkflowTemplateButtons endpoint={props.endpoint} /> */}
       <ClearContainerButtons endpoint={props.endpoint} />
     </>
   );
-}
+});

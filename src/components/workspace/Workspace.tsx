@@ -152,8 +152,8 @@ export default function Workspace({
     },
   );
 
-  const isDraftDifferent = useMemo(() => {
-    if (!selectedVersion || !currentWorkflow) return false;
+  useEffect(() => {
+    if (!selectedVersion || !currentWorkflow) return;
 
     const differences = diff(selectedVersion.workflow, currentWorkflow, {
       keysToSkip: ["extra", "order", "$index"],
@@ -164,12 +164,21 @@ export default function Workspace({
 
     setDifferences(differences);
 
-    return Object.keys(differences).length > 0;
+    const isDraftDifferent = Object.keys(differences).length > 0;
+    console.log(
+      "isDraftDifferent",
+      isDraftDifferent,
+      selectedVersion.workflow,
+      currentWorkflow,
+      differences,
+    );
+    setHasChanged(isDraftDifferent);
+    // return isDraftDifferent;
   }, [selectedVersion?.version, currentWorkflow]);
 
-  useEffect(() => {
-    setHasChanged(isDraftDifferent);
-  }, [isDraftDifferent]);
+  // useEffect(() => {
+
+  // }, [isDraftDifferent]);
 
   const endpoint = _endpoint;
 

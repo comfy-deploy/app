@@ -1,13 +1,20 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export function DiffView({
   workflow,
   oldWorkflow,
+  className,
   differences,
-}: { workflow: any; oldWorkflow: any; differences: any }) {
+}: {
+  workflow: any;
+  oldWorkflow: any;
+  className?: string;
+  differences: any;
+}) {
   console.log(differences);
 
   // Update the getNodeInfoFromChanges function to also get node types from the workflow
@@ -221,7 +228,7 @@ export function DiffView({
   };
 
   return (
-    <div className="space-y-6 pr-4">
+    <div className={cn("space-y-6 pr-4", className)}>
       {Array.from(
         groupAllChangesByNodeType(groupedChanges, nodeInfo, oldNodeInfo),
       ).map(([nodeType, changes]) => (

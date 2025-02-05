@@ -14,6 +14,10 @@ import { use, useCallback } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useWorkflowVersion } from "../workflow-list";
+import { DiffView } from "./DiffView";
+import { useSelectedVersion } from "../version-select";
+import { useWorkflowStore } from "./Workspace";
+import { ScrollArea } from "../ui/scroll-area";
 
 type WorkflowCommitVersionProps = {
   setOpen: (b: boolean) => void;
@@ -68,6 +72,10 @@ export function WorkflowCommitVersion({
     ...parseAsInteger,
   });
 
+  const differences = useWorkflowStore((state) => state.differences);
+  const workflow = useWorkflowStore((state) => state.workflow);
+  const { value: selectedVersion } = useSelectedVersion(workflowId);
+
   const endpoint = _endpoint;
   // if (turbo) {
   //   endpoint = machineAPIEndPoint.replace("comfyui-api", "workspace");
@@ -120,6 +128,16 @@ export function WorkflowCommitVersion({
       setOpen={setOpen}
       dialogClassName="sm:max-w-[600px]"
       title="Commit changes"
+      extraUI={
+        <ScrollArea>
+          <DiffView
+            className="max-h-[300px]"
+            differences={differences}
+            workflow={workflow}
+            oldWorkflow={selectedVersion?.workflow}
+          />
+        </ScrollArea>
+      }
       description="Commit a new version of the workflow"
       serverAction={async (data) => {
         if (!userId) return;

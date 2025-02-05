@@ -39,6 +39,7 @@ import { defaultWorkflowTemplates } from "@/utils/default-workflow";
 import { sendWorkflow } from "./sendEventToCD";
 import { Label } from "../ui/label";
 import Cookies from "js-cookie";
+import { WorkflowDiff } from "./WorkflowDiff";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -50,6 +51,15 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
     shouldThrow: false,
   });
 
+  const { data: session, refetch } = useQuery<any>({
+    queryKey: ["session", match?.params.sessionId],
+    enabled: !!match?.params.sessionId,
+  });
+
+  const { data: machine, refetch: refetchMachine } = useMachine(
+    session?.machine_id,
+  );
+
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const data = useMemo(() => {
     return {
@@ -58,7 +68,10 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
         {
           id: "save-image",
           icon: "pi-save",
-          label: "Snapshot",
+          label: machine ? machine.name : "New Workspace",
+          style: {
+            color: !machine ? "#9ca3af" : "",
+          },
           tooltip: "Save the current image to your output directory.",
           event: "save_image",
           onClick: (_: string, __: unknown) => setIsWorkflowDialogOpen(true),
@@ -78,13 +91,6 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
     };
   }, []);
 
-  const { data: session, refetch } = useQuery<any>({
-    queryKey: ["session", match?.params.sessionId],
-    enabled: !!match?.params.sessionId,
-  });
-
-  const { data: machine } = useMachine(session?.machine_id);
-
   useWorkspaceButtons(data, endpoint);
 
   const [machineName, setMachineName] = useState(machine?.name);
@@ -97,15 +103,15 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
   return (
     <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>
       <DialogContent hideOverlay className="sm:max-w-[600px]">
-        <DialogTitle>Snapshot</DialogTitle>
+        <DialogTitle>Workspace</DialogTitle>
 
         {!machine && (
           <div className="flex flex-col gap-2">
             <div className="text-muted-foreground text-sm">
-              No existing machine, create a new one.
+              No existing workspace, create a new one.
             </div>
             <Input
-              placeholder="Machine Name"
+              placeholder="Workspace Name"
               value={machineName}
               onChange={(e) => setMachineName(e.target.value)}
             />
@@ -125,9 +131,10 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
                     }),
                   );
                   await refetch();
+                  await refetchMachine();
                 }}
               >
-                Create Machine
+                Create
               </Button>
             </div>
           </div>
@@ -433,6 +440,38 @@ export function WorkflowButtons({
     setIsWorkflowDialogOpen(false);
   };
 
+  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const [isNewWorkflowOpen, setIsNewWorkflowOpen] = useState(false);
+  const { machineId, workflowLink } = useSearch({
+    from: "/sessions/$sessionId/",
+  });
+  const { cdSetup } = useCDStore();
+  const endpointParts = endpoint.split("//")[1].split(".");
+  const endpointId = `${endpointParts[0]}-${endpointParts[1]}`;
+
+  useEffect(() => {
+    if (!cdSetup) return;
+    if (workflowId || workflowLink) return;
+
+    const hasShownTemplate = Cookies.get(`cd_templateShown_${endpointId}`);
+    if (hasShownTemplate) return;
+
+    setTimeout(() => {
+      setIsTemplateOpen(true);
+      Cookies.set(`cd_templateShown_${endpointId}`, "true", {
+        expires: 1 / 24,
+      });
+    }, 1000);
+  }, [cdSetup, workflowId, workflowLink]);
+  const [displayDiff, setDisplayDiff] = useState(false);
+
+  const { data: session, refetch } = useQuery<any>({
+    queryKey: ["session", match?.params.sessionId],
+    enabled: !!match?.params.sessionId,
+  });
+
+  const { data: machine } = useMachine(session?.machine_id);
+
   const data = useMemo(() => {
     return {
       containerSelector: "body > div.comfyui-body-top > div",
@@ -440,11 +479,15 @@ export function WorkflowButtons({
         {
           id: "workflow-1",
           icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m16 3l4 4l-4 4m-6-4h10M8 13l-4 4l4 4m-4-4h9"/></svg>`,
-          label: workflow?.name || "Workflow",
+          label: workflow?.name || "Empty Workflow",
+          style: {
+            color: !workflow?.name ? "#9ca3af" : "",
+          },
           tooltip: "Select a workflow",
           event: "change_workflow",
           onClick: (_: string, __: unknown) => setIsWorkflowDialogOpen(true),
         },
+
         {
           id: "workflow-3",
           label: `v${version}`,
@@ -452,24 +495,77 @@ export function WorkflowButtons({
           event: "change_version",
           onClick: (_: string, __: unknown) => setIsVersionDialogOpen(true),
         },
+
+        {
+          id: "workflow-template",
+          icon: "pi-plus",
+          tooltip: "Workflow Template",
+          event: "workflow_template",
+          // style: {
+          //   height: "28px",
+          //   marginLeft: "7px",
+          //   borderRadius: "4px",
+          //   display: "flex",
+          // },
+          onClick: (_: string, __: unknown) => {
+            setWorkflowId(null);
+            setIsTemplateOpen(true);
+          },
+        },
+
         {
           id: "workflow-2",
-          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3v6"/><circle cx="12" cy="12" r="3"/><path d="M12 15v6"/></g></svg>`,
-          label: "Commit",
+          icon: "pi-save",
+          // icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3v6"/><circle cx="12" cy="12" r="3"/><path d="M12 15v6"/></g></svg>`,
+          label: "Save",
           tooltip: "Commit the current workflow",
           event: "commit",
           style: {
             backgroundColor: "oklch(.476 .114 61.907)",
             display: !hasChanged ? "none" : "flex",
           },
-          onClick: (_: string, __: unknown) => setDisplayCommit(true),
+          onClick: (_: string, __: unknown) => {
+            if (!machine) {
+              toast.error("Please create a workspace first");
+              return;
+            }
+            setDisplayCommit(true);
+          },
+        },
+
+        // {
+        //   id: "workflow-4",
+        //   icon: "pi-diff",
+        //   label: "Diff",
+        //   tooltip: "Diff",
+        //   event: "diff",
+        //   onClick: (_: string, __: unknown) => setDisplayDiff(true),
+        // },
+
+        {
+          id: "save-new-workflow",
+          icon: "pi-save",
+          label: "Create new workflow",
+          tooltip: "New Workflow",
+          event: "save_new_workflow",
+          onClick: (_: string, __: unknown) => {
+            setIsNewWorkflowOpen(true);
+          },
+          style: {
+            backgroundColor: "oklch(.476 .114 61.907)",
+            // height: "28px",
+            // marginLeft: "7px",
+            // borderRadius: "4px",
+            display: workflowId || workflowLink ? "none" : "flex",
+          },
         },
       ],
       buttonIdPrefix: "cd-button-workflow-",
       insertBefore: "body > div.comfyui-body-top > div > div.flex-grow",
     };
-  }, [workflow?.name, version, hasChanged]);
+  }, [workflow?.name, version, hasChanged, workflowId, workflowLink]);
 
+  const [_, setWorkflowId] = useQueryState("workflowId");
   useWorkspaceButtons(data, endpoint);
 
   return (
@@ -482,6 +578,14 @@ export function WorkflowButtons({
           machine_version_id={machine_version_id}
         />
       )}
+
+      {/* {displayDiff && (
+        <WorkflowDiff
+          workflowId={workflowId || ""}
+          onClose={() => setDisplayDiff(false)}
+          onSave={() => setDisplayDiff(false)}
+        />
+      )} */}
 
       <Dialog
         open={isWorkflowDialogOpen}
@@ -505,138 +609,83 @@ export function WorkflowButtons({
           />
         </DialogContent>
       </Dialog>
+
+      <>
+        {/* New Workflow Dialog */}
+        <NewWorkflowDialog
+          open={isNewWorkflowOpen}
+          setOpen={setIsNewWorkflowOpen}
+        />
+        {/* Template Dialog */}
+        <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
+          <DialogContent
+            hideOverlay
+            className="border-zinc-800 bg-zinc-900 text-white drop-shadow-md sm:max-w-[850px]"
+          >
+            <DialogHeader>
+              <DialogTitle>Welcome to ComfyDeploy!</DialogTitle>
+              <DialogDescription className="text-zinc-400">
+                Choose a workflow template to kickstart your creative journey.
+                Each template is designed to help you explore different
+                possibilities in AI image generation.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 gap-1 py-2 md:grid-cols-2 lg:grid-cols-3">
+              {defaultWorkflowTemplates.map((template) => (
+                // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+                <div
+                  key={template.workflowId}
+                  onClick={() => {
+                    sendWorkflow(JSON.parse(template.workflowJson));
+                  }}
+                  className="group relative cursor-pointer overflow-hidden rounded-md border border-zinc-800 bg-zinc-950 p-4 transition-all hover:border-zinc-700"
+                >
+                  <div className="mb-3 aspect-square overflow-hidden rounded-[10px]">
+                    <img
+                      src={template.workflowImageUrl}
+                      alt={template.workflowName}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="mb-1 font-semibold text-sm text-white">
+                      {template.workflowName}
+                    </h3>
+                    <p className="line-clamp-2 text-xs text-zinc-400 leading-snug">
+                      {template.workflowDescription}
+                    </p>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
+                      Use Template
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     </>
   );
 }
 
-export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
-  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
-  const [isNewWorkflowOpen, setIsNewWorkflowOpen] = useState(false);
-  const { workflowId, machineId, workflowLink } = useSearch({
-    from: "/sessions/$sessionId/",
-  });
-  const { cdSetup } = useCDStore();
-  const endpointParts = endpoint.split("//")[1].split(".");
-  const endpointId = `${endpointParts[0]}-${endpointParts[1]}`;
+// export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
+//   const data = useMemo(() => {
+//     return {
+//       containerSelector: "body > div.comfyui-body-top > div",
+//       buttonConfigs: [],
+//       buttonIdPrefix: "cd-button-workflow-template-",
+//       insertBefore: "body > div.comfyui-body-top > div > div.flex-grow",
+//     };
+//   }, [workflowId]);
 
-  useEffect(() => {
-    if (!cdSetup) return;
-    if (workflowId || workflowLink) return;
+//   useWorkspaceButtons(data, endpoint);
 
-    const hasShownTemplate = Cookies.get(`cd_templateShown_${endpointId}`);
-    if (hasShownTemplate) return;
+//   return (
 
-    setTimeout(() => {
-      setIsTemplateOpen(true);
-      Cookies.set(`cd_templateShown_${endpointId}`, "true", {
-        expires: 1 / 24,
-      });
-    }, 1000);
-  }, [cdSetup, workflowId, workflowLink]);
-
-  const data = useMemo(() => {
-    return {
-      containerSelector: "body > div.comfyui-body-top > div",
-      buttonConfigs: [
-        {
-          id: "workflow-template",
-          icon: "pi-plus",
-          tooltip: "Workflow Template",
-          event: "workflow_template",
-          style: {
-            height: "28px",
-            marginLeft: "7px",
-            borderRadius: "4px",
-            display: workflowId || workflowLink ? "none" : "flex",
-          },
-          onClick: (_: string, __: unknown) => {
-            setIsTemplateOpen(true);
-          },
-        },
-        {
-          id: "save-new-workflow",
-          icon: "pi-save",
-          label: "Save Changes",
-          tooltip: "New Workflow",
-          event: "save_new_workflow",
-          onClick: (_: string, __: unknown) => {
-            setIsNewWorkflowOpen(true);
-          },
-          style: {
-            backgroundColor: "oklch(.476 .114 61.907)",
-            height: "28px",
-            marginLeft: "7px",
-            borderRadius: "4px",
-            display: workflowId || workflowLink ? "none" : "flex",
-          },
-        },
-      ],
-      buttonIdPrefix: "cd-button-workflow-template-",
-      insertBefore: "body > div.comfyui-body-top > div > div.flex-grow",
-    };
-  }, []);
-
-  useWorkspaceButtons(data, endpoint);
-
-  return (
-    <>
-      {/* New Workflow Dialog */}
-      <NewWorkflowDialog
-        open={isNewWorkflowOpen}
-        setOpen={setIsNewWorkflowOpen}
-      />
-      {/* Template Dialog */}
-      <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
-        <DialogContent
-          hideOverlay
-          className="border-zinc-800 bg-zinc-900 text-white drop-shadow-md sm:max-w-[850px]"
-        >
-          <DialogHeader>
-            <DialogTitle>Welcome to ComfyDeploy!</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              Choose a workflow template to kickstart your creative journey.
-              Each template is designed to help you explore different
-              possibilities in AI image generation.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 gap-1 py-2 md:grid-cols-2 lg:grid-cols-3">
-            {defaultWorkflowTemplates.map((template) => (
-              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-              <div
-                key={template.workflowId}
-                onClick={() => {
-                  sendWorkflow(JSON.parse(template.workflowJson));
-                }}
-                className="group relative cursor-pointer overflow-hidden rounded-md border border-zinc-800 bg-zinc-950 p-4 transition-all hover:border-zinc-700"
-              >
-                <div className="mb-3 aspect-square overflow-hidden rounded-[10px]">
-                  <img
-                    src={template.workflowImageUrl}
-                    alt={template.workflowName}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                </div>
-                <div>
-                  <h3 className="mb-1 font-semibold text-sm text-white">
-                    {template.workflowName}
-                  </h3>
-                  <p className="line-clamp-2 text-xs text-zinc-400 leading-snug">
-                    {template.workflowDescription}
-                  </p>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 opacity-0 transition-opacity group-hover:opacity-100">
-                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
-                    Use Template
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
+//   );
+// }
 
 export function ClearContainerButtons({ endpoint }: WorkspaceButtonProps) {
   useWorkspaceButtons(
