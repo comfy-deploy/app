@@ -559,7 +559,11 @@ export function APIDocs({
         </h2>
       )}
 
-      {!model && <VersionDetails workflow_id={workflow_id} />}
+      {!model && (
+        <VersionDetails
+          workflow_version_id={selectedDeployment?.workflow_version_id}
+        />
+      )}
       {/* {!model && deployments && deployments.length > 0 && (
         <Card className="p-4">
           <div className="space-y-2">

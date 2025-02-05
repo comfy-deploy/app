@@ -9,6 +9,7 @@ import {
 import { customInputNodes } from "@/lib/customInputNodes";
 import { getInputsFromWorkflowAPI } from "@/lib/getInputsFromWorkflow";
 import { useSelectedVersion } from "./Workspace";
+import { useQuery } from "@tanstack/react-query";
 
 export function ExternalInputsDisplay(props: {
   workflow_api?: any;
@@ -64,16 +65,18 @@ export function ExternalInputsDisplay(props: {
 }
 
 export function VersionDetails({
-  workflow_id,
+  workflow_version_id,
 }: {
-  workflow_id: string;
+  workflow_version_id: string;
 }) {
-  const { value } = useSelectedVersion(workflow_id);
+  const { data: versionData } = useQuery<any>({
+    queryKey: ["workflow-version", workflow_version_id],
+  });
 
   return (
     <ExternalInputsDisplay
-      workflow_api={value?.workflow_api ?? undefined}
-      version={value?.version ?? undefined}
+      workflow_api={versionData?.workflow_api ?? undefined}
+      version={versionData?.version ?? undefined}
     />
   );
 }
