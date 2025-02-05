@@ -608,35 +608,70 @@ function RequestPage({
                       <MoreVertical size={16} />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <Button
-                        variant={"ghost"}
-                        disabled={!item.machine_version_id}
-                        onClick={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          e.nativeEvent.preventDefault();
-                          e.nativeEvent.stopPropagation();
+                      <DropdownMenuItem className="p-0">
+                        <Button
+                          variant={"ghost"}
+                          className="w-full"
+                          disabled={!item.machine_version_id}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.nativeEvent.preventDefault();
+                            e.nativeEvent.stopPropagation();
 
-                          await callServerPromise(
-                            api({
-                              url: "deployment",
-                              init: {
-                                method: "POST",
-                                body: JSON.stringify({
-                                  workflow_id: workflowId,
-                                  workflow_version_id: item.id,
-                                  machine_version_id: item.machine_version_id,
-                                  environment: "production",
-                                }),
-                              },
-                            }),
-                          );
+                            await callServerPromise(
+                              api({
+                                url: "deployment",
+                                init: {
+                                  method: "POST",
+                                  body: JSON.stringify({
+                                    workflow_id: workflowId,
+                                    workflow_version_id: item.id,
+                                    machine_version_id: item.machine_version_id,
+                                    environment: "production",
+                                  }),
+                                },
+                              }),
+                            );
 
-                          await refetchDeployments();
-                        }}
-                      >
-                        Promote to Production
-                      </Button>
+                            await refetchDeployments();
+                          }}
+                        >
+                          Promote to Production
+                        </Button>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="p-0">
+                        <Button
+                          variant={"ghost"}
+                          className="w-full justify-start"
+                          disabled={!item.machine_version_id}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.nativeEvent.preventDefault();
+                            e.nativeEvent.stopPropagation();
+
+                            await callServerPromise(
+                              api({
+                                url: "deployment",
+                                init: {
+                                  method: "POST",
+                                  body: JSON.stringify({
+                                    workflow_id: workflowId,
+                                    workflow_version_id: item.id,
+                                    machine_version_id: item.machine_version_id,
+                                    environment: "public-share",
+                                  }),
+                                },
+                              }),
+                            );
+
+                            await refetchDeployments();
+                          }}
+                        >
+                          Share
+                        </Button>
+                      </DropdownMenuItem>
                       {item.machine_version_id ? (
                         <></>
                       ) : (
