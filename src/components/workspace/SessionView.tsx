@@ -61,7 +61,12 @@ export function getSessionStatus(session: any, isLive: boolean | undefined) {
 export function SessionLoading({
   session,
   isLive,
-}: { session?: any; isLive?: boolean }) {
+  isLoadingSession,
+}: {
+  session?: any;
+  isLive?: boolean;
+  isLoadingSession?: boolean;
+}) {
   const status = getSessionStatus(session, isLive);
   const now = new Date();
   const isTimeout = now > new Date(session?.timeout_end);
@@ -70,17 +75,7 @@ export function SessionLoading({
     from: "/sessions/$sessionId/",
   });
 
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isInitialLoading && !session) {
+  if (isLoadingSession) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center">
         <div className="flex flex-col items-center gap-4 p-6">
@@ -144,7 +139,7 @@ export function SessionCreator(props: {
 
   const sessionId = props.sessionIdOverride;
 
-  const { data: session } = useQuery<any>({
+  const { data: session, isLoading: isLoadingSession } = useQuery<any>({
     enabled: !!sessionId,
     queryKey: ["session", sessionId],
     refetchInterval: 1000,
@@ -227,7 +222,13 @@ export function SessionCreator(props: {
     );
 
   if (!url || !isLive) {
-    return <SessionLoading session={session} isLive={isLive ?? false} />;
+    return (
+      <SessionLoading
+        session={session}
+        isLive={isLive ?? false}
+        isLoadingSession={isLoadingSession}
+      />
+    );
   }
 
   if (url && isLive) {
