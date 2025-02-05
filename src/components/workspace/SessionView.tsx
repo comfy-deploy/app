@@ -3,7 +3,7 @@ import { useMachine } from "@/hooks/use-machine";
 import { useAuthStore } from "@/lib/auth-store";
 import { EventSourcePolyfill } from "event-source-polyfill";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLogStore } from "./LogContext";
 import { LogDisplay } from "./LogDisplay";
@@ -69,6 +69,32 @@ export function SessionLoading({
   const { workflowId } = useSearch({
     from: "/sessions/$sessionId/",
   });
+
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isInitialLoading && !session) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center">
+        <div className="flex flex-col items-center gap-4 p-6">
+          <h2 className="flex items-center gap-2 font-semibold">
+            Loading Session{" "}
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          </h2>
+          <p className="text-center text-muted-foreground text-xs">
+            Please wait while we load your session...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center">
