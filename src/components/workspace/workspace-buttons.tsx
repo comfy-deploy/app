@@ -535,7 +535,7 @@ export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
         {
           id: "save-new-workflow",
           icon: "pi-save",
-          label: "New Workflow",
+          label: "Save Changes",
           tooltip: "New Workflow",
           event: "save_new_workflow",
           onClick: (_: string, __: unknown) => {
