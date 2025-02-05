@@ -505,7 +505,11 @@ export function APIDocs({
         (deployment) => !deployment.environment.endsWith("share"),
       );
 
-      setSelectedDeployment(NonShareDeployment[0]);
+      setSelectedDeployment(
+        NonShareDeployment.find(
+          (d) => d.workflow_version_id === workflow_version_id,
+        ),
+      );
     }
   }, [deployments]);
 
