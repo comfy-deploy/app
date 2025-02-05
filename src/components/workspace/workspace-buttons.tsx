@@ -89,7 +89,7 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
       ],
       buttonIdPrefix: "cd-button-",
     };
-  }, []);
+  }, [machine?.id, machine?.name]);
 
   useWorkspaceButtons(data, endpoint);
 
@@ -549,6 +549,10 @@ export function WorkflowButtons({
           tooltip: "New Workflow",
           event: "save_new_workflow",
           onClick: (_: string, __: unknown) => {
+            if (!machine) {
+              toast.error("Please create a workspace first");
+              return;
+            }
             setIsNewWorkflowOpen(true);
           },
           style: {
@@ -563,7 +567,15 @@ export function WorkflowButtons({
       buttonIdPrefix: "cd-button-workflow-",
       insertBefore: "body > div.comfyui-body-top > div > div.flex-grow",
     };
-  }, [workflow?.name, version, hasChanged, workflowId, workflowLink]);
+  }, [
+    workflow?.name,
+    version,
+    hasChanged,
+    workflowId,
+    workflowLink,
+    machine?.id,
+    machine?.name,
+  ]);
 
   const [_, setWorkflowId] = useQueryState("workflowId");
   useWorkspaceButtons(data, endpoint);
