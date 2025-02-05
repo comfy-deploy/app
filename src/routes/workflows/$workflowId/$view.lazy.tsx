@@ -89,6 +89,7 @@ import { create } from "zustand";
 import { MyDrawer } from "@/components/drawer";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const pages = [
   "workspace",
@@ -429,15 +430,15 @@ export function VersionDrawer({ workflowId }: { workflowId: string }) {
         setSelectedVersion(null);
       }}
     >
-      <div className="overflow-y-auto">
+      <ScrollArea className="h-full">
         <LoadingWrapper tag="api">
           <APIDocs
             domain={process.env.NEXT_PUBLIC_CD_API_URL!}
             workflow_id={workflowId}
-            workflow_version_id={selectedVersion}
+            workflow_version_id={selectedVersion ?? undefined}
           />
         </LoadingWrapper>
-      </div>
+      </ScrollArea>
     </MyDrawer>
   );
 }
