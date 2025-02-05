@@ -210,7 +210,6 @@ export function SessionCreator(props: {
         <div className="flex h-full w-full flex-col">
           <Workspace
             sessionIdOverride={props.sessionIdOverride}
-            workflowId={props.workflowId}
             nativeMode={true}
             endpoint={url}
           />

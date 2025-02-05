@@ -62,6 +62,7 @@ import {
   useSessionIncrementStore,
 } from "./increase-session";
 import { WorkspaceControls } from "./workspace-control";
+import { useSearch } from "@tanstack/react-router";
 
 interface WorkflowState {
   workflow: any;
@@ -88,14 +89,16 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
 export default function Workspace({
   endpoint: _endpoint,
   nativeMode = false,
-  workflowId,
   sessionIdOverride,
 }: {
   endpoint: string;
   nativeMode?: boolean;
-  workflowId?: string;
   sessionIdOverride?: string;
 }) {
+  const { workflowId, workflowLink } = useSearch({
+    from: "/sessions/$sessionId/",
+  });
+
   const { workflow } = useCurrentWorkflow(workflowId ?? null);
   const { value: versionData, isLoading: isLoadingVersion } =
     useSelectedVersion(workflowId ?? null);
@@ -132,10 +135,10 @@ export default function Workspace({
     defaultValue: "",
   });
 
-  const [workflowLink, setWorkflowLink] = useQueryState(
-    "workflowLink",
-    parseAsString,
-  );
+  // const [workflowLink, setWorkflowLink] = useQueryState(
+  //   "workflowLink",
+  //   parseAsString,
+  // );
 
   const { data: workflowLinkJson, isLoading: isLoadingWorkflowLink } = useQuery(
     {
@@ -345,6 +348,8 @@ export default function Workspace({
           // ]);
         } else if (data.type === "cd_plugin_onAfterChange") {
         } else if (data.type === "cd_plugin_onDeployChanges") {
+          // console.log("current workflow", data.data.workflow);
+
           const differences = diff(
             currentWorkflowRef.current,
             data.data.workflow,
