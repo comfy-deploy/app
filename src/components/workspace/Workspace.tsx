@@ -135,11 +135,6 @@ export default function Workspace({
     defaultValue: "",
   });
 
-  // const [workflowLink, setWorkflowLink] = useQueryState(
-  //   "workflowLink",
-  //   parseAsString,
-  // );
-
   const { data: workflowLinkJson, isLoading: isLoadingWorkflowLink } = useQuery(
     {
       queryKey: ["workflow", "link", workflowLink],
@@ -214,30 +209,65 @@ export default function Workspace({
     return () => clearInterval(deployInterval);
   }, [cdSetup]);
 
-  const setComfyUIWorkflow = (workflowJson: any, delayTimeout = 0) => {
-    setTimeout(() => {
-      currentWorkflowRef.current = workflowJson;
-      sendWorkflow(workflowJson);
-    }, delayTimeout);
+  // Add new state for tracking workflow send status
+  const [workflowSendAttempts, setWorkflowSendAttempts] = useState(0);
+  const [isWorkflowLoaded, setIsWorkflowLoaded] = useState(false);
+  const workflowToSend = useRef<any>(null);
+
+  const [startTime] = useState(() => Date.now());
+
+  const setComfyUIWorkflow = (workflowJson: any) => {
+    workflowToSend.current = workflowJson;
+    setWorkflowSendAttempts(1); // Start first attempt
+    currentWorkflowRef.current = workflowJson;
+    sendWorkflow(workflowJson);
   };
+
+  useEffect(() => {
+    if (!workflowSendAttempts || isWorkflowLoaded) return;
+
+    const baseDelay = 200;
+    const exponentialDelay = Math.min(
+      baseDelay * 2 ** (workflowSendAttempts - 1),
+      4000,
+    );
+
+    const jitter = Math.random() * 100;
+    const delay = exponentialDelay + jitter;
+
+    const timeout = setTimeout(() => {
+      const timeElapsed = Date.now() - startTime;
+
+      if (!isWorkflowLoaded && timeElapsed < 30000) {
+        console.log(
+          `Retrying workflow send, attempt ${workflowSendAttempts + 1} (delay: ${delay.toFixed(0)}ms, total time: ${timeElapsed.toFixed(0)}ms)`,
+        );
+        setWorkflowSendAttempts((prev) => prev + 1);
+        sendWorkflow(workflowToSend.current);
+      } else {
+        console.log(
+          `Stopping retries: ${isWorkflowLoaded ? "Workflow loaded" : "Time limit reached"} (${timeElapsed.toFixed(0)}ms elapsed)`,
+        );
+      }
+    }, delay);
+
+    return () => clearTimeout(timeout);
+  }, [workflowSendAttempts, isWorkflowLoaded, startTime]);
 
   useEffect(() => {
     if (!cdSetup) return;
 
     if (!workflowId && !workflowLink) {
       console.log("no workflow, setting empty");
-      setComfyUIWorkflow(
-        {
-          nodes: [],
-        },
-        500,
-      );
+      setComfyUIWorkflow({
+        nodes: [],
+      });
     } else if (workflowId && !isLoadingVersion && versionData?.workflow) {
       console.log("using workflowId", versionData.workflow);
       setComfyUIWorkflow(versionData.workflow);
     } else if (workflowLink && !isLoadingWorkflowLink && workflowLinkJson) {
       console.log("using workflowLink", workflowLinkJson);
-      setComfyUIWorkflow(workflowLinkJson, 500);
+      setComfyUIWorkflow(workflowLinkJson);
     }
   }, [
     workflowId,
@@ -381,6 +411,9 @@ export default function Workspace({
             // console.log("sending workflow info", info);
             sendEventToCD("workflow_info", info);
           });
+        } else if (data.type === "graph_loaded") {
+          setIsWorkflowLoaded(true);
+          setWorkflowSendAttempts(0);
         }
       } catch (error) {
         console.error("Error parsing message from iframe:", error);
