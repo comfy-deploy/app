@@ -10,6 +10,7 @@ import {
   useSelectedVersionStore,
   VersionDrawer,
 } from "./workflows/$workflowId/$view.lazy";
+import { useState } from "react";
 
 export const Route = createFileRoute("/deployments")({
   component: RouteComponent,
@@ -20,6 +21,9 @@ function RouteComponent() {
     queryKey: ["deployments"],
   });
   const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(
+    null,
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-screen-md flex-col gap-4">
@@ -41,11 +45,18 @@ function RouteComponent() {
             </div>
             <div className="flex w-full flex-col divide-y">
               {deployments.map((deployment: any) => (
+                // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
                 <div
                   key={deployment.id}
                   className="flex w-full cursor-pointer items-center justify-between gap-2 p-2 hover:bg-gray-50"
                   onClick={() => {
-                    setSelectedVersion(deployment.workflow_version_id);
+                    if (
+                      deployment.environment === "production" ||
+                      deployment.environment === "staging"
+                    ) {
+                      setSelectedVersion(deployment.workflow_version_id);
+                      setSelectedWorkflowId(workflowId);
+                    }
                   }}
                 >
                   <div className="flex w-full items-center gap-2">
@@ -88,10 +99,10 @@ function RouteComponent() {
                 </div>
               ))}
             </div>
-            <VersionDrawer workflowId={workflowId} />
           </div>
         ))}
       </div>
+      {selectedWorkflowId && <VersionDrawer workflowId={selectedWorkflowId} />}
     </div>
   );
 }
