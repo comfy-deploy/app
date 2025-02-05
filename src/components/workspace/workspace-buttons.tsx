@@ -34,11 +34,11 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Progress } from "../ui/progress";
-import { Timer } from "../workflows/Timer";
 import { toast } from "sonner";
 import { defaultWorkflowTemplates } from "@/utils/default-workflow";
 import { sendWorkflow } from "./sendEventToCD";
 import { Label } from "../ui/label";
+import Cookies from "js-cookie";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -516,15 +516,23 @@ export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
     from: "/sessions/$sessionId/",
   });
   const { cdSetup } = useCDStore();
+  const endpointParts = endpoint.split("//")[1].split(".");
+  const endpointId = `${endpointParts[0]}-${endpointParts[1]}`;
 
   useEffect(() => {
     if (!cdSetup) return;
-    if (workflowId || machineId || workflowLink) return;
+    if (workflowId || workflowLink) return;
+
+    const hasShownTemplate = Cookies.get(`cd_templateShown_${endpointId}`);
+    if (hasShownTemplate) return;
 
     setTimeout(() => {
       setIsTemplateOpen(true);
+      Cookies.set(`cd_templateShown_${endpointId}`, "true", {
+        expires: 1 / 24,
+      });
     }, 1000);
-  }, [cdSetup, workflowId, machineId, workflowLink]);
+  }, [cdSetup, workflowId, workflowLink]);
 
   const data = useMemo(() => {
     return {
