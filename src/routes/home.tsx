@@ -247,9 +247,9 @@ function SessionsList() {
         show={showGuide && !!workflowLinkSearch}
         tooltipPosition={{
           offsetX: 20, // Move 20px right from default position
-          offsetY: 24, // Space between target and tooltip
+          offsetY: -100, // Space between target and tooltip
           align: "end", // Align to start of target
-          side: "bottom", // Show below target
+          side: "top", // Show below target
         }}
         delay={500}
         maskMargin={10}
@@ -391,13 +391,30 @@ function SessionsList() {
                 className="overflow-hidden"
               >
                 <div className="mx-2 mt-4 rounded-t-2xl border-gray-200/60 border-x border-t bg-white/50 p-4 shadow-inner">
-                  <div className="mb-6">
-                    <h3 className="font-medium text-gray-800 text-sm">
-                      Quick Launch
-                    </h3>
-                    <p className="text-2xs text-muted-foreground">
-                      Configure your ComfyUI session settings
-                    </p>
+                  <div className="mb-6 flex flex-row items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-gray-800 text-sm">
+                        Quick Launch
+                      </h3>
+                      <p className="text-2xs text-muted-foreground">
+                        Configure your ComfyUI session settings
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      onClick={handleCopy}
+                      className="transition-all duration-200"
+                    >
+                      {copied ? (
+                        <>
+                          Copied! <Check className="ml-2 h-3 w-3" />
+                        </>
+                      ) : (
+                        <>
+                          Share <Share2 className="ml-2 h-3 w-3" />
+                        </>
+                      )}
+                    </Button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -492,7 +509,7 @@ function SessionsList() {
                     </div>
                   </div>
 
-                  <div className="mt-4">
+                  <div className="my-4">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-gray-700 text-xs">
                         Custom Nodes
@@ -627,24 +644,6 @@ function SessionsList() {
                         </div>
                       )}
                     </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      onClick={handleCopy}
-                      className="transition-all duration-200"
-                    >
-                      {copied ? (
-                        <>
-                          Copied! <Check className="ml-2 h-3 w-3" />
-                        </>
-                      ) : (
-                        <>
-                          Share <Share2 className="ml-2 h-3 w-3" />
-                        </>
-                      )}
-                    </Button>
                   </div>
                 </div>
               </motion.div>
