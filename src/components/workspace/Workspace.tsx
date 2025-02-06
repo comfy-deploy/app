@@ -62,7 +62,7 @@ import {
   useSessionIncrementStore,
 } from "./increase-session";
 import { WorkspaceControls } from "./workspace-control";
-import { useSearch } from "@tanstack/react-router";
+import { useParams, useSearch } from "@tanstack/react-router";
 
 interface WorkflowState {
   workflow: any;
@@ -130,10 +130,6 @@ export default function Workspace({
   } = useWorkflowStore();
 
   const { value: selectedVersion } = useSelectedVersion(workflowId ?? null);
-
-  const [sessionId] = useQueryState("sessionId", {
-    defaultValue: "",
-  });
 
   const { data: workflowLinkJson, isLoading: isLoadingWorkflowLink } = useQuery(
     {
@@ -361,10 +357,6 @@ export default function Workspace({
           useAssetsBrowserStore.getState().setOpen(true);
           useAssetsBrowserStore.getState().setTargetNodeData(data.data);
         }
-        if (data.type === "increase-session") {
-          useSessionIncrementStore.getState().setOpen(true);
-          useSessionIncrementStore.getState().setSessionId(sessionId);
-        }
 
         // handleEvent(data.type, data.data);
 
@@ -415,7 +407,8 @@ export default function Workspace({
                 newPythonEndpoint,
               ).toString(),
               cd_token: x,
-              gpu_event_id: sessionId,
+              gpu_event_id: sessionIdOverride,
+              gpu: session.gpu,
             };
             // console.log("sending workflow info", info);
             sendEventToCD("workflow_info", info);
@@ -489,7 +482,6 @@ export default function Workspace({
 
   return (
     <>
-      {sessionId !== "preview" && <SessionIncrementDialog />}
       <AnimatePresence>
         {!cdSetup && (
           <motion.div
