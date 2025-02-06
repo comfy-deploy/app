@@ -682,23 +682,6 @@ export function WorkflowButtons({
   );
 }
 
-// export function WorkflowTemplateButtons({ endpoint }: WorkspaceButtonProps) {
-//   const data = useMemo(() => {
-//     return {
-//       containerSelector: "body > div.comfyui-body-top > div",
-//       buttonConfigs: [],
-//       buttonIdPrefix: "cd-button-workflow-template-",
-//       insertBefore: "body > div.comfyui-body-top > div > div.flex-grow",
-//     };
-//   }, [workflowId]);
-
-//   useWorkspaceButtons(data, endpoint);
-
-//   return (
-
-//   );
-// }
-
 export function ClearContainerButtons({ endpoint }: WorkspaceButtonProps) {
   useWorkspaceButtons(
     {

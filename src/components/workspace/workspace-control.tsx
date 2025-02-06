@@ -152,7 +152,6 @@ export const WorkspaceControls = React.memo(function WorkspaceControls(props: {
         machine_id={props.machine_id}
         machine_version_id={props.machine_version_id}
       />
-      {/* <WorkflowTemplateButtons endpoint={props.endpoint} /> */}
       <ClearContainerButtons endpoint={props.endpoint} />
     </>
   );
