@@ -46,6 +46,9 @@ export const Route = createRootRouteWithContext<Context>()({
     ) {
       throw redirect({
         to: "/auth/sign-in",
+        search: {
+          redirect: location.href,
+        },
       });
     }
 
