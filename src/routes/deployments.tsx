@@ -7,7 +7,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CopyIcon, ExternalLink, LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
-  useSelectedVersionStore,
+  useSelectedDeploymentStore,
   VersionDrawer,
 } from "./workflows/$workflowId/$view.lazy";
 import { useState } from "react";
@@ -20,7 +20,8 @@ function RouteComponent() {
   const { data: deployments } = useQuery<any>({
     queryKey: ["deployments"],
   });
-  const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
+  const { selectedDeployment, setSelectedDeployment } =
+    useSelectedDeploymentStore();
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(
     null,
   );
@@ -54,7 +55,7 @@ function RouteComponent() {
                       deployment.environment === "production" ||
                       deployment.environment === "staging"
                     ) {
-                      setSelectedVersion(deployment.workflow_version_id);
+                      setSelectedDeployment(deployment.id);
                       setSelectedWorkflowId(workflowId);
                     }
                   }}

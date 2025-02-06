@@ -104,15 +104,18 @@ export const Route = createLazyFileRoute("/workflows/$workflowId/$view")({
   component: WorkflowPageComponent,
 });
 
-interface SelectedVersionState {
-  selectedVersion: string | null;
-  setSelectedVersion: (version: string | null) => void;
+interface SelectedDeploymentState {
+  selectedDeployment: string | null;
+  setSelectedDeployment: (deployment: string | null) => void;
 }
 
-export const useSelectedVersionStore = create<SelectedVersionState>((set) => ({
-  selectedVersion: null,
-  setSelectedVersion: (version) => set({ selectedVersion: version }),
-}));
+export const useSelectedDeploymentStore = create<SelectedDeploymentState>(
+  (set) => ({
+    selectedDeployment: null,
+    setSelectedDeployment: (deployment) =>
+      set({ selectedDeployment: deployment }),
+  }),
+);
 
 function WorkflowPageComponent() {
   const { workflowId, view: currentView } = Route.useParams();
@@ -422,12 +425,14 @@ function WorkflowPageComponent() {
 }
 
 export function VersionDrawer({ workflowId }: { workflowId: string }) {
-  const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
+  // const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
+  const { selectedDeployment, setSelectedDeployment } =
+    useSelectedDeploymentStore();
   return (
     <MyDrawer
-      open={!!selectedVersion}
+      open={!!selectedDeployment}
       onClose={() => {
-        setSelectedVersion(null);
+        setSelectedDeployment(null);
       }}
     >
       <ScrollArea className="h-full">
@@ -435,7 +440,8 @@ export function VersionDrawer({ workflowId }: { workflowId: string }) {
           <APIDocs
             domain={process.env.NEXT_PUBLIC_CD_API_URL!}
             workflow_id={workflowId}
-            workflow_version_id={selectedVersion ?? undefined}
+            // workflow_version_id={selectedVersion ?? undefined}
+            deployment_id={selectedDeployment ?? undefined}
           />
         </LoadingWrapper>
       </ScrollArea>
@@ -455,7 +461,7 @@ function RequestPage({
     useCurrentWorkflow(workflowId);
   const { data: deployments, refetch: refetchDeployments } =
     useWorkflowDeployments(workflowId);
-  const { setSelectedVersion } = useSelectedVersionStore();
+  const { setSelectedDeployment } = useSelectedDeploymentStore();
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -586,7 +592,7 @@ function RequestPage({
                             getEnvColor(deployment.environment),
                           )}
                           onClick={() => {
-                            setSelectedVersion(item.id);
+                            setSelectedDeployment(deployment.id);
                           }}
                         >
                           {deployment?.environment}

@@ -490,12 +490,12 @@ export function APIDocs({
   workflow_id,
   domain,
   model,
-  workflow_version_id,
+  deployment_id,
 }: {
   workflow_id: string;
   domain: string;
   model?: any;
-  workflow_version_id?: string;
+  deployment_id?: string;
 }) {
   const { data: deployments } = useWorkflowDeployments(workflow_id);
   const [selectedDeployment, setSelectedDeployment] = useState<any>(null);
@@ -507,12 +507,10 @@ export function APIDocs({
       );
 
       setSelectedDeployment(
-        NonShareDeployment.find(
-          (d) => d.workflow_version_id === workflow_version_id,
-        ),
+        NonShareDeployment.find((d) => d.id === deployment_id),
       );
     }
-  }, [deployments]);
+  }, [deployments, deployment_id]);
 
   if (!selectedDeployment) {
     return (
