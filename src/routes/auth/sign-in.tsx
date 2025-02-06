@@ -12,7 +12,7 @@ export const Route = createFileRoute("/auth/sign-in")({
 function SignInComponent() {
   return (
     <div className="w-full h-full items-center flex justify-center">
-      <SignIn />
+      <SignIn waitlistUrl="/waitlist" />
     </div>
   );
 }

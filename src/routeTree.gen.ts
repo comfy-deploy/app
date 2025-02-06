@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as WaitlistImport } from './routes/waitlist'
 import { Route as UsageImport } from './routes/usage'
 import { Route as StorageImport } from './routes/storage'
 import { Route as SettingsImport } from './routes/settings'
@@ -45,6 +46,12 @@ const MachinesMachineIdIndexLazyImport = createFileRoute(
 )()
 
 // Create/Update Routes
+
+const WaitlistRoute = WaitlistImport.update({
+  id: '/waitlist',
+  path: '/waitlist',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const UsageRoute = UsageImport.update({
   id: '/usage',
@@ -286,6 +293,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsageImport
       parentRoute: typeof rootRoute
     }
+    '/waitlist': {
+      id: '/waitlist'
+      path: '/waitlist'
+      fullPath: '/waitlist'
+      preLoaderRoute: typeof WaitlistImport
+      parentRoute: typeof rootRoute
+    }
     '/auth/sign-in': {
       id: '/auth/sign-in'
       path: '/auth/sign-in'
@@ -407,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/storage': typeof StorageRoute
   '/usage': typeof UsageRoute
+  '/waitlist': typeof WaitlistRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/analytics': typeof AnalyticsIndexRoute
@@ -435,6 +450,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/storage': typeof StorageRoute
   '/usage': typeof UsageRoute
+  '/waitlist': typeof WaitlistRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/analytics': typeof AnalyticsIndexRoute
@@ -464,6 +480,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/storage': typeof StorageRoute
   '/usage': typeof UsageRoute
+  '/waitlist': typeof WaitlistRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/analytics/': typeof AnalyticsIndexRoute
@@ -494,6 +511,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/storage'
     | '/usage'
+    | '/waitlist'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/analytics'
@@ -521,6 +539,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/storage'
     | '/usage'
+    | '/waitlist'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/analytics'
@@ -548,6 +567,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/storage'
     | '/usage'
+    | '/waitlist'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/analytics/'
@@ -577,6 +597,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   StorageRoute: typeof StorageRoute
   UsageRoute: typeof UsageRoute
+  WaitlistRoute: typeof WaitlistRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
   AnalyticsIndexRoute: typeof AnalyticsIndexRoute
@@ -605,6 +626,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   StorageRoute: StorageRoute,
   UsageRoute: UsageRoute,
+  WaitlistRoute: WaitlistRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
   AnalyticsIndexRoute: AnalyticsIndexRoute,
@@ -644,6 +666,7 @@ export const routeTree = rootRoute
         "/settings",
         "/storage",
         "/usage",
+        "/waitlist",
         "/auth/sign-in",
         "/auth/sign-up",
         "/analytics/",
@@ -690,6 +713,9 @@ export const routeTree = rootRoute
     },
     "/usage": {
       "filePath": "usage.tsx"
+    },
+    "/waitlist": {
+      "filePath": "waitlist.tsx"
     },
     "/auth/sign-in": {
       "filePath": "auth/sign-in.tsx"
