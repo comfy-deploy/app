@@ -47,6 +47,12 @@ export function Playground(props: {
   runOrigin?: any;
 }) {
   const workflow_id = useWorkflowIdInWorkflowPage();
+  const [runId, setRunId] = useQueryState("run-id");
+  const { data: run, isLoading: isRunLoading } = useQuery({
+    enabled: !!runId,
+    queryKey: ["run", runId],
+    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+  });
 
   const { data: deployments } = useWorkflowDeployments(workflow_id);
 
@@ -66,6 +72,16 @@ export function Playground(props: {
   useEffect(() => {
     setDefaultValues(getDefaultValuesFromWorkflow(deployment?.input_types));
   }, [deployment?.id]);
+
+  const lastRunIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (runId && run && runId !== lastRunIdRef.current) {
+      setDefaultValues(getFormattedInputs(run));
+      toast.success("Input values updated.");
+      lastRunIdRef.current = runId;
+    }
+  }, [runId, run]);
 
   return (
     <div className="grid h-full w-full grid-rows-[1fr,1fr] gap-4 pt-4 lg:grid-cols-[1fr,minmax(auto,500px)]">
@@ -199,14 +215,8 @@ export function UserIcon({
 
 function RunRow({
   run: _run,
-  isSelected,
-  onSelect,
-  setInputValues,
 }: {
-  run: WorkflowRunType | null;
-  isSelected: boolean;
-  onSelect: () => void;
-  setInputValues: (values: any) => void;
+  run: any;
 }) {
   const {
     data: run,
@@ -216,71 +226,12 @@ function RunRow({
     queryKey: ["run", _run?.id],
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
   });
+  const [_, setRunId] = useQueryState("run-id");
 
-  // const { data: userData } = useSWR(
-  //   `${run.user_id}/image`,
-  //   () => getClerkUserData(run.user_id || ""),
-  //   {
-  //     refreshInterval: 1000 * 60 * 5,
-  //   },
-  // );
-
-  // const { data: userData } = useQuery({
-  //   queryKey: ["user", run.user_id],
-  // });
-
-  const { setVersion, value: currentVersion } = useSelectedVersion(
-    run?.workflow_id || "",
-  );
-
-  // // TODO: on holded
-  // const { data: favoriteStatus, mutate: mutateFavoriteStatus } = useSWR(
-  //   `favorite-status-${run.id}`,
-  //   () => getWorkflowRunFavoriteStatus(run.id),
-  // );
-
-  function getFormattedInputs(run: any): Record<string, any> {
-    if (
-      run.workflow_inputs &&
-      typeof run.workflow_inputs === "object" &&
-      Object.keys(run.workflow_inputs).length > 0
-    ) {
-      return run.workflow_inputs;
-    }
-    if (run.workflow_api) {
-      return Object.entries(run.workflow_api).reduce(
-        (acc, [nodeId, node]) => {
-          if (
-            customInputNodes.hasOwnProperty(
-              node.class_type as keyof typeof customInputNodes,
-            )
-          ) {
-            if (node.class_type === "ComfyUIDeployExternalImage") {
-              // Handle external image case safely
-              const linkedNodeId =
-                Array.isArray(node.inputs.default_value) &&
-                node.inputs.default_value.length > 0
-                  ? node.inputs.default_value[0]
-                  : null;
-              const linkedNode = linkedNodeId
-                ? run.workflow_api?.[linkedNodeId]
-                : null;
-              if (linkedNode && linkedNode.inputs && linkedNode.inputs.image) {
-                acc[node.inputs.input_id] = linkedNode.inputs.image;
-              } else {
-                acc[node.inputs.input_id] = node.inputs.default_value || null;
-              }
-            } else {
-              acc[node.inputs.input_id] = node.inputs.default_value || null;
-            }
-          }
-          return acc;
-        },
-        {} as Record<string, any>,
-      );
-    }
-    return {};
-  }
+  const { data: versionData } = useQuery<any>({
+    enabled: !!run?.workflow_version_id,
+    queryKey: ["workflow-version", run?.workflow_version_id],
+  });
 
   const DisplayInputs = ({
     title,
@@ -346,13 +297,15 @@ function RunRow({
     <div>
       <div
         className={cn(
-          "flex gap-3 py-2",
+          "flex items-center gap-3 py-2",
           run.origin === "manual" ? "flex-row-reverse" : "flex-row",
         )}
       >
-        <p className="text-gray-500 text-sm">#{run.number}</p>
+        <p className="font-mono text-2xs text-muted-foreground">
+          #{run.id.slice(0, 6)}
+        </p>
         <Badge className="w-fit rounded-[10px] text-xs">
-          {run.version?.version ? `v${run.version.version}` : "N/A"}
+          {`v${versionData?.version}` || "N/A"}
         </Badge>
         {run.gpu && (
           <Badge className="w-fit rounded-[10px] text-2xs text-gray-500">
@@ -437,19 +390,7 @@ function RunRow({
                         size="icon"
                         className="bg-gray-200/80 text-gray-700"
                         onClick={() => {
-                          // console.log("run inputs", getFormattedInputs(run));
-                          setInputValues(getFormattedInputs(run));
-                          toast.success("Input values updated. ");
-                          console.log("run version", currentVersion.version);
-                          if (
-                            run.version?.version &&
-                            run.version?.version !== currentVersion.version
-                          ) {
-                            setVersion(run.version?.version);
-                            toast.warning(
-                              `Version updated to: v${run.version?.version}`,
-                            );
-                          }
+                          setRunId(run.id);
                         }}
                       >
                         <Pencil size={16} />
@@ -546,6 +487,49 @@ function RunRow({
       </div>
     </div>
   );
+}
+
+function getFormattedInputs(run: any): Record<string, any> {
+  if (
+    run.workflow_inputs &&
+    typeof run.workflow_inputs === "object" &&
+    Object.keys(run.workflow_inputs).length > 0
+  ) {
+    return run.workflow_inputs;
+  }
+  if (run.workflow_api) {
+    return Object.entries(run.workflow_api).reduce(
+      (acc, [nodeId, node]) => {
+        if (
+          customInputNodes.hasOwnProperty(
+            node.class_type as keyof typeof customInputNodes,
+          )
+        ) {
+          if (node.class_type === "ComfyUIDeployExternalImage") {
+            // Handle external image case safely
+            const linkedNodeId =
+              Array.isArray(node.inputs.default_value) &&
+              node.inputs.default_value.length > 0
+                ? node.inputs.default_value[0]
+                : null;
+            const linkedNode = linkedNodeId
+              ? run.workflow_api?.[linkedNodeId]
+              : null;
+            if (linkedNode?.inputs?.image) {
+              acc[node.inputs.input_id] = linkedNode.inputs.image;
+            } else {
+              acc[node.inputs.input_id] = node.inputs.default_value || null;
+            }
+          } else {
+            acc[node.inputs.input_id] = node.inputs.default_value || null;
+          }
+        }
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
+  }
+  return {};
 }
 
 function shouldBreakAll(str: string): boolean {
