@@ -39,14 +39,14 @@ if (!rootElement) {
 function InnerApp() {
   const auth = useAuth();
 
-  // // We can use a loading state here to show a loading screen
-  // if (!auth.isLoaded) {
-  //   return (
-  //     <div className="flex h-screen w-screen items-center justify-center">
-  //       <LoadingIcon />
-  //     </div>
-  //   );
-  // }
+  // We can use a loading state here to show a loading screen
+  if (!auth.isLoaded) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <LoadingIcon />
+      </div>
+    );
+  }
 
   // const router = useRouter();
 

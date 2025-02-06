@@ -25,7 +25,7 @@ function HomeComponent() {
   return (
     <div className="p-2">
       <SignedOut>
-        <RedirectToSignIn />
+        <RedirectToSignIn redirectUrl={"/"} />
       </SignedOut>
     </div>
   );
