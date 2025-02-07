@@ -1,9 +1,10 @@
 import { FileURLRender } from "@/components/workflows/OutputRender";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
 
 type GalleryViewProps = {
   workflowID: string;
@@ -52,6 +53,22 @@ function GallerySkeleton() {
         />
       ))}
     </div>
+  );
+}
+
+function GalleryImage({ outputUrl }: { outputUrl: string }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  return (
+    <FileURLRender
+      url={outputUrl}
+      lazyLoading={true}
+      imgClasses={cn(
+        "w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none min-h-[200px]",
+        !isLoaded && "aspect-square",
+      )}
+      onLoad={() => setIsLoaded(true)}
+    />
   );
 }
 
@@ -111,11 +128,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                 "run-id": page.run_id,
               }}
             >
-              <FileURLRender
-                url={outputUrl}
-                lazyLoading={true}
-                imgClasses="w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none"
-              />
+              <GalleryImage outputUrl={outputUrl} />
               <div className="absolute bottom-0 left-0 w-full rounded-b-[4px] bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 <div className="flex items-center justify-between px-4 py-3 drop-shadow-md">
                   <div className="flex items-center gap-2">
