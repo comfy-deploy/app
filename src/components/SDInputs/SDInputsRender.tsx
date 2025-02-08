@@ -2,6 +2,7 @@ import { SDImageInput } from "@/components/SDInputs/SDImageInput";
 import { SDInput } from "@/components/SDInputs/SDInput";
 import { SDTextarea } from "@/components/SDInputs/SDTextarea";
 import { SDVideoInput } from "@/components/SDInputs/SDVideoInput";
+import { SDAudioInput } from "@/components/SDInputs/SDAudioInput";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -221,6 +222,19 @@ export function SDInputsRender({
     case "ComfyUIDeployExternalVideo":
       return (
         <SDVideoInput
+          key={inputNode.input_id}
+          file={inputValue}
+          inputClasses="mt-2 bg-gray-50"
+          header={header(genericProps)}
+          {...genericProps}
+          onChange={(file: File | string | undefined) => {
+            updateInput(inputNode.input_id, file);
+          }}
+        />
+      );
+    case "ComfyUIDeployExternalAudio":
+      return (
+        <SDAudioInput
           key={inputNode.input_id}
           file={inputValue}
           inputClasses="mt-2 bg-gray-50"

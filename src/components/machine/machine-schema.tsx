@@ -64,7 +64,11 @@ const dockerCommandStep = z.discriminatedUnion("type", [
 
 export const serverlessFormSchema = z.object({
   name: z.string().default("My Machine").describe("Name"),
-  comfyui_version: z.string().default(comfyui_hash).describe("ComfyUI Version"),
+  comfyui_version: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/i, "Must be a valid 40-character git commit hash")
+    .default(comfyui_hash)
+    .describe("ComfyUI Version"),
   gpu: z.enum(machineGPUOptions).default("A10G"),
   docker_command_steps: z
     .object({
