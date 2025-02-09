@@ -465,7 +465,7 @@ export function RunWorkflowButton({
   );
 }
 
-export function CreateDeploymentButtonV2({
+export function useCreateDeploymentDialog({
   workflow_id,
 }: {
   workflow_id: string;
@@ -489,7 +489,7 @@ export function CreateDeploymentButtonV2({
     "production",
   );
 
-  const { dialog, open, setOpen } = useConfirmServerActionDialog({
+  return useConfirmServerActionDialog({
     action: async () => {
       if (!machine) return;
 
@@ -575,20 +575,20 @@ export function CreateDeploymentButtonV2({
     description: "Deploy your workflow to a machine",
   });
 
-  return (
-    <>
-      <Button
-        iconPlacement="right"
-        disabled={!machine}
-        Icon={Plus}
-        onClick={() => setOpen(true)}
-        variant="default"
-      >
-        Deploy
-      </Button>
-      {dialog}
-    </>
-  );
+  // return (
+  //   <>
+  //     <Button
+  //       iconPlacement="right"
+  //       disabled={!machine}
+  //       Icon={Plus}
+  //       onClick={() => setOpen(true)}
+  //       variant="default"
+  //     >
+  //       Deploy
+  //     </Button>
+  //     {dialog}
+  //   </>
+  // );
 }
 
 export async function getWorkflowJSON(

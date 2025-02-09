@@ -91,6 +91,7 @@ import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLogStore } from "@/components/workspace/LogContext";
+import { useCreateDeploymentDialog } from "@/components/run/VersionSelect";
 
 const pages = [
   "workspace",
@@ -537,6 +538,10 @@ function RequestPage({
     }
   };
 
+  const { dialog, open, setOpen } = useCreateDeploymentDialog({
+    workflow_id: workflowId,
+  });
+
   return (
     <div className="mx-auto flex flex-row">
       <VersionDrawer workflowId={workflowId} />
@@ -617,10 +622,17 @@ function RequestPage({
                       <MoreVertical size={16} />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
+                      {/* {item.machine_version_id ? (
+                        <></>
+                      ) : (
+                        <div className="text-xs text-gray-500 px-4 ring-1 ring-gray-200 rounded-md">
+                          Save from workspace to use
+                        </div>
+                      )} */}
                       <DropdownMenuItem className="p-0">
                         <Button
                           variant={"ghost"}
-                          className="w-full justify-start"
+                          className="w-full justify-start px-2 font-normal"
                           disabled={!item.machine_version_id}
                           onClick={async (e) => {
                             e.preventDefault();
@@ -652,7 +664,7 @@ function RequestPage({
                       <DropdownMenuItem className="p-0">
                         <Button
                           variant={"ghost"}
-                          className="w-full justify-start"
+                          className="w-full justify-start px-2 font-normal"
                           disabled={!item.machine_version_id}
                           onClick={async (e) => {
                             e.preventDefault();
@@ -684,7 +696,7 @@ function RequestPage({
                       <DropdownMenuItem className="p-0">
                         <Button
                           variant={"ghost"}
-                          className="w-full justify-start"
+                          className="w-full justify-start px-2 font-normal"
                           disabled={!item.machine_version_id}
                           onClick={async (e) => {
                             e.preventDefault();
@@ -714,12 +726,15 @@ function RequestPage({
                           Edit
                         </Button>
                       </DropdownMenuItem>
-                      {item.machine_version_id ? (
-                        <></>
-                      ) : (
-                        <div className="text-xs text-gray-500 px-4 ring-1 ring-gray-200 rounded-md">
-                          Please commit a version from a workspace
-                        </div>
+
+                      {!item.machine_version_id && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setOpen(true);
+                          }}
+                        >
+                          Create Deployment
+                        </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -741,6 +756,7 @@ function RequestPage({
         </motion.div>
       </div>
       <WorkflowComponent />
+      {dialog}
     </div>
   );
 }
