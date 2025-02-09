@@ -416,8 +416,10 @@ function RunRow({
 
   return (
     <div
-      className={`flex h-full cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm hover:bg-gray-100 ${
-        isSelected ? "border border-black bg-gray-50 shadow-sm" : ""
+      className={`transition-shadow flex h-full cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm  ${
+        isSelected
+          ? " bg-gray-50 shadow-md"
+          : "hover:bg-gray-100 hover:shadow-sm"
       }`}
       onClick={() => {
         onSelect();

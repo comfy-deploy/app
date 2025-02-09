@@ -1357,7 +1357,7 @@ export function AnyModelRegistry(props: {
         modelList={modelList}
         selected={selected}
         onSelectedChange={setSelected}
-        label="Any"
+        label="from Hugging Face, CivitAI, or ComfyUI"
         onSearch={setSearch}
         shouldFilter={false}
         isLoading={isLoading}
