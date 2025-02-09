@@ -1014,13 +1014,15 @@ export function APIDocs({
               Check out our comprehensive documentation for in-depth guides and
               examples.
             </p>
-            <Link
-              href="https://docs.comfydeploy.com"
+            <a
+              href="https://api.comfydeploy.com"
+              target="_blank"
               className="mt-2 inline-flex items-center text-blue-600 hover:underline"
+              rel="noreferrer"
             >
               Visit our docs
               <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
+            </a>
           </div>
           {/* Trigger the workflow */}
           {/* <CodeBlock

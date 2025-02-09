@@ -41,6 +41,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Alert, AlertDescription } from "../ui/alert";
+import { MyDrawer } from "../drawer";
 
 export default function WorkflowComponent() {
   const [runId, setRunId] = useQueryState("run-id");
@@ -53,19 +54,20 @@ export default function WorkflowComponent() {
   };
 
   return (
-    <AnimatePresence>
+    <>
       {runId && (
-        <motion.div
-          className="relative h-fit w-full lg:max-w-[500px]"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.2 }}
+        <MyDrawer
+          backgroundInteractive={true}
+          desktopClassName="w-[600px] ring-1 ring-gray-200"
+          open={!!runId}
+          onClose={() => {
+            handleCloseRun();
+          }}
         >
           <RunDetails run_id={runId} onClose={handleCloseRun} />
-        </motion.div>
+        </MyDrawer>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
@@ -95,51 +97,15 @@ function RunDetails(props: {
     },
   });
 
-  if (isLoading) {
-    return (
-      <Card className="relative h-fit w-full lg:max-w-[500px]">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <Skeleton className="mb-2 h-8 w-32" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-24" />
-            <Skeleton className="h-9 w-24" />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <div className="grid grid-cols-2 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i}>
-                  <Skeleton className="mb-2 h-4 w-20" />
-                  <Skeleton className="h-6 w-24" />
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4">
-              <Skeleton className="mb-4 h-10 w-full" />
-              <div className="space-y-4">
-                <Skeleton className="h-[200px] w-full" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (!run) {
     return (
-      <Card className="relative h-fit w-full lg:max-w-[500px]">
-        <CardContent className="space-y-6">
-          <div className="py-8 text-center text-muted-foreground">
-            No run data available
-          </div>
-        </CardContent>
-      </Card>
+      // <Card className="relative h-fit w-full lg:max-w-[500px]">
+      // <CardContent className="space-y-6">
+      <div className="py-8 text-center text-muted-foreground">
+        No run data available
+      </div>
+      // </CardContent>
+      // </Card>
     );
   }
 
@@ -151,7 +117,7 @@ function RunDetails(props: {
 
   const content = (
     <>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <div className="flex flex-row items-center justify-between mb-4">
         <div>
           <h2 className="font-bold text-2xl">Run Details</h2>
           <p className="text-muted-foreground">#{run.id.slice(0, 8)}</p>
@@ -186,152 +152,152 @@ function RunDetails(props: {
               )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6" key={run.id}>
-        <div>
-          <div className="grid grid-cols-2 gap-4">
-            <InfoItem
-              label="Status"
-              value={<StatusBadge status={run.status} />}
-            />
-            <InfoItem label="GPU" value={<Badge>{run.gpu || "N/A"}</Badge>} />
-            <InfoItem
-              label="Total Duration"
-              value={
-                // "duration" in run && run.duration ? (
-                //   `${parseFloat(run.duration as string).toFixed(2)}s`
-                // ) : (
-                <RunDuration
-                  showTotalDuration
-                  run={run as any}
-                  liveStatus={null}
-                  status={run.status}
-                  realtimeStatus={null}
-                />
-                // )
-              }
-            />
-            {/* {"machine" in run && (
+      </div>
+      {/* <CardContent className="space-y-6" key={run.id}> */}
+      <div>
+        <div className="grid grid-cols-2 gap-4">
+          <InfoItem
+            label="Status"
+            value={<StatusBadge status={run.status} />}
+          />
+          <InfoItem label="GPU" value={<Badge>{run.gpu || "N/A"}</Badge>} />
+          <InfoItem
+            label="Total Duration"
+            value={
+              // "duration" in run && run.duration ? (
+              //   `${parseFloat(run.duration as string).toFixed(2)}s`
+              // ) : (
+              <RunDuration
+                showTotalDuration
+                run={run as any}
+                liveStatus={null}
+                status={run.status}
+                realtimeStatus={null}
+              />
+              // )
+            }
+          />
+          {/* {"machine" in run && (
               <InfoItem label="Machine" value={(run.machine as any).name} />
             )} */}
-            {run.machine_id && (
-              <InfoItem
-                label="Machine"
-                value={<MachineLink machineId={run.machine_id} />}
-              />
-            )}
-            {run.batch_id && (
-              <InfoItem
-                label="Batch"
-                value={
-                  <Link
-                    href={`/batch/${run.batch_id}`}
-                    className="text-primary hover:underline"
-                  >
-                    #{run.batch_id}
-                  </Link>
-                }
-              />
-            )}
-          </div>
-
-          <Tabs
-            defaultValue="outputs"
-            className="mt-4"
-            value={selectedTab ?? "outputs"}
-            onValueChange={setSelectedTab}
-          >
-            <TabsList className="">
-              <TabsTrigger value="inputs">Inputs</TabsTrigger>
-              <TabsTrigger value="outputs">Outputs</TabsTrigger>
-              <>
-                {/* <TabsTrigger value="timeline">Timeline</TabsTrigger> */}
-                <TabsTrigger value="logs">Logs</TabsTrigger>
-                <TabsTrigger value="graph">Execution</TabsTrigger>
-              </>
-            </TabsList>
-            <TabsContent value="inputs">
-              <RunInputs run={run as any} />
-            </TabsContent>
-            <TabsContent
-              value="outputs"
-              className="flex w-fit flex-col justify-start gap-2"
-            >
-              <OutputRenderRun
-                run={run as any}
-                imgClasses="max-w-full min-h-[230px] object-cover rounded-[8px]å"
-                canExpandToView={true}
-                canDownload={true}
-              />
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="link" className="flex items-center gap-2">
-                    View Full Outputs <ExternalLink size={16} />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="flex h-fit max-h-[calc(100vh-10rem)] max-w-3xl flex-col">
-                  <DialogHeader>
-                    <DialogTitle>Run outputs</DialogTitle>
-                    <DialogDescription>
-                      <div className="flex items-center justify-between">
-                        You can view your run&apos;s outputs here
-                        <Button variant="outline" onClick={handleClick}>
-                          <Settings2Icon size={16} /> Tweak it
-                        </Button>
-                      </div>
-                    </DialogDescription>
-                  </DialogHeader>
-                  <ScrollArea className="flex w-full flex-col pr-4">
-                    <div className="w-full rounded-md border border-gray-200 bg-muted/50 p-2">
-                      <RunInputs run={run as any} />
-                    </div>
-                    <div className="mt-4 w-full rounded-md border border-gray-200 bg-muted/50 p-2">
-                      <RunOutputs run={run as any} />
-                    </div>
-                  </ScrollArea>
-                </DialogContent>
-              </Dialog>
-            </TabsContent>
-            <TabsContent value="graph">
-              <FilteredWorkflowExecutionGraph run={run as any} />
-            </TabsContent>
-            <TabsContent value="logs">
-              <ErrorBoundary fallback={() => <div>Error loading logs</div>}>
-                {run.modal_function_call_id && <LogsTab runId={run.id} />}
-                {!run.modal_function_call_id && (
-                  <Alert
-                    variant="default"
-                    className="w-auto max-w-md border-muted bg-muted/50"
-                  >
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-muted-foreground text-sm">
-                      We're unable to display logs for runs from the workspace.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </ErrorBoundary>
-            </TabsContent>
-          </Tabs>
+          {run.machine_id && (
+            <InfoItem
+              label="Machine"
+              value={<MachineLink machineId={run.machine_id} />}
+            />
+          )}
+          {run.batch_id && (
+            <InfoItem
+              label="Batch"
+              value={
+                <Link
+                  href={`/batch/${run.batch_id}`}
+                  className="text-primary hover:underline"
+                >
+                  #{run.batch_id}
+                </Link>
+              }
+            />
+          )}
         </div>
-      </CardContent>
+
+        <Tabs
+          defaultValue="outputs"
+          className="mt-4"
+          value={selectedTab ?? "outputs"}
+          onValueChange={setSelectedTab}
+        >
+          <TabsList className="">
+            <TabsTrigger value="inputs">Inputs</TabsTrigger>
+            <TabsTrigger value="outputs">Outputs</TabsTrigger>
+            <>
+              {/* <TabsTrigger value="timeline">Timeline</TabsTrigger> */}
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+              <TabsTrigger value="graph">Execution</TabsTrigger>
+            </>
+          </TabsList>
+          <TabsContent value="inputs">
+            <RunInputs run={run as any} />
+          </TabsContent>
+          <TabsContent
+            value="outputs"
+            className="flex w-fit flex-col justify-start gap-2"
+          >
+            <OutputRenderRun
+              run={run as any}
+              imgClasses="max-w-full min-h-[230px] object-cover rounded-[8px]å"
+              canExpandToView={true}
+              canDownload={true}
+            />
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="link" className="flex items-center gap-2">
+                  View Full Outputs <ExternalLink size={16} />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="flex h-fit max-h-[calc(100vh-10rem)] max-w-3xl flex-col">
+                <DialogHeader>
+                  <DialogTitle>Run outputs</DialogTitle>
+                  <DialogDescription>
+                    <div className="flex items-center justify-between">
+                      You can view your run&apos;s outputs here
+                      <Button variant="outline" onClick={handleClick}>
+                        <Settings2Icon size={16} /> Tweak it
+                      </Button>
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="flex w-full flex-col pr-4">
+                  <div className="w-full rounded-md border border-gray-200 bg-muted/50 p-2">
+                    <RunInputs run={run as any} />
+                  </div>
+                  <div className="mt-4 w-full rounded-md border border-gray-200 bg-muted/50 p-2">
+                    <RunOutputs run={run as any} />
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+          <TabsContent value="graph">
+            <FilteredWorkflowExecutionGraph run={run as any} />
+          </TabsContent>
+          <TabsContent value="logs">
+            <ErrorBoundary fallback={() => <div>Error loading logs</div>}>
+              {run.modal_function_call_id && <LogsTab runId={run.id} />}
+              {!run.modal_function_call_id && (
+                <Alert
+                  variant="default"
+                  className="w-auto max-w-md border-muted bg-muted/50"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-muted-foreground text-sm">
+                    We're unable to display logs for runs from the workspace.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </ErrorBoundary>
+          </TabsContent>
+        </Tabs>
+      </div>
+      {/* </CardContent> */}
     </>
   );
 
-  if (isMobile) {
-    console.log("isMobile");
+  // if (isMobile) {
+  //   console.log("isMobile");
 
-    return (
-      <Sheet open={true} onOpenChange={props.onClose} modal={false}>
-        <SheetContent side="bottom" className="h-full">
-          <ScrollArea className="h-full">{content}</ScrollArea>
-        </SheetContent>
-      </Sheet>
-    );
-  }
+  //   return (
+  //     <Sheet open={true} onOpenChange={props.onClose} modal={false}>
+  //       <SheetContent side="bottom" className="h-full">
+  //         <ScrollArea className="h-full">{content}</ScrollArea>
+  //       </SheetContent>
+  //     </Sheet>
+  //   );
+  // }
 
   return (
-    <Card className="relative h-fit w-full lg:max-w-[500px]">
-      <button
+    <div className="relative h-fit w-full">
+      {/* <button
         onClick={props.onClose}
         className="absolute top-2 right-2 rounded-full p-1 hover:bg-gray-200"
         aria-label="Close"
@@ -350,9 +316,9 @@ function RunDetails(props: {
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
-      </button>
+      </button> */}
       {content}
-    </Card>
+    </div>
   );
 }
 

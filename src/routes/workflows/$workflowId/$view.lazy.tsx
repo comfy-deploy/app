@@ -431,20 +431,19 @@ export function VersionDrawer({ workflowId }: { workflowId: string }) {
     useSelectedDeploymentStore();
   return (
     <MyDrawer
+      desktopClassName="w-[600px]"
       open={!!selectedDeployment}
       onClose={() => {
         setSelectedDeployment(null);
       }}
     >
       <ScrollArea className="h-full">
-        <LoadingWrapper tag="api">
-          <APIDocs
-            domain={process.env.NEXT_PUBLIC_CD_API_URL!}
-            workflow_id={workflowId}
-            // workflow_version_id={selectedVersion ?? undefined}
-            deployment_id={selectedDeployment ?? undefined}
-          />
-        </LoadingWrapper>
+        <APIDocs
+          domain={process.env.NEXT_PUBLIC_CD_API_URL!}
+          workflow_id={workflowId}
+          // workflow_version_id={selectedVersion ?? undefined}
+          deployment_id={selectedDeployment ?? undefined}
+        />
       </ScrollArea>
     </MyDrawer>
   );
