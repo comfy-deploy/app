@@ -7,6 +7,7 @@ export function useMachines(
   batchSize: number = BATCH_SIZE,
   limit?: number,
   include_has_workflows?: boolean,
+  is_workspace = false,
 ) {
   return useInfiniteQuery<any[]>({
     queryKey: ["machines"],
@@ -17,6 +18,7 @@ export function useMachines(
         search: debouncedSearchValue ?? "",
         is_deleted: false,
         include_has_workflows: include_has_workflows ?? false,
+        is_workspace: is_workspace,
       },
     },
     queryKeyHashFn: (queryKey) => [...queryKey, batchSize].toString(),

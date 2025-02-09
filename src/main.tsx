@@ -1,4 +1,4 @@
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth, useClerk } from "@clerk/clerk-react";
 import {
   RouterProvider,
   createRouter,
@@ -16,6 +16,7 @@ const router = createRouter({
   defaultPreload: "intent",
   context: {
     auth: undefined as ReturnType<typeof useAuth> | undefined,
+    clerk: undefined as ReturnType<typeof useClerk> | undefined,
   },
 });
 
@@ -38,15 +39,16 @@ if (!rootElement) {
 
 function InnerApp() {
   const auth = useAuth();
+  const clerk = useClerk();
 
   // We can use a loading state here to show a loading screen
-  if (!auth.isLoaded) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <LoadingIcon />
-      </div>
-    );
-  }
+  // if (!auth.isLoaded) {
+  //   return (
+  //     <div className="flex h-screen w-screen items-center justify-center">
+  //       <LoadingIcon />
+  //     </div>
+  //   );
+  // }
 
   // const router = useRouter();
 
@@ -61,7 +63,7 @@ function InnerApp() {
   //   }
   // }, [auth?.isLoaded]);
 
-  return <RouterProvider router={router} context={{ auth }} />;
+  return <RouterProvider router={router} context={{ auth, clerk }} />;
 }
 
 if (!rootElement.innerHTML) {

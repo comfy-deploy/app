@@ -103,7 +103,7 @@ function SessionsList() {
   } = Route.useSearch();
 
   // console.log(data);
-  const query = useMachines(undefined, 6, 6, true);
+  const query = useMachines(undefined, 6, 6, true, true);
 
   // console.log(query.data);
 
@@ -655,7 +655,7 @@ function SessionsList() {
       {!query.data || query.data?.pages.flat().length === 0 ? (
         <div className="mx-auto h-[400px] w-full max-w-[1200px] rounded-3xl border bg-white drop-shadow-sm">
           <div className="flex h-full flex-col items-center justify-center py-8 text-muted-foreground">
-            <div className="text-sm">No machines found</div>
+            <div className="text-sm">No workspace found</div>
             <div className="flex flex-row items-center gap-1 text-2xs">
               Try starting a new session by pressing the "Start" button above{" "}
               <CornerRightUp className="h-3 w-3" />
@@ -665,7 +665,7 @@ function SessionsList() {
       ) : (
         <>
           <VirtualizedInfiniteList
-            autoFetch={false}
+            // autoFetch={true}
             className="mx-auto w-full max-w-[1200px] rounded-3xl border bg-white drop-shadow-sm"
             containerClassName="divide-y divide-border"
             estimateSizeFn={(index) => {
@@ -704,17 +704,17 @@ function SessionsList() {
               ));
             }}
           />
-          <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
-            <Link
-              to="/machines"
-              className="flex items-center gap-1 hover:underline"
-            >
-              View all machines
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
         </>
       )}
+      <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
+        <Link
+          to="/machines"
+          className="flex items-center gap-1 hover:underline"
+        >
+          View all machines
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+      </div>
     </div>
   );
 }

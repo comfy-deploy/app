@@ -18,7 +18,7 @@ const TanStackRouterDevtools =
 import { AppSidebar } from "@/components/app-sidebar";
 import { ComfyCommand } from "@/components/comfy-command";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { SignedIn, type useAuth } from "@clerk/clerk-react";
+import { SignedIn, type useClerk, type useAuth } from "@clerk/clerk-react";
 import { RedirectToSignIn, SignedOut } from "@clerk/clerk-react";
 import React from "react";
 import { Toaster } from "sonner";
@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 
 type Context = {
   auth?: ReturnType<typeof useAuth>;
+  clerk?: ReturnType<typeof useClerk>;
 };
 
 const publicRoutes = ["/home", "/auth/sign-in", "/auth/sign-up", "/waitlist"];
@@ -35,15 +36,12 @@ const publicRoutes = ["/home", "/auth/sign-in", "/auth/sign-up", "/waitlist"];
 export const Route = createRootRouteWithContext<Context>()({
   component: RootComponent,
   beforeLoad: async ({ context, location }) => {
-    // if (!context.auth?.isLoaded) {
-    //   return;
-    // }
+    while (!context.clerk?.loaded) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
 
     // Define public routes that don't require authentication
-    if (
-      !context.auth?.isSignedIn &&
-      !publicRoutes.includes(location.pathname)
-    ) {
+    if (!context.clerk?.session && !publicRoutes.includes(location.pathname)) {
       throw redirect({
         to: "/auth/sign-in",
         search: {
@@ -53,7 +51,7 @@ export const Route = createRootRouteWithContext<Context>()({
     }
 
     // Only redirect from root to home if user is signed in
-    if (context.auth?.isSignedIn && location.pathname === "/") {
+    if (context.clerk?.session && location.pathname === "/") {
       throw redirect({
         to: "/home",
       });

@@ -90,6 +90,7 @@ import { MyDrawer } from "@/components/drawer";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLogStore } from "@/components/workspace/LogContext";
 
 const pages = [
   "workspace",
@@ -465,6 +466,9 @@ function RequestPage({
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const router = useRouter();
+
+  const { createDynamicSession } = useSessionAPI();
 
   const defaultValues = useMemo(
     () => ({
@@ -617,7 +621,7 @@ function RequestPage({
                       <DropdownMenuItem className="p-0">
                         <Button
                           variant={"ghost"}
-                          className="w-full"
+                          className="w-full justify-start"
                           disabled={!item.machine_version_id}
                           onClick={async (e) => {
                             e.preventDefault();
@@ -678,11 +682,44 @@ function RequestPage({
                           Share
                         </Button>
                       </DropdownMenuItem>
+                      <DropdownMenuItem className="p-0">
+                        <Button
+                          variant={"ghost"}
+                          className="w-full justify-start"
+                          disabled={!item.machine_version_id}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.nativeEvent.preventDefault();
+                            e.nativeEvent.stopPropagation();
+
+                            const response =
+                              await createDynamicSession.mutateAsync({
+                                gpu: "A10G",
+                                machine_id: item.machine_id,
+                                machine_version_id: item.machine_version_id,
+                              });
+                            useLogStore.getState().clearLogs();
+
+                            router.navigate({
+                              to: "/sessions/$sessionId",
+                              params: {
+                                sessionId: response.session_id,
+                              },
+                              search: {
+                                workflowId,
+                              },
+                            });
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </DropdownMenuItem>
                       {item.machine_version_id ? (
                         <></>
                       ) : (
-                        <div className="text-xs text-gray-500 px-2">
-                          Please commit a version from a new machine
+                        <div className="text-xs text-gray-500 px-4 ring-1 ring-gray-200 rounded-md">
+                          Please commit a version from a workspace
                         </div>
                       )}
                     </DropdownMenuContent>

@@ -2,7 +2,7 @@ import { UserIcon } from "@/components/run/SharePageComponent";
 import { Badge } from "@/components/ui/badge";
 import { DisplayWorkflowVersion } from "@/components/workflows/RunsTable";
 import { getRelativeTime } from "@/lib/get-relative-time";
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CopyIcon, ExternalLink, LinkIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -11,15 +11,21 @@ import {
   VersionDrawer,
 } from "./workflows/$workflowId/$view.lazy";
 import { useState } from "react";
+import { queryClient } from "@/lib/providers";
+
+const getAllDeploymentsOptions = queryOptions({
+  queryKey: ["deployments"],
+});
 
 export const Route = createFileRoute("/deployments")({
   component: RouteComponent,
+  loader: async ({ context }) => {
+    await queryClient.ensureQueryData(getAllDeploymentsOptions);
+  },
 });
 
 function RouteComponent() {
-  const { data: deployments } = useQuery<any>({
-    queryKey: ["deployments"],
-  });
+  const { data: deployments } = useQuery(getAllDeploymentsOptions);
   const { selectedDeployment, setSelectedDeployment } =
     useSelectedDeploymentStore();
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(
