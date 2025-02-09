@@ -30,7 +30,7 @@ type Context = {
   auth?: ReturnType<typeof useAuth>;
 };
 
-const publicRoutes = ["/home", "/auth/sign-in", "/waitlist"];
+const publicRoutes = ["/home", "/auth/sign-in", "/auth/sign-up", "/waitlist"];
 
 export const Route = createRootRouteWithContext<Context>()({
   component: RootComponent,
