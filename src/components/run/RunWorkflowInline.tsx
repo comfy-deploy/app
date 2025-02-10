@@ -318,6 +318,11 @@ export function RunWorkflowInline({
         throw new Error(await response.text());
       }
 
+      if (runOrigin === "public-share") {
+        const data = await response.json();
+        setRunId(data.run_id);
+      }
+
       if (model_id) {
         const data = await response.json();
         setLoading2(false);
