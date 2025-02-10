@@ -26,6 +26,9 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { getTotalUrlCountAndUrls } from "@/components/workflows/OutputRender";
+import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 type ShareDeployment = {
   id: string;
@@ -92,17 +95,127 @@ function RouteComponent() {
     enabled: !!runId,
   });
 
-  //   const { data: galleryData } = useGalleryData(
-  //     "a3c62c92-7647-48e4-9a26-1ac0e07392be",
-  //   );
+  const galleryData = useGalleryData("a3c62c92-7647-48e4-9a26-1ac0e07392be");
 
-  //   console.log(galleryData);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(-1);
 
   useEffect(() => {
     if (runId !== "") {
       setIsDrawerOpen(false);
     }
   }, [runId]);
+
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (!galleryData?.data?.pages?.[0]) return;
+
+      const allImages = galleryData.data.pages.flat();
+      const virtualListContainer = document.querySelector(
+        ".scrollbar-none",
+      ) as HTMLElement;
+
+      // Calculate the middle position
+      const containerHeight = virtualListContainer?.offsetHeight || 384;
+      const middleOffset = containerHeight / 2 - 32;
+
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        setSelectedImageIndex((prev) => {
+          const newIndex = prev - 1;
+          const url = allImages[newIndex]?.data?.images?.[0]?.url;
+          if (newIndex >= 0 && url) {
+            setCompletedImageUrls([url]);
+            virtualListContainer?.scrollTo({
+              top: Math.max(0, newIndex * 64 - middleOffset),
+              behavior: "smooth",
+            });
+            return newIndex;
+          }
+          return prev;
+        });
+      }
+
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+        e.preventDefault();
+        setSelectedImageIndex((prev) => {
+          const newIndex = prev + 1;
+          const url = allImages[newIndex]?.data?.images?.[0]?.url;
+
+          if (newIndex >= allImages.length - 5 && galleryData.hasNextPage) {
+            galleryData.fetchNextPage();
+          }
+
+          if (newIndex < allImages.length && url) {
+            setCompletedImageUrls([url]);
+            virtualListContainer?.scrollTo({
+              top: Math.max(0, newIndex * 64 - middleOffset),
+              behavior: "smooth",
+            });
+            return newIndex;
+          }
+          return prev;
+        });
+      }
+    };
+
+    // Add wheel event handler
+    const handleWheel = (e: WheelEvent) => {
+      if (!galleryData?.data?.pages?.[0]) return;
+
+      const allImages = galleryData.data.pages.flat();
+      const virtualListContainer = document.querySelector(
+        ".scrollbar-none",
+      ) as HTMLElement;
+
+      // Calculate the middle position
+      const containerHeight = virtualListContainer?.offsetHeight || 384;
+      const middleOffset = containerHeight / 2 - 32;
+
+      // Determine direction (positive deltaY means scrolling down)
+      const direction = e.deltaY > 0 ? 1 : -1;
+
+      setSelectedImageIndex((prev) => {
+        const newIndex = prev + direction;
+        const url = allImages[newIndex]?.data?.images?.[0]?.url;
+
+        if (
+          direction > 0 &&
+          newIndex >= allImages.length - 5 &&
+          galleryData.hasNextPage
+        ) {
+          galleryData.fetchNextPage();
+        }
+
+        if (
+          (direction > 0 && newIndex < allImages.length) ||
+          (direction < 0 && newIndex >= 0)
+        ) {
+          if (url) {
+            e.preventDefault();
+            setCompletedImageUrls([url]);
+            virtualListContainer?.scrollTo({
+              top: Math.max(0, newIndex * 64 - middleOffset),
+              behavior: "smooth",
+            });
+            return newIndex;
+          }
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      window.addEventListener("keydown", handleKeyDown);
+      window.removeEventListener("wheel", handleWheel);
+    };
+  }, [
+    galleryData?.data?.pages,
+    galleryData.hasNextPage,
+    galleryData.fetchNextPage,
+  ]);
 
   const displayImageUrls = useMemo(() => {
     if (runId === "") return [];
@@ -113,6 +226,7 @@ function RouteComponent() {
 
   useEffect(() => {
     setCompletedImageUrls(displayImageUrls);
+    galleryData?.refetch();
   }, [displayImageUrls]);
 
   useEffect(() => {
@@ -169,7 +283,7 @@ function RouteComponent() {
       {/* Center */}
       <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2">
         <AnimatePresence mode="wait" initial={false}>
-          {!runId && (
+          {!runId && !completedImageUrls.length && (
             <motion.div
               key="initial"
               initial={{ opacity: 0 }}
@@ -234,56 +348,120 @@ function RouteComponent() {
       </div>
 
       {/* Left */}
-      <div />
+
+      <div className="-translate-y-1/2 fixed top-1/2 left-2">
+        <motion.div
+          initial={{ opacity: 0, x: -100 }}
+          animate={
+            galleryData && !galleryData.isLoading
+              ? { opacity: 1, x: 0 }
+              : { opacity: 0, x: -100 }
+          }
+          exit={{ opacity: 0, x: 100 }}
+          transition={{
+            duration: 0.5,
+            ease: "circOut",
+          }}
+        >
+          {galleryData && (
+            <VirtualizedInfiniteList
+              className="scrollbar-none !h-[384px] w-[70px]"
+              queryResult={galleryData}
+              renderItem={(item) => {
+                return (
+                  // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+                  <div
+                    onClick={() => {
+                      setCompletedImageUrls([item.data.images[0].url]);
+                    }}
+                    className="cursor-pointer shadow-md"
+                  >
+                    <FileURLRender
+                      key={item.output_id}
+                      url={item.data.images[0].url}
+                      imgClasses="aspect-square max-w-full object-cover rounded-[6px] pointer-events-none"
+                    />
+                  </div>
+                );
+              }}
+              renderItemClassName={(item, index) =>
+                cn(
+                  "transition-all duration-200 !w-[60px]",
+                  item.data?.images?.[0]?.url === completedImageUrls?.[0] ||
+                    index === selectedImageIndex
+                    ? "ml-2"
+                    : "hover:ml-1.5",
+                )
+              }
+              estimateSize={64}
+              renderLoading={() => {
+                return [...Array(4)].map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="h-[60px] w-[60px] rounded-[6px]"
+                  />
+                ));
+              }}
+            />
+          )}
+        </motion.div>
+      </div>
 
       {/* functions */}
       <div className="-translate-x-1/2 fixed bottom-6 left-1/2">
-        <div className="flex gap-2">
-          <ShinyButton
-            className="h-12 w-96 rounded-sm shadow-lg"
-            disabled={runButtonLoading}
-            onClick={async () => {
-              try {
-                setRunButtonLoading(true);
-                const run = await api({
-                  url: "run",
-                  init: {
-                    method: "POST",
-                    body: JSON.stringify({
-                      deployment_id: shareDeployment.id,
-                      origin: "public-share",
-                    }),
-                  },
-                });
-                setRunId(run.run_id);
-              } catch (error) {
-                toast.error(`Failed to start run: ${error}`);
-              } finally {
-                setRunButtonLoading(false);
-              }
-            }}
-          >
-            <div className="flex h-full items-center justify-center">
-              {runButtonLoading ? (
-                <div className="flex animate-pulse items-center gap-2 text-muted-foreground">
-                  <span>Starting...</span>
-                  <LoadingIcon />
-                </div>
-              ) : (
-                <>
-                  Run <Stars className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </div>
-          </ShinyButton>
-          <Button
-            size="icon"
-            className="h-12 w-14 shadow-md"
-            onClick={() => setIsDrawerOpen(true)}
-          >
-            <Brush className="h-4 w-4" />
-          </Button>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -100 }}
+          transition={{ duration: 0.5, ease: "circOut" }}
+        >
+          <div className="flex gap-2">
+            <ShinyButton
+              className="h-12 w-96 rounded-sm shadow-lg"
+              disabled={runButtonLoading}
+              onClick={async () => {
+                try {
+                  setRunButtonLoading(true);
+                  const run = await api({
+                    url: "run",
+                    init: {
+                      method: "POST",
+                      body: JSON.stringify({
+                        deployment_id: shareDeployment.id,
+                        origin: "public-share",
+                      }),
+                    },
+                  });
+                  setRunId(run.run_id);
+                } catch (error) {
+                  toast.error(`Failed to start run: ${error}`);
+                } finally {
+                  setRunButtonLoading(false);
+                }
+              }}
+            >
+              <div className="flex h-full items-center justify-center">
+                {runButtonLoading ? (
+                  <div className="flex animate-pulse items-center gap-2 text-muted-foreground">
+                    <span>Starting...</span>
+                    <LoadingIcon />
+                  </div>
+                ) : (
+                  <>
+                    Run <Stars className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </div>
+            </ShinyButton>
+            <Button
+              size="icon"
+              className="h-12 w-[52px] shadow-md"
+              onClick={() => setIsDrawerOpen(true)}
+            >
+              <Brush className="h-4 w-4" />
+            </Button>
+          </div>
+        </motion.div>
       </div>
 
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -306,53 +484,5 @@ function RouteComponent() {
         </DrawerContent>
       </Drawer>
     </>
-  );
-}
-
-// deprecated
-
-function Test() {
-  return (
-    <div className="flex w-full flex-col gap-6 md:flex-row">
-      <div className="flex w-full max-w-[500px] flex-col gap-2">
-        <span className="pl-2 text-muted-foreground text-sm">Inputs</span>
-        <div className="w-full rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
-          <RunWorkflowInline
-            blocking={false}
-            default_values={default_values}
-            inputs={shareDeployment?.input_types}
-            runOrigin="public-share"
-            deployment_id={shareDeployment.id}
-          />
-        </div>
-      </div>
-      <div className="flex w-full flex-col gap-2">
-        <span className="pl-2 text-muted-foreground text-sm">Outputs</span>
-        <div className="aspect-square w-full rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
-          {!runId && (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
-              Press Run to start generation
-            </div>
-          )}
-          {runId && !completedImageUrls && (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-4">
-              <LoadingIcon />
-              <div className="flex w-64 flex-col gap-2">
-                <div className="text-center text-muted-foreground text-sm">
-                  {runResult?.live_status}
-                </div>
-                <Progress value={(runResult?.progress || 0) * 100} />
-              </div>
-            </div>
-          )}
-          {completedImageUrls && (
-            <FileURLRender
-              url={completedImageUrls[0]}
-              imgClasses="max-w-full h-full object-cover"
-            />
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
