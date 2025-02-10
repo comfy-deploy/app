@@ -5,14 +5,17 @@ import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useParams } from "@tanstack/react-router";
 import { Brush, Loader2, Stars } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Progress } from "@/components/ui/progress";
 import { UserIcon } from "@/components/run/SharePageComponent";
 import { LoadingIcon } from "@/components/loading-icon";
 import { useUser } from "@clerk/clerk-react";
 import { ShinyButton } from "@/components/magicui/shiny-button";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useGalleryData } from "@/components/GalleryView";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 type ShareDeployment = {
   id: string;
@@ -65,7 +68,9 @@ function RouteComponent() {
   const [completedImageUrl, setCompletedImageUrl] = useState<string | null>(
     null,
   );
-  const { runId } = publicRunStore();
+  const { runId, setRunId } = publicRunStore();
+
+  const [runButtonLoading, setRunButtonLoading] = useState(false);
 
   const { data: runResult } = useQuery<RunResult>({
     queryKey: ["run"],
@@ -79,17 +84,20 @@ function RouteComponent() {
     enabled: !!runId,
   });
 
-  // Update completed image URL when run succeeds OR when starting new run
-  useEffect(() => {
-    if (runId === "") {
-      setCompletedImageUrl(null);
-    } else if (runResult?.outputs?.[0]?.data?.images?.[0]?.url) {
-      setCompletedImageUrl(runResult.outputs[0].data.images[0].url);
-    } else {
-      // Clear image when starting a new run
-      setCompletedImageUrl(null);
-    }
+  //   const { data: galleryData } = useGalleryData(
+  //     "a3c62c92-7647-48e4-9a26-1ac0e07392be",
+  //   );
+
+  //   console.log(galleryData);
+
+  const displayImageUrl = useMemo(() => {
+    if (runId === "") return null;
+    return runResult?.outputs?.[0]?.data?.images?.[0]?.url || null;
   }, [runId, runResult?.outputs]);
+
+  useEffect(() => {
+    setCompletedImageUrl(displayImageUrl);
+  }, [displayImageUrl]);
 
   useEffect(() => {
     setDefaultValues(
@@ -107,6 +115,18 @@ function RouteComponent() {
 
   return (
     <>
+      {/* Useless Background */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="pointer-events-none"
+      >
+        <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
+        <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
+        <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
+      </motion.div>
+
       <div className="mx-auto w-full max-w-[1400px] gap-6 p-4">
         <div className="mb-4 flex flex-col gap-2 pl-2">
           <div className="flex flex-row items-end gap-2">
@@ -130,27 +150,102 @@ function RouteComponent() {
         </div>
       </div>
 
-      {/* Image Display */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-      >
-        <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
-        <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
-        <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
-      </motion.div>
+      {/* Center */}
+      <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2">
+        <AnimatePresence mode="wait" initial={false}>
+          {!runId && (
+            <motion.div
+              key="initial"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <span className="animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
+                Press Run to start your first generation
+              </span>
+            </motion.div>
+          )}
+          {runId && !completedImageUrl && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="flex w-64 flex-col gap-1">
+                <div className="animate-[pulse_4s_ease-in-out_infinite] text-center text-muted-foreground text-xs">
+                  {runResult?.live_status || "Generating..."}
+                </div>
+                <Progress
+                  value={(runResult?.progress || 0) * 100}
+                  className="opacity-70"
+                />
+              </div>
+            </motion.div>
+          )}
+          {completedImageUrl && (
+            <motion.div
+              key="result"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: 0.4,
+                ease: "easeInOut",
+              }}
+            >
+              <FileURLRender
+                url={completedImageUrl}
+                imgClasses="max-w-full h-full max-h-[65vh] object-cover shadow-lg"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-      <span className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
-        Press Run to start your first generation
-      </span>
+      {/* Left */}
+      <div />
 
       {/* functions */}
       <div className="-translate-x-1/2 fixed bottom-6 left-1/2">
         <div className="flex gap-2">
-          <ShinyButton className="h-12 w-96 rounded-sm shadow-lg">
+          <ShinyButton
+            className="h-12 w-96 rounded-sm shadow-lg"
+            disabled={runButtonLoading}
+            onClick={async () => {
+              try {
+                setRunButtonLoading(true);
+                const run = await api({
+                  url: "run",
+                  init: {
+                    method: "POST",
+                    body: JSON.stringify({
+                      deployment_id: shareDeployment.id,
+                      origin: "public-share",
+                    }),
+                  },
+                });
+                setRunId(run.run_id);
+              } catch (error) {
+                toast.error(`Failed to start run: ${error}`);
+              } finally {
+                setRunButtonLoading(false);
+              }
+            }}
+          >
             <div className="flex h-full items-center justify-center">
-              Run <Stars className="ml-2 h-4 w-4" />
+              {runButtonLoading ? (
+                <div className="flex animate-pulse items-center gap-2 text-muted-foreground">
+                  <span>Starting...</span>
+                  <LoadingIcon />
+                </div>
+              ) : (
+                <>
+                  Run <Stars className="ml-2 h-4 w-4" />
+                </>
+              )}
             </div>
           </ShinyButton>
           <Button size="icon" className="h-12 w-14 shadow-md">
