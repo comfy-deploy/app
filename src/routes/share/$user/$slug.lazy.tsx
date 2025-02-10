@@ -16,6 +16,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useGalleryData } from "@/components/GalleryView";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { getTotalUrlCountAndUrls } from "@/components/workflows/OutputRender";
 
 type ShareDeployment = {
   id: string;
@@ -64,14 +74,12 @@ function RouteComponent() {
     getDefaultValuesFromWorkflow(shareDeployment?.input_types),
   );
 
-  // Store completed image URL to persist between polling updates
-  const [completedImageUrl, setCompletedImageUrl] = useState<string | null>(
-    null,
-  );
+  // Change the state to handle multiple images
+  const [completedImageUrls, setCompletedImageUrls] = useState<string[]>([]);
   const { runId, setRunId } = publicRunStore();
 
   const [runButtonLoading, setRunButtonLoading] = useState(false);
-
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { data: runResult } = useQuery<RunResult>({
     queryKey: ["run"],
     queryKeyHashFn: (queryKey) => [...queryKey, runId].toString(),
@@ -80,7 +88,7 @@ function RouteComponent() {
         run_id: runId,
       },
     },
-    refetchInterval: runId && !completedImageUrl ? 3000 : false,
+    refetchInterval: runId && !completedImageUrls.length ? 3000 : false,
     enabled: !!runId,
   });
 
@@ -90,14 +98,22 @@ function RouteComponent() {
 
   //   console.log(galleryData);
 
-  const displayImageUrl = useMemo(() => {
-    if (runId === "") return null;
-    return runResult?.outputs?.[0]?.data?.images?.[0]?.url || null;
+  useEffect(() => {
+    if (runId !== "") {
+      setIsDrawerOpen(false);
+    }
+  }, [runId]);
+
+  const displayImageUrls = useMemo(() => {
+    if (runId === "") return [];
+    const { urls: urlList } = getTotalUrlCountAndUrls(runResult?.outputs || []);
+    // Take at most 4 images
+    return urlList.slice(0, 4).map((url) => url.url);
   }, [runId, runResult?.outputs]);
 
   useEffect(() => {
-    setCompletedImageUrl(displayImageUrl);
-  }, [displayImageUrl]);
+    setCompletedImageUrls(displayImageUrls);
+  }, [displayImageUrls]);
 
   useEffect(() => {
     setDefaultValues(
@@ -166,7 +182,7 @@ function RouteComponent() {
               </span>
             </motion.div>
           )}
-          {runId && !completedImageUrl && (
+          {runId && !completedImageUrls.length && (
             <motion.div
               key="loading"
               initial={{ opacity: 0 }}
@@ -185,7 +201,7 @@ function RouteComponent() {
               </div>
             </motion.div>
           )}
-          {completedImageUrl && (
+          {completedImageUrls.length > 0 && (
             <motion.div
               key="result"
               initial={{ opacity: 0 }}
@@ -196,10 +212,22 @@ function RouteComponent() {
                 ease: "easeInOut",
               }}
             >
-              <FileURLRender
-                url={completedImageUrl}
-                imgClasses="max-w-full h-full max-h-[65vh] object-cover shadow-lg"
-              />
+              <div
+                className={`grid gap-2 ${completedImageUrls.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+              >
+                {completedImageUrls.map((url, index) => (
+                  <FileURLRender
+                    // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                    key={index}
+                    url={url}
+                    imgClasses={`${
+                      completedImageUrls.length === 1
+                        ? "max-w-[550px] h-full max-h-[65vh]"
+                        : "max-w-[275px] max-h-[32.5vh]"
+                    } object-cover shadow-lg`}
+                  />
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -248,11 +276,35 @@ function RouteComponent() {
               )}
             </div>
           </ShinyButton>
-          <Button size="icon" className="h-12 w-14 shadow-md">
+          <Button
+            size="icon"
+            className="h-12 w-14 shadow-md"
+            onClick={() => setIsDrawerOpen(true)}
+          >
             <Brush className="h-4 w-4" />
           </Button>
         </div>
       </div>
+
+      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <DrawerContent className="mx-auto max-w-[500px]">
+          <DrawerHeader>
+            <DrawerTitle>Advanced Options</DrawerTitle>
+            <DrawerDescription>
+              Adjust the inputs to generate a different image.
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="p-4">
+            <RunWorkflowInline
+              blocking={false}
+              default_values={default_values}
+              inputs={shareDeployment?.input_types}
+              runOrigin="public-share"
+              deployment_id={shareDeployment.id}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }
@@ -282,7 +334,7 @@ function Test() {
               Press Run to start generation
             </div>
           )}
-          {runId && !completedImageUrl && (
+          {runId && !completedImageUrls && (
             <div className="flex h-full w-full flex-col items-center justify-center gap-4">
               <LoadingIcon />
               <div className="flex w-64 flex-col gap-2">
@@ -293,9 +345,9 @@ function Test() {
               </div>
             </div>
           )}
-          {completedImageUrl && (
+          {completedImageUrls && (
             <FileURLRender
-              url={completedImageUrl}
+              url={completedImageUrls[0]}
               imgClasses="max-w-full h-full object-cover"
             />
           )}
