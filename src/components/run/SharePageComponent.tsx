@@ -182,7 +182,12 @@ type UserIconData = {
 export function UserIcon({
   user_id,
   className,
-}: { user_id: string; className?: string }) {
+  displayName = false,
+}: {
+  user_id: string;
+  className?: string;
+  displayName?: boolean;
+}) {
   const { data: userData } = useQuery<UserIconData>({
     queryKey: ["user", user_id],
   });
@@ -191,12 +196,20 @@ export function UserIcon({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Avatar className={cn("h-8 w-8", className)}>
-            <AvatarImage src={userData?.image_url || ""} />
-            <AvatarFallback>
-              <Skeleton className="h-full w-full" />
-            </AvatarFallback>
-          </Avatar>
+          <div className="flex items-center gap-2">
+            <Avatar className={cn("h-8 w-8", className)}>
+              <AvatarImage src={userData?.image_url || ""} />
+              <AvatarFallback>
+                <Skeleton className="h-full w-full" />
+              </AvatarFallback>
+            </Avatar>
+            {displayName && (
+              <span className="text-muted-foreground text-xs">
+                {userData?.username ||
+                  `${userData?.first_name} ${userData?.last_name}`}
+              </span>
+            )}
+          </div>
         </TooltipTrigger>
         {/* At least firstName or LastName is required to display something */}
         {userData && (userData.last_name || userData.first_name) && (
