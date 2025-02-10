@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { UserIcon } from "@/components/run/SharePageComponent";
 import { LoadingIcon } from "@/components/loading-icon";
+import { useUser } from "@clerk/clerk-react";
 
 type ShareDeployment = {
   id: string;
@@ -40,7 +41,14 @@ function RouteComponent() {
 
   const { data: shareDeployment, isLoading } = useQuery<ShareDeployment>({
     queryKey: ["share", user, slug],
+    queryFn: () => {
+      return fetch(
+        `${process.env.NEXT_PUBLIC_CD_API_URL}/api/share/${user}/${slug}`,
+      ).then((res) => res.json());
+    },
   });
+
+  const { isSignedIn } = useUser();
 
   const [default_values, setDefaultValues] = useState(
     getDefaultValuesFromWorkflow(shareDeployment?.input_types),
@@ -99,7 +107,11 @@ function RouteComponent() {
             {shareDeployment.share_slug}
           </h2>
         </div>
-        <UserIcon className="h-5 w-5" user_id={shareDeployment.user_id} />
+        {isSignedIn ? (
+          <UserIcon className="h-5 w-5" user_id={shareDeployment.user_id} />
+        ) : (
+          <span className="text-muted-foreground text-sm">{user}</span>
+        )}
         <span className="text-muted-foreground text-sm">
           {shareDeployment.description}
         </span>
