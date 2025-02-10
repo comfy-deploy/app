@@ -131,7 +131,7 @@ export function RunsTable(props: {
   );
 }
 
-const DEFAULT_ITEM_HEIGHT = 49; // Keep the default, but allow it to be overridden
+const DEFAULT_ITEM_HEIGHT = 50; // Keep the default, but allow it to be overridden
 const BATCH_SIZE = 20; // Adjust this value based on your needs
 
 // Create a new prop type for the custom row renderer
@@ -382,8 +382,8 @@ export function RunsTableVirtualized(props: {
 
 function LoadingRow() {
   return (
-    <div className="flex h-full items-center justify-between overflow-hidden border-b p-2">
-      <div className="grid w-full grid-cols-12 items-center gap-2">
+    <div className="flex h-[50px] items-center justify-between overflow-hidden border-b px-2">
+      <div className="grid w-full grid-cols-12 items-center">
         <Skeleton className="col-span-1 h-4 w-8" />
         <Skeleton className="col-span-2 h-6 w-16" />
         <Skeleton className="col-span-2 h-4 w-12" />
@@ -416,11 +416,12 @@ function RunRow({
 
   return (
     <div
-      className={`transition-shadow flex h-full cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm  ${
+      className={cn(
+        "flex h-[50px] cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm transition-shadow",
         isSelected
-          ? " bg-gray-50 shadow-md"
-          : "hover:bg-gray-100 hover:shadow-sm"
-      }`}
+          ? "bg-gray-50 shadow-md"
+          : "hover:bg-gray-100 hover:shadow-sm",
+      )}
       onClick={() => {
         onSelect();
       }}
@@ -499,7 +500,7 @@ function OutputPreview(props: {
 
 function LoadingState() {
   return (
-    <div className="flex flex-col space-y-4 p-4">
+    <div className="flex flex-col">
       {[...Array(5)].map((_, index) => (
         <LoadingRow key={index} />
       ))}

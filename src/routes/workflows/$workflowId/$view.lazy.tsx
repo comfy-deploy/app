@@ -45,7 +45,10 @@ import {
   getEnvColor,
   useWorkflowDeployments,
 } from "@/components/workspace/ContainersTable";
-import { APIDocs } from "@/components/workspace/DeploymentDisplay";
+import {
+  APIDocs,
+  DeploymentSettings,
+} from "@/components/workspace/DeploymentDisplay";
 import { LogDisplay } from "@/components/workspace/LogDisplay";
 import { useSelectedVersion } from "@/components/workspace/Workspace";
 import { WorkspaceStatusBar } from "@/components/workspace/WorkspaceStatusBar";
@@ -92,6 +95,7 @@ import { callServerPromise } from "@/lib/call-server-promise";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLogStore } from "@/components/workspace/LogContext";
 import { useCreateDeploymentDialog } from "@/components/run/VersionSelect";
+import type { Deployment } from "@/components/workspace/DeploymentDisplay";
 
 const pages = [
   "workspace",
@@ -205,7 +209,12 @@ function WorkflowPageComponent() {
 
   const [sessionId, setSessionId] = useQueryState("sessionId");
 
-  const { data: sessionSelected } = useQuery({
+  interface Session {
+    url?: string;
+    // Add other session properties as needed
+  }
+
+  const { data: sessionSelected } = useQuery<Session>({
     queryKey: ["session", sessionId],
     enabled: !!sessionId,
   });
@@ -248,58 +257,63 @@ function WorkflowPageComponent() {
 
                   {/* Only render if the current view is workspace */}
                   <AnimatePresence>
-                    {tab === "workspace" && currentView === "workspace" && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <WorkspaceStatusBar
-                          endpoint={
-                            sessionSelected?.url ||
-                            process.env.COMFYUI_FRONTEND_URL
-                          }
-                          className=""
-                          btnsClassName="gap-1"
-                        />
-                        <SidebarMenu className="">
-                          <SidebarMenuItem>
-                            <div className="flex items-center gap-0.5">
-                              {/* <SidebarMenuButton>
-                                <SessionCreate
-                                  workflowId={workflowId}
-                                  setSessionId={setSessionId}
-                                  asChild={true}
-                                >
-                                  <div className="flex items-center gap-0.5">
-                                    <Plus size={16} /> Create Session
-                                  </div>
-                                </SessionCreate>
-                              </SidebarMenuButton> */}
-                              {currentView === "workspace" &&
-                                tab === "workspace" &&
-                                sessionSelected && (
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 "
-                                      >
-                                        <Terminal className="mr-2 h-4 " /> Logs
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-fit p-2">
-                                      <LogDisplay />
-                                    </PopoverContent>
-                                  </Popover>
-                                )}
-                            </div>
-                          </SidebarMenuItem>
-                        </SidebarMenu>
-                      </motion.div>
-                    )}
+                    {typeof currentView === "string" &&
+                      currentView === "workspace" &&
+                      tab === "workspace" &&
+                      sessionSelected && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <WorkspaceStatusBar
+                            endpoint={
+                              sessionSelected?.url ||
+                              process.env.COMFYUI_FRONTEND_URL ||
+                              ""
+                            }
+                            className=""
+                            btnsClassName="gap-1"
+                          />
+                          <SidebarMenu className="">
+                            <SidebarMenuItem>
+                              <div className="flex items-center gap-0.5">
+                                {/* <SidebarMenuButton>
+                                  <SessionCreate
+                                    workflowId={workflowId}
+                                    setSessionId={setSessionId}
+                                    asChild={true}
+                                  >
+                                    <div className="flex items-center gap-0.5">
+                                      <Plus size={16} /> Create Session
+                                    </div>
+                                  </SessionCreate>
+                                </SidebarMenuButton> */}
+                                {currentView === "workspace" &&
+                                  tab === "workspace" &&
+                                  sessionSelected && (
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 "
+                                        >
+                                          <Terminal className="mr-2 h-4 " />{" "}
+                                          Logs
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-fit p-2">
+                                        <LogDisplay />
+                                      </PopoverContent>
+                                    </Popover>
+                                  )}
+                              </div>
+                            </SidebarMenuItem>
+                          </SidebarMenu>
+                        </motion.div>
+                      )}
                   </AnimatePresence>
 
                   {tab === "workspace" && sessions && sessions.length > 0 && (
@@ -427,9 +441,13 @@ function WorkflowPageComponent() {
 }
 
 export function VersionDrawer({ workflowId }: { workflowId: string }) {
-  // const { selectedVersion, setSelectedVersion } = useSelectedVersionStore();
   const { selectedDeployment, setSelectedDeployment } =
     useSelectedDeploymentStore();
+  const { data: deployments } = useWorkflowDeployments(workflowId);
+  const deployment = deployments?.find(
+    (d: Deployment) => d.id === selectedDeployment,
+  );
+
   return (
     <MyDrawer
       desktopClassName="w-[600px]"
@@ -439,12 +457,12 @@ export function VersionDrawer({ workflowId }: { workflowId: string }) {
       }}
     >
       <ScrollArea className="h-full">
-        <APIDocs
-          domain={process.env.NEXT_PUBLIC_CD_API_URL!}
-          workflow_id={workflowId}
-          // workflow_version_id={selectedVersion ?? undefined}
-          deployment_id={selectedDeployment ?? undefined}
-        />
+        {deployment && (
+          <DeploymentSettings
+            deployment={deployment}
+            onClose={() => setSelectedDeployment(null)}
+          />
+        )}
       </ScrollArea>
     </MyDrawer>
   );
@@ -576,7 +594,8 @@ function RequestPage({
           height={40}
           renderItem={(item) => {
             const myDeployments = deployments?.filter(
-              (deployment) => deployment.workflow_version_id === item.id,
+              (deployment: Deployment) =>
+                deployment.workflow_version_id === item.id,
             );
             return (
               <div className="flex flex-row items-center justify-between gap-2 rounded-md px-4 py-2 hover:bg-gray-100">
@@ -592,7 +611,7 @@ function RequestPage({
                 <div className="grid grid-cols-[auto_auto_110px_30px] items-center gap-4">
                   {myDeployments?.length > 0 ? (
                     <div className="flex flex-row gap-2">
-                      {myDeployments.map((deployment) => (
+                      {myDeployments.map((deployment: Deployment) => (
                         <Badge
                           key={deployment.id}
                           className={cn(
@@ -743,11 +762,11 @@ function RequestPage({
             );
           }}
         />
-        <div className="text-sm font-bold mt-4">Queues</div>
+        <div className="font-bold mt-4 text-sm">Queues</div>
         <motion.div
           layout
           className={cn(
-            "flex h-full w-full flex-row gap-4 rounded-md ring-1 ring-gray-200 lg:flex-row",
+            "flex flex-row gap-4 h-full lg:flex-row ring-1 ring-gray-200 rounded-md w-full",
           )}
         >
           <RealtimeWorkflowProvider workflowId={workflowId}>

@@ -59,7 +59,8 @@ function RouteComponent() {
                   onClick={() => {
                     if (
                       deployment.environment === "production" ||
-                      deployment.environment === "staging"
+                      deployment.environment === "staging" ||
+                      deployment.environment === "public-share"
                     ) {
                       setSelectedDeployment(deployment.id);
                       setSelectedWorkflowId(workflowId);
