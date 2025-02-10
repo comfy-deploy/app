@@ -38,7 +38,7 @@ import { useMediaQuery } from "usehooks-ts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMachine } from "@/hooks/use-machine";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Alert, AlertDescription } from "../ui/alert";
 import { MyDrawer } from "../drawer";
@@ -77,9 +77,10 @@ function RunDetails(props: {
 }) {
   const { run_id, onClose } = props;
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const navigate = useNavigate();
 
   const [selectedTab, setSelectedTab] = useQueryState("tab", parseAsString);
-  const [_, setRunID] = useQueryState("runID");
+  const [_, setRunId] = useQueryState("run-id");
 
   const { data: run, isLoading } = useQuery<any>({
     queryKey: ["run", run_id],
@@ -111,7 +112,14 @@ function RunDetails(props: {
 
   const handleClick = () => {
     if (run) {
-      setRunID(run.id);
+      setRunId(run.id);
+      navigate({
+        to: "/workflows/$workflowId/$view",
+        params: {
+          workflowId: run.workflow_id,
+          view: "playground",
+        },
+      });
     }
   };
 
