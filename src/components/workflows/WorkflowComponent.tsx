@@ -71,7 +71,7 @@ export default function WorkflowComponent() {
   );
 }
 
-function RunDetails(props: {
+export function RunDetails(props: {
   run_id: string;
   onClose: () => void;
 }) {

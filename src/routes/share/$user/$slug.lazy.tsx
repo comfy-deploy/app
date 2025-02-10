@@ -29,6 +29,8 @@ import { getTotalUrlCountAndUrls } from "@/components/workflows/OutputRender";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { MyDrawer } from "@/components/drawer";
+import { RunDetails } from "@/components/workflows/WorkflowComponent";
 
 type ShareDeployment = {
   id: string;
@@ -82,7 +84,9 @@ function RouteComponent() {
   const { runId, setRunId } = publicRunStore();
 
   const [runButtonLoading, setRunButtonLoading] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAdvanceOptionDrawerOpen, setIsAdvanceOptionDrawerOpen] =
+    useState(false);
+  const [isImageDetailDrawerOpen, setIsImageDetailDrawerOpen] = useState(false);
   const { data: runResult } = useQuery<RunResult>({
     queryKey: ["run"],
     queryKeyHashFn: (queryKey) => [...queryKey, runId].toString(),
@@ -98,123 +102,125 @@ function RouteComponent() {
   const galleryData = useGalleryData("a3c62c92-7647-48e4-9a26-1ac0e07392be");
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(-1);
+  const selectedImageData = useMemo(() => {
+    if (selectedImageIndex === -1 || !galleryData?.data?.pages) return null;
+    return galleryData.data.pages.flat()[selectedImageIndex];
+  }, [selectedImageIndex, galleryData?.data?.pages]);
 
   useEffect(() => {
     if (runId !== "") {
-      setIsDrawerOpen(false);
+      setIsAdvanceOptionDrawerOpen(false);
     }
   }, [runId]);
 
   useEffect(() => {
+    let lastEventTime = 0;
+    const eventCooldown = 150;
+    let isProcessing = false;
+
+    const handleImageChange = (
+      newIndex: number,
+      virtualListContainer: HTMLElement,
+      allImages: any[],
+    ) => {
+      const containerHeight = virtualListContainer?.offsetHeight || 384;
+      const middleOffset = containerHeight / 2 - 32;
+      const url = allImages[newIndex]?.data?.images?.[0]?.url;
+
+      if (newIndex >= allImages.length - 5 && galleryData.hasNextPage) {
+        galleryData.fetchNextPage();
+      }
+
+      if (newIndex < allImages.length && newIndex >= 0 && url) {
+        setCompletedImageUrls([url]);
+        virtualListContainer?.scrollTo({
+          top: Math.max(0, newIndex * 64 - middleOffset),
+          behavior: "smooth",
+        });
+        setSelectedImageIndex(newIndex);
+      }
+    };
+
     const handleKeyDown = async (e: KeyboardEvent) => {
-      if (!galleryData?.data?.pages?.[0]) return;
+      if (!galleryData?.data?.pages?.[0] || isProcessing) return;
+
+      const currentTime = Date.now();
+      if (currentTime - lastEventTime < eventCooldown) return;
+      lastEventTime = currentTime;
 
       const allImages = galleryData.data.pages.flat();
       const virtualListContainer = document.querySelector(
         ".scrollbar-none",
       ) as HTMLElement;
 
-      // Calculate the middle position
-      const containerHeight = virtualListContainer?.offsetHeight || 384;
-      const middleOffset = containerHeight / 2 - 32;
-
       if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
         e.preventDefault();
-        setSelectedImageIndex((prev) => {
-          const newIndex = prev - 1;
-          const url = allImages[newIndex]?.data?.images?.[0]?.url;
-          if (newIndex >= 0 && url) {
-            setCompletedImageUrls([url]);
-            virtualListContainer?.scrollTo({
-              top: Math.max(0, newIndex * 64 - middleOffset),
-              behavior: "smooth",
-            });
-            return newIndex;
-          }
-          return prev;
-        });
+        isProcessing = true;
+        handleImageChange(
+          selectedImageIndex - 1,
+          virtualListContainer,
+          allImages,
+        );
+        isProcessing = false;
       }
 
       if (e.key === "ArrowDown" || e.key === "ArrowRight") {
         e.preventDefault();
-        setSelectedImageIndex((prev) => {
-          const newIndex = prev + 1;
-          const url = allImages[newIndex]?.data?.images?.[0]?.url;
-
-          if (newIndex >= allImages.length - 5 && galleryData.hasNextPage) {
-            galleryData.fetchNextPage();
-          }
-
-          if (newIndex < allImages.length && url) {
-            setCompletedImageUrls([url]);
-            virtualListContainer?.scrollTo({
-              top: Math.max(0, newIndex * 64 - middleOffset),
-              behavior: "smooth",
-            });
-            return newIndex;
-          }
-          return prev;
-        });
+        isProcessing = true;
+        handleImageChange(
+          selectedImageIndex + 1,
+          virtualListContainer,
+          allImages,
+        );
+        isProcessing = false;
       }
     };
 
-    // Add wheel event handler
+    // Add wheel event handler with throttling
+    let wheelTimeout: NodeJS.Timeout | null = null;
     const handleWheel = (e: WheelEvent) => {
-      if (!galleryData?.data?.pages?.[0]) return;
+      if (!galleryData?.data?.pages?.[0] || isProcessing) return;
+
+      const currentTime = Date.now();
+      if (currentTime - lastEventTime < eventCooldown) return;
+      lastEventTime = currentTime;
+
+      if (wheelTimeout) return;
+
+      wheelTimeout = setTimeout(() => {
+        wheelTimeout = null;
+      }, eventCooldown);
 
       const allImages = galleryData.data.pages.flat();
       const virtualListContainer = document.querySelector(
         ".scrollbar-none",
       ) as HTMLElement;
 
-      // Calculate the middle position
-      const containerHeight = virtualListContainer?.offsetHeight || 384;
-      const middleOffset = containerHeight / 2 - 32;
-
-      // Determine direction (positive deltaY means scrolling down)
       const direction = e.deltaY > 0 ? 1 : -1;
 
-      setSelectedImageIndex((prev) => {
-        const newIndex = prev + direction;
-        const url = allImages[newIndex]?.data?.images?.[0]?.url;
-
-        if (
-          direction > 0 &&
-          newIndex >= allImages.length - 5 &&
-          galleryData.hasNextPage
-        ) {
-          galleryData.fetchNextPage();
-        }
-
-        if (
-          (direction > 0 && newIndex < allImages.length) ||
-          (direction < 0 && newIndex >= 0)
-        ) {
-          if (url) {
-            e.preventDefault();
-            setCompletedImageUrls([url]);
-            virtualListContainer?.scrollTo({
-              top: Math.max(0, newIndex * 64 - middleOffset),
-              behavior: "smooth",
-            });
-            return newIndex;
-          }
-        }
-        return prev;
-      });
+      isProcessing = true;
+      e.preventDefault();
+      handleImageChange(
+        selectedImageIndex + direction,
+        virtualListContainer,
+        allImages,
+      );
+      isProcessing = false;
     };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      window.addEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("wheel", handleWheel);
+      if (wheelTimeout) clearTimeout(wheelTimeout);
     };
   }, [
     galleryData?.data?.pages,
     galleryData.hasNextPage,
     galleryData.fetchNextPage,
+    selectedImageIndex, // Add this dependency
   ]);
 
   const displayImageUrls = useMemo(() => {
@@ -241,7 +247,12 @@ function RouteComponent() {
         <LoadingIcon />
       </div>
     );
-  if (!shareDeployment) return <div>Not found</div>;
+  if (!shareDeployment)
+    return (
+      <div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
+        Not found
+      </div>
+    );
 
   return (
     <>
@@ -281,7 +292,26 @@ function RouteComponent() {
       </div>
 
       {/* Center */}
-      <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2">
+      <AnimatePresence mode="wait" initial={false}>
+        {isImageDetailDrawerOpen && (
+          <motion.div
+            className="fixed inset-0 z-10 bg-white/10 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          />
+        )}
+      </AnimatePresence>
+
+      <div
+        className={cn(
+          "-translate-y-1/2 absolute top-1/2 z-20 transition-all duration-1000 ease-in-out",
+          isImageDetailDrawerOpen
+            ? "-translate-x-1/2 left-[calc(50%-250px)]" // Move right by half the drawer width (500px/2)
+            : "-translate-x-1/2 left-1/2",
+        )}
+      >
         <AnimatePresence mode="wait" initial={false}>
           {!runId && !completedImageUrls.length && (
             <motion.div
@@ -326,8 +356,13 @@ function RouteComponent() {
                 ease: "easeInOut",
               }}
             >
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
               <div
-                className={`grid gap-2 ${completedImageUrls.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+                className={cn(
+                  "grid gap-2",
+                  completedImageUrls.length > 1 ? "grid-cols-2" : "grid-cols-1",
+                )}
+                onClick={() => setIsImageDetailDrawerOpen(true)}
               >
                 {completedImageUrls.map((url, index) => (
                   <FileURLRender
@@ -349,7 +384,7 @@ function RouteComponent() {
 
       {/* Left */}
 
-      <div className="-translate-y-1/2 fixed top-1/2 left-2">
+      <div className={cn("-translate-y-1/2 fixed top-1/2 left-2 z-20")}>
         <motion.div
           initial={{ opacity: 0, x: -100 }}
           animate={
@@ -362,17 +397,19 @@ function RouteComponent() {
             duration: 0.5,
             ease: "circOut",
           }}
+          className="relative"
         >
           {galleryData && (
             <VirtualizedInfiniteList
               className="scrollbar-none !h-[384px] w-[70px]"
               queryResult={galleryData}
-              renderItem={(item) => {
+              renderItem={(item, index) => {
                 return (
                   // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
                   <div
                     onClick={() => {
                       setCompletedImageUrls([item.data.images[0].url]);
+                      setSelectedImageIndex(index);
                     }}
                     className="cursor-pointer shadow-md"
                   >
@@ -405,6 +442,12 @@ function RouteComponent() {
             />
           )}
         </motion.div>
+
+        {/* Top gradient overlay */}
+        <div className="pointer-events-none absolute top-0 left-0 h-10 w-full bg-gradient-to-b from-white to-transparent" />
+
+        {/* Bottom gradient overlay */}
+        <div className="pointer-events-none absolute bottom-0 left-0 h-10 w-full bg-gradient-to-t from-white to-transparent" />
       </div>
 
       {/* functions */}
@@ -456,7 +499,7 @@ function RouteComponent() {
             <Button
               size="icon"
               className="h-12 w-[52px] shadow-md"
-              onClick={() => setIsDrawerOpen(true)}
+              onClick={() => setIsAdvanceOptionDrawerOpen(true)}
             >
               <Brush className="h-4 w-4" />
             </Button>
@@ -464,7 +507,10 @@ function RouteComponent() {
         </motion.div>
       </div>
 
-      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+      <Drawer
+        open={isAdvanceOptionDrawerOpen}
+        onOpenChange={setIsAdvanceOptionDrawerOpen}
+      >
         <DrawerContent className="mx-auto max-w-[500px]">
           <DrawerHeader>
             <DrawerTitle>Advanced Options</DrawerTitle>
@@ -483,6 +529,18 @@ function RouteComponent() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <MyDrawer
+        desktopClassName="w-[500px] shadow-lg border-2 border-gray-200"
+        open={isImageDetailDrawerOpen}
+        backgroundInteractive
+        onClose={() => setIsImageDetailDrawerOpen(false)}
+      >
+        <RunDetails
+          run_id={selectedImageData?.run_id}
+          onClose={() => setIsImageDetailDrawerOpen(false)}
+        />
+      </MyDrawer>
     </>
   );
 }
