@@ -117,7 +117,7 @@ function RouteComponent() {
         </span>
       </div>
 
-      <div className="flex w-full flex-row gap-6">
+      <div className="flex w-full flex-col gap-6 md:flex-row">
         <div className="flex w-full max-w-[500px] flex-col gap-2">
           <span className="pl-2 text-muted-foreground text-sm">Inputs</span>
           <div className="w-full rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
