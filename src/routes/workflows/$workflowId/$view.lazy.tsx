@@ -476,8 +476,11 @@ function RequestPage({
   setIsEditing,
 }: { setIsEditing: (isEditing: boolean) => void }) {
   const { workflowId } = Route.useParams();
-  const { workflow: currentWorkflow, isLoading: isLoadingWorkflow } =
-    useCurrentWorkflow(workflowId);
+  const {
+    workflow: currentWorkflow,
+    isLoading: isLoadingWorkflow,
+    mutateWorkflow,
+  } = useCurrentWorkflow(workflowId);
   const { data: deployments, refetch: refetchDeployments } =
     useWorkflowDeployments(workflowId);
   const { setSelectedDeployment } = useSelectedDeploymentStore();
@@ -549,6 +552,7 @@ function RequestPage({
       );
       setIsDirty(false);
       setIsEditing(false);
+      mutateWorkflow();
     } catch (error) {
       toast.error("Failed to update description");
     } finally {
@@ -691,6 +695,8 @@ function RequestPage({
                             e.nativeEvent.preventDefault();
                             e.nativeEvent.stopPropagation();
 
+                            console.log(currentWorkflow);
+
                             await callServerPromise(
                               api({
                                 url: "deployment",
@@ -701,6 +707,9 @@ function RequestPage({
                                     workflow_version_id: item.id,
                                     machine_version_id: item.machine_version_id,
                                     environment: "public-share",
+                                    ...(currentWorkflow.description && {
+                                      description: currentWorkflow.description,
+                                    }),
                                   }),
                                 },
                               }),

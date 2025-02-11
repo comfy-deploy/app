@@ -45,6 +45,7 @@ type ShareDeployment = {
   input_types: Record<string, any>;
   workflow: {
     name: string;
+    id: string;
   };
 };
 
@@ -106,7 +107,7 @@ function RouteComponent() {
     enabled: !!runId,
   });
 
-  const galleryData = useGalleryData("a3c62c92-7647-48e4-9a26-1ac0e07392be");
+  const galleryData = useGalleryData(shareDeployment?.workflow.id);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(-1);
   const selectedImageData = useMemo(() => {
