@@ -1,5 +1,10 @@
 import { FileURLRender } from "@/components/output-render";
-import { RunWorkflowInline } from "@/components/run/RunWorkflowInline";
+import {
+  parseFilesToImgURLs,
+  parseInputs,
+  parseInputValues,
+  RunWorkflowInline,
+} from "@/components/run/RunWorkflowInline";
 import { publicRunStore } from "@/components/run/VersionSelect";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +14,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Progress } from "@/components/ui/progress";
 import { UserIcon } from "@/components/run/SharePageComponent";
 import { LoadingIcon } from "@/components/loading-icon";
-import { useUser } from "@clerk/clerk-react";
+import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import { ShinyButton } from "@/components/magicui/shiny-button";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,17 +63,19 @@ export const Route = createLazyFileRoute("/share/$user/$slug")({
 });
 
 function RouteComponent() {
-  const { user, slug } = useParams({ from: "/share/$user/$slug" });
+  const { user: userParam, slug } = useParams({ from: "/share/$user/$slug" });
+  const clerk = useClerk();
+  const user = useAuth();
 
   const {
     data: shareDeployment,
     isLoading,
     error,
   } = useQuery<ShareDeployment>({
-    queryKey: ["share", user, slug],
+    queryKey: ["share", userParam, slug],
     queryFn: () => {
       return fetch(
-        `${process.env.NEXT_PUBLIC_CD_API_URL}/api/share/${user}/${slug}`,
+        `${process.env.NEXT_PUBLIC_CD_API_URL}/api/share/${userParam}/${slug}`,
       ).then((res) => (res.ok ? res.json() : null));
     },
   });
@@ -283,7 +290,7 @@ function RouteComponent() {
               displayName
             />
           ) : (
-            <span className="text-muted-foreground text-sm">{user}</span>
+            <span className="text-muted-foreground text-sm">{userParam}</span>
           )}
           <span className="text-muted-foreground text-sm">
             {shareDeployment.description}
@@ -464,7 +471,18 @@ function RouteComponent() {
               disabled={runButtonLoading}
               onClick={async () => {
                 try {
+                  if (!user.isSignedIn) {
+                    clerk.openSignIn({
+                      redirectUrl: window.location.href,
+                    });
+                    return;
+                  }
+
                   setRunButtonLoading(true);
+                  const valuesParsed = await parseFilesToImgURLs({
+                    ...default_values,
+                  });
+                  const val = parseInputValues(valuesParsed);
                   const run = await api({
                     url: "run",
                     init: {
@@ -472,6 +490,7 @@ function RouteComponent() {
                       body: JSON.stringify({
                         deployment_id: shareDeployment.id,
                         origin: "public-share",
+                        inputs: val,
                       }),
                     },
                   });

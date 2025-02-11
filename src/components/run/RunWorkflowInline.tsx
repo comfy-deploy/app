@@ -208,6 +208,28 @@ export function WorkflowInputsForm({
   );
 }
 
+export function parseInputValues(valuesParsed: Record<string, any>) {
+  return Object.entries(valuesParsed)
+    .filter(([_, value]) => value != null)
+    .reduce(
+      (acc, [key, value]) => ({
+        ...acc,
+        [key]:
+          typeof value === "string"
+            ? // Try to parse JSON strings, fall back to original value if parsing fails
+              (() => {
+                try {
+                  return JSON.parse(value);
+                } catch {
+                  return value;
+                }
+              })()
+            : value,
+      }),
+      {},
+    );
+}
+
 // For share page
 export function RunWorkflowInline({
   inputs,
@@ -265,25 +287,7 @@ export function RunWorkflowInline({
     setLoading2(true);
     setIsLoading(true);
     const valuesParsed = await parseFilesToImgURLs({ ...values });
-    const val = Object.entries(valuesParsed)
-      .filter(([_, value]) => value != null)
-      .reduce(
-        (acc, [key, value]) => ({
-          ...acc,
-          [key]:
-            typeof value === "string"
-              ? // Try to parse JSON strings, fall back to original value if parsing fails
-                (() => {
-                  try {
-                    return JSON.parse(value);
-                  } catch {
-                    return value;
-                  }
-                })()
-              : value,
-        }),
-        {},
-      );
+    const val = parseInputValues(valuesParsed);
     console.log(val);
     setStatus({ state: "preparing", live_status: "", progress: 0 });
     try {
