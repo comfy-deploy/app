@@ -50,7 +50,6 @@ import { ShineBorder } from "./magicui/shine-border";
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const router = useRouter();
 
   const isRootLevel = pathname.split("/").filter(Boolean).length === 1;

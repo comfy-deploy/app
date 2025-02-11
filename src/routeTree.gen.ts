@@ -44,6 +44,7 @@ import { Route as MachinesMachineIdHistoryIndexImport } from './routes/machines/
 const MachinesMachineIdIndexLazyImport = createFileRoute(
   '/machines/$machineId/',
 )()
+const ShareUserSlugLazyImport = createFileRoute('/share/$user/$slug')()
 
 // Create/Update Routes
 
@@ -183,6 +184,14 @@ const OrganizationProfileOrganizationMembersIndexRoute =
     path: '/organization-profile/organization-members/',
     getParentRoute: () => rootRoute,
   } as any)
+
+const ShareUserSlugLazyRoute = ShareUserSlugLazyImport.update({
+  id: '/share/$user/$slug',
+  path: '/share/$user/$slug',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() =>
+  import('./routes/share/$user/$slug.lazy').then((d) => d.Route),
+)
 
 const WorkflowsWorkflowIdViewRoute = WorkflowsWorkflowIdViewImport.update({
   id: '/workflows/$workflowId/$view',
@@ -377,6 +386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkflowsWorkflowIdViewImport
       parentRoute: typeof rootRoute
     }
+    '/share/$user/$slug': {
+      id: '/share/$user/$slug'
+      path: '/share/$user/$slug'
+      fullPath: '/share/$user/$slug'
+      preLoaderRoute: typeof ShareUserSlugLazyImport
+      parentRoute: typeof rootRoute
+    }
     '/organization-profile/organization-members/': {
       id: '/organization-profile/organization-members/'
       path: '/organization-profile/organization-members'
@@ -433,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/machines/$machineId/activity': typeof MachinesMachineIdActivityRoute
   '/sessions/$sessionId/$workflowId': typeof SessionsSessionIdWorkflowIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
+  '/share/$user/$slug': typeof ShareUserSlugLazyRoute
   '/organization-profile/organization-members': typeof OrganizationProfileOrganizationMembersIndexRoute
   '/sessions/$sessionId': typeof SessionsSessionIdIndexRoute
   '/machines/$machineId': typeof MachinesMachineIdIndexLazyRoute
@@ -462,6 +479,7 @@ export interface FileRoutesByTo {
   '/machines/$machineId/activity': typeof MachinesMachineIdActivityRoute
   '/sessions/$sessionId/$workflowId': typeof SessionsSessionIdWorkflowIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
+  '/share/$user/$slug': typeof ShareUserSlugLazyRoute
   '/organization-profile/organization-members': typeof OrganizationProfileOrganizationMembersIndexRoute
   '/sessions/$sessionId': typeof SessionsSessionIdIndexRoute
   '/machines/$machineId': typeof MachinesMachineIdIndexLazyRoute
@@ -492,6 +510,7 @@ export interface FileRoutesById {
   '/machines/$machineId/activity': typeof MachinesMachineIdActivityRoute
   '/sessions/$sessionId/$workflowId': typeof SessionsSessionIdWorkflowIdRoute
   '/workflows/$workflowId/$view': typeof WorkflowsWorkflowIdViewRoute
+  '/share/$user/$slug': typeof ShareUserSlugLazyRoute
   '/organization-profile/organization-members/': typeof OrganizationProfileOrganizationMembersIndexRoute
   '/sessions/$sessionId/': typeof SessionsSessionIdIndexRoute
   '/machines/$machineId/': typeof MachinesMachineIdIndexLazyRoute
@@ -523,6 +542,7 @@ export interface FileRouteTypes {
     | '/machines/$machineId/activity'
     | '/sessions/$sessionId/$workflowId'
     | '/workflows/$workflowId/$view'
+    | '/share/$user/$slug'
     | '/organization-profile/organization-members'
     | '/sessions/$sessionId'
     | '/machines/$machineId'
@@ -551,6 +571,7 @@ export interface FileRouteTypes {
     | '/machines/$machineId/activity'
     | '/sessions/$sessionId/$workflowId'
     | '/workflows/$workflowId/$view'
+    | '/share/$user/$slug'
     | '/organization-profile/organization-members'
     | '/sessions/$sessionId'
     | '/machines/$machineId'
@@ -579,6 +600,7 @@ export interface FileRouteTypes {
     | '/machines/$machineId/activity'
     | '/sessions/$sessionId/$workflowId'
     | '/workflows/$workflowId/$view'
+    | '/share/$user/$slug'
     | '/organization-profile/organization-members/'
     | '/sessions/$sessionId/'
     | '/machines/$machineId/'
@@ -609,6 +631,7 @@ export interface RootRouteChildren {
   MachinesMachineIdActivityRoute: typeof MachinesMachineIdActivityRoute
   SessionsSessionIdWorkflowIdRoute: typeof SessionsSessionIdWorkflowIdRoute
   WorkflowsWorkflowIdViewRoute: typeof WorkflowsWorkflowIdViewRoute
+  ShareUserSlugLazyRoute: typeof ShareUserSlugLazyRoute
   OrganizationProfileOrganizationMembersIndexRoute: typeof OrganizationProfileOrganizationMembersIndexRoute
   SessionsSessionIdIndexRoute: typeof SessionsSessionIdIndexRoute
   MachinesMachineIdIndexLazyRoute: typeof MachinesMachineIdIndexLazyRoute
@@ -639,6 +662,7 @@ const rootRouteChildren: RootRouteChildren = {
   MachinesMachineIdActivityRoute: MachinesMachineIdActivityRoute,
   SessionsSessionIdWorkflowIdRoute: SessionsSessionIdWorkflowIdRoute,
   WorkflowsWorkflowIdViewRoute: WorkflowsWorkflowIdViewRoute,
+  ShareUserSlugLazyRoute: ShareUserSlugLazyRoute,
   OrganizationProfileOrganizationMembersIndexRoute:
     OrganizationProfileOrganizationMembersIndexRoute,
   SessionsSessionIdIndexRoute: SessionsSessionIdIndexRoute,
@@ -678,6 +702,7 @@ export const routeTree = rootRoute
         "/machines/$machineId/activity",
         "/sessions/$sessionId/$workflowId",
         "/workflows/$workflowId/$view",
+        "/share/$user/$slug",
         "/organization-profile/organization-members/",
         "/sessions/$sessionId/",
         "/machines/$machineId/",
@@ -749,6 +774,9 @@ export const routeTree = rootRoute
     },
     "/workflows/$workflowId/$view": {
       "filePath": "workflows/$workflowId/$view.tsx"
+    },
+    "/share/$user/$slug": {
+      "filePath": "share/$user/$slug.lazy.tsx"
     },
     "/organization-profile/organization-members/": {
       "filePath": "organization-profile/organization-members/index.tsx"
