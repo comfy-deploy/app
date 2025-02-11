@@ -588,6 +588,7 @@ export function WorkflowButtons({
           endpoint={endpoint}
           machine_id={machine_id}
           machine_version_id={machine_version_id}
+          session_url={session?.url}
         />
       )}
 
