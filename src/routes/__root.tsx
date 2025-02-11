@@ -36,7 +36,7 @@ const publicRoutes = [
   "/auth/sign-in",
   "/auth/sign-up",
   "/waitlist",
-  "/share",
+  { path: "/share", wildcard: true },
 ];
 
 export const Route = createRootRouteWithContext<Context>()({
@@ -46,11 +46,14 @@ export const Route = createRootRouteWithContext<Context>()({
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    // Define public routes that don't require authentication
-    if (
-      !context.clerk?.session &&
-      !publicRoutes.some((route) => location.pathname.startsWith(route))
-    ) {
+    const isPublicRoute = publicRoutes.some((route) => {
+      if (typeof route === "string") {
+        return location.pathname === route;
+      }
+      return route.wildcard && location.pathname.startsWith(route.path);
+    });
+
+    if (!context.clerk?.session && !isPublicRoute) {
       throw redirect({
         to: "/auth/sign-in",
         search: {
@@ -71,7 +74,11 @@ export const Route = createRootRouteWithContext<Context>()({
 function RootComponent() {
   const { pathname } = useLocation();
   const isSession = pathname.includes("/sessions/");
-  const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
+  const isPublic = publicRoutes.some((route) =>
+    typeof route === "string"
+      ? pathname === route
+      : route.wildcard && pathname.startsWith(route.path),
+  );
   return (
     <SidebarProvider defaultOpen={false}>
       <Providers>
