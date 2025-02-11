@@ -40,6 +40,7 @@ import { RunDetails } from "@/components/workflows/WorkflowComponent";
 type ShareDeployment = {
   id: string;
   user_id: string;
+  org_id: string;
   share_slug: string;
   description: string;
   input_types: Record<string, any>;
@@ -105,6 +106,14 @@ function RouteComponent() {
     },
     refetchInterval: runId && !completedImageUrls.length ? 3000 : false,
     enabled: !!runId,
+  });
+
+  const { data: orgName } = useQuery({
+    enabled: !!shareDeployment?.org_id,
+    queryKey: ["org", shareDeployment?.org_id],
+    queryFn: () => {
+      return clerk.getOrganization(shareDeployment?.org_id || "");
+    },
   });
 
   const galleryData = useGalleryData(shareDeployment?.workflow.id);
@@ -285,11 +294,15 @@ function RouteComponent() {
             </h2>
           </div>
           {isSignedIn ? (
-            <UserIcon
-              className="h-5 w-5"
-              user_id={shareDeployment.user_id}
-              displayName
-            />
+            <div className="flex flex-row items-center gap-1 text-muted-foreground">
+              <UserIcon
+                className="h-5 w-5"
+                user_id={shareDeployment.user_id}
+                displayName
+              />
+              {orgName && <span className="text-xs">•</span>}
+              {orgName && <span className="text-xs">{orgName.name}</span>}
+            </div>
           ) : (
             <span className="text-muted-foreground text-sm">{userParam}</span>
           )}
