@@ -58,7 +58,7 @@ import {
   getInputsFromWorkflowAPI,
   getInputsFromWorkflowJSON,
 } from "@/lib/getInputsFromWorkflow";
-import { cn } from "@/lib/utils";
+import { cn, slugify } from "@/lib/utils";
 import {
   Link,
   createLazyFileRoute,
@@ -695,7 +695,7 @@ function RequestPage({
                             e.nativeEvent.preventDefault();
                             e.nativeEvent.stopPropagation();
 
-                            console.log(currentWorkflow);
+                            const shareSlug = slugify(currentWorkflow.name);
 
                             await callServerPromise(
                               api({
@@ -710,6 +710,7 @@ function RequestPage({
                                     ...(currentWorkflow.description && {
                                       description: currentWorkflow.description,
                                     }),
+                                    share_slug: shareSlug,
                                   }),
                                 },
                               }),
