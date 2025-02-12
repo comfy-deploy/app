@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 interface VirtualizedInfiniteListProps<T> {
   queryResult: UseInfiniteQueryResult<InfiniteData<T[], unknown>, unknown>;
   renderItem: (item: T, index: number) => React.ReactNode;
-  renderItemClassName?: (item: T) => string;
+  renderItemClassName?: (item: T, index: number) => string;
   renderLoading?: () => React.ReactNode;
   estimateSize?: number;
   header?: React.ReactNode;
@@ -102,7 +102,11 @@ export function VirtualizedInfiniteList<T>({
                 height: `${virtualRow.size}px`,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
-              className={renderItemClassName ? renderItemClassName(item) : ""}
+              className={
+                renderItemClassName
+                  ? renderItemClassName(item, virtualRow.index)
+                  : ""
+              }
             >
               {item
                 ? renderItem(item, virtualRow.index)

@@ -31,7 +31,13 @@ type Context = {
   clerk?: ReturnType<typeof useClerk>;
 };
 
-const publicRoutes = ["/home", "/auth/sign-in", "/auth/sign-up", "/waitlist"];
+const publicRoutes = [
+  "/home",
+  "/auth/sign-in",
+  "/auth/sign-up",
+  "/waitlist",
+  { path: "/share", wildcard: true },
+];
 
 export const Route = createRootRouteWithContext<Context>()({
   component: RootComponent,
@@ -40,8 +46,14 @@ export const Route = createRootRouteWithContext<Context>()({
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    // Define public routes that don't require authentication
-    if (!context.clerk?.session && !publicRoutes.includes(location.pathname)) {
+    const isPublicRoute = publicRoutes.some((route) => {
+      if (typeof route === "string") {
+        return location.pathname === route;
+      }
+      return route.wildcard && location.pathname.startsWith(route.path);
+    });
+
+    if (!context.clerk?.session && !isPublicRoute) {
       throw redirect({
         to: "/auth/sign-in",
         search: {
@@ -62,8 +74,11 @@ export const Route = createRootRouteWithContext<Context>()({
 function RootComponent() {
   const { pathname } = useLocation();
   const isSession = pathname.includes("/sessions/");
-  const isHome = pathname.includes("/home");
-
+  const isPublic = publicRoutes.some((route) =>
+    typeof route === "string"
+      ? pathname === route
+      : route.wildcard && pathname.startsWith(route.path),
+  );
   return (
     <SidebarProvider defaultOpen={false}>
       <Providers>
@@ -76,7 +91,7 @@ function RootComponent() {
           <div className="fixed z-[-1] h-full w-full bg-white">
             <div className="absolute h-full w-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
           </div>
-          <SignedOut>{isHome && <SignedOutNavBar />}</SignedOut>
+          <SignedOut>{isPublic && <SignedOutNavBar />}</SignedOut>
           <SignedIn>{!isSession && <NavBar />}</SignedIn>
           <div
             className={cn(
