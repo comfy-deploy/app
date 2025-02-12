@@ -14,7 +14,7 @@ import { use, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useWorkflowVersion } from "../workflow-list";
-import { DiffView } from "./DiffView";
+import { DiffView, SnapshotDiffView } from "./DiffView";
 import { useSelectedVersion } from "../version-select";
 import { useWorkflowStore } from "./Workspace";
 import { ScrollArea } from "../ui/scroll-area";
@@ -162,11 +162,9 @@ export function WorkflowCommitVersion({
               <Loader2 className="animate-spin" />
             </div>
           ) : (
-            <DiffView
-              className="max-h-[300px]"
-              differences={comfyui_snapshot_difference}
-              workflow={comfyui_snapshot}
-              oldWorkflow={selectedVersion?.comfyui_snapshot}
+            <SnapshotDiffView
+              newSnapshot={comfyui_snapshot}
+              oldSnapshot={selectedVersion?.comfyui_snapshot}
             />
           )}
           <DiffView
