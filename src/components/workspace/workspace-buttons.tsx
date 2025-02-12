@@ -51,14 +51,12 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
     shouldThrow: false,
   });
 
-  const { data: session, refetch } = useQuery<any>({
+  const { data: session } = useQuery<any>({
     queryKey: ["session", match?.params.sessionId],
     enabled: !!match?.params.sessionId,
   });
 
-  const { data: machine, refetch: refetchMachine } = useMachine(
-    session?.machine_id,
-  );
+  const { data: machine } = useMachine(session?.machine_id);
 
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const data = useMemo(() => {
@@ -93,15 +91,48 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
 
   useWorkspaceButtons(data, endpoint);
 
-  const [machineName, setMachineName] = useState(machine?.name);
+  // const { data: machineVersions, isLoading: isLoadingMachineVersions } =
+  //   useMachineVersions(machine?.id);
 
-  const { data: machineVersions, isLoading: isLoadingMachineVersions } =
-    useMachineVersions(machine?.id);
-
-  const versions = machineVersions?.pages[0] || [];
+  // const versions = machineVersions?.pages[0] || [];
 
   return (
-    <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>
+    <>
+      <CreateWorkspaceDialog
+        open={isWorkflowDialogOpen}
+        setOpen={setIsWorkflowDialogOpen}
+        sessionMachineId={session?.machine_id}
+      />
+    </>
+  );
+}
+
+export function CreateWorkspaceDialog({
+  open,
+  setOpen,
+  sessionMachineId,
+  setFirstCreateDialogOpen,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  sessionMachineId: string;
+  setFirstCreateDialogOpen?: (open: boolean) => void;
+}) {
+  const { data: machine, refetch: refetchMachine } =
+    useMachine(sessionMachineId);
+  const [machineName, setMachineName] = useState(machine?.name);
+  const match = useMatch({
+    from: "/sessions/$sessionId/",
+    shouldThrow: false,
+  });
+
+  const { refetch } = useQuery<any>({
+    queryKey: ["session", match?.params.sessionId],
+    enabled: !!match?.params.sessionId,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent hideOverlay className="sm:max-w-[600px]">
         <DialogTitle>Workspace</DialogTitle>
 
@@ -130,8 +161,20 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
                       },
                     }),
                   );
-                  await refetch();
-                  await refetchMachine();
+                  setOpen(false);
+                  toast.promise(
+                    async () => {
+                      await refetch();
+                      await refetchMachine();
+                    },
+                    {
+                      loading: "Creating workspace...",
+                      error: "Failed to create workspace. Please try again.",
+                    },
+                  );
+                  if (setFirstCreateDialogOpen) {
+                    setFirstCreateDialogOpen(true);
+                  }
                 }}
               >
                 Create
@@ -140,7 +183,7 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
           </div>
         )}
 
-        {machine && (
+        {/* {machine && (
           <div className="flex flex-col gap-2">
             <Link
               target="_blank"
@@ -176,7 +219,7 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
               </Button>
             </div>
           </div>
-        )}
+        )} */}
       </DialogContent>
     </Dialog>
   );
@@ -407,6 +450,8 @@ export function WorkflowButtons({
 }: WorkflowButtonsProps) {
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
+  const [isNewWorkspaceDialogOpen, setIsNewWorkspaceDialogOpen] =
+    useState(false);
   const [displayCommit, setDisplayCommit] = useState(false);
 
   const router = useRouter();
@@ -527,6 +572,7 @@ export function WorkflowButtons({
           onClick: (_: string, __: unknown) => {
             if (!machine) {
               toast.error("Please create a workspace first");
+              setIsNewWorkspaceDialogOpen(true);
               return;
             }
             setDisplayCommit(true);
@@ -551,6 +597,7 @@ export function WorkflowButtons({
           onClick: (_: string, __: unknown) => {
             if (!machine) {
               toast.error("Please create a workspace first");
+              setIsNewWorkspaceDialogOpen(true);
               return;
             }
             setIsNewWorkflowOpen(true);
@@ -592,13 +639,12 @@ export function WorkflowButtons({
         />
       )}
 
-      {/* {displayDiff && (
-        <WorkflowDiff
-          workflowId={workflowId || ""}
-          onClose={() => setDisplayDiff(false)}
-          onSave={() => setDisplayDiff(false)}
-        />
-      )} */}
+      <CreateWorkspaceDialog
+        open={isNewWorkspaceDialogOpen}
+        setOpen={setIsNewWorkspaceDialogOpen}
+        sessionMachineId={session?.machine_id}
+        setFirstCreateDialogOpen={setIsNewWorkflowOpen}
+      />
 
       <Dialog
         open={isWorkflowDialogOpen}

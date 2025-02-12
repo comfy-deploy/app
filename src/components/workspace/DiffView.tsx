@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { diff } from "json-diff-ts";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export function DiffView({
   workflow,
@@ -432,16 +432,30 @@ export function DiffView({
   );
 }
 
+type SnapshotDiffViewProps = {
+  newSnapshot: any;
+  oldSnapshot: any;
+  onSnapshotActionChange: (hasChanges: boolean) => void;
+};
+
 export function SnapshotDiffView({
   newSnapshot,
   oldSnapshot,
-}: {
-  newSnapshot: any;
-  oldSnapshot: any;
-}) {
+  onSnapshotActionChange,
+}: SnapshotDiffViewProps) {
   const differences = diff(oldSnapshot, newSnapshot, {
     keysToSkip: ["cnr_custom_nodes", "pips", "file_custom_nodes"],
   });
+
+  // Effect to update snapshot action based on differences
+  useEffect(() => {
+    // Only consider it a change if we have both snapshots and actual differences
+    const hasChanges = Boolean(
+      differences && differences.length > 0 && oldSnapshot,
+    );
+
+    onSnapshotActionChange(hasChanges);
+  }, [differences, oldSnapshot, onSnapshotActionChange]);
 
   // Helper to extract repo info
   const getRepoInfo = (url: string) => {
@@ -451,6 +465,32 @@ export function SnapshotDiffView({
       repo: parts[1],
     };
   };
+
+  if (!differences || differences.length === 0 || !oldSnapshot) {
+    return (
+      <div className="flex flex-col items-center justify-center px-8 py-4 text-center">
+        <div className="mb-2 rounded-full bg-green-50 p-1">
+          <svg
+            className="h-6 w-6 text-green-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <h3 className="font-medium text-gray-900 text-sm">
+          No differences found
+        </h3>
+        <p className="text-2xs text-gray-500">The snapshots are identical</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2 text-sm">
