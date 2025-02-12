@@ -444,7 +444,7 @@ export function SnapshotDiffView({
   onSnapshotActionChange,
 }: SnapshotDiffViewProps) {
   const differences = diff(oldSnapshot, newSnapshot, {
-    keysToSkip: ["cnr_custom_nodes", "pips", "file_custom_nodes"],
+    keysToSkip: ["pips", "file_custom_nodes"],
   });
 
   // Effect to update snapshot action based on differences
@@ -510,6 +510,69 @@ export function SnapshotDiffView({
                 <span className="rounded-[4px] bg-green-50 px-2 py-0.5 text-2xs text-green-600">
                   {change.value?.slice(0, 7)}
                 </span>
+              </div>
+            </div>
+          );
+        }
+
+        if (change.key === "cnr_custom_nodes") {
+          return (
+            <div key="cnr_custom_nodes" className="rounded-sm border p-2">
+              <Badge className="!text-xs !py-0 mb-2">Custom Nodes</Badge>
+              <div className="space-y-1">
+                {change.changes?.map((nodeChange: any) => {
+                  if (nodeChange.type === "REMOVE") {
+                    return (
+                      <div
+                        key={nodeChange.key}
+                        className="flex w-full items-center gap-2 rounded-[4px] bg-red-50 px-2 py-0.5 text-xs"
+                      >
+                        <span className="font-medium text-red-600">-</span>
+                        <span className="font-medium">{nodeChange.key}</span>
+                        <span className="text-gray-600">
+                          v{nodeChange.value}
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  if (nodeChange.type === "ADD") {
+                    return (
+                      <div
+                        key={nodeChange.key}
+                        className="flex w-full items-center gap-2 rounded-[4px] bg-green-50 px-2 py-0.5 text-xs"
+                      >
+                        <span className="font-medium text-green-600">+</span>
+                        <span className="font-medium">{nodeChange.key}</span>
+                        <span className="text-gray-600">
+                          v{nodeChange.value}
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  // UPDATE case (version change)
+                  if (nodeChange.type === "UPDATE") {
+                    return (
+                      <div
+                        key={nodeChange.key}
+                        className="flex w-full items-center justify-between px-2 py-0.5"
+                      >
+                        <span className="font-medium">{nodeChange.key}</span>
+                        <div className="flex items-center gap-2 font-mono text-xs">
+                          <span className="rounded-[4px] bg-red-50 px-2 py-0.5 text-2xs text-red-600">
+                            v{nodeChange.oldValue}
+                          </span>
+                          <span className="text-gray-400">→</span>
+                          <span className="rounded-[4px] bg-green-50 px-2 py-0.5 text-2xs text-green-600">
+                            v{nodeChange.value}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
               </div>
             </div>
           );
