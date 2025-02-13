@@ -57,6 +57,7 @@ type RunResult = {
   }[];
   live_status: string;
   progress: number;
+  status: string;
 };
 
 export const Route = createLazyFileRoute("/share/$user/$slug")({
@@ -95,6 +96,8 @@ function RouteComponent() {
   const [isAdvanceOptionDrawerOpen, setIsAdvanceOptionDrawerOpen] =
     useState(false);
   const [isImageDetailDrawerOpen, setIsImageDetailDrawerOpen] = useState(false);
+  const [isRunComplete, setIsRunComplete] = useState(false);
+
   const { data: runResult } = useQuery<RunResult>({
     queryKey: ["run"],
     queryKeyHashFn: (queryKey) => [...queryKey, runId].toString(),
@@ -103,7 +106,7 @@ function RouteComponent() {
         run_id: runId,
       },
     },
-    refetchInterval: runId && !completedImageUrls.length ? 3000 : false,
+    refetchInterval: runId && !isRunComplete ? 3000 : false,
     enabled: !!runId,
   });
 
@@ -257,16 +260,62 @@ function RouteComponent() {
     return urlList.slice(0, 4).map((url) => url.url);
   }, [runId, runResult?.outputs]);
 
+  // Update the run status effect
   useEffect(() => {
-    setCompletedImageUrls(displayImageUrls);
-    galleryData?.refetch();
-  }, [displayImageUrls]);
+    if (runId && runResult) {
+      const isComplete = runResult.status === "success";
+      setIsRunComplete(isComplete);
+
+      if (isComplete) {
+        setCompletedImageUrls(displayImageUrls);
+        galleryData?.refetch();
+      }
+    } else if (!runId) {
+      setIsRunComplete(false);
+    }
+  }, [runId, runResult?.status, displayImageUrls]);
+
+  // Update the gallery image selection logic
+  const handleGalleryImageSelect = (url: string, index: number) => {
+    if (runId && !isRunComplete) return;
+
+    setCompletedImageUrls([url]);
+    setSelectedImageIndex(index);
+    setRunId("");
+    setIsRunComplete(false);
+  };
 
   useEffect(() => {
     setDefaultValues(
       getDefaultValuesFromWorkflow(shareDeployment?.input_types),
     );
   }, [shareDeployment?.id]);
+
+  useEffect(() => {
+    if (displayImageUrls.length > 0) {
+      const allImages = galleryData?.data?.pages?.flat() || [];
+      const newImageIndex = allImages.findIndex(
+        (item) => item.data.images[0].url === displayImageUrls[0],
+      );
+
+      if (newImageIndex !== -1) {
+        setSelectedImageIndex(newImageIndex);
+      }
+    }
+  }, [displayImageUrls, galleryData?.data?.pages]);
+
+  const getDisplayState = () => {
+    if (runId && !isRunComplete) {
+      // Show progress when running, regardless of other states
+      return "running";
+    }
+    if (completedImageUrls.length > 0) {
+      // Show completed images (either from run or gallery selection)
+      return "completed";
+    }
+    // Show initial state
+    return "initial";
+  };
 
   if (isLoading)
     return (
@@ -344,7 +393,7 @@ function RouteComponent() {
         )}
       >
         <AnimatePresence mode="wait" initial={false}>
-          {!runId && !completedImageUrls.length && (
+          {getDisplayState() === "initial" && (
             <motion.div
               key="initial"
               initial={{ opacity: 0 }}
@@ -357,7 +406,8 @@ function RouteComponent() {
               </span>
             </motion.div>
           )}
-          {runId && !completedImageUrls.length && (
+
+          {getDisplayState() === "running" && (
             <motion.div
               key="loading"
               initial={{ opacity: 0 }}
@@ -376,18 +426,15 @@ function RouteComponent() {
               </div>
             </motion.div>
           )}
-          {completedImageUrls.length > 0 && (
+
+          {getDisplayState() === "completed" && (
             <motion.div
               key="result"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{
-                duration: 0.4,
-                ease: "easeInOut",
-              }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
             >
-              {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
               <div
                 className={cn(
                   "grid gap-2",
@@ -397,8 +444,7 @@ function RouteComponent() {
               >
                 {completedImageUrls.map((url, index) => (
                   <FileURLRender
-                    // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                    key={index}
+                    key={url}
                     url={url}
                     imgClasses={`${
                       completedImageUrls.length === 1
@@ -438,10 +484,9 @@ function RouteComponent() {
                 return (
                   // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
                   <div
-                    onClick={() => {
-                      setCompletedImageUrls([item.data.images[0].url]);
-                      setSelectedImageIndex(index);
-                    }}
+                    onClick={() =>
+                      handleGalleryImageSelect(item.data.images[0].url, index)
+                    }
                     className="cursor-pointer shadow-md"
                   >
                     <FileURLRender

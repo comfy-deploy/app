@@ -102,6 +102,12 @@ export function RunDetails(props: {
     },
   });
 
+  useEffect(() => {
+    if (isShare) {
+      setSelectedTab("inputs");
+    }
+  }, [isShare]);
+
   if (!run) {
     return (
       // <Card className="relative h-fit w-full lg:max-w-[500px]">
