@@ -145,7 +145,8 @@ function WorkflowPageComponent() {
 
   let view: React.ReactNode;
 
-  const { workflow } = useCurrentWorkflow(workflowId);
+  const { workflow, isLoading: isWorkflowLoading } =
+    useCurrentWorkflow(workflowId);
 
   const { value: version } = useSelectedVersion(workflowId);
 
@@ -412,7 +413,13 @@ function WorkflowPageComponent() {
           </div>
         </div>
       </Portal>
-      {workflow ? (
+      {isWorkflowLoading ? (
+        <div className="flex h-full flex-col items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">
+            Loading workflow...
+          </div>
+        </div>
+      ) : workflow ? (
         <div className="h-full">
           {selectedMachine &&
             !isEditing &&
