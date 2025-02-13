@@ -349,7 +349,7 @@ function RouteComponent() {
           <div className="flex flex-row items-end gap-2">
             <h1 className="text-xl">{shareDeployment.workflow.name}</h1>
             <h2 className="text-muted-foreground text-sm">
-              {shareDeployment.share_slug}
+              {shareDeployment.share_slug.split("_")[1]}
             </h2>
           </div>
           {isSignedIn ? (
