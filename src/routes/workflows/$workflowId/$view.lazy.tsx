@@ -67,6 +67,7 @@ import {
 } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ChevronLeft,
   ImageIcon,
   MoreHorizontal,
   MoreVertical,
@@ -411,31 +412,31 @@ function WorkflowPageComponent() {
           </div>
         </div>
       </Portal>
-      <div className="h-full">
-        {selectedMachine &&
-          !isEditing &&
-          currentView !== "playground" &&
-          currentView !== "gallery" && (
-            <MachineWorkspaceItem
-              machine={selectedMachine}
-              index={0}
-              isInWorkspace={true}
-            />
-          )}
+      {workflow ? (
+        <div className="h-full">
+          {selectedMachine &&
+            !isEditing &&
+            currentView !== "playground" &&
+            currentView !== "gallery" && (
+              <MachineWorkspaceItem
+                machine={selectedMachine}
+                index={0}
+                isInWorkspace={true}
+              />
+            )}
 
-        {view}
-      </div>
-
-      {/* {mountedViews.has("workspace") ? (
-        <div
-          className="h-full w-full"
-          style={{
-            display: currentView === "workspace" ? "block" : "none",
-          }}
-        >
-          <WorkspaceClientWrapper workflow_id={workflowId} />
+          {view}
         </div>
-      ) : null} */}
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-4">
+          <div className="text-muted-foreground">Workflow not found</div>
+          <Link to="/">
+            <Button variant="outline">
+              <ChevronLeft className="mr-2 h-4 w-4" /> Return
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
