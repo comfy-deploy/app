@@ -113,11 +113,13 @@ type PublicRunStore = {
   runId: string;
   status: status | null;
   logs: LogsType;
+  inputValues: Record<string, any>;
   addLogs: (logs: LogsType) => void;
   setImage: (image: { url: string }[]) => void;
   setLoading: (loading: boolean) => void;
   setRunId: (runId: string) => void;
   setStatus: (status: status) => void;
+  setInputValues: (inputTypes: Record<string, any>) => void;
 };
 
 export const publicRunStore = create<PublicRunStore>((set) => ({
@@ -126,11 +128,12 @@ export const publicRunStore = create<PublicRunStore>((set) => ({
   runId: "",
   status: null,
   logs: [],
+  inputValues: {},
   setImage: (image) => set({ image }),
   setLoading: (loading) => set({ loading }),
   setRunId: (runId) => set({ runId }),
   setStatus: (status) => set({ status }),
-
+  setInputValues: (inputTypes) => set({ inputValues: inputTypes }),
   addLogs: (logs) => set((state) => ({ logs: [...state.logs, ...logs] })),
 }));
 

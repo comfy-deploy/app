@@ -1,7 +1,6 @@
 import { FileURLRender } from "@/components/output-render";
 import {
   parseFilesToImgURLs,
-  parseInputs,
   parseInputValues,
   RunWorkflowInline,
 } from "@/components/run/RunWorkflowInline";
@@ -90,7 +89,7 @@ function RouteComponent() {
 
   // Change the state to handle multiple images
   const [completedImageUrls, setCompletedImageUrls] = useState<string[]>([]);
-  const { runId, setRunId } = publicRunStore();
+  const { runId, setRunId, inputValues } = publicRunStore();
 
   const [runButtonLoading, setRunButtonLoading] = useState(false);
   const [isAdvanceOptionDrawerOpen, setIsAdvanceOptionDrawerOpen] =
@@ -129,6 +128,14 @@ function RouteComponent() {
       setIsAdvanceOptionDrawerOpen(false);
     }
   }, [runId]);
+
+  useEffect(() => {
+    if (inputValues && Object.keys(inputValues).length > 0) {
+      setDefaultValues(inputValues);
+      setIsImageDetailDrawerOpen(false);
+      setIsAdvanceOptionDrawerOpen(true);
+    }
+  }, [inputValues]);
 
   useEffect(() => {
     let lastEventTime = 0;
@@ -565,13 +572,14 @@ function RouteComponent() {
 
       <MyDrawer
         desktopClassName="w-[500px] shadow-lg border-2 border-gray-200"
-        open={isImageDetailDrawerOpen}
-        backgroundInteractive
+        open={!!isImageDetailDrawerOpen}
+        backgroundInteractive={true}
         onClose={() => setIsImageDetailDrawerOpen(false)}
       >
         <RunDetails
           run_id={selectedImageData?.run_id}
           onClose={() => setIsImageDetailDrawerOpen(false)}
+          isShare={true}
         />
       </MyDrawer>
     </>
