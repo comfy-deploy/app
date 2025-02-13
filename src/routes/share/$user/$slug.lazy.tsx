@@ -203,6 +203,9 @@ function RouteComponent() {
     // Add wheel event handler with throttling
     let wheelTimeout: NodeJS.Timeout | null = null;
     const handleWheel = (e: WheelEvent) => {
+      const isOverDrawer = (e.target as HTMLElement).closest('[role="dialog"]');
+      if (isOverDrawer) return;
+
       if (!galleryData?.data?.pages?.[0] || isProcessing) return;
 
       const currentTime = Date.now();
