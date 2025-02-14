@@ -39,7 +39,7 @@ import { defaultWorkflowTemplates } from "@/utils/default-workflow";
 import { sendWorkflow } from "./sendEventToCD";
 import { Label } from "../ui/label";
 import Cookies from "js-cookie";
-import { WorkflowDiff } from "./WorkflowDiff";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -407,6 +407,8 @@ export function WorkflowButtons({
 }: WorkflowButtonsProps) {
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
+  const [isClearWorkflowDialogOpen, setIsClearWorkflowDialogOpen] =
+    useState(false);
   const [displayCommit, setDisplayCommit] = useState(false);
 
   const router = useRouter();
@@ -442,7 +444,7 @@ export function WorkflowButtons({
 
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
   const [isNewWorkflowOpen, setIsNewWorkflowOpen] = useState(false);
-  const { machineId, workflowLink } = useSearch({
+  const { workflowId: workflowIdFromSearch, workflowLink } = useSearch({
     from: "/sessions/$sessionId/",
   });
   const { cdSetup } = useCDStore();
@@ -463,7 +465,6 @@ export function WorkflowButtons({
       });
     }, 1000);
   }, [cdSetup, workflowId, workflowLink]);
-  const [displayDiff, setDisplayDiff] = useState(false);
 
   const { data: session, refetch } = useQuery<any>({
     queryKey: ["session", match?.params.sessionId],
@@ -508,8 +509,11 @@ export function WorkflowButtons({
           //   display: "flex",
           // },
           onClick: (_: string, __: unknown) => {
-            setWorkflowId(null);
-            setIsTemplateOpen(true);
+            if (workflowIdFromSearch) {
+              setIsClearWorkflowDialogOpen(true);
+            } else {
+              setIsTemplateOpen(true);
+            }
           },
         },
 
@@ -628,6 +632,44 @@ export function WorkflowButtons({
           open={isNewWorkflowOpen}
           setOpen={setIsNewWorkflowOpen}
         />
+        {/* popover clear current workflow */}
+        <Popover
+          open={isClearWorkflowDialogOpen}
+          onOpenChange={setIsClearWorkflowDialogOpen}
+        >
+          <PopoverTrigger asChild>
+            <div id="cd-button-workflow-workflow-template" />
+          </PopoverTrigger>
+          <PopoverContent sideOffset={50} className="w-80">
+            <div className="flex flex-col gap-2">
+              <div className="font-medium text-sm">Clear Workflow</div>
+              <div className="text-xs leading-5">
+                Are you sure you want to clear the current workflow?
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setIsClearWorkflowDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="xs"
+                  onClick={() => {
+                    setWorkflowId(null);
+                    setIsClearWorkflowDialogOpen(false);
+                    setIsTemplateOpen(true);
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {/* Template Dialog */}
         <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
           <DialogContent
