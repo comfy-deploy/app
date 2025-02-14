@@ -34,6 +34,7 @@ export function MyDrawer({
           />
         )}
         <Drawer.Content
+          role="dialog"
           className={cn(
             "z-50 rounded-[16px]",
             isMobile

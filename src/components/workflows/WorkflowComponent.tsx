@@ -42,6 +42,8 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Alert, AlertDescription } from "../ui/alert";
 import { MyDrawer } from "../drawer";
+import { publicRunStore } from "../run/VersionSelect";
+import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
 
 export default function WorkflowComponent() {
   const [runId, setRunId] = useQueryState("run-id");
@@ -74,13 +76,15 @@ export default function WorkflowComponent() {
 export function RunDetails(props: {
   run_id: string;
   onClose: () => void;
+  isShare?: boolean;
 }) {
-  const { run_id, onClose } = props;
+  const { run_id, onClose, isShare = false } = props;
   const isMobile = useMediaQuery("(max-width: 768px)");
   const navigate = useNavigate();
 
   const [selectedTab, setSelectedTab] = useQueryState("tab", parseAsString);
   const [_, setRunId] = useQueryState("run-id");
+  const { setInputValues } = publicRunStore();
 
   const { data: run, isLoading } = useQuery<any>({
     queryKey: ["run", run_id],
@@ -98,6 +102,12 @@ export function RunDetails(props: {
     },
   });
 
+  useEffect(() => {
+    if (isShare) {
+      setSelectedTab("inputs");
+    }
+  }, [isShare]);
+
   if (!run) {
     return (
       // <Card className="relative h-fit w-full lg:max-w-[500px]">
@@ -111,7 +121,10 @@ export function RunDetails(props: {
   }
 
   const handleClick = () => {
-    if (run) {
+    if (!run) return;
+    if (isShare) {
+      setInputValues(run.workflow_inputs);
+    } else {
       setRunId(run.id);
       navigate({
         to: "/workflows/$workflowId/$view",
@@ -168,7 +181,9 @@ export function RunDetails(props: {
             label="Status"
             value={<StatusBadge status={run.status} />}
           />
-          <InfoItem label="GPU" value={<Badge>{run.gpu || "N/A"}</Badge>} />
+          {!props.isShare && (
+            <InfoItem label="GPU" value={<Badge>{run.gpu || "N/A"}</Badge>} />
+          )}
           <InfoItem
             label="Total Duration"
             value={
@@ -188,7 +203,7 @@ export function RunDetails(props: {
           {/* {"machine" in run && (
               <InfoItem label="Machine" value={(run.machine as any).name} />
             )} */}
-          {run.machine_id && (
+          {!props.isShare && run.machine_id && (
             <InfoItem
               label="Machine"
               value={<MachineLink machineId={run.machine_id} />}

@@ -25,7 +25,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getInputsFromWorkflow } from "@/lib/getInputsFromWorkflow";
 // import type { findAllDeployments } from "@/server/findAllRuns";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, ChevronRight, Copy, Settings } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  Copy,
+  Settings,
+} from "lucide-react";
 import { DeploymentRow } from "./DeploymentRow";
 // import { SharePageSettings } from "@/components/SharePageSettings";
 import Steps from "./Steps";
@@ -66,6 +73,8 @@ import { MyDrawer } from "../drawer";
 import type { GpuTypes } from "../onboarding/workflow-machine-import";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { Input } from "../ui/input";
 
 const curlTemplate = `
 curl --request POST \
@@ -289,6 +298,7 @@ export interface Deployment {
   version?: {
     version: number;
   };
+  dub_link?: string;
 }
 
 export function DeploymentDisplay({
@@ -1166,6 +1176,9 @@ export function DeploymentSettings({
       {((view === "settings" && deployment.modal_image_id) ||
         deployment.environment === "public-share") && (
         <form ref={formRef} className="flex flex-col gap-6 p-6">
+          <div className="mb-4">
+            <ShareLinkDisplay deployment={deployment} />
+          </div>
           <div className="flex flex-col gap-2">
             <Badge className="w-fit font-medium text-sm">GPU</Badge>
             <GPUSelectBox
@@ -1271,5 +1284,57 @@ export function VersionDrawer({ workflowId }: { workflowId: string }) {
         )}
       </ScrollArea>
     </MyDrawer>
+  );
+}
+
+function ShareLinkDisplay({ deployment }: { deployment: Deployment }) {
+  const [copying, setCopying] = useState(false);
+
+  const handleCopy = async () => {
+    if (!deployment.dub_link) return;
+    setCopying(true);
+    await navigator.clipboard.writeText(deployment.dub_link);
+    toast.success("Link copied to clipboard!");
+    setTimeout(() => setCopying(false), 1000);
+  };
+
+  return (
+    <div className="-m-4 flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-sm">Sharing Link</h3>
+          <Badge variant="secondary" className="bg-zinc-100 text-zinc-700">
+            Public
+          </Badge>
+        </div>
+      </div>
+      {deployment.dub_link ? (
+        <div className="flex gap-2">
+          <Input
+            readOnly
+            value={deployment.dub_link}
+            className="border-zinc-200 bg-zinc-50 font-mono text-xs"
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleCopy}
+            className="shrink-0 transition-all duration-200 hover:bg-zinc-50"
+          >
+            {copying ? (
+              <Check className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between rounded-md bg-amber-50 p-3 text-amber-700">
+          <span className="text-sm">
+            No sharing link available. Please reshare again.
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

@@ -58,7 +58,7 @@ import {
   getInputsFromWorkflowAPI,
   getInputsFromWorkflowJSON,
 } from "@/lib/getInputsFromWorkflow";
-import { cn, slugify } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   Link,
   createLazyFileRoute,
@@ -67,6 +67,7 @@ import {
 } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ChevronLeft,
   ImageIcon,
   MoreHorizontal,
   MoreVertical,
@@ -144,7 +145,8 @@ function WorkflowPageComponent() {
 
   let view: React.ReactNode;
 
-  const { workflow } = useCurrentWorkflow(workflowId);
+  const { workflow, isLoading: isWorkflowLoading } =
+    useCurrentWorkflow(workflowId);
 
   const { value: version } = useSelectedVersion(workflowId);
 
@@ -411,31 +413,37 @@ function WorkflowPageComponent() {
           </div>
         </div>
       </Portal>
-      <div className="h-full">
-        {selectedMachine &&
-          !isEditing &&
-          currentView !== "playground" &&
-          currentView !== "gallery" && (
-            <MachineWorkspaceItem
-              machine={selectedMachine}
-              index={0}
-              isInWorkspace={true}
-            />
-          )}
-
-        {view}
-      </div>
-
-      {/* {mountedViews.has("workspace") ? (
-        <div
-          className="h-full w-full"
-          style={{
-            display: currentView === "workspace" ? "block" : "none",
-          }}
-        >
-          <WorkspaceClientWrapper workflow_id={workflowId} />
+      {isWorkflowLoading ? (
+        <div className="flex h-full flex-col items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">
+            Loading workflow...
+          </div>
         </div>
-      ) : null} */}
+      ) : workflow ? (
+        <div className="h-full">
+          {selectedMachine &&
+            !isEditing &&
+            currentView !== "playground" &&
+            currentView !== "gallery" && (
+              <MachineWorkspaceItem
+                machine={selectedMachine}
+                index={0}
+                isInWorkspace={true}
+              />
+            )}
+
+          {view}
+        </div>
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-4">
+          <div className="text-muted-foreground">Workflow not found</div>
+          <Link to="/">
+            <Button variant="outline">
+              <ChevronLeft className="mr-2 h-4 w-4" /> Return
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -695,8 +703,6 @@ function RequestPage({
                             e.nativeEvent.preventDefault();
                             e.nativeEvent.stopPropagation();
 
-                            const shareSlug = slugify(currentWorkflow.name);
-
                             await callServerPromise(
                               api({
                                 url: "deployment",
@@ -710,7 +716,6 @@ function RequestPage({
                                     ...(currentWorkflow.description && {
                                       description: currentWorkflow.description,
                                     }),
-                                    share_slug: shareSlug,
                                   }),
                                 },
                               }),
