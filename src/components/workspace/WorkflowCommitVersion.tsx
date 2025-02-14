@@ -10,20 +10,25 @@ import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { useAuth } from "@clerk/clerk-react";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { use, useCallback } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useWorkflowVersion } from "../workflow-list";
-import { DiffView } from "./DiffView";
+import { DiffView, SnapshotDiffView } from "./DiffView";
 import { useSelectedVersion } from "../version-select";
 import { useWorkflowStore } from "./Workspace";
 import { ScrollArea } from "../ui/scroll-area";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { diff } from "json-diff-ts";
+import { useMatch } from "@tanstack/react-router";
 
 type WorkflowCommitVersionProps = {
   setOpen: (b: boolean) => void;
   endpoint: string;
   machine_id?: string;
-  machine_version_id?: string;
+  machine_version_id?: any;
+  session_url?: string;
 };
 
 async function createNewWorkflowVersion(data: {
@@ -36,6 +41,7 @@ async function createNewWorkflowVersion(data: {
   comment: string;
   machine_id?: string;
   machine_version_id?: string;
+  comfyui_snapshot?: string;
 }) {
   return api({
     url: `workflow/${data.workflow_id}/version`,
@@ -47,16 +53,20 @@ async function createNewWorkflowVersion(data: {
         comment: data.comment,
         machine_id: data.machine_id,
         machine_version_id: data.machine_version_id,
+        comfyui_snapshot: data.comfyui_snapshot,
       }),
     },
   });
 }
+
+type SnapshotAction = "CREATE_AND_COMMIT" | "COMMIT_ONLY";
 
 export function WorkflowCommitVersion({
   setOpen,
   endpoint: _endpoint,
   machine_id,
   machine_version_id,
+  session_url,
 }: WorkflowCommitVersionProps) {
   const { userId } = useAuth();
 
@@ -75,6 +85,13 @@ export function WorkflowCommitVersion({
   const differences = useWorkflowStore((state) => state.differences);
   const workflow = useWorkflowStore((state) => state.workflow);
   const { value: selectedVersion } = useSelectedVersion(workflowId);
+  const [snapshotAction, setSnapshotAction] =
+    useState<SnapshotAction>("CREATE_AND_COMMIT");
+
+  const match = useMatch({
+    from: "/sessions/$sessionId/",
+    shouldThrow: false,
+  });
 
   const endpoint = _endpoint;
   // if (turbo) {
@@ -121,6 +138,23 @@ export function WorkflowCommitVersion({
     [endpoint],
   );
 
+  const {
+    data: comfyui_snapshot,
+    isLoading: comfyui_snapshot_loading,
+    refetch: refetchComfyuiSnapshot,
+  } = useQuery({
+    queryKey: ["comfyui_snapshot", session_url],
+    queryFn: async () => {
+      if (!session_url) return null;
+      const response = await fetch(`${session_url}/snapshot/get_current`);
+      return response.json();
+    },
+  });
+
+  const handleSnapshotActionChange = useCallback((hasChanges: boolean) => {
+    setSnapshotAction(hasChanges ? "CREATE_AND_COMMIT" : "COMMIT_ONLY");
+  }, []);
+
   return (
     <InsertModal
       trigger={<></>}
@@ -128,8 +162,25 @@ export function WorkflowCommitVersion({
       setOpen={setOpen}
       dialogClassName="sm:max-w-[600px]"
       title="Commit changes"
+      actionButtonName={
+        snapshotAction === "CREATE_AND_COMMIT"
+          ? "Update Workspace and Commit"
+          : "Commit"
+      }
       extraUI={
         <ScrollArea>
+          {comfyui_snapshot_loading ? (
+            <div className="flex h-full items-center justify-center">
+              Fetching snapshot...
+              <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <SnapshotDiffView
+              newSnapshot={comfyui_snapshot}
+              oldSnapshot={selectedVersion?.comfyui_snapshot}
+              onSnapshotActionChange={handleSnapshotActionChange}
+            />
+          )}
           <DiffView
             className="max-h-[300px]"
             differences={differences}
@@ -141,18 +192,11 @@ export function WorkflowCommitVersion({
       description="Commit a new version of the workflow"
       serverAction={async (data) => {
         if (!userId) return;
+        if (comfyui_snapshot_loading) return;
 
         try {
           const prompt = await getPromptWithTimeout();
           console.log("prompt", prompt);
-
-          const dependencies = {
-            comfyui: "",
-            custom_nodes: {},
-            missing_nodes: [],
-            models: [],
-            files: {},
-          };
 
           const result = await callServerPromise(
             createNewWorkflowVersion({
@@ -161,6 +205,7 @@ export function WorkflowCommitVersion({
               comment: data.comment,
               machine_id: machine_id,
               machine_version_id: machine_version_id,
+              comfyui_snapshot: comfyui_snapshot,
               workflow_data: {
                 workflow: prompt.workflow,
                 workflow_api: prompt.output,
@@ -173,7 +218,23 @@ export function WorkflowCommitVersion({
 
           await query.refetch();
 
-          // await mutate(workflowId + "-version");
+          if (
+            snapshotAction === "CREATE_AND_COMMIT" &&
+            match?.params.sessionId
+          ) {
+            await callServerPromise(
+              api({
+                url: `session/${match.params.sessionId}/snapshot`,
+                init: {
+                  method: "POST",
+                },
+              }),
+              {
+                loadingText: "Creating a new workspace",
+              },
+            );
+          }
+
           if (result?.version !== undefined) {
             setTimeout(() => {
               setVersion(result.version);

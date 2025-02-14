@@ -47,6 +47,7 @@ type DataModalProps<
   keepDialogWhenSubmit?: boolean;
   children?: React.ReactNode;
   containerClassName?: string;
+  actionButtonName?: string;
 };
 
 export function useConfirmServerActionDialog<T>(props: {
@@ -290,7 +291,7 @@ export function InsertModal<
               Icon={Plus}
               iconPlacement="right"
             >
-              Create
+              {props.actionButtonName ?? "Create"}
             </Button>
           </div>
         </AutoForm>
