@@ -438,7 +438,7 @@ export function RunWorkflowInline({
             );
           })}
       </SDForm>
-      {!inputs && !hideRunButton && (
+      {/* {!inputs && !hideRunButton && (
         <Button
           onClick={runWorkflow}
           isLoading={isLoading || loading}
@@ -446,7 +446,7 @@ export function RunWorkflowInline({
         >
           Confirm
         </Button>
-      )}
+      )} */}
     </>
   );
 }
