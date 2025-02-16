@@ -11,7 +11,7 @@ import {
 import { WorkflowList } from "@/components/workflow-dropdown";
 import { VersionList } from "@/components/version-select";
 import { WorkflowCommitVersion } from "./WorkflowCommitVersion";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useMatch } from "@tanstack/react-router";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
@@ -36,7 +36,7 @@ import {
 import { Progress } from "../ui/progress";
 import { toast } from "sonner";
 import { defaultWorkflowTemplates } from "@/utils/default-workflow";
-import { sendWorkflow } from "./sendEventToCD";
+import { sendEventToCD, sendWorkflow } from "./sendEventToCD";
 import { Label } from "../ui/label";
 import Cookies from "js-cookie";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -260,7 +260,7 @@ export function LeftMenuButtons({ endpoint }: WorkspaceButtonProps) {
       buttonIdPrefix: "cd-button-left-",
       containerStyle: { order: "-1" },
     };
-  }, [router, workflowId]);
+  }, [workflowId]);
 
   useWorkspaceButtons(data, endpoint);
 
@@ -450,8 +450,10 @@ export function WorkflowButtons({
 }: WorkflowButtonsProps) {
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
-  const [isNewWorkspaceDialogOpen, setIsNewWorkspaceDialogOpen] = useState(false);
-  const [isClearWorkflowDialogOpen, setIsClearWorkflowDialogOpen] = useState(false);
+  const [isNewWorkspaceDialogOpen, setIsNewWorkspaceDialogOpen] =
+    useState(false);
+  const [isClearWorkflowDialogOpen, setIsClearWorkflowDialogOpen] =
+    useState(false);
   const [displayCommit, setDisplayCommit] = useState(false);
 
   const router = useRouter();
@@ -813,6 +815,48 @@ function NewWorkflowDialog({
     shouldThrow: false,
   });
 
+  const { data: session } = useQuery<any>({
+    queryKey: ["session", match?.params.sessionId],
+    enabled: !!match?.params.sessionId,
+  });
+
+  const getPromptWithTimeout = useCallback(
+    async (timeoutMs = 5000) => {
+      const getPrompt = new Promise<{ workflow: string; output: string }>(
+        (resolve, reject) => {
+          const eventListener = (event: MessageEvent<string>) => {
+            if (event.origin !== session?.url) return;
+            try {
+              const data = JSON.parse(event.data);
+              if (data.type === "cd_plugin_onGetPrompt") {
+                window.removeEventListener("message", eventListener, {
+                  capture: true,
+                });
+                resolve(data.data);
+              }
+            } catch (error) {
+              console.error("Error parsing prompt:", error);
+              reject(error);
+            }
+          };
+          window.addEventListener("message", eventListener, {
+            capture: true,
+          });
+          sendEventToCD("get_prompt");
+        },
+      );
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(
+          () => reject(new Error("Timeout: Failed to get prompt")),
+          timeoutMs,
+        );
+      });
+      return Promise.race([getPrompt, timeoutPromise]);
+    },
+    [session?.url],
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -822,12 +866,29 @@ function NewWorkflowDialog({
       return;
     }
 
+    if (!session?.url) {
+      toast.error("Session URL is not available");
+      return;
+    }
+
     try {
       setIsLoading(true);
+
+      // Get snapshot
+      const snapshotResponse = await fetch(
+        `${session.url}/snapshot/get_current`,
+      );
+      const comfyui_snapshot = await snapshotResponse.json();
+
+      // Get prompt
+      const prompt = await getPromptWithTimeout();
 
       const requestBody = {
         name: newName.trim(),
         workflow_json: JSON.stringify(workflow),
+        workflow_api: JSON.stringify(prompt.output),
+        machine_version_id: session?.machine_version_id,
+        comfyui_snapshot,
       };
 
       const result = await api({
@@ -849,8 +910,11 @@ function NewWorkflowDialog({
         },
       });
       setOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create new workflow");
+    } catch (error) {
+      console.error("Error creating workflow:", error);
+      toast.error(
+        typeof error === "string" ? error : "Failed to create new workflow",
+      );
     } finally {
       setIsLoading(false);
     }
