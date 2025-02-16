@@ -30,6 +30,7 @@ type SDImageInputProps = {
   multiple?: boolean;
   onChange: (file: File | string | undefined | FileList) => void;
   header?: ReactNode;
+  accept?: string;
 };
 
 export function SDImageInput({
@@ -40,6 +41,7 @@ export function SDImageInput({
   onChange,
   multiple,
   header,
+  accept = "image/*",
 }: SDImageInputProps) {
   const dropRef: RefObject<any> = useRef(null);
   const ImgView: ImgView | null = useMemo(() => {
@@ -122,7 +124,7 @@ export function SDImageInput({
             </Label>
             <Input
               id={`file-input-${label}`}
-              accept="image/*"
+              accept={accept}
               className="hidden"
               onChange={(e: ChangeEvent<HTMLInputElement>) => {
                 if (!e?.target.files) {

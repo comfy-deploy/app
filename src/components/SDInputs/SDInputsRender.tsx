@@ -232,6 +232,24 @@ export function SDInputsRender({
           }}
         />
       );
+    case "ComfyUIDeployExternalEXR":
+      return (
+        <SDImageInput
+          key={inputNode.input_id}
+          file={inputValue}
+          inputClasses="mt-2 bg-gray-50"
+          header={header(genericProps)}
+          accept=".exr"
+          {...genericProps}
+          onChange={(file: File | string | undefined | FileList) => {
+            if (file instanceof FileList) {
+              updateInput(inputNode.input_id, file[0]);
+              return;
+            }
+            updateInput(inputNode.input_id, file);
+          }}
+        />
+      );
     case "ComfyUIDeployExternalAudio":
       return (
         <SDAudioInput
