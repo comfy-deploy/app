@@ -1176,9 +1176,11 @@ export function DeploymentSettings({
       {((view === "settings" && deployment.modal_image_id) ||
         deployment.environment === "public-share") && (
         <form ref={formRef} className="flex flex-col gap-6 p-6">
-          <div className="mb-4">
-            <ShareLinkDisplay deployment={deployment} />
-          </div>
+          {deployment.environment === "public-share" && (
+            <div className="mb-4">
+              <ShareLinkDisplay deployment={deployment} />
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             <Badge className="w-fit font-medium text-sm">GPU</Badge>
             <GPUSelectBox
