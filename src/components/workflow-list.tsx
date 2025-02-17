@@ -435,44 +435,6 @@ function WorkflowCard({
               </div>
             )}
           </div>
-          <div className="absolute right-0 bottom-0 left-0 px-2 py-2 opacity-0 transition-all duration-300 group-hover:opacity-100">
-            <div className="flex items-center justify-center gap-2">
-              <AdminAndMember>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full "
-                  href={`/workflows/${workflow.id}/workspace`}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full "
-                  href={`/workflows/${workflow.id}/requests`}
-                >
-                  <Code className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full "
-                  href={`/workflows/${workflow.id}/playground`}
-                >
-                  <Play className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full "
-                  href={`/workflows/${workflow.id}/gallery`}
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
-              </AdminAndMember>
-            </div>
-          </div>
           <div className="absolute top-2 right-2">
             <AdminAndMember>
               <DropdownMenu>
