@@ -42,6 +42,7 @@ import { SpotlightTooltip } from "@/components/spotlight-guide";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth, useClerk } from "@clerk/clerk-react";
+import { callServerPromise } from "@/lib/call-server-promise";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -343,18 +344,24 @@ function SessionsList() {
                     return;
                   }
 
-                  const response = await createDynamicSession.mutateAsync({
-                    gpu: gpu,
-                    comfyui_hash: comfyui_version,
-                    timeout: timeout,
-                    dependencies: nodesSearch ? nodesSearch.split(",") : [],
-                    ...(dockerImageSearch && {
-                      base_docker_image: dockerImageSearch,
+                  const response = await callServerPromise(
+                    createDynamicSession.mutateAsync({
+                      gpu: gpu,
+                      comfyui_hash: comfyui_version,
+                      timeout: timeout,
+                      dependencies: nodesSearch ? nodesSearch.split(",") : [],
+                      ...(dockerImageSearch && {
+                        base_docker_image: dockerImageSearch,
+                      }),
+                      ...(pythonSearch && {
+                        python_version: pythonSearch.toString(),
+                      }),
                     }),
-                    ...(pythonSearch && {
-                      python_version: pythonSearch.toString(),
-                    }),
-                  });
+                    {
+                      loadingText: "Starting new session...",
+                      successMessage: "Session started successfully",
+                    },
+                  );
                   useLogStore.getState().clearLogs();
 
                   router.navigate({

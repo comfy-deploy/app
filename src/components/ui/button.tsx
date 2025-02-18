@@ -148,16 +148,20 @@ const Button = forwardRef<
       const currentTooltip = tooltip;
 
       setIsLoading(true);
-      if (onProcess) {
-        e.preventDefault();
-        const generator = onProcess();
-        for await (const message of generator) {
-          // setChildren(message.children);
-          setChildrenOverrides(message.children);
-          setTooltip(message.tooltip);
+      try {
+        if (onProcess) {
+          e.preventDefault();
+          const generator = onProcess();
+          for await (const message of generator) {
+            // setChildren(message.children);
+            setChildrenOverrides(message.children);
+            setTooltip(message.tooltip);
+          }
+        } else {
+          await onClick?.(e as React.MouseEvent<HTMLButtonElement>);
         }
-      } else {
-        await onClick?.(e as React.MouseEvent<HTMLButtonElement>);
+      } catch (error) {
+        console.error(error);
       }
       setIsLoading(false);
       // setChildren(currentChildren);
