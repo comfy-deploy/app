@@ -38,7 +38,7 @@ function getButtonLabel(currentPlans: string[], targetPlan: string): string {
   }
 
   if (currentPlans.length === 0) {
-    return "Get Started (free trial)";
+    return "Get Started";
   }
 
   // console.log(targetPlan);
@@ -90,6 +90,7 @@ export function UpgradeButton(props: {
 }) {
   const { userId } = useAuth();
   const [invoice, setInvoice] = useState<any | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
@@ -103,7 +104,7 @@ export function UpgradeButton(props: {
     from: "/pricing",
   });
 
-  const ready = search?.ready;
+  const ready = true; //search?.ready;
 
   let isCustom = (props.plan as any) === "large_enterprise";
   const isBasic = props.plan === "basic";
@@ -134,7 +135,8 @@ export function UpgradeButton(props: {
               props.className,
             )}
             iconPlacement="right"
-            variant="expandIcon"
+            variant="expandIconOutline"
+            isLoading={isLoading}
             onClick={async () => {
               if (isBasic) {
                 router.navigate({
@@ -166,43 +168,50 @@ export function UpgradeButton(props: {
                 return;
               }
 
-              const invoice = await callServerPromise(
-                getUpgradeOrNewPlan(props.plan, coupon),
-              );
+              setIsLoading(true);
+              try {
+                const invoice = await callServerPromise(
+                  getUpgradeOrNewPlan(props.plan, coupon),
+                );
 
-              if (!invoice || "error" in invoice) {
-                const res = await api({
-                  url: "platform/checkout",
-                  params: {
-                    plan: props.plan,
-                    trial: props.trial,
-                    redirect_url: window.location.href,
-                    coupon,
-                  },
-                });
+                if (!invoice || "error" in invoice) {
+                  const res = await api({
+                    url: "platform/checkout",
+                    params: {
+                      plan: props.plan,
+                      trial: props.trial,
+                      redirect_url: window.location.href,
+                      coupon,
+                    },
+                  });
 
-                if (res.error) {
-                  toast.error(res.error);
+                  if (res.error) {
+                    toast.error(res.error);
+                  } else {
+                    window.location.href = res.url;
+                  }
+
+                  // window.location.href =
+                  //   props.href +
+                  //   "&redirect=" +
+                  //   encodeURIComponent(window.location.href) +
+                  //   (props.trial ? "&trial=true" : "") +
+                  //   (props.allowCoupon && coupon
+                  //     ? "&coupon=" + encodeURIComponent(coupon)
+                  //     : "");
+                  // router.push();
                 } else {
-                  window.location.href = res.url;
+                  setInvoice(invoice);
                 }
-
-                // window.location.href =
-                //   props.href +
-                //   "&redirect=" +
-                //   encodeURIComponent(window.location.href) +
-                //   (props.trial ? "&trial=true" : "") +
-                //   (props.allowCoupon && coupon
-                //     ? "&coupon=" + encodeURIComponent(coupon)
-                //     : "");
-                // router.push();
-              } else {
-                setInvoice(invoice);
+              } catch (error) {
+                toast.error("Failed to process upgrade request");
+              } finally {
+                setIsLoading(false);
               }
             }}
           >
             {isCustom ? "Book a call" : label}
-            <BlueprintOutline />
+            {/* <BlueprintOutline /> */}
           </Button>
         }
       >

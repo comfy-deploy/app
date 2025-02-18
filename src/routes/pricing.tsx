@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UpgradeButton } from "@/components/pricing/plan-button";
 
 export const Route = createFileRoute("/pricing")({
   component: RouteComponent,
@@ -61,7 +62,7 @@ const tiers: Tier[] = [
     id: "creator",
     priceMonthly: "$34",
     priceYearly: "$340",
-    description: "For individual creators, Run ComfyUI anywhere",
+    description: "For individual creators, run ComfyUI anywhere",
   },
   {
     name: "Deployment",
@@ -97,7 +98,7 @@ const sections = [
         tiers: {
           Basic: "1",
           Creator: "1",
-          Deployment: "5",
+          Deployment: "10",
           Business: "Custom",
         },
       },
@@ -201,15 +202,6 @@ const sections = [
         },
       },
       {
-        name: "GPU Concurrency",
-        tiers: {
-          Basic: false,
-          Creator: false,
-          Deployment: "10",
-          Business: "Custom",
-        },
-      },
-      {
         name: "Internal APIs",
         tiers: {
           Basic: false,
@@ -309,9 +301,9 @@ function PricingTier({
                 )}
             </div>
             {isYearly && tier.priceMonthly !== "Free" && (
-              <div className="text-xs text-gray-500">
-                Billed yearly: {getYearlyTotal(tier.priceMonthly)}
-                <span className="ml-1 text-green-600">(-20%)</span>
+              <div className="text-sm text-gray-500 mt-1">
+                Billed yearly: {getYearlyTotal(tier.priceMonthly)}{" "}
+                <span className="ml-1 text-green-600">(2 months free)</span>
               </div>
             )}
             <p className="mt-2 text-sm text-gray-600">{tier.description}</p>
@@ -388,24 +380,22 @@ function PricingTier({
           <div className="mt-4">
             {tier.name === "Business" ? (
               <div className="grid grid-cols-2 gap-px">
-                <Button
-                  className="rounded-none border-b-0 border-t border-x-0 p-4 transition-colors w-full hover:bg-gray-900 hover:text-white"
-                  variant="outline"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="h-4 w-4 animate-spin">
-                      <LoadingIcon />
-                    </div>
-                  ) : plans.includes(tier.id) ? (
-                    "Manage"
-                  ) : (
-                    "Get Started"
-                  )}
-                </Button>
+                <UpgradeButton
+                  plan={`${tier.id}_${isYearly ? "yearly" : "monthly"}`}
+                  href={`/checkout?plan=${tier.id}`}
+                  plans={plans}
+                  className="rounded-none border-b-0 border-t border-x-0 p-6 transition-colors w-full hover:bg-gray-900 hover:text-white"
+                  trial={false}
+                  allowCoupon={true}
+                  data={{
+                    tier: tier.name,
+                    price: isYearly ? tier.priceYearly : tier.priceMonthly,
+                    billing: isYearly ? "yearly" : "monthly",
+                  }}
+                />
                 <Button
                   asChild
-                  className="rounded-none border-b-0 border-t border-x-0 p-4 transition-colors w-full hover:bg-purple-900 hover:text-white"
+                  className="rounded-none border-b-0 border-t border-x-0 p-6 transition-colors w-full hover:bg-purple-900 hover:text-white"
                   variant="outline"
                 >
                   <Link to="/onboarding-call" target="_blank">
@@ -415,21 +405,19 @@ function PricingTier({
                 </Button>
               </div>
             ) : (
-              <Button
-                className="rounded-none border-b-0 border-t border-x-0 p-4 transition-colors w-full hover:bg-gray-900 hover:text-white"
-                variant="outline"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="h-4 w-4 animate-spin">
-                    <LoadingIcon />
-                  </div>
-                ) : plans.includes(tier.id) ? (
-                  "Manage"
-                ) : (
-                  "Get Started"
-                )}
-              </Button>
+              <UpgradeButton
+                plan={`${tier.id}_${isYearly ? "yearly" : "monthly"}`}
+                href={`/checkout?plan=${tier.id}`}
+                plans={plans}
+                className="rounded-none border-b-0 border-t border-x-0 p-6 transition-colors w-full hover:bg-gray-900 hover:text-white"
+                trial={false}
+                allowCoupon={true}
+                data={{
+                  tier: tier.name,
+                  price: isYearly ? tier.priceYearly : tier.priceMonthly,
+                  billing: isYearly ? "yearly" : "monthly",
+                }}
+              />
             )}
           </div>
         )}
@@ -554,7 +542,7 @@ function GPUPricingTable() {
 
 function RouteComponent() {
   const { data: _sub, isLoading } = useCurrentPlanWithStatus();
-  const [isYearly, setIsYearly] = useState(false);
+  const [isYearly, setIsYearly] = useState(true);
 
   return (
     <div className="min-h-screen">
@@ -577,38 +565,61 @@ function RouteComponent() {
               className="inline-flex items-center rounded-full bg-white/95 p-0.5 shadow-md ring-1 ring-gray-200/50 backdrop-blur-sm"
               layout
             >
-              <Button
-                variant="ghost"
-                onClick={() => setIsYearly(false)}
-                className={cn(
-                  "rounded-full px-4 py-1.5 text-sm font-medium transition-all",
-                  !isYearly
-                    ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                    : "text-gray-600 hover:bg-gray-100",
-                )}
-              >
-                Monthly
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setIsYearly(true)}
-                className={cn(
-                  "relative rounded-full px-4 py-1.5 text-sm font-medium transition-all",
-                  isYearly
-                    ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                    : "text-gray-600 hover:bg-gray-100",
-                )}
-              >
-                Yearly{" "}
-                <span
+              <motion.div layout className="relative">
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsYearly(false)}
                   className={cn(
-                    "ml-1 text-blue-500 font-medium transition-all",
-                    isYearly ? "opacity-100" : "opacity-40",
+                    "rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+                    !isYearly
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
+                      : "text-gray-600 hover:bg-gray-100",
                   )}
                 >
-                  -20%
-                </span>
-              </Button>
+                  Monthly
+                </Button>
+              </motion.div>
+              <motion.div className="relative">
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsYearly(true)}
+                  className={cn(
+                    "relative rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+                    isYearly
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
+                      : "text-gray-600 hover:bg-gray-100",
+                  )}
+                >
+                  Yearly
+                  <AnimatePresence mode="wait">
+                    {isYearly && (
+                      <motion.div
+                        className="inline-flex items-center overflow-hidden"
+                        initial={{ width: 0, marginLeft: 0 }}
+                        animate={{ width: "auto", marginLeft: "0.5rem" }}
+                        exit={{ width: 0, marginLeft: 0 }}
+                        transition={{
+                          duration: 0.2,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <motion.span
+                          className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-600 whitespace-nowrap"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{
+                            duration: 0.1,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          2 months free
+                        </motion.span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </motion.div>
             </motion.div>
           </div>
 
