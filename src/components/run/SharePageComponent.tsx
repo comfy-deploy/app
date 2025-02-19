@@ -317,9 +317,11 @@ function RunRow({
         <p className="font-mono text-2xs text-muted-foreground">
           #{run.id.slice(0, 6)}
         </p>
-        <Badge className="w-fit rounded-[10px] text-xs">
-          {`v${versionData?.version}` || "N/A"}
-        </Badge>
+        {versionData?.version && (
+          <Badge className="w-fit rounded-[10px] text-xs">
+            {`v${versionData.version}`}
+          </Badge>
+        )}
         {run.gpu && (
           <Badge className="w-fit rounded-[10px] text-2xs text-gray-500">
             {run.gpu}
