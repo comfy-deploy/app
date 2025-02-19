@@ -37,6 +37,14 @@ function getButtonLabel(currentPlans: string[], targetPlan: string): string {
   const isOnYearlyPlan = currentPlans?.includes(`${planId}_yearly`);
   const isOnMonthlyPlan = currentPlans?.includes(`${planId}_monthly`);
 
+  console.log(
+    currentPlans,
+    planId,
+    isOnThisPlan,
+    isOnYearlyPlan,
+    isOnMonthlyPlan,
+  );
+
   if (isOnThisPlan) {
     // If viewing yearly tab and on yearly plan, or viewing monthly tab and on monthly plan
     if ((isYearly && isOnYearlyPlan) || (!isYearly && isOnMonthlyPlan)) {
@@ -49,7 +57,7 @@ function getButtonLabel(currentPlans: string[], targetPlan: string): string {
     }
 
     // If viewing monthly tab and on monthly plan, or viewing yearly tab
-    if (!isYearly && isOnMonthlyPlan) {
+    if (isYearly && isOnMonthlyPlan) {
       return "Switch to yearly";
     }
   }
@@ -62,33 +70,22 @@ function getButtonLabel(currentPlans: string[], targetPlan: string): string {
     return "Get Started";
   }
 
-  const wsPlanPriority: Record<string, number> = {
-    ws_basic: 1,
-    ws_pro: 2,
-  };
-
   const apiPlanPriority: Record<string, number> = {
     basic: 1,
     pro: 2,
-    enterprise: 3,
-    deployment: 4,
-    business: 5,
+    creator: 3,
+    enterprise: 4,
+    deployment: 5,
+    business: 6,
   };
 
   let currentPlanPriority = 0;
   let targetPlanPriority = 0;
 
-  if (planId.includes("ws")) {
-    currentPlanPriority = Math.max(
-      ...currentPlans.map((plan) => wsPlanPriority[plan.split("_")[0]] || 0),
-    );
-    targetPlanPriority = wsPlanPriority[planId];
-  } else {
-    currentPlanPriority = Math.max(
-      ...currentPlans.map((plan) => apiPlanPriority[plan.split("_")[0]] || 0),
-    );
-    targetPlanPriority = apiPlanPriority[planId];
-  }
+  currentPlanPriority = Math.max(
+    ...currentPlans.map((plan) => apiPlanPriority[plan.split("_")[0]] || 0),
+  );
+  targetPlanPriority = apiPlanPriority[planId];
 
   if (targetPlanPriority > currentPlanPriority) {
     return "Upgrade";
@@ -250,7 +247,8 @@ export function UpgradeButton(props: PlanButtonProps) {
             }}
           >
             {isCustom ? "Book a call" : label}
-            {label?.toLowerCase().includes("manage") && (
+            {(label?.toLowerCase().includes("manage") ||
+              label?.toLowerCase().includes("switch")) && (
               <Badge variant="cyan" className="ml-2 group-hover:text-white">
                 Current plan
               </Badge>
