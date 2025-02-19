@@ -24,6 +24,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeButton } from "@/components/pricing/plan-button";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/pricing")({
   component: RouteComponent,
@@ -265,22 +267,26 @@ function PricingTier({
     return `$${amount * 10}`;
   };
 
+  // const { data: subscription } = useCurrentPlanWithStatus();
+  // const isCancelled = subscription?.cancel_at_period_end;
+  // const currentPlanMatchesTier = subscription?.plan?.startsWith(tier.id);
+
   return (
     <div className={cn("border-gray-200 flex flex-col", className)}>
       <div className="flex flex-1 flex-col">
         <div className="flex flex-1 flex-col p-4">
           <div>
             {tier.name !== "Free" && (
-              <h3 className="text-lg font-bold">{tier.name}</h3>
+              <h3 className="font-bold text-lg">{tier.name}</h3>
             )}
-            <div className="mt-1 flex items-baseline">
+            <div className="flex items-baseline mt-1">
               <AnimatePresence mode="wait">
                 <motion.span
                   key={isYearly ? "yearly" : "monthly"}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="text-3xl font-bold"
+                  className="font-bold text-3xl"
                 >
                   {getMonthlyPrice(tier.priceMonthly)}
                 </motion.span>
@@ -384,7 +390,7 @@ function PricingTier({
                   plan={`${tier.id}_${isYearly ? "yearly" : "monthly"}`}
                   href={`/checkout?plan=${tier.id}`}
                   plans={plans}
-                  className="rounded-none border-b-0 border-t border-x-0 p-6 transition-colors w-full hover:bg-gray-900 hover:text-white"
+                  className="border-b-0 border-t border-x-0 hover:bg-gray-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
                   trial={false}
                   allowCoupon={true}
                   data={{
@@ -395,12 +401,12 @@ function PricingTier({
                 />
                 <Button
                   asChild
-                  className="rounded-none border-b-0 border-t border-x-0 p-6 transition-colors w-full hover:bg-purple-900 hover:text-white"
+                  className="border-b-0 border-t border-x-0 hover:bg-purple-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
                   variant="outline"
                 >
                   <Link to="/onboarding-call" target="_blank">
                     Call with us
-                    <ExternalLink className="ml-2 h-4 w-4" />
+                    <ExternalLink className="h-4 ml-2 w-4" />
                   </Link>
                 </Button>
               </div>
@@ -409,7 +415,7 @@ function PricingTier({
                 plan={`${tier.id}_${isYearly ? "yearly" : "monthly"}`}
                 href={`/checkout?plan=${tier.id}`}
                 plans={plans}
-                className="rounded-none border-b-0 border-t border-x-0 p-6 transition-colors w-full hover:bg-gray-900 hover:text-white"
+                className="border-b-0 border-t border-x-0 hover:bg-gray-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
                 trial={false}
                 allowCoupon={true}
                 data={{
@@ -544,6 +550,10 @@ function RouteComponent() {
   const { data: _sub, isLoading } = useCurrentPlanWithStatus();
   const [isYearly, setIsYearly] = useState(true);
 
+  console.log(_sub);
+
+  const isCancelled = _sub?.sub?.cancel_at_period_end;
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto pb-20">
@@ -559,6 +569,42 @@ function RouteComponent() {
 
         {/* Pricing Section */}
         <div className="relative mx-auto max-w-5xl">
+          {isCancelled && (
+            <div className="py-6 px-4 bg-yellow-50 border-b border-yellow-200 w-full">
+              <div className="flex items-start justify-between w-full max-w-5xl mx-auto">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-yellow-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.485 2.495c.873-1.562 3.157-1.562 4.03 0l6.28 11.25c.873 1.562-.217 3.505-2.015 3.505H4.22c-1.798 0-2.888-1.943-2.015-3.505l6.28-11.25zm1.515 4.755v4h-1v-4h1zm-1 6v-1h1v1h-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800">
+                      Plan Cancellation Notice
+                    </h3>
+                    <div className="mt-1 text-sm text-yellow-700">
+                      Your plan will be cancelled at the end of the billing
+                      period.
+                    </div>
+                  </div>
+                </div>
+                <UpgradeButton
+                  plan={_sub?.sub?.plan}
+                  href={`/checkout?plan=${_sub?.sub?.plan}`}
+                  plans={_sub?.plans?.plans ?? []}
+                  className="ml-8 flex-shrink-0"
+                />
+              </div>
+            </div>
+          )}
           {/* Billing period toggle - Positioned on top of pricing cards */}
           <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2">
             <motion.div
