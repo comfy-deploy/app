@@ -238,6 +238,17 @@ function RunRow({
   } = useQuery<any>({
     queryKey: ["run", _run?.id],
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+    refetchInterval: (query) => {
+      if (
+        query.state.data?.status === "running" ||
+        query.state.data?.status === "uploading" ||
+        query.state.data?.status === "not-started" ||
+        query.state.data?.status === "queued"
+      ) {
+        return 2000;
+      }
+      return false;
+    },
   });
   const [_, setRunId] = useQueryState("run-id");
 
