@@ -111,12 +111,14 @@ export function CreateWorkspaceDialog({
   open,
   setOpen,
   sessionMachineId,
-  setFirstCreateDialogOpen,
+  setFirstCreateDialogOpen, // for new workspace and new workflow
+  setDisplayCommit, // for new workspace but exist workflow
 }: {
   open: boolean;
   setOpen: (open: boolean) => void;
   sessionMachineId: string;
   setFirstCreateDialogOpen?: (open: boolean) => void;
+  setDisplayCommit?: (open: boolean) => void;
 }) {
   const { data: machine, refetch: refetchMachine } =
     useMachine(sessionMachineId);
@@ -124,6 +126,9 @@ export function CreateWorkspaceDialog({
   const match = useMatch({
     from: "/sessions/$sessionId/",
     shouldThrow: false,
+  });
+  const { workflowId } = useSearch({
+    from: "/sessions/$sessionId/",
   });
 
   const { refetch } = useQuery<any>({
@@ -173,7 +178,11 @@ export function CreateWorkspaceDialog({
                     },
                   );
                   if (setFirstCreateDialogOpen) {
-                    setFirstCreateDialogOpen(true);
+                    if (workflowId) {
+                      setDisplayCommit?.(true);
+                    } else {
+                      setFirstCreateDialogOpen(true);
+                    }
                   }
                 }}
               >
@@ -647,7 +656,8 @@ export function WorkflowButtons({
         open={isNewWorkspaceDialogOpen}
         setOpen={setIsNewWorkspaceDialogOpen}
         sessionMachineId={session?.machine_id}
-        setFirstCreateDialogOpen={setIsNewWorkflowOpen}
+        setFirstCreateDialogOpen={setIsNewWorkflowOpen} // for new workspace and new workflow
+        setDisplayCommit={setDisplayCommit} // for new workspace but exist workflow
       />
 
       <Dialog
