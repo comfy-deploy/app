@@ -15,7 +15,10 @@ import {
 } from "@/components/ui/tooltip";
 import { useSelectedVersion } from "@/components/version-select";
 import { LiveStatus } from "@/components/workflows/LiveStatus";
-import { OutputRenderRun } from "@/components/workflows/OutputRender";
+import {
+  getTotalUrlCountAndUrls,
+  OutputRenderRun,
+} from "@/components/workflows/OutputRender";
 import { RunsTableVirtualized } from "@/components/workflows/RunsTable";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { customInputNodes } from "@/lib/customInputNodes";
@@ -257,6 +260,8 @@ function RunRow({
     queryKey: ["workflow-version", run?.workflow_version_id],
   });
 
+  const { total: totalUrlCount } = getTotalUrlCountAndUrls(run?.outputs || []);
+
   const DisplayInputs = ({
     title,
     input,
@@ -349,7 +354,9 @@ function RunRow({
         )}
       >
         {run.origin === "manual" && run.user_id ? (
-          <UserIcon user_id={run.user_id} />
+          <div className="flex flex-col gap-2">
+            <UserIcon user_id={run.user_id} />
+          </div>
         ) : (
           <div className="flex flex-col gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -360,7 +367,10 @@ function RunRow({
         )}
         <div
           className={cn(
-            "flex h-full max-w-[1400px] flex-wrap rounded-[12px] border drop-shadow-md",
+            "flex h-full min-w-[240px] max-w-[1400px] flex-wrap rounded-[12px] border drop-shadow-md",
+            totalUrlCount === 1 && "w-[240px] xl:w-auto",
+            totalUrlCount === 2 && "w-[475px] xl:w-auto",
+            totalUrlCount === 3 && "w-[710px] xl:w-auto",
             (() => {
               switch (run.status) {
                 case "failed":

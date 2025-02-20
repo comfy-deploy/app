@@ -157,57 +157,28 @@ function FileURLRenderMulti({
   const [openOnIndex, setOpenOnIndex] = useState<number | null>(null);
 
   if (!canExpandToView) {
+    if (columns > 1) {
+      return (
+        <div className={cn("grid grid-cols-1 gap-2", `grid-cols-${columns}`)}>
+          {urls.map((url, i) => (
+            <FileURLRender key={i} url={url.url} imgClasses={imgClasses} />
+          ))}
+        </div>
+      );
+    }
+
     return (
-      <div className={cn("grid grid-cols-1 gap-2", `grid-cols-${columns}`)}>
+      <>
         {urls.map((url, i) => (
           <FileURLRender key={i} url={url.url} imgClasses={imgClasses} />
         ))}
-      </div>
+      </>
     );
   }
 
-  return (
-    <>
-      <Dialog
-        open={openOnIndex !== null}
-        onOpenChange={() => setOpenOnIndex(null)}
-      >
-        <DialogContent className="max-h-fit max-w-fit">
-          <DialogHeader>
-            <DialogTitle />
-          </DialogHeader>
-          {urls.length === 1 && (
-            <FileURLRender
-              url={urls[0].url}
-              imgClasses="max-w-full rounded-[8px] max-h-[80vh]"
-              lazyLoading={lazyLoading}
-            />
-          )}
-          {urls.length > 1 && (
-            <Carousel className=" mx-9" opts={{ startIndex: openOnIndex || 0 }}>
-              <CarouselContent>
-                {urls.map((image, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="flex aspect-square max-h-[80vh] max-w-full items-center justify-center"
-                  >
-                    <FileURLRender
-                      url={image.url}
-                      imgClasses="max-w-full rounded-[8px] max-h-[80vh]"
-                      lazyLoading={lazyLoading}
-                    />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <>
-                <CarouselPrevious />
-                <CarouselNext />
-              </>
-            </Carousel>
-          )}
-        </DialogContent>
-      </Dialog>
-      <div className={cn("grid grid-cols-1 gap-2", `grid-cols-${columns}`)}>
+  const ImageList = () => {
+    return (
+      <>
         {urls.map((_, i) => {
           const urlImage = urls[i];
 
@@ -266,7 +237,58 @@ function FileURLRenderMulti({
             </button>
           );
         })}
-      </div>
+      </>
+    );
+  };
+
+  return (
+    <>
+      <Dialog
+        open={openOnIndex !== null}
+        onOpenChange={() => setOpenOnIndex(null)}
+      >
+        <DialogContent className="max-h-fit max-w-fit">
+          <DialogHeader>
+            <DialogTitle />
+          </DialogHeader>
+          {urls.length === 1 && (
+            <FileURLRender
+              url={urls[0].url}
+              imgClasses="max-w-full rounded-[8px] max-h-[80vh]"
+              lazyLoading={lazyLoading}
+            />
+          )}
+          {urls.length > 1 && (
+            <Carousel className=" mx-9" opts={{ startIndex: openOnIndex || 0 }}>
+              <CarouselContent>
+                {urls.map((image, index) => (
+                  <CarouselItem
+                    key={index}
+                    className="flex aspect-square max-h-[80vh] max-w-full items-center justify-center"
+                  >
+                    <FileURLRender
+                      url={image.url}
+                      imgClasses="max-w-full rounded-[8px] max-h-[80vh]"
+                      lazyLoading={lazyLoading}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <>
+                <CarouselPrevious />
+                <CarouselNext />
+              </>
+            </Carousel>
+          )}
+        </DialogContent>
+      </Dialog>
+      {columns > 1 ? (
+        <div className={cn("grid grid-cols-1 gap-2", `grid-cols-${columns}`)}>
+          <ImageList />
+        </div>
+      ) : (
+        <ImageList />
+      )}
     </>
   );
 }
