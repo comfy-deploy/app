@@ -12,6 +12,8 @@ import {
 } from "./workflows/$workflowId/$view.lazy";
 import { useState } from "react";
 import { queryClient } from "@/lib/providers";
+import { cn } from "@/lib/utils";
+import { getEnvColor } from "@/components/workspace/ContainersTable";
 
 const getAllDeploymentsOptions = queryOptions({
   queryKey: ["deployments"],
@@ -57,14 +59,8 @@ function RouteComponent() {
                   key={deployment.id}
                   className="flex w-full cursor-pointer items-center justify-between gap-2 p-2 hover:bg-gray-50"
                   onClick={() => {
-                    if (
-                      deployment.environment === "production" ||
-                      deployment.environment === "staging" ||
-                      deployment.environment === "public-share"
-                    ) {
-                      setSelectedDeployment(deployment.id);
-                      setSelectedWorkflowId(workflowId);
-                    }
+                    setSelectedDeployment(deployment.id);
+                    setSelectedWorkflowId(workflowId);
                   }}
                 >
                   <div className="flex w-full items-center gap-2">
@@ -85,13 +81,7 @@ function RouteComponent() {
                       versionId={deployment.workflow_version_id}
                       className="py-0 text-xs"
                     />
-                    <Badge
-                      variant={
-                        deployment.environment === "production"
-                          ? "green"
-                          : "amber"
-                      }
-                    >
+                    <Badge className={cn(getEnvColor(deployment.environment))}>
                       {deployment.environment}
                     </Badge>
                   </div>

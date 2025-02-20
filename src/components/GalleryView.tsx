@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { RunDetails } from "./workflows/WorkflowComponent";
+import { MyDrawer } from "./drawer";
+import { useQueryState } from "nuqs";
 
 type GalleryViewProps = {
   workflowID: string;
@@ -75,6 +78,8 @@ function GalleryImage({ outputUrl }: { outputUrl: string }) {
 export function GalleryView({ workflowID }: GalleryViewProps) {
   const query = useGalleryData(workflowID);
   const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
+  const [runId, setRunId] = useQueryState("run-id");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -94,6 +99,16 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
     return () => observer.disconnect();
   }, [query.hasNextPage, query.isFetching, query.fetchNextPage]);
 
+  useEffect(() => {
+    console.log("runId", runId);
+    setIsDrawerOpen(!!runId);
+  }, [runId]);
+
+  const handleCloseRun = () => {
+    setRunId(null);
+    setIsDrawerOpen(false);
+  };
+
   if (query.isLoading) {
     return (
       <div className="mx-auto w-full max-w-[1200px]">
@@ -103,74 +118,83 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1200px]">
-      <div className="m-4 columns-2 gap-0.5 overflow-clip rounded-xl sm:columns-3 lg:columns-4">
-        {query.data?.pages.flat().map((page) => {
-          const outputUrl =
-            page.data?.images?.[0]?.url ||
-            page.data?.gifs?.[0]?.url ||
-            page.data?.mesh?.[0]?.url ||
-            "";
+    <>
+      <div className="mx-auto w-full max-w-[1200px]">
+        <div className="m-4 columns-2 gap-0.5 overflow-clip rounded-xl sm:columns-3 lg:columns-4">
+          {query.data?.pages.flat().map((page) => {
+            const outputUrl =
+              page.data?.images?.[0]?.url ||
+              page.data?.gifs?.[0]?.url ||
+              page.data?.mesh?.[0]?.url ||
+              "";
 
-          const totalTime =
-            Math.round((page.run_duration + page.queue_time) * 10) / 10;
+            const totalTime =
+              Math.round((page.run_duration + page.queue_time) * 10) / 10;
 
-          return (
-            <Link
-              key={page.output_id}
-              className="group relative cursor-pointer"
-              to="/workflows/$workflowId/$view"
-              params={{
-                workflowId: workflowID,
-                view: "requests",
-              }}
-              search={{
-                "run-id": page.run_id,
-              }}
-            >
-              <GalleryImage outputUrl={outputUrl} />
-              <div className="absolute bottom-0 left-0 w-full rounded-b-[4px] bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                <div className="flex items-center justify-between px-4 py-3 drop-shadow-md">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white/90 text-xs">{totalTime}s</span>
-                    {page.data?.images?.[0]?.filename && (
-                      <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] text-white/90">
-                        {page.data?.images?.[0]?.filename}
+            return (
+              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+              <div
+                key={page.output_id}
+                className="group relative cursor-pointer"
+                onClick={() => {
+                  setRunId(page.run_id);
+                  setIsDrawerOpen(true);
+                }}
+              >
+                <GalleryImage outputUrl={outputUrl} />
+                <div className="absolute bottom-0 left-0 w-full rounded-b-[4px] bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <div className="flex items-center justify-between px-4 py-3 drop-shadow-md">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/90 text-xs">
+                        {totalTime}s
                       </span>
-                    )}
+                      {page.data?.images?.[0]?.filename && (
+                        <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] text-white/90">
+                          {page.data?.images?.[0]?.filename}
+                        </span>
+                      )}
+                    </div>
+                    <Search className="h-3.5 w-3.5 text-white/90" />
                   </div>
-                  <Search className="h-3.5 w-3.5 text-white/90" />
                 </div>
               </div>
-            </Link>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
 
-      <div className="fixed top-0 left-0 h-20 w-full bg-gradient-to-b from-white to-transparent" />
+        <div className="fixed top-0 left-0 h-20 w-full bg-gradient-to-b from-white to-transparent" />
 
-      <div className="flex items-center justify-center gap-2 pb-4">
-        {query.hasNextPage ? (
-          <Button
-            ref={loadMoreButtonRef}
-            variant="outline"
-            onClick={() => query.fetchNextPage()}
-            disabled={!query.hasNextPage || query.isFetching}
-          >
-            {query.isFetching
-              ? "Loading..."
-              : query.hasNextPage
-                ? "Load More"
-                : "No More Results"}
-          </Button>
-        ) : (
-          <div className="mt-2 border-gray-200 border-t-2 pt-2">
-            <span className="text-muted-foreground text-xs">
-              Total: {query.data?.pages.flat().length} results
-            </span>
-          </div>
-        )}
+        <div className="flex items-center justify-center gap-2 pb-4">
+          {query.hasNextPage ? (
+            <Button
+              ref={loadMoreButtonRef}
+              variant="outline"
+              onClick={() => query.fetchNextPage()}
+              disabled={!query.hasNextPage || query.isFetching}
+            >
+              {query.isFetching
+                ? "Loading..."
+                : query.hasNextPage
+                  ? "Load More"
+                  : "No More Results"}
+            </Button>
+          ) : (
+            <div className="mt-2 border-gray-200 border-t-2 pt-2">
+              <span className="text-muted-foreground text-xs">
+                Total: {query.data?.pages.flat().length} results
+              </span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      <MyDrawer
+        desktopClassName="w-[600px] ring-1 ring-gray-200"
+        backgroundInteractive={true}
+        open={isDrawerOpen}
+        onClose={handleCloseRun}
+      >
+        {runId && <RunDetails run_id={runId} onClose={handleCloseRun} />}
+      </MyDrawer>
+    </>
   );
 }

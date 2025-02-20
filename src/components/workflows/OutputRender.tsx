@@ -137,6 +137,7 @@ function FileURLRenderMulti({
   canExpandToView,
   lazyLoading,
   canDownload,
+  columns = 1,
 }: {
   urls: {
     url: string;
@@ -151,10 +152,21 @@ function FileURLRenderMulti({
   canExpandToView: boolean;
   lazyLoading: boolean;
   canDownload: boolean;
+  columns?: number;
 }) {
   const [openOnIndex, setOpenOnIndex] = useState<number | null>(null);
 
   if (!canExpandToView) {
+    if (columns > 1) {
+      return (
+        <div className={cn("grid grid-cols-1 gap-2", `grid-cols-${columns}`)}>
+          {urls.map((url, i) => (
+            <FileURLRender key={i} url={url.url} imgClasses={imgClasses} />
+          ))}
+        </div>
+      );
+    }
+
     return (
       <>
         {urls.map((url, i) => (
@@ -163,6 +175,71 @@ function FileURLRenderMulti({
       </>
     );
   }
+
+  const ImageList = () => {
+    return (
+      <>
+        {urls.map((_, i) => {
+          const urlImage = urls[i];
+
+          return (
+            <button
+              key={i}
+              type="button"
+              className="group/item relative flex overflow-clip rounded-[8px] "
+              onClick={() => {
+                setOpenOnIndex(i);
+              }}
+            >
+              <Skeleton className={cn("aspect-square min-w-[230px]")} />
+              <FileURLRender
+                url={urlImage.url}
+                imgClasses={cn(
+                  imgClasses,
+                  "absolute top-0 left-0 pointer-events-none",
+                )}
+                lazyLoading={lazyLoading}
+              />
+
+              {urlImage.upload_duration && (
+                <Badge className="absolute top-2 left-2 text-white opacity-0 transition-all duration-300 group-hover/item:bg-black group-hover/item:opacity-100">
+                  Upload time:{" "}
+                  {Math.round(urlImage.upload_duration * 100) / 100}s
+                </Badge>
+              )}
+
+              {urlImage.node_meta && (
+                <Badge className="absolute bottom-2 left-2 text-white opacity-0 transition-all duration-300 group-hover/item:bg-black/25 group-hover/item:opacity-100">
+                  {urlImage.node_meta.node_class}
+                </Badge>
+              )}
+
+              {canDownload && (
+                <Button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const url = urlImage;
+                    const a = document.createElement("a");
+                    a.href = url.url;
+                    a.download = `ComfyImage_${i}`;
+                    a.target = "_blank";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                  }}
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-black bg-opacity-50 text-white opacity-0 transition-all duration-300 hover:bg-black hover:bg-opacity-70 hover:text-white group-hover/item:opacity-100"
+                >
+                  <Download size={16} />
+                </Button>
+              )}
+            </button>
+          );
+        })}
+      </>
+    );
+  };
 
   return (
     <>
@@ -205,63 +282,13 @@ function FileURLRenderMulti({
           )}
         </DialogContent>
       </Dialog>
-      {urls.map((_, i) => {
-        const urlImage = urls[i];
-
-        return (
-          <button
-            key={i}
-            type="button"
-            className="group/item relative flex overflow-clip rounded-[8px] "
-            onClick={() => {
-              setOpenOnIndex(i);
-            }}
-          >
-            <Skeleton className={cn("aspect-square min-w-[230px]")} />
-            <FileURLRender
-              url={urlImage.url}
-              imgClasses={cn(
-                imgClasses,
-                "absolute top-0 left-0 pointer-events-none",
-              )}
-              lazyLoading={lazyLoading}
-            />
-
-            {urlImage.upload_duration && (
-              <Badge className="absolute top-2 left-2 text-white opacity-0 transition-all duration-300 group-hover/item:bg-black group-hover/item:opacity-100">
-                Upload time: {Math.round(urlImage.upload_duration * 100) / 100}s
-              </Badge>
-            )}
-
-            {urlImage.node_meta && (
-              <Badge className="absolute bottom-2 left-2 text-white opacity-0 transition-all duration-300 group-hover/item:bg-black/25 group-hover/item:opacity-100">
-                {urlImage.node_meta.node_class}
-              </Badge>
-            )}
-
-            {canDownload && (
-              <Button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  const url = urlImage;
-                  const a = document.createElement("a");
-                  a.href = url.url;
-                  a.download = `ComfyImage_${i}`;
-                  a.target = "_blank";
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                }}
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 bg-black bg-opacity-50 text-white opacity-0 transition-all duration-300 hover:bg-black hover:bg-opacity-70 hover:text-white group-hover/item:opacity-100"
-              >
-                <Download size={16} />
-              </Button>
-            )}
-          </button>
-        );
-      })}
+      {columns > 1 ? (
+        <div className={cn("grid grid-cols-1 gap-2", `grid-cols-${columns}`)}>
+          <ImageList />
+        </div>
+      ) : (
+        <ImageList />
+      )}
     </>
   );
 }
@@ -310,6 +337,7 @@ export function OutputRenderRun({
   lazyLoading = false,
   canExpandToView = false,
   canDownload = false,
+  columns = 1,
   displayCount,
 }: {
   run: any;
@@ -318,6 +346,7 @@ export function OutputRenderRun({
   canExpandToView?: boolean;
   canDownload?: boolean;
   displayCount?: number;
+  columns?: number;
 }) {
   const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
     run.outputs || [],
@@ -335,6 +364,7 @@ export function OutputRenderRun({
       canExpandToView={canExpandToView}
       lazyLoading={lazyLoading}
       canDownload={canDownload}
+      columns={columns}
     />
   );
 }

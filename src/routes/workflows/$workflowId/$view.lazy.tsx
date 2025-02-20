@@ -133,9 +133,6 @@ function WorkflowPageComponent() {
   );
 
   useEffect(() => {
-    if (currentView === "gallery") {
-      return;
-    }
     setMountedViews((prev) => {
       const newSet = new Set(prev);
       newSet.add(currentView);

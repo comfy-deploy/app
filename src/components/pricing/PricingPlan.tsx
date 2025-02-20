@@ -333,9 +333,21 @@ export function PricingList(props: { trial?: boolean }) {
 
   const ready = search?.ready;
 
+  const plansMapping = _sub?.plans?.plans
+    ? _sub?.plans?.plans?.map((plan: string) => {
+        if (plan.includes("monthly")) {
+          return plan.replace("_monthly", "");
+        }
+        if (plan.includes("yearly")) {
+          return plan.replace("_yearly", "");
+        }
+        return plan;
+      })
+    : [];
+
   useEffect(() => {
-    if (!ready && _sub?.plans?.plans) {
-      setPlans(_sub?.plans?.plans ?? []);
+    if (!ready && plansMapping) {
+      setPlans(plansMapping ?? []);
     }
 
     if (ready) {
@@ -344,8 +356,12 @@ export function PricingList(props: { trial?: boolean }) {
   }, [_sub, ready]);
 
   const isOldProPlan = plans.includes("pro"); // $20
-  const isOldBusinessPlan = plans.includes("creator"); // $100
-  const isNewBusinessPlan = plans.includes("business"); // $998
+  const isOldBusinessPlan = plans.some((plan) =>
+    ["creator", "creator_monthly", "creator_yearly"].includes(plan),
+  ); // $100
+  const isNewBusinessPlan = plans.some((plan) =>
+    ["business", "business_monthly", "business_yearly"].includes(plan),
+  ); // $998
 
   // isOldBusinessPlan = true;
 
@@ -447,11 +463,11 @@ export function PricingList(props: { trial?: boolean }) {
               trial={props.trial}
               className="mt-2 w-full"
               plan={tier.id as any}
-              plans={_sub?.plans?.plans}
+              plans={plansMapping}
               href={`/api/stripe/checkout?plan=${tier.id}`}
               allowCoupon
             />
-            {_sub?.plans?.plans.includes(tier.id as any) &&
+            {plansMapping.includes(tier.id as any) &&
               _sub?.plans?.cancel_at_period_end && (
                 <div className="mt-2 text-muted-foreground text-sm">
                   Cancelling at the end of your current billing period.
@@ -619,11 +635,11 @@ export function PricingList(props: { trial?: boolean }) {
                       trial={props.trial}
                       className="mt-2 w-full"
                       plan={tier.id as any}
-                      plans={_sub?.plans?.plans}
+                      plans={plansMapping}
                       href={`/api/stripe/checkout?plan=${tier.id}`}
                       allowCoupon
                     />
-                    {_sub?.plans?.plans.includes(tier.id as any) &&
+                    {plansMapping.includes(tier.id as any) &&
                       _sub?.plans?.cancel_at_period_end && (
                         <div className="mt-2 text-muted-foreground text-sm">
                           Cancelling at the end of your current billing period.

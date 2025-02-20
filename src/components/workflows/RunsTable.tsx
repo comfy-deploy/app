@@ -479,12 +479,15 @@ function OutputPreview(props: {
     run.outputs || [],
   );
 
-  const urlsToDisplay = 2 && urlList.length > 0 ? urlList.slice(0, 2) : urlList;
+  const MAX_DISPLAY = 2;
+  const urlsToDisplay =
+    urlList.length > 0 ? urlList.slice(0, MAX_DISPLAY) : urlList;
+  const remainingCount = urlList.length - MAX_DISPLAY;
 
   if (urlsToDisplay.length === 0) return null;
 
   return (
-    <div className="flex flex-row gap-2">
+    <div className="flex flex-row items-center gap-2">
       {urlsToDisplay.map((url) => (
         <div key={url.url}>
           <img
@@ -494,6 +497,11 @@ function OutputPreview(props: {
           />
         </div>
       ))}
+      {remainingCount > 0 && (
+        <div className="ml-1 text-2xs text-muted-foreground">
+          +{remainingCount} more
+        </div>
+      )}
     </div>
   );
 }

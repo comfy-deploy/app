@@ -246,12 +246,15 @@ export function RunDetails(props: {
             value="outputs"
             className="flex w-fit flex-col justify-start gap-2"
           >
-            <OutputRenderRun
-              run={run as any}
-              imgClasses="max-w-full min-h-[230px] object-cover rounded-[8px]å"
-              canExpandToView={true}
-              canDownload={true}
-            />
+            <ScrollArea className="h-[calc(100vh-380px)]">
+              <OutputRenderRun
+                run={run as any}
+                imgClasses="max-w-full min-h-[230px] object-cover rounded-[8px]"
+                canExpandToView={true}
+                canDownload={true}
+                columns={2}
+              />
+            </ScrollArea>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="link" className="flex items-center gap-2">

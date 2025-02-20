@@ -15,7 +15,10 @@ import {
 } from "@/components/ui/tooltip";
 import { useSelectedVersion } from "@/components/version-select";
 import { LiveStatus } from "@/components/workflows/LiveStatus";
-import { OutputRenderRun } from "@/components/workflows/OutputRender";
+import {
+  getTotalUrlCountAndUrls,
+  OutputRenderRun,
+} from "@/components/workflows/OutputRender";
 import { RunsTableVirtualized } from "@/components/workflows/RunsTable";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { customInputNodes } from "@/lib/customInputNodes";
@@ -23,7 +26,7 @@ import { getRelativeTime } from "@/lib/get-relative-time";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Forward, Pencil, User } from "lucide-react";
+import { Forward, Pencil, Play, User } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 // import Markdown from "react-markdown";
@@ -41,6 +44,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Fab } from "../fab";
+import { MyDrawer } from "../drawer";
 
 export function Playground(props: {
   title?: ReactNode;
@@ -48,6 +53,8 @@ export function Playground(props: {
 }) {
   const workflow_id = useWorkflowIdInWorkflowPage();
   const [runId, setRunId] = useQueryState("run-id");
+  const [showRunInputsMobileLayout, setShowRunInputsMobileLayout] =
+    useState(false);
   const { data: run, isLoading: isRunLoading } = useQuery({
     enabled: !!runId,
     queryKey: ["run", runId],
@@ -84,91 +91,131 @@ export function Playground(props: {
   }, [runId, run]);
 
   return (
-    <div className="grid h-full w-full grid-rows-[1fr,1fr] gap-4 pt-4 lg:grid-cols-[1fr,minmax(auto,500px)]">
-      <div className="flex flex-col gap-4">
-        <div className="rounded-sm ring-1 ring-gray-200">
-          <RunsTableVirtualized
-            className="h-[calc(100vh-7rem)]"
-            workflow_id={workflow_id}
-            itemHeight={400}
-            RunRowComponent={RunRow}
-            setInputValues={setDefaultValues}
-          />
+    <>
+      <div className="grid h-full w-full grid-rows-[1fr,1fr] gap-4 pt-4 lg:grid-cols-[1fr,minmax(auto,500px)]">
+        <div className="flex flex-col gap-4">
+          <div className="rounded-sm ring-1 ring-gray-200">
+            <RunsTableVirtualized
+              className="fab-playground h-[calc(100vh-7rem)]"
+              workflow_id={workflow_id}
+              itemHeight={400}
+              RunRowComponent={RunRow}
+              setInputValues={setDefaultValues}
+            />
+          </div>
         </div>
+
+        <Card className="h-fit w-full">
+          {props.title}
+
+          <CardContent className="flex w-full flex-col gap-4 px-3 py-2">
+            <InputLayout
+              deployment={deployment}
+              setSelectedDeployment={setSelectedDeployment}
+              deployments={deployments}
+              default_values={default_values}
+              runOrigin={props.runOrigin}
+            />
+          </CardContent>
+        </Card>
+
+        <AssetsBrowserPopup />
       </div>
 
-      <Card className="h-fit w-full">
-        {props.title}
+      <Fab
+        refScrollingContainerKey="fab-playground"
+        className="lg:hidden"
+        mainItem={{
+          onClick: () =>
+            setShowRunInputsMobileLayout(!showRunInputsMobileLayout),
+          name: "Queue run",
+          icon: Play,
+        }}
+      />
 
-        <CardContent className="flex w-full flex-col gap-4 px-3 py-2">
-          <Tabs defaultValue="regular">
-            <TabsContent value="regular">
-              <Select
-                value={deployment?.id}
-                defaultValue={deployment?.id}
-                onValueChange={(value) => {
-                  const deployment = deployments?.find((d) => d.id === value);
-                  if (deployment) {
-                    setSelectedDeployment(deployment.id);
-                  }
-                }}
+      {showRunInputsMobileLayout && (
+        <MyDrawer
+          open={showRunInputsMobileLayout}
+          backgroundInteractive={true}
+          onClose={() => setShowRunInputsMobileLayout(false)}
+          desktopClassName="w-[500px] lg:hidden shadow-lg border border-gray-200"
+        >
+          <InputLayout
+            deployment={deployment}
+            setSelectedDeployment={setSelectedDeployment}
+            deployments={deployments}
+            default_values={default_values}
+            runOrigin={props.runOrigin}
+          />
+        </MyDrawer>
+      )}
+    </>
+  );
+}
+
+function InputLayout({
+  deployment,
+  setSelectedDeployment,
+  deployments,
+  default_values,
+  runOrigin,
+}: {
+  deployment: any;
+  setSelectedDeployment: (deployment: any) => void;
+  deployments: any;
+  default_values: any;
+  runOrigin: string;
+}) {
+  return (
+    <Tabs defaultValue="regular">
+      <TabsContent value="regular">
+        <Select
+          value={deployment?.id}
+          defaultValue={deployment?.id}
+          onValueChange={(value) => {
+            const deployment = deployments?.find((d) => d.id === value);
+            if (deployment) {
+              setSelectedDeployment(deployment.id);
+            }
+          }}
+        >
+          <SelectTrigger className="mb-4 w-[200px] capitalize">
+            <SelectValue placeholder="Select deployment" />
+          </SelectTrigger>
+          <SelectContent>
+            {deployments?.map((deployment) => (
+              <SelectItem
+                key={deployment.id}
+                value={deployment.id}
+                className="flex items-center justify-between capitalize"
               >
-                <SelectTrigger className="mb-4 w-[200px] capitalize">
-                  <SelectValue placeholder="Select deployment" />
-                </SelectTrigger>
-                <SelectContent>
-                  {deployments?.map((deployment) => (
-                    <SelectItem
-                      key={deployment.id}
-                      value={deployment.id}
-                      className="flex items-center justify-between capitalize"
-                    >
-                      {/* <span>{deployment.environment}</span> */}
-                      <Badge
-                        variant="outline"
-                        className={cn(getEnvColor(deployment.environment))}
-                      >
-                        {deployment.environment}
-                      </Badge>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {deployment && (
-                <RunWorkflowInline
-                  blocking={false}
-                  default_values={default_values}
-                  inputs={deployment?.input_types}
-                  runOrigin={props.runOrigin}
-                  deployment_id={deployment?.id}
-                />
-              )}
-              {!deployment && (
-                <div className="flex flex-col gap-2 text-center text-muted-foreground text-sm">
-                  <p>No deployment selected</p>
-                </div>
-              )}
-            </TabsContent>
-            {/* <TabsContent value="batch">
-              <BatchRequestForm
-                init_inputs={props.inputs}
-                default_values={default_values}
-                machine_id={
-                  props.machine_id ?? sharedDeployment?.machine_id ?? ""
-                }
-                workflow_version_id={
-                  props.workflow_version_id ??
-                  sharedDeployment?.workflow_version_id ??
-                  ""
-                }
-              />
-            </TabsContent> */}
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      <AssetsBrowserPopup />
-    </div>
+                {/* <span>{deployment.environment}</span> */}
+                <Badge
+                  variant="outline"
+                  className={cn(getEnvColor(deployment.environment))}
+                >
+                  {deployment.environment}
+                </Badge>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {deployment && (
+          <RunWorkflowInline
+            blocking={false}
+            default_values={default_values}
+            inputs={deployment?.input_types}
+            runOrigin={runOrigin}
+            deployment_id={deployment?.id}
+          />
+        )}
+        {!deployment && (
+          <div className="flex flex-col gap-2 text-center text-muted-foreground text-sm">
+            <p>No deployment selected</p>
+          </div>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
 
@@ -238,13 +285,37 @@ function RunRow({
   } = useQuery<any>({
     queryKey: ["run", _run?.id],
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+    refetchInterval: (query) => {
+      if (
+        query.state.data?.status === "running" ||
+        query.state.data?.status === "uploading" ||
+        query.state.data?.status === "not-started" ||
+        query.state.data?.status === "queued"
+      ) {
+        return 2000;
+      }
+      return false;
+    },
   });
   const [_, setRunId] = useQueryState("run-id");
 
+  // const { data: userData } = useSWR(
+  //   `${run.user_id}/image`,
+  //   () => getClerkUserData(run.user_id || ""),
+  //   {
+  //     refreshInterval: 1000 * 60 * 5,
+  //   },
+  // );
+
+  // const { data: userData } = useQuery({
+  //   queryKey: ["user", run.user_id],
+  // });
   const { data: versionData } = useQuery<any>({
     enabled: !!run?.workflow_version_id,
     queryKey: ["workflow-version", run?.workflow_version_id],
   });
+
+  const { total: totalUrlCount } = getTotalUrlCountAndUrls(run?.outputs || []);
 
   const DisplayInputs = ({
     title,
@@ -317,9 +388,11 @@ function RunRow({
         <p className="font-mono text-2xs text-muted-foreground">
           #{run.id.slice(0, 6)}
         </p>
-        <Badge className="w-fit rounded-[10px] text-xs">
-          {`v${versionData?.version}` || "N/A"}
-        </Badge>
+        {versionData?.version && (
+          <Badge className="w-fit rounded-[10px] text-xs">
+            {`v${versionData.version}`}
+          </Badge>
+        )}
         {run.gpu && (
           <Badge className="w-fit rounded-[10px] text-2xs text-gray-500">
             {run.gpu}
@@ -336,7 +409,9 @@ function RunRow({
         )}
       >
         {run.origin === "manual" && run.user_id ? (
-          <UserIcon user_id={run.user_id} />
+          <div className="flex flex-col gap-2">
+            <UserIcon user_id={run.user_id} />
+          </div>
         ) : (
           <div className="flex flex-col gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -347,7 +422,10 @@ function RunRow({
         )}
         <div
           className={cn(
-            "flex h-full max-w-[1400px] flex-wrap rounded-[12px] border drop-shadow-md",
+            "flex h-full min-w-[240px] max-w-[1400px] flex-wrap rounded-[12px] border drop-shadow-md",
+            totalUrlCount === 1 && "w-[240px] xl:w-auto",
+            totalUrlCount === 2 && "w-[475px] xl:w-auto",
+            totalUrlCount === 3 && "w-[710px] xl:w-auto",
             (() => {
               switch (run.status) {
                 case "failed":
