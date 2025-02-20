@@ -575,11 +575,52 @@ function RequestPage({
       <div className="mx-auto flex h-full w-full max-w-screen-lg flex-col gap-2">
         <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)}>
           <div className="font-bold text-sm">Description</div>
-          <textarea
-            {...form.register("description")}
-            className="min-h-[100px] w-full rounded-md p-2 text-muted-foreground outline-none focus:bg-muted/50"
-            placeholder="Type a description for your workflow..."
-          />
+          <div className="flex flex-row gap-4">
+            <textarea
+              {...form.register("description")}
+              className="-ml-2 min-h-[100px] w-full rounded-md p-2 text-muted-foreground outline-none focus:bg-muted/50"
+              placeholder="Type a description for your workflow..."
+            />
+
+            <div className="group relative aspect-square w-[150px] shrink-0 overflow-hidden rounded-sm bg-gray-100">
+              {currentWorkflow?.cover_image ? (
+                <>
+                  <img
+                    src={currentWorkflow.cover_image}
+                    alt="Workflow cover"
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Link
+                      to={`/workflows/${workflowId}/gallery`}
+                      // @ts-expect-error
+                      search={{ action: "set-cover-image" }}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-black/20 group-hover:text-white"
+                      >
+                        Change
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  to={`/workflows/${workflowId}/gallery`}
+                  // @ts-expect-error
+                  search={{ action: "set-cover-image" }}
+                  className="flex h-full w-full flex-col items-center justify-center rounded-sm border-2 border-gray-200 border-dashed p-2"
+                >
+                  <ImageIcon className="h-6 w-6 text-gray-400" />
+                  <span className="text-center text-gray-400 text-xs">
+                    Upload cover
+                  </span>
+                </Link>
+              )}
+            </div>
+          </div>
         </form>
 
         <UnsavedChangesWarning

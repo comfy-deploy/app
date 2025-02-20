@@ -2,12 +2,31 @@ import { FileURLRender } from "@/components/workflows/OutputRender";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import {
+  AlertCircle,
+  Download,
+  Ellipsis,
+  Loader2,
+  Search,
+  X,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { RunDetails } from "./workflows/WorkflowComponent";
 import { MyDrawer } from "./drawer";
 import { useQueryState } from "nuqs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
+import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 type GalleryViewProps = {
   workflowID: string;
@@ -59,19 +78,74 @@ function GallerySkeleton() {
   );
 }
 
-function GalleryImage({ outputUrl }: { outputUrl: string }) {
+function GalleryImage({
+  outputUrl,
+  setRunId,
+  setIsDrawerOpen,
+  runId,
+}: {
+  outputUrl: string;
+  setRunId: (runId: string) => void;
+  setIsDrawerOpen: (isDrawerOpen: boolean) => void;
+  runId: string;
+}) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   return (
-    <FileURLRender
-      url={outputUrl}
-      lazyLoading={true}
-      imgClasses={cn(
-        "w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none min-h-[200px]",
-        !isLoaded && "aspect-square",
-      )}
-      onLoad={() => setIsLoaded(true)}
-    />
+    // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+    <div
+      className="group relative cursor-pointer"
+      onClick={() => {
+        setRunId(runId);
+        setIsDrawerOpen(true);
+      }}
+    >
+      <FileURLRender
+        url={outputUrl}
+        lazyLoading={true}
+        imgClasses={cn(
+          "w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none min-h-[200px]",
+          !isLoaded && "aspect-square",
+        )}
+        onLoad={() => setIsLoaded(true)}
+      />
+    </div>
+  );
+}
+
+function RenderAlert({
+  setShow,
+  variant,
+  title,
+  description,
+  bgColor,
+}: {
+  setShow: (show: boolean) => void;
+  variant: "warning" | "destructive" | "default";
+  title: string;
+  description: React.ReactNode;
+  bgColor: string;
+}) {
+  return (
+    <Alert variant={variant} className={`rounded-[10px] ${bgColor} relative`}>
+      <Button
+        onClick={() => setShow(false)}
+        className={`absolute top-1 right-1 p-1 hover:bg-${
+          variant === "destructive"
+            ? "red"
+            : variant === "warning"
+              ? "yellow"
+              : "gray"
+        }-100`}
+        variant="ghost"
+        size="icon"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+      <AlertCircle className="h-4 w-4" />
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>{description}</AlertDescription>
+    </Alert>
   );
 }
 
@@ -80,6 +154,10 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
   const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
   const [runId, setRunId] = useQueryState("run-id");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [loadingCoverId, setLoadingCoverId] = useState<string | null>(null);
+  const [coverImageNotified, setSetCoverImageNotified] =
+    useQueryState("action");
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -109,6 +187,27 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
     setIsDrawerOpen(false);
   };
 
+  const handleSetAsCoverImage = async (imageUrl: string) => {
+    setLoadingCoverId(runId);
+    try {
+      await callServerPromise(
+        api({
+          url: `workflow/${workflowID}`,
+          init: {
+            method: "PATCH",
+            body: JSON.stringify({
+              cover_image: imageUrl,
+            }),
+          },
+        }),
+      );
+      toast.success("Cover image updated!");
+    } finally {
+      setLoadingCoverId(null);
+      setOpenDropdownId(null);
+    }
+  };
+
   if (query.isLoading) {
     return (
       <div className="mx-auto w-full max-w-[1200px]">
@@ -120,6 +219,23 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
   return (
     <>
       <div className="mx-auto w-full max-w-[1200px]">
+        {coverImageNotified && (
+          <div className="m-4">
+            <RenderAlert
+              setShow={() => setSetCoverImageNotified(null)}
+              variant="default"
+              title="Set Cover Image"
+              description={
+                <p>
+                  To set a cover image for your workflow, hover over any image
+                  and click the <Ellipsis className="inline h-3.5 w-3.5" />{" "}
+                  menu, then select "Set as Cover Image".
+                </p>
+              }
+              bgColor="bg-blue-50 text-blue-900 border-blue-200"
+            />
+          </div>
+        )}
         <div className="m-4 columns-2 gap-0.5 overflow-clip rounded-xl sm:columns-3 lg:columns-4">
           {query.data?.pages.flat().map((page) => {
             const outputUrl =
@@ -132,16 +248,70 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
               Math.round((page.run_duration + page.queue_time) * 10) / 10;
 
             return (
-              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-              <div
-                key={page.output_id}
-                className="group relative cursor-pointer"
-                onClick={() => {
-                  setRunId(page.run_id);
-                  setIsDrawerOpen(true);
-                }}
-              >
-                <GalleryImage outputUrl={outputUrl} />
+              <div key={page.output_id} className="group relative">
+                <GalleryImage
+                  outputUrl={outputUrl}
+                  setRunId={setRunId}
+                  setIsDrawerOpen={setIsDrawerOpen}
+                  runId={page.run_id}
+                />
+                <div className="absolute top-0 right-0 w-full rounded-t-[4px] bg-gradient-to-t from-transparent to-black/70 p-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <div className="flex items-center justify-end">
+                    <DropdownMenu
+                      open={openDropdownId === page.run_id}
+                      onOpenChange={(isOpen) =>
+                        setOpenDropdownId(isOpen ? page.run_id : null)
+                      }
+                    >
+                      <DropdownMenuTrigger>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-transparent"
+                        >
+                          <Ellipsis className="h-3.5 w-3.5 text-white/90" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-52">
+                        {page.data?.images?.[0]?.filename && (
+                          <>
+                            <DropdownMenuLabel>
+                              {page.data?.images?.[0]?.filename}
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const a = document.createElement("a");
+                            a.href = outputUrl;
+                            a.download = page.data?.images?.[0]?.filename || "";
+                            a.click();
+                          }}
+                        >
+                          <div className="flex w-full items-center justify-between">
+                            Download <Download className="h-3.5 w-3.5" />
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={loadingCoverId === page.run_id}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            await handleSetAsCoverImage(outputUrl);
+                          }}
+                        >
+                          <div className="flex w-full items-center justify-between">
+                            Set as Cover Image
+                            {loadingCoverId === page.run_id && (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
                 <div className="absolute bottom-0 left-0 w-full rounded-b-[4px] bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                   <div className="flex items-center justify-between px-4 py-3 drop-shadow-md">
                     <div className="flex items-center gap-2">

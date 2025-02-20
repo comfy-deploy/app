@@ -30,6 +30,7 @@ import {
   Image,
   MoreHorizontal,
   PinIcon,
+  PinOff,
   Play,
   Workflow,
 } from "lucide-react";
@@ -419,10 +420,9 @@ function WorkflowCard({
       >
         <Card className="group relative flex aspect-square h-[320px] w-full flex-col overflow-hidden rounded-md">
           <div className="h-full w-full">
-            {latest_output?.images?.[0] && latest_output.images[0].url ? (
+            {workflow.cover_image || latest_output?.images?.[0]?.url ? (
               <FileURLRender
-                url={latest_output.images[0].url}
-                // alt={workflow.name}
+                url={workflow.cover_image || latest_output.images[0].url}
                 imgClasses="w-full h-full max-w-full max-h-full rounded-[8px] object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
               />
             ) : (
@@ -446,7 +446,14 @@ function WorkflowCard({
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-44"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                >
                   <DropdownMenuLabel>Workflow Actions</DropdownMenuLabel>
                   <DropdownMenuItem onClick={(e) => openRenameDialog(e)}>
                     Rename
@@ -482,6 +489,16 @@ function WorkflowCard({
                     Delete
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Link
+                      to={`/workflows/${workflow.id}/gallery`}
+                      // @ts-expect-error
+                      search={{ action: "set-cover-image" }}
+                      className="w-full"
+                    >
+                      Set Cover Image
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={async (e) => {
                       e.stopPropagation();
@@ -499,7 +516,14 @@ function WorkflowCard({
                       mutate();
                     }}
                   >
-                    {workflow.pinned ? "Unpin" : "Pin"}
+                    <div className="flex w-full items-center justify-between">
+                      {workflow.pinned ? "Unpin" : "Pin"}
+                      {workflow.pinned ? (
+                        <PinOff className="h-4 w-4 rotate-45" />
+                      ) : (
+                        <PinIcon className="h-4 w-4 rotate-45" />
+                      )}
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
