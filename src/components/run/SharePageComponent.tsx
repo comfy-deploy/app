@@ -299,6 +299,17 @@ function RunRow({
   });
   const [_, setRunId] = useQueryState("run-id");
 
+  // const { data: userData } = useSWR(
+  //   `${run.user_id}/image`,
+  //   () => getClerkUserData(run.user_id || ""),
+  //   {
+  //     refreshInterval: 1000 * 60 * 5,
+  //   },
+  // );
+
+  // const { data: userData } = useQuery({
+  //   queryKey: ["user", run.user_id],
+  // });
   const { data: versionData } = useQuery<any>({
     enabled: !!run?.workflow_version_id,
     queryKey: ["workflow-version", run?.workflow_version_id],

@@ -327,33 +327,50 @@ function ServerlessSettings({
   const handleSubmit = async (data: FormData) => {
     try {
       setIsLoading(true);
-      const { name, ...filteredData } = data;
-      const response = await api({
-        url: `machine/serverless/${machine.id}`,
-        init: {
-          method: "PATCH",
-          body: JSON.stringify(filteredData),
+      const { name, ...formData } = data;
+
+      // Create object with only changed values
+      const changedData = Object.keys(formData).reduce(
+        (acc, key) => {
+          const formValue = formData[key as keyof typeof formData];
+          const originalValue = machine[key];
+
+          // Only include if value has changed
+          if (formValue !== originalValue) {
+            acc[key] = formValue;
+          }
+          return acc;
         },
-      });
-      setIsFormDirty(false);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      toast.success("Updated successfully!");
-      navigate({
-        to: "/machines/$machineId/$machineVersionId",
-        params: {
-          machineId: machine.id,
-          machineVersionId: response.machine_version_id,
-        },
-      });
+        {} as Record<string, any>,
+      );
+
+      // Only make API call if there are changes
+      if (Object.keys(changedData).length > 0) {
+        const response = await callServerPromise(
+          api({
+            url: `machine/serverless/${machine.id}`,
+            init: {
+              method: "PATCH",
+              body: JSON.stringify(changedData),
+            },
+          }),
+        );
+        if (!("error" in response)) setIsFormDirty(false);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        navigate({
+          to: "/machines/$machineId/$machineVersionId",
+          params: {
+            machineId: machine.id,
+            machineVersionId: response.machine_version_id,
+          },
+        });
+      }
     } catch (error: any) {
       console.error("API Error:", error);
-      // If the error response contains validation details, show them
       if (error.response) {
         const errorData = await error.response.json();
         console.error("Validation errors:", errorData);
         toast.error(`Update failed: ${JSON.stringify(errorData, null, 2)}`);
-      } else {
-        toast.error("Failed to update!");
       }
     } finally {
       setIsLoading(false);

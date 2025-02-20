@@ -49,7 +49,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 // import { MachineSelect } from "@/components/MachineSelect";
 // import { useCurrentPlan } from "@/components/useCurrentPlan";
 import { motion } from "framer-motion";
-import React, { use, useEffect, useRef } from "react";
+import React, { use, useEffect, useRef, useState } from "react";
 import { VersionSelectV2 } from "./version-select";
 import { MachineSelect } from "./workspace/MachineSelect";
 
@@ -407,6 +407,8 @@ export function AppSidebar() {
           />
         )}
 
+        {!workflow_id && <V3Dialog />}
+
         <OrganizationSwitcher
           organizationProfileUrl="/organization-profile"
           organizationProfileMode="navigation"
@@ -421,5 +423,173 @@ export function AppSidebar() {
         />
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function V3Dialog() {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isOverflowVisible, setIsOverflowVisible] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const loadedImages = useRef(new Set());
+
+  const handleImageLoad = (imageSrc: string) => {
+    loadedImages.current.add(imageSrc);
+    if (loadedImages.current.size === 3) {
+      // We have 3 images total
+      setImagesLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (isHovered) {
+      timeoutId = setTimeout(() => {
+        setIsOverflowVisible(true);
+      }, 100);
+    } else {
+      setIsOverflowVisible(false);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [isHovered]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{
+        opacity: imagesLoaded ? 1 : 0,
+        y: imagesLoaded ? 0 : 10,
+      }}
+      transition={{ duration: 0.3, delay: 0.5 }}
+      className="group rounded-[8px] border bg-white p-3"
+    >
+      <Link
+        // @ts-ignore
+        to="https://comfydeploy.link/beta"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="flex flex-col gap-1 text-xs">
+          <div className="font-medium">Introducing New ComfyDeploy</div>
+          <div className="text-muted-foreground leading-5">
+            New Experience. New Platform. Same ComfyUI.
+          </div>
+
+          <motion.div
+            className="relative mt-2 rounded-[6px]"
+            animate={{
+              height: isHovered ? "150px" : "75px",
+            }}
+            style={{
+              overflow: isOverflowVisible ? "visible" : "hidden",
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              duration: 0.3,
+            }}
+          >
+            <div className="relative h-[75px]">
+              <motion.div
+                className="absolute w-full"
+                animate={{
+                  rotateZ: isHovered ? -5 : 0,
+                  x: isHovered ? -20 : 0,
+                  y: isHovered ? -10 : 0,
+                  scale: isHovered ? 0.95 : 1,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                }}
+              >
+                <img
+                  src="https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/third.webp"
+                  alt="Platform Preview 3"
+                  className="w-full rounded-[6px] border border-gray-200 object-cover shadow-lg"
+                  loading="lazy"
+                  onLoad={() => handleImageLoad("third.webp")}
+                />
+              </motion.div>
+
+              <motion.div
+                className="absolute w-full"
+                animate={{
+                  rotateZ: isHovered ? 0 : 0,
+                  x: isHovered ? 0 : 0,
+                  y: isHovered ? -5 : 0,
+                  scale: isHovered ? 0.97 : 1,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                }}
+              >
+                <img
+                  src="https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/second.webp"
+                  alt="Platform Preview 2"
+                  className="w-full rounded-[6px] border border-gray-200 object-cover shadow-lg"
+                  loading="lazy"
+                  onLoad={() => handleImageLoad("second.webp")}
+                />
+              </motion.div>
+
+              <motion.div
+                className="absolute w-full"
+                animate={{
+                  rotateZ: isHovered ? 5 : 0,
+                  x: isHovered ? 20 : 0,
+                  y: isHovered ? 0 : 0,
+                  scale: isHovered ? 1 : 1,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                }}
+              >
+                <img
+                  src="https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/first.webp"
+                  alt="Platform Preview 1"
+                  className="w-full rounded-[6px] border border-gray-200 object-cover shadow-lg"
+                  loading="lazy"
+                  onLoad={() => handleImageLoad("first.webp")}
+                />
+              </motion.div>
+            </div>
+
+            <motion.div
+              className="absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-b from-transparent to-white"
+              animate={{ opacity: isHovered ? 0 : 1 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+                duration: 0.3,
+              }}
+            />
+          </motion.div>
+          <motion.div
+            className="flex justify-end text-2xs text-muted-foreground underline"
+            animate={{
+              opacity: isHovered ? 1 : 0,
+              height: isHovered ? "auto" : "0px",
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              duration: 0.3,
+            }}
+          >
+            <span className="flex flex-row items-center gap-1">
+              Try it out <ExternalLink size={12} />
+            </span>
+          </motion.div>
+        </div>
+      </Link>
+    </motion.div>
   );
 }
