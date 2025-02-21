@@ -21,6 +21,7 @@ import {
   ArrowLeftIcon,
   ChevronRight,
   CircleGauge,
+  Code,
   CreditCard,
   Database,
   Folder,
@@ -69,8 +70,8 @@ export function NavBar() {
 
   return (
     <>
-      <div className="sticky top-2 z-50 my-2 w-full">
-        <nav className="flex w-full items-center justify-between ">
+      <div className="sticky top-2 z-50 my-2 w-full ">
+        <nav className="flex w-full items-center justify-between px-2 lg:px-0">
           <div
             className={cn(
               "mx-auto h-[46px] w-full max-w-[520px] rounded-lg border border-gray-200 bg-white",
@@ -109,7 +110,7 @@ export function NavBar() {
                     <NavItem
                       to="/deployments"
                       label="Deployments"
-                      icon={Server}
+                      icon={Code}
                     />
                     <NavItem to="/storage" label="Storage" icon={Database} />
                   </div>
@@ -212,13 +213,40 @@ export function NavBar() {
 
       <div
         className={cn(
-          "absolute top-0 left-2 z-50 mx-auto my-2 hidden h-[40px] w-fit rounded-lg border border-gray-200 bg-white md:block",
+          "absolute top-0 left-2 z-50 mx-auto my-2 hidden h-[40px] w-fit rounded-lg border border-gray-200 bg-white lg:block",
         )}
       >
         <div className="flex h-full w-full items-center gap-1">
           <UserMenu />
           /
           <OrganizationSwitcher />
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          "absolute top-0 right-2 z-50 mx-auto my-2 hidden h-[40px] w-fit rounded-lg border border-gray-200 bg-white lg:block",
+        )}
+      >
+        <div className="flex h-full w-full items-center gap-4 px-4">
+          <a
+            href="https://www.comfydeploy.com/docs/v2/introduction"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <BookOpen className="h-4 w-4" />
+            Docs
+          </a>
+          <a
+            href="https://discord.com/invite/c222Cwyget"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <DiscordIcon />
+            Discord
+          </a>
         </div>
       </div>
     </>
@@ -249,7 +277,7 @@ export function NavItem({
       className="flex items-center gap-1 rounded-md px-3 py-1 font-medium text-sm transition-all hover:bg-gray-100"
     >
       {Icon && <Icon className="h-4 w-4" />}
-      {label}
+      {label && <span className="hidden md:inline">{label}</span>}
     </Link>
   );
 }
