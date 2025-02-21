@@ -70,6 +70,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronLeft,
   CircleArrowUp,
+  ExternalLink,
   ImageIcon,
   Info,
   Loader2,
@@ -671,7 +672,6 @@ function RequestPage({
               <div
                 className={cn(
                   "flex flex-row items-center justify-between gap-2 rounded-md px-4 py-2 transition-colors hover:bg-gray-100",
-                  !item.machine_version_id && "bg-gray-50 opacity-80",
                 )}
               >
                 <div className="grid grid-cols-[38px_auto_1fr] items-center gap-4">
@@ -915,12 +915,7 @@ function RequestPage({
                             <Tooltip delayDuration={0}>
                               <TooltipTrigger asChild>
                                 <DropdownMenuLabel className="relative flex items-center justify-between gap-2 px-2 py-1 font-medium text-sm">
-                                  <div className="flex flex-row gap-2">
-                                    Legacy version
-                                    <Badge variant="secondary">
-                                      v{item.version}
-                                    </Badge>
-                                  </div>
+                                  v{item.version}
                                   <Info className="h-4 w-4" />
                                   <span className="-top-1.5 -right-1.5 absolute flex size-3">
                                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
@@ -930,21 +925,25 @@ function RequestPage({
                               </TooltipTrigger>
                               <TooltipContent
                                 side="left"
-                                className="max-w-[350px]"
+                                className="max-w-[320px]"
                               >
                                 <div className="flex flex-col gap-2 p-2">
                                   <h4 className="font-semibold text-sm">
-                                    This workflow is a legacy version.
+                                    We've release a new versioning control!
                                   </h4>
-                                  <p className="text-muted-foreground text-sm">
-                                    No worries, current deployments will not be
-                                    affected.
-                                  </p>
                                   <p className="text-sm">
-                                    Try to start a new ComfyUI, save a new
-                                    workspace and commit a workflow version, to
-                                    ensure your workflow is up to date.
+                                    You can try to save a new workspace and
+                                    version of your workflow.
                                   </p>
+                                  <Link
+                                    // @ts-expect-error
+                                    to="https://comfydeploy.com/docs"
+                                    target="_blank"
+                                    className="flex items-center justify-end gap-1 text-muted-foreground text-sm hover:underline"
+                                  >
+                                    Learn more
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </Link>
                                 </div>
                               </TooltipContent>
                             </Tooltip>
