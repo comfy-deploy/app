@@ -1,13 +1,22 @@
+import { Icon as IconWord } from "@/components/icon-word";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
+import { OrganizationSwitcher, useClerk } from "@clerk/clerk-react";
 import {
   Link,
   useLocation,
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useSidebar } from "./ui/sidebar";
-import { OrganizationSwitcher, useClerk } from "@clerk/clerk-react";
-import { UserMenu } from "./app-sidebar";
-import { Button } from "./ui/button";
+import { delay, motion } from "framer-motion";
 import {
   ArrowLeftIcon,
   ChevronRight,
@@ -24,28 +33,20 @@ import {
   Settings,
   Workflow,
 } from "lucide-react";
+import { BookOpen, Github, PlayCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { UserMenu } from "./app-sidebar";
+import { ShineBorder } from "./magicui/shine-border";
+import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { delay, motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
-import { Icon as IconWord } from "@/components/icon-word";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuContent,
-  NavigationMenuLink,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { Github, BookOpen, PlayCircle } from "lucide-react";
 import { Separator } from "./ui/separator";
-import { ShineBorder } from "./magicui/shine-border";
+import { useSidebar } from "./ui/sidebar";
+import { Badge } from "./ui/badge";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
@@ -103,7 +104,8 @@ export function NavBar() {
                       label="Workflows"
                       icon={Workflow}
                     />
-                    <NavItem to="/home" label="Workspace" icon={Monitor} />
+                    {/* <NavItem to="/home" label="Workspace" icon={Monitor} /> */}
+                    <NavItem to="/machines" label="Machines" icon={Server} />
                     <NavItem
                       to="/deployments"
                       label="Deployments"
@@ -124,17 +126,24 @@ export function NavBar() {
                     <DropdownMenuContent>
                       {/* <DropdownMenuLabel>My Account</DropdownMenuLabel> */}
                       {/* <DropdownMenuSeparator /> */}
-                      <DropdownMenuItem asChild>
+                      {/* <DropdownMenuItem asChild>
                         <Link
                           to="/machines"
                           className="flex items-center gap-2"
                         >
                           <Server className="h-4 w-4" /> Machines
                         </Link>
+                      </DropdownMenuItem> */}
+                      <DropdownMenuItem asChild>
+                        <Link to="/home" className="flex items-center gap-2">
+                          <Monitor className="h-4 w-4" /> Workspace{" "}
+                          <Badge variant="fuchsia">Beta</Badge>
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/assets" className="flex items-center gap-2">
                           <Folder className="h-4 w-4" /> Assets
+                          <Badge variant="fuchsia">Beta</Badge>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
