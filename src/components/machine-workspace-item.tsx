@@ -108,6 +108,7 @@ export function MachineWorkspaceItem({
                     variant="default"
                     className="rounded-[9px]"
                     onClick={handleStartSession}
+                    disabled={machine.type !== "comfy-deploy-serverless"}
                   >
                     Start ComfyUI
                     <Play className="ml-2 h-3 w-3" />
