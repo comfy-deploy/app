@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -25,13 +24,11 @@ import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
-  Code,
-  Edit,
-  Image,
+  Filter,
+  Globe2,
   MoreHorizontal,
   PinIcon,
   PinOff,
-  Play,
   Workflow,
 } from "lucide-react";
 import * as React from "react";
@@ -48,9 +45,8 @@ import { DialogTemplate } from "@/components/dialog-template";
 // import { FileURLRender } from "@/components/output-render";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useUser } from "@clerk/clerk-react";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useDebounce } from "use-debounce";
 
 import { AdminAndMember, useIsAdminAndMember } from "@/components/permissions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -62,9 +58,15 @@ import {
 import { useCurrentPlan, useCurrentPlanQuery } from "@/hooks/use-current-plan";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { toast } from "sonner";
-import { useWorkflowList } from "../hooks/use-workflow-list";
+import {
+  useSharedWorkflows,
+  useWorkflowList,
+} from "../hooks/use-workflow-list";
 import { UserIcon } from "./run/SharePageComponent";
 import { FileURLRender } from "./workflows/OutputRender";
+import { useGalleryData } from "./GalleryView";
+import { Separator } from "./ui/separator";
+import { openCommandView } from "./comfy-command";
 
 export function useWorkflowVersion(
   workflow_id?: string,
@@ -99,14 +101,8 @@ export function useWorkflowVersion(
 }
 
 export function WorkflowList() {
-  const [modalType, setModalType] = React.useState<"json" | "new" | null>(null);
-  const [view, setView] = React.useState<"list" | "grid">("grid");
-
   const user = useUser();
   const sub = useCurrentPlan();
-
-  const [searchValue, setSearchValue] = React.useState<string | null>(null);
-  const [debouncedSearchValue] = useDebounce(searchValue, 250);
 
   const {
     data: workflowsFromPythonApi,
@@ -115,7 +111,7 @@ export function WorkflowList() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useWorkflowList(debouncedSearchValue ?? "");
+  } = useWorkflowList("");
 
   const parentRef = React.useRef<HTMLDivElement>(null);
   useInfiniteScroll(parentRef, fetchNextPage, hasNextPage, isFetchingNextPage);
@@ -125,111 +121,131 @@ export function WorkflowList() {
     [workflowsFromPythonApi],
   );
 
+  const [showCommunity, setShowCommunity] = React.useState(() => {
+    const stored = localStorage.getItem("showCommunity");
+    return stored === null ? true : stored === "true";
+  });
+
   React.useEffect(() => {
-    refetch();
-  }, [debouncedSearchValue]);
+    localStorage.setItem("showCommunity", showCommunity.toString());
+  }, [showCommunity]);
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex w-full flex-row items-center gap-2 px-4 py-4 hidden">
-        <div className="relative max-w-sm flex-1">
-          <Input
-            placeholder="Filter workflows..."
-            value={searchValue ?? ""}
-            onChange={(event) => {
-              if (event.target.value === "") {
-                setSearchValue(null);
-              } else {
-                setSearchValue(event.target.value);
-              }
-            }}
-            className="pr-12" // Add padding to prevent text overlap with kbd
-          />
-          <kbd className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px] text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>K
-          </kbd>
-        </div>
-        <AdminAndMember>
-          <div className="ml-auto flex gap-2">
-            <Tooltip>
-              <TooltipTrigger>
-                {sub && (
-                  <Badge
-                    className={cn(
-                      sub?.features.workflowLimited
-                        ? "border-gray-400 text-gray-500"
-                        : "",
-                    )}
-                  >
-                    <div className="flex items-center gap-2 px-2 text-xs">
-                      {sub?.features.currentWorkflowCount}/
-                      {sub?.features.workflowLimit}
-                    </div>
-                  </Badge>
-                )}
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  Current workflows: {sub?.features.currentWorkflowCount} / Max:{" "}
-                  {sub?.features.workflowLimit}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </AdminAndMember>
-      </div>
       <ScrollArea className="fab-workflow-list flex-grow" ref={parentRef}>
-        {isLoading ? (
-          <div className="mx-auto grid grid-cols-1 gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }, (_, index) => (
-              <WorkflowCardSkeleton key={index} />
-            ))}
+        <>
+          <div className="sticky top-0 z-10 mx-auto flex w-full max-w-[1350px] justify-end gap-2 bg-gradient-to-b from-white to-transparent p-2">
+            <AdminAndMember>
+              <div className="ml-auto flex gap-2">
+                <Tooltip>
+                  <TooltipTrigger>
+                    {sub && (
+                      <Badge
+                        className={cn(
+                          sub?.features.workflowLimited
+                            ? "border-gray-400 text-gray-500"
+                            : "",
+                        )}
+                      >
+                        <div className="flex items-center gap-2 px-2 text-xs">
+                          {sub?.features.currentWorkflowCount}/
+                          {sub?.features.workflowLimit}
+                        </div>
+                      </Badge>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Current workflows: {sub?.features.currentWorkflowCount} /
+                      Max: {sub?.features.workflowLimit}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </AdminAndMember>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="shadow-sm">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Filter</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={showCommunity}
+                  onCheckedChange={setShowCommunity}
+                >
+                  Community
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked disabled>
+                  My Workflows
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="flex items-center justify-between"
+                  onSelect={() => openCommandView()}
+                >
+                  Search
+                  <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px] text-muted-foreground opacity-100">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        ) : flatData?.length === 0 ? (
-          <div className="absolute inset-0 flex h-full flex-col items-center justify-center p-4 text-center">
-            {debouncedSearchValue ? (
-              <>
-                <h3 className="mb-2 font-semibold text-lg">No results found</h3>
-                <p className="mb-4 text-muted-foreground">
-                  Try adjusting your search or filter to find what you're
-                  looking for.
-                </p>
-              </>
-            ) : (
-              <>
-                <h3 className="mb-2 font-semibold text-lg">
-                  Welcome{" "}
-                  {user.user?.username ??
-                    (user.user?.firstName ?? "") +
-                      " " +
-                      (user.user?.lastName ?? "")}
-                </h3>
-                <p className="mb-4 text-muted-foreground">
-                  Click the + button in the bottom right to create your first
-                  workflow
-                </p>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="mx-auto grid grid-cols-1 gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {flatData &&
-              flatData.map((workflow) => (
+          {showCommunity && <SharedWorkflowList />}
+          {isLoading ? (
+            <div className="mx-auto grid grid-cols-1 gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }, (_, index) => (
+                <WorkflowCardSkeleton key={index} />
+              ))}
+            </div>
+          ) : flatData?.length === 0 ? (
+            <div className="absolute inset-0 flex h-full flex-col items-center justify-center p-4 text-center">
+              {debouncedSearchValue ? (
+                <>
+                  <h3 className="mb-2 font-semibold text-lg">
+                    No results found
+                  </h3>
+                  <p className="mb-4 text-muted-foreground">
+                    Try adjusting your search or filter to find what you're
+                    looking for.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="mb-2 font-semibold text-lg">
+                    Welcome{" "}
+                    {user.user?.username ??
+                      `${user.user?.firstName ?? ""} ${user.user?.lastName ?? ""}`}
+                  </h3>
+                  <p className="mb-4 text-muted-foreground">
+                    Click the + button in the bottom right to create your first
+                    workflow
+                  </p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="mx-auto grid grid-cols-1 gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {flatData?.map((workflow) => (
                 <WorkflowCard
                   key={workflow.id}
                   workflow={workflow}
                   mutate={refetch}
                 />
               ))}
-            {isFetchingNextPage && (
-              <>
-                {Array.from({ length: 8 }, (_, index) => (
-                  <WorkflowCardSkeleton key={index} />
-                ))}
-              </>
-            )}
-          </div>
-        )}
+              {isFetchingNextPage && (
+                <>
+                  {Array.from({ length: 8 }, (_, index) => (
+                    <WorkflowCardSkeleton key={index} />
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </>
       </ScrollArea>
     </div>
   );
@@ -566,5 +582,113 @@ function WorkflowCard({
         </div>
       </Link>
     </>
+  );
+}
+
+function SharedWorkflowList() {
+  const { data: sharedWorkflows, isLoading } = useSharedWorkflows({});
+
+  if (isLoading || !sharedWorkflows) return null;
+
+  return (
+    <div
+      className={cn(
+        "mx-auto mb-3 space-y-3",
+        sharedWorkflows?.length === 0 && "w-full max-w-[1350px] px-4",
+      )}
+    >
+      <div className="mx-2 font-semibold">Community</div>
+
+      {sharedWorkflows?.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {sharedWorkflows?.map((workflow) => (
+            <SharedWorkflowCard key={workflow.id} workflow={workflow} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center p-4 text-muted-foreground">
+          <Globe2 className="my-2 h-6 w-6" />
+          <div className="font-medium text-sm">
+            You haven't tried any shared workflows yet
+          </div>
+          <div className="text-sm">
+            Explore the community's shared workflows to get inspired!
+          </div>
+        </div>
+      )}
+
+      <Separator className="mx-auto max-w-40" />
+      <div className="ml-2 font-semibold">Your Workflows</div>
+    </div>
+  );
+}
+
+function SharedWorkflowCard({
+  workflow,
+}: {
+  workflow: any;
+}) {
+  const { data: galleryData } = useGalleryData(workflow.workflow.id);
+  const coverImage = galleryData?.pages.flat()[0]?.data.images[0].url;
+  const clerk = useClerk();
+
+  const { data: orgName } = useQuery({
+    enabled: !!workflow?.org_id,
+    queryKey: ["org", workflow?.org_id],
+    queryFn: () => {
+      return clerk.getOrganization(workflow?.org_id || "");
+    },
+  });
+
+  return (
+    <div className="flex w-full flex-col md:max-w-[320px]">
+      <Card className="group relative flex h-[160px] w-[320px] flex-col overflow-hidden rounded-md">
+        <Link to={`/share/${workflow.share_slug.split("_").join("/")}`}>
+          {coverImage ? (
+            <FileURLRender
+              url={coverImage}
+              imgClasses="w-full h-full max-w-full max-h-full rounded-[8px] object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center">
+              <Workflow
+                size={25}
+                strokeWidth={1.5}
+                className=" text-gray-400"
+              />
+            </div>
+          )}
+        </Link>
+      </Card>
+      <div className="flex flex-col px-2 pt-2">
+        <div className="flex w-full flex-row justify-between truncate font-semibold text-gray-700 text-md">
+          <div className="mr-2 truncate">{workflow.workflow.name}</div>
+        </div>
+        <div className="flex flex-row justify-between">
+          <div className="flex items-center gap-1 truncate text-muted-foreground text-xs">
+            {workflow.user_id && (
+              <UserIcon
+                user_id={workflow.user_id}
+                className="h-4 w-4"
+                displayName
+              />
+            )}
+            {workflow.org_id && (
+              <>
+                <span className="text-xs">•</span>
+                <span className="text-xs">{orgName?.name}</span>
+              </>
+            )}
+          </div>
+          <div className="shrink-0 text-xs">
+            {workflow.workflow.latest_run_at ? (
+              getRelativeTime(workflow.workflow.latest_run_at)
+            ) : (
+              <Skeleton className="h-4 w-16" />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

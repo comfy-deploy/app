@@ -33,3 +33,13 @@ export function useWorkflowsAll() {
     refetchInterval: 5000,
   });
 }
+
+export function useSharedWorkflows({ limit = 4 }: { limit?: number }) {
+  return useQuery<any[]>({
+    queryKey: ["workflows", "shared"],
+    meta: {
+      limit,
+    },
+    refetchInterval: 5000,
+  });
+}
