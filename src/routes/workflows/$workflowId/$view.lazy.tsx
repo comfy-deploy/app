@@ -431,8 +431,7 @@ function WorkflowPageComponent() {
         </div>
       ) : workflow ? (
         <div className="h-full">
-          {selectedMachine &&
-            !isEditing &&
+          {!isEditing &&
             currentView !== "playground" &&
             currentView !== "gallery" && (
               <MachineWorkspaceItem

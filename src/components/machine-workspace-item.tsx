@@ -14,6 +14,7 @@ import { useLogStore } from "@/components/workspace/LogContext";
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useState, useMemo, useRef } from "react";
@@ -65,7 +66,8 @@ export function MachineWorkspaceItem({
   };
 
   const { data: relatedWorkflows } = useQuery({
-    queryKey: ["machine", machine.id, "workflows"],
+    queryKey: ["machine", machine?.id, "workflows"],
+    enabled: !!machine?.id,
   });
 
   if (isInWorkspace) {
@@ -91,29 +93,68 @@ export function MachineWorkspaceItem({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <MachineListItem
-            key={machine.id}
-            index={index}
-            machine={machine}
-            showMigrateDialog={false}
-            overrideRightSide={
+          {machine ? (
+            <MachineListItem
+              index={index}
+              machine={machine}
+              showMigrateDialog={false}
+              overrideRightSide={
+                <div className="flex flex-row items-center gap-2">
+                  <SwitchMachineButton
+                    openFocus={openFocus}
+                    setOpenFocus={setOpenFocus}
+                  />
+                  <Button
+                    variant="default"
+                    className="rounded-[9px]"
+                    onClick={handleStartSession}
+                  >
+                    Start ComfyUI
+                    <Play className="ml-2 h-3 w-3" />
+                  </Button>
+                </div>
+              }
+              machineActionItemList={<></>}
+            />
+          ) : (
+            <div className="flex items-center justify-between bg-white p-3.5">
+              <div className="flex gap-2">
+                <Skeleton className="mt-1 h-3 w-3 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[200px]" />
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-4 w-[60px] rounded-full" />
+                    <Skeleton className="h-4 w-[60px] rounded-full" />
+                  </div>
+                </div>
+              </div>
               <div className="flex flex-row items-center gap-2">
                 <SwitchMachineButton
                   openFocus={openFocus}
                   setOpenFocus={setOpenFocus}
                 />
-                <Button
-                  variant="default"
-                  className="rounded-[9px]"
-                  onClick={handleStartSession}
-                >
-                  Start ComfyUI
-                  <Play className="ml-2 h-3 w-3" />
-                </Button>
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger>
+                      <Button
+                        variant="default"
+                        className="rounded-[9px]"
+                        disabled
+                        tabIndex={0}
+                      >
+                        Start ComfyUI
+                        <Play className="ml-2 h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Please select a machine</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-            }
-            machineActionItemList={<></>}
-          />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -218,6 +259,8 @@ function MachineSessionList({
   const workflowId = useWorkflowIdInWorkflowPage();
   const { data: activeSessions } = useQuery<any[]>({
     queryKey: ["sessions"],
+    queryKeyHashFn: (queryKey) => [...queryKey, currentMachine?.id].toString(),
+    enabled: !!currentMachine?.id,
     refetchInterval: 2000,
     select: (data) =>
       data?.filter((session) => session.machine_id === currentMachine.id),
@@ -334,13 +377,15 @@ function MachineSelectList({
 
   const filteredMachines = useMemo(
     () =>
-      machines?.filter(
-        (machine) =>
-          (machine.name.toLowerCase().includes(search.toLowerCase()) ||
-            machine.id.includes(search)) &&
-          machine.id !== currentMachine.id,
+      machines?.filter((machine) =>
+        currentMachine
+          ? (machine.name.toLowerCase().includes(search.toLowerCase()) ||
+              machine.id.includes(search)) &&
+            machine.id !== currentMachine.id
+          : machine.name.toLowerCase().includes(search.toLowerCase()) ||
+            machine.id.includes(search),
       ) ?? [],
-    [machines, search, currentMachine.id],
+    [machines, search, currentMachine],
   );
 
   const virtualizer = useVirtualizer({

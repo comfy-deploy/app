@@ -70,6 +70,7 @@ export function useSessionAPI(machineId?: string | null) {
           machine_id: machineId,
         },
       },
+      enabled: !!machineId,
       // queryFn: async () => {
       //   return await api({
       //     url: "session",
