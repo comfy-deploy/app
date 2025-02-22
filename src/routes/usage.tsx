@@ -297,7 +297,7 @@ function RouteComponent() {
         </div>
         {/* Total Summary Card */}
         <div className="mb-6 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <div className="text-sm text-muted-foreground">Total Usage</div>
               <div className="font-semibold text-2xl">
@@ -307,31 +307,14 @@ function RouteComponent() {
                   "0.00"}
               </div>
             </div>
-            {/* {discountAmount > 0 && (
-              <div>
-                <div className="text-sm text-muted-foreground">
-                  Credits Applied
-                </div>
-              <div className="mt-1 text-2xl font-semibold text-green-600">
-                -${(() => {
-                  if (discountAmount <= 0) return null;
-
-                  return (
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        Credits Applied
-                      </div>
-                      <div className="mt-1 text-2xl font-semibold text-green-600">
-                        -$
-                        {isNaN(discountAmount)
-                          ? "0.00"
-                          : discountAmount.toFixed(2)}
-                      </div>
-                    </div>
-                  );
-                })()}
+            <div>
+              <div className="text-sm text-muted-foreground">
+                Monthly Credit
               </div>
-            </div>} */}
+              <div className="mt-1 text-2xl font-semibold text-green-600">
+                -$5.00
+              </div>
+            </div>
             <div>
               <div className="text-sm text-muted-foreground">Final Total</div>
               <div className="mt-1 text-2xl font-semibold">
