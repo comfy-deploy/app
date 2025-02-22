@@ -52,51 +52,123 @@ export const Route = createFileRoute("/usage")({
 
 function RouteComponent() {
   const [viewMode, setViewMode] = useState<"graph" | "grid">("graph");
-  const { data: invoices } = useSuspenseQuery<any>({
+  const { data: invoices } = useQuery<Invoice[]>({
     queryKey: ["platform", "invoices"],
   });
 
-  // Get current period from the first invoice
-  const currentPeriod = useMemo(() => {
-    if (!invoices || invoices.length === 0) return null;
-    const latest = invoices[0];
-    return {
-      id: latest.id,
-      label: `Current Period (${latest.period_start} - ${latest.period_end})`,
-      start: new Date(latest.period_start_timestamp),
-      end: new Date(latest.period_end_timestamp),
-    };
-  }, [invoices]);
-
-  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(
-    currentPeriod?.id ?? null,
-  );
-
-  // Get selected invoice data
-  const selectedInvoice = useMemo(() => {
-    if (!selectedPeriod || !invoices) return null;
-    return invoices.find((inv: any) => inv.id === selectedPeriod);
-  }, [selectedPeriod, invoices]);
-
-  const handlePeriodChange = (direction: "prev" | "next") => {
-    if (!invoices || !selectedPeriod) return;
-    const currentIndex = invoices.findIndex((inv) => inv.id === selectedPeriod);
-    if (currentIndex === -1) return;
-
-    if (direction === "prev" && currentIndex < invoices.length - 1) {
-      setSelectedPeriod(invoices[currentIndex + 1].id);
-    } else if (direction === "next" && currentIndex > 0) {
-      setSelectedPeriod(invoices[currentIndex - 1].id);
-    }
-  };
-
-  const { data: sub } = useSuspenseQuery<any>({
+  const { data: sub } = useQuery<Subscription>({
     queryKey: ["platform", "plan"],
   });
 
-  const { data: userSettings } = useSuspenseQuery<any>({
+  const { data: userSettings } = useQuery<{
+    credit?: number;
+  }>({
     queryKey: ["platform", "user-settings"],
   });
+
+  // Get current period from the last invoice timestamp in current plan
+  const currentPeriod = useMemo(() => {
+    if (!sub?.sub?.last_invoice_timestamp) return null;
+    const start = new Date(sub.sub.last_invoice_timestamp * 1000);
+    const end = new Date();
+    return {
+      id: "current",
+      label: `Current Period (${start.toLocaleDateString()} - ${end.toLocaleDateString()})`,
+      start,
+      end,
+      period_start: start.toLocaleDateString(),
+      period_end: end.toLocaleDateString(),
+      period_start_timestamp: sub.sub.last_invoice_timestamp,
+      period_end_timestamp: Math.floor(end.getTime() / 1000),
+    };
+  }, [sub]);
+
+  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(
+    "current",
+  );
+
+  // Get selected invoice data
+  const selectedInvoice = useMemo<Invoice | CurrentPeriod | null>(() => {
+    if (!selectedPeriod) return currentPeriod;
+    if (selectedPeriod === "current") return currentPeriod;
+    if (!invoices?.length) return currentPeriod;
+    return invoices.find((inv) => inv.id === selectedPeriod) || currentPeriod;
+  }, [selectedPeriod, invoices, currentPeriod]);
+
+  // Get usage data for current period
+  const { data: usage } = useQuery<Usage>({
+    queryKey: ["platform", "usage"],
+    queryKeyHashFn: (queryKey) =>
+      [
+        ...queryKey,
+        selectedInvoice?.period_start_timestamp,
+        selectedInvoice?.period_end_timestamp,
+      ].toString(),
+    meta: {
+      params: {
+        start_time: selectedInvoice?.period_start_timestamp
+          ? new Date(
+              selectedInvoice.period_start_timestamp * 1000,
+            ).toISOString()
+          : undefined,
+        end_time: selectedInvoice?.period_end_timestamp
+          ? new Date(selectedInvoice.period_end_timestamp * 1000).toISOString()
+          : undefined,
+      },
+    },
+  });
+
+  const handlePeriodChange = (direction: "prev" | "next") => {
+    if (!selectedPeriod) return;
+    if (!invoices?.length) return;
+
+    console.log("Current period:", selectedPeriod);
+    console.log("Direction:", direction);
+    console.log("Invoices:", invoices);
+
+    // When on current period, only allow going back to most recent invoice
+    if (selectedPeriod === "current") {
+      if (direction === "prev" && invoices.length > 0) {
+        console.log(
+          "Moving from current to most recent invoice:",
+          invoices[0].id,
+        );
+        setSelectedPeriod(invoices[0].id);
+      }
+      return;
+    }
+
+    // Find current position in invoice list
+    const currentIndex = invoices.findIndex((inv) => inv.id === selectedPeriod);
+    console.log("Current index in invoices:", currentIndex);
+
+    if (currentIndex === -1) return;
+
+    // Handle navigation
+    if (direction === "prev") {
+      // Go to older invoice if available
+      if (currentIndex < invoices.length - 1) {
+        console.log("Moving to older invoice:", invoices[currentIndex + 1].id);
+        setSelectedPeriod(invoices[currentIndex + 1].id);
+      }
+    } else {
+      // Going next (to newer invoices)
+      if (currentIndex === 0) {
+        // At most recent invoice, go to current period
+        console.log("Moving to current period");
+        setSelectedPeriod("current");
+      } else {
+        // Go to newer invoice
+        console.log("Moving to newer invoice:", invoices[currentIndex - 1].id);
+        setSelectedPeriod(invoices[currentIndex - 1].id);
+      }
+    }
+  };
+
+  // const discountAmount =
+  //   (selectedInvoice?.subtotal - selectedInvoice?.total ?? 0) +
+  //   (selectedInvoice ? 0 : (usage?.credit ?? 0)) +
+  //   (selectedInvoice ? 0 : (usage?.free_tier_credit ?? 0) / 100);
 
   return (
     <div className="bg-white py-4">
@@ -106,62 +178,67 @@ function RouteComponent() {
         >
           <UnpaidInvoices />
         </Suspense>
-
         {/* Top row with plan, credit and date selection */}
         <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           {/* Left - Plan badges and Credit */}
           <div className="flex flex-wrap items-center gap-2">
-            {sub?.plans?.plans.map((x, i) => (
-              <Badge
-                key={i}
-                variant="fuchsia"
-                className="flex items-center gap-1.5 text-sm"
-              >
-                <CreditCard className="h-3.5 w-3.5" />
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const res = await callServerPromise(
-                      api({
-                        url: `platform/stripe/dashboard?redirect_url=${encodeURIComponent(
-                          window.location.href,
-                        )}`,
-                      }),
-                      {
-                        loadingText: "Redirecting to Stripe...",
-                      },
-                    );
-                    window.open(res.url, "_blank");
-                  }}
-                  className="flex items-center gap-1 text-sm"
-                >
-                  {pricingPlanNameMapping[x]} Plan
-                  {sub.plans.charges?.[i] !== undefined &&
-                  sub.plans.amount?.[i] !== undefined &&
-                  sub.plans.charges[i] !== sub.plans.amount[i] ? (
-                    <span className="ml-1">
-                      (
-                      <span className="text-muted-foreground line-through">
-                        ${(sub.plans.amount[i] ?? 0) / 100}
-                      </span>{" "}
-                      ${(sub.plans.charges[i] ?? 0) / 100}/mo)
-                    </span>
-                  ) : (
-                    <span className="ml-1">
-                      (${(sub.plans.amount[i] ?? 0) / 100}/mo)
-                    </span>
-                  )}
-                  <ExternalLink size={12} className="ml-1" />
-                </button>
-              </Badge>
-            ))}
+            {sub?.plans?.plans?.map(
+              (x: keyof typeof pricingPlanNameMapping, i: number) => {
+                const charges = sub.plans?.charges?.[i];
+                const amount = sub.plans?.amount?.[i];
+                return (
+                  <Badge
+                    key={i}
+                    variant="fuchsia"
+                    className="flex items-center gap-1.5 text-sm"
+                  >
+                    <CreditCard className="h-3.5 w-3.5" />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await callServerPromise(
+                          api({
+                            url: `platform/stripe/dashboard?redirect_url=${encodeURIComponent(
+                              window.location.href,
+                            )}`,
+                          }),
+                          {
+                            loadingText: "Redirecting to Stripe...",
+                          },
+                        );
+                        window.open(res.url, "_blank");
+                      }}
+                      className="flex items-center gap-1 text-sm"
+                    >
+                      {pricingPlanNameMapping[x]} Plan
+                      {charges !== undefined &&
+                      amount !== undefined &&
+                      charges !== amount ? (
+                        <span className="ml-1">
+                          (
+                          <span className="text-muted-foreground line-through">
+                            ${(amount ?? 0) / 100}
+                          </span>{" "}
+                          ${(charges ?? 0) / 100}/mo)
+                        </span>
+                      ) : (
+                        <span className="ml-1">
+                          (${(amount ?? 0) / 100}/mo)
+                        </span>
+                      )}
+                      <ExternalLink size={12} className="ml-1" />
+                    </button>
+                  </Badge>
+                );
+              },
+            )}
             <div className="mx-2 hidden h-4 w-[1px] bg-border sm:block" />
             <Badge
               variant="green"
               className="flex items-center gap-1.5 text-sm"
             >
               <Wallet className="h-3.5 w-3.5" />
-              Usage Credit: ${(userSettings?.credit ?? 0).toFixed(3)}
+              Credit: ${(userSettings?.credit ?? 0).toFixed(3)}
             </Badge>
           </div>
 
@@ -174,8 +251,10 @@ function RouteComponent() {
               onClick={() => handlePeriodChange("prev")}
               disabled={
                 !selectedPeriod ||
-                invoices?.findIndex((inv) => inv.id === selectedPeriod) ===
-                  invoices?.length - 1
+                (selectedPeriod !== "current" &&
+                  invoices &&
+                  invoices.findIndex((inv) => inv.id === selectedPeriod) ===
+                    invoices.length - 1)
               }
             >
               <ChevronLeft className="h-4 w-4" />
@@ -188,10 +267,19 @@ function RouteComponent() {
                 <SelectValue placeholder="Select billing period" />
               </SelectTrigger>
               <SelectContent>
-                {invoices?.map((invoice: any) => (
+                <SelectItem value="current" className="font-medium">
+                  Current Period
+                  <span className="ml-2 text-muted-foreground">
+                    ({currentPeriod?.period_start} - {currentPeriod?.period_end}
+                    )
+                  </span>
+                </SelectItem>
+                <div className="px-2 py-1.5 text-muted-foreground text-xs">
+                  Past Periods
+                </div>
+                {invoices?.map((invoice) => (
                   <SelectItem key={invoice.id} value={invoice.id}>
                     {invoice.period_start} - {invoice.period_end}
-                    {invoice.id === currentPeriod?.id && " (Current)"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -201,16 +289,66 @@ function RouteComponent() {
               size="icon"
               className="h-9 w-9"
               onClick={() => handlePeriodChange("next")}
-              disabled={
-                !selectedPeriod ||
-                invoices?.findIndex((inv) => inv.id === selectedPeriod) === 0
-              }
+              disabled={selectedPeriod === "current"}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
+        {/* Total Summary Card */}
+        <div className="mb-6 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <div className="text-sm text-muted-foreground">Total Usage</div>
+              <div className="font-semibold text-2xl">
+                $
+                {selectedInvoice?.total_cost?.toFixed(4) ??
+                  usage?.total_cost?.toFixed(4) ??
+                  "0.00"}
+              </div>
+            </div>
+            {/* {discountAmount > 0 && (
+              <div>
+                <div className="text-sm text-muted-foreground">
+                  Credits Applied
+                </div>
+              <div className="mt-1 text-2xl font-semibold text-green-600">
+                -${(() => {
+                  if (discountAmount <= 0) return null;
 
+                  return (
+                    <div>
+                      <div className="text-sm text-muted-foreground">
+                        Credits Applied
+                      </div>
+                      <div className="mt-1 text-2xl font-semibold text-green-600">
+                        -$
+                        {isNaN(discountAmount)
+                          ? "0.00"
+                          : discountAmount.toFixed(2)}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>} */}
+            <div>
+              <div className="text-sm text-muted-foreground">Final Total</div>
+              <div className="mt-1 text-2xl font-semibold">
+                {selectedPeriod === "current" ? (
+                  <span className="text-muted-foreground">TBD</span>
+                ) : (
+                  <>
+                    $
+                    {selectedInvoice?.total?.toFixed(4) ??
+                      usage?.final_cost?.toFixed(4) ??
+                      "0.00"}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
         {/* Graph/Table section */}
         <div className="relative mt-8">
           {/* View toggle centered on top */}
@@ -244,12 +382,12 @@ function RouteComponent() {
               <UsageTable
                 startTimeOverride={
                   selectedInvoice
-                    ? new Date(selectedInvoice.period_start_timestamp)
+                    ? new Date(selectedInvoice.period_start_timestamp * 1000)
                     : undefined
                 }
                 endTimeOverride={
                   selectedInvoice
-                    ? new Date(selectedInvoice.period_end_timestamp)
+                    ? new Date(selectedInvoice.period_end_timestamp * 1000)
                     : undefined
                 }
               />
@@ -277,18 +415,16 @@ export function UsageBreakdown({
   const { startDate, endDate } = useMemo(() => {
     if (startTimeOverride && endTimeOverride) {
       return {
-        startDate: new Date(startTimeOverride * 1000)
-          .toISOString()
-          .split("T")[0],
-        endDate: new Date(endTimeOverride * 1000).toISOString().split("T")[0],
+        startDate: new Date(startTimeOverride * 1000).toISOString(),
+        endDate: new Date(endTimeOverride * 1000).toISOString(),
       };
     }
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 180);
     return {
-      startDate: start.toISOString().split("T")[0],
-      endDate: end.toISOString().split("T")[0],
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
     };
   }, [startTimeOverride, endTimeOverride]);
 
@@ -604,24 +740,24 @@ function PlanTotal() {
 }
 
 export function InvoiceTable() {
-  const { data: invoices } = useSuspenseQuery<any>({
+  const { data: invoices } = useSuspenseQuery<Invoice[]>({
     queryKey: ["platform", "invoices"],
   });
 
   return (
     <div className="space-y-4 w-full">
-      {invoices.map((invoice) => (
+      {invoices?.map((invoice: Invoice) => (
         <InvoiceItem key={invoice.id} invoice={invoice}>
           {/* <div className=""> */}
           <UsageTable
-            startTimeOverride={new Date(invoice.period_start_timestamp)}
-            endTimeOverride={new Date(invoice.period_end_timestamp)}
+            startTimeOverride={new Date(invoice.period_start_timestamp * 1000)}
+            endTimeOverride={new Date(invoice.period_end_timestamp * 1000)}
           />
           <div className="mt-4">
             <h3 className="font-semibold mb-2">Invoice Breakdown:</h3>
             <ul className="list-disc list-inside">
               {invoice.line_items.map((item, index) => (
-                <li key={index}>
+                <li key={item.description || index}>
                   {item.description}: ${item.amount.toFixed(2)}
                   {item.quantity && item.quantity > 1
                     ? ` (x${item.quantity})`
@@ -660,7 +796,14 @@ export function InvoiceTable() {
 export function InvoiceItem({
   invoice,
   children,
-}: { invoice: any; children: React.ReactNode }) {
+}: {
+  invoice: Invoice;
+  children: React.ReactNode;
+}) {
+  if (!isInvoice(invoice)) {
+    return null;
+  }
+
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleViewInvoice = () => {
@@ -735,14 +878,55 @@ export function InvoiceItem({
   );
 }
 
-function InvoiceDetails({ invoice }: { invoice: any }) {
+// Type guard to check if an object is an Invoice
+function isInvoice(obj: any): obj is Invoice {
+  return obj && "line_items" in obj && "subtotal" in obj;
+}
+
+interface Invoice {
+  id: string;
+  period_start: string;
+  period_end: string;
+  subtotal: number;
+  total: number;
+  total_cost?: number;
+  period_start_timestamp: number;
+  period_end_timestamp: number;
+  line_items: Array<{
+    description: string;
+    amount: number;
+    quantity?: number;
+  }>;
+  hosted_invoice_url?: string;
+  status?: string;
+}
+
+interface Subscription {
+  sub: {
+    last_invoice_timestamp: number;
+  };
+  plans?: {
+    plans: Array<keyof typeof pricingPlanNameMapping>;
+    charges?: number[];
+    amount?: number[];
+  };
+}
+
+function InvoiceDetails({ invoice }: { invoice: Invoice | CurrentPeriod }) {
+  if (!isInvoice(invoice)) {
+    return null;
+  }
+
   return (
     <div className="space-y-4 text-sm">
       <div className="bg-muted/50 p-4 rounded-md border border-border/50">
         <h3 className="text-sm font-medium mb-3">Invoice Breakdown</h3>
         <ul className="space-y-1.5 text-muted-foreground">
-          {invoice.line_items.map((item: any, index: number) => (
-            <li key={item.description} className="flex justify-between">
+          {invoice.line_items.map((item, index) => (
+            <li
+              key={item.description || index}
+              className="flex justify-between"
+            >
               <span>{item.description}</span>
               <span>
                 ${item.amount.toFixed(2)}
@@ -788,12 +972,15 @@ function InvoiceDetails({ invoice }: { invoice: any }) {
 }
 
 function UnpaidInvoices() {
-  const { data: invoices } = useSuspenseQuery<any>({
+  const { data: invoices } = useSuspenseQuery<Invoice[]>({
     queryKey: ["platform", "invoices"],
   });
 
-  const unpaidInvoices =
-    invoices?.filter((invoice) => invoice.status === "open") ?? [];
+  const unpaidInvoices = useMemo(
+    () =>
+      invoices?.filter((invoice: Invoice) => invoice.status === "open") ?? [],
+    [invoices],
+  );
 
   if (unpaidInvoices.length === 0) return null;
 
@@ -804,7 +991,7 @@ function UnpaidInvoices() {
         <AlertTitle>Unpaid Invoices</AlertTitle>
         <AlertDescription>
           <div className="mt-2 space-y-2">
-            {unpaidInvoices.map((invoice) => (
+            {unpaidInvoices.map((invoice: Invoice) => (
               <div
                 key={invoice.id}
                 className="flex items-center justify-between text-sm"
@@ -832,4 +1019,33 @@ function UnpaidInvoices() {
       </Alert>
     </Card>
   );
+}
+
+interface CurrentPeriod {
+  id: string;
+  label: string;
+  start: Date;
+  end: Date;
+  period_start: string;
+  period_end: string;
+  period_start_timestamp: number;
+  period_end_timestamp: number;
+  total_cost?: number;
+  total?: number;
+}
+
+interface Usage {
+  total_cost: number;
+  final_cost: number;
+  usage: Array<{
+    machine_id: string;
+    machine_name: string;
+    cost: number;
+    gpu?: string;
+    ws_gpu?: string;
+    usage_in_sec: number;
+    cost_item_title?: string;
+  }>;
+  credit?: number;
+  free_tier_credit: number;
 }
