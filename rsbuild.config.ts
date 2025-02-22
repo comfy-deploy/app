@@ -77,13 +77,13 @@ export default defineConfig({
         ],
       },
       plugins: [
-        new rspack.EnvironmentPlugin([
-          "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-          "NEXT_PUBLIC_POSTHOG_KEY",
-          "NEXT_PUBLIC_CD_API_URL",
-          "COMFY_DEPLOY_SHARED_MACHINE_API_URL",
-        ]),
+        // Required for the app to work
+        new rspack.EnvironmentPlugin(["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"]),
+        // Optional for the app to work locally
         new rspack.EnvironmentPlugin({
+          COMFY_DEPLOY_SHARED_MACHINE_API_URL: null,
+          NEXT_PUBLIC_POSTHOG_KEY: null,
+          NEXT_PUBLIC_CD_API_URL: "http://localhost:3011",
           NEXT_PUBLIC_NGROK_CD_API_URL: null,
           NEXT_PUBLIC_POSTHOG_HOST: "https://app.posthog.com",
           COMFYUI_FRONTEND_URL: "https://comfyui.comfydeploy.com",
