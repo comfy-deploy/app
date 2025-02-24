@@ -20,6 +20,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -68,10 +69,15 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronLeft,
+  CircleArrowUp,
+  ExternalLink,
   ImageIcon,
+  Info,
+  Loader2,
   MoreHorizontal,
   MoreVertical,
   Plus,
+  Share,
   Terminal,
   Workflow,
 } from "lucide-react";
@@ -97,6 +103,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLogStore } from "@/components/workspace/LogContext";
 import { useCreateDeploymentDialog } from "@/components/run/VersionSelect";
 import type { Deployment } from "@/components/workspace/DeploymentDisplay";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 
 const pages = [
   "workspace",
@@ -418,8 +431,7 @@ function WorkflowPageComponent() {
         </div>
       ) : workflow ? (
         <div className="h-full">
-          {selectedMachine &&
-            !isEditing &&
+          {!isEditing &&
             currentView !== "playground" &&
             currentView !== "gallery" && (
               <MachineWorkspaceItem
@@ -492,6 +504,11 @@ function RequestPage({
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [isCreatingDeployment, setIsCreatingDeployment] = useState({
+    production: false,
+    staging: false,
+    publicShare: false,
+  });
   const router = useRouter();
 
   const { createDynamicSession } = useSessionAPI();
@@ -565,21 +582,58 @@ function RequestPage({
     }
   };
 
-  const { dialog, open, setOpen } = useCreateDeploymentDialog({
-    workflow_id: workflowId,
-  });
-
   return (
     <div className="mx-auto flex flex-row">
       <VersionDrawer workflowId={workflowId} />
       <div className="mx-auto flex h-full w-full max-w-screen-lg flex-col gap-2">
         <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)}>
           <div className="font-bold text-sm">Description</div>
-          <textarea
-            {...form.register("description")}
-            className="min-h-[100px] w-full rounded-md p-2 text-muted-foreground outline-none focus:bg-muted/50"
-            placeholder="Type a description for your workflow..."
-          />
+          <div className="flex flex-row gap-4">
+            <textarea
+              {...form.register("description")}
+              className="-ml-2 min-h-[100px] w-full rounded-md p-2 text-muted-foreground outline-none focus:bg-muted/50"
+              placeholder="Type a description for your workflow..."
+            />
+
+            <div className="group relative aspect-square w-[150px] shrink-0 overflow-hidden rounded-sm bg-gray-100">
+              {currentWorkflow?.cover_image ? (
+                <>
+                  <img
+                    src={currentWorkflow.cover_image}
+                    alt="Workflow cover"
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Link
+                      to={`/workflows/${workflowId}/gallery`}
+                      // @ts-expect-error
+                      search={{ action: "set-cover-image" }}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-black/20 group-hover:text-white"
+                      >
+                        Change
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  to={`/workflows/${workflowId}/gallery`}
+                  // @ts-expect-error
+                  search={{ action: "set-cover-image" }}
+                  className="flex h-full w-full flex-col items-center justify-center rounded-sm border-2 border-gray-200 border-dashed p-2"
+                >
+                  <ImageIcon className="h-6 w-6 text-gray-400" />
+                  <span className="text-center text-gray-400 text-xs">
+                    Upload cover
+                  </span>
+                </Link>
+              )}
+            </div>
+          </div>
         </form>
 
         <UnsavedChangesWarning
@@ -606,8 +660,19 @@ function RequestPage({
               (deployment: Deployment) =>
                 deployment.workflow_version_id === item.id,
             );
+            const isProductionDeployed = myDeployments?.some(
+              (deployment) => deployment.environment === "production",
+            );
+            const isPublicShareDeployed = myDeployments?.some(
+              (deployment) => deployment.environment === "public-share",
+            );
+
             return (
-              <div className="flex flex-row items-center justify-between gap-2 rounded-md px-4 py-2 hover:bg-gray-100">
+              <div
+                className={cn(
+                  "flex flex-row items-center justify-between gap-2 rounded-md px-4 py-2 transition-colors hover:bg-gray-100",
+                )}
+              >
                 <div className="grid grid-cols-[38px_auto_1fr] items-center gap-4">
                   <Badge className="w-fit whitespace-nowrap rounded-sm text-xs">
                     v{item.version}
@@ -649,123 +714,343 @@ function RequestPage({
                     >
                       <MoreVertical size={16} />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {/* {item.machine_version_id ? (
-                        <></>
-                      ) : (
-                        <div className="text-xs text-gray-500 px-4 ring-1 ring-gray-200 rounded-md">
-                          Save from workspace to use
-                        </div>
-                      )} */}
-                      <DropdownMenuItem className="p-0">
-                        <Button
-                          variant={"ghost"}
-                          className="w-full justify-start px-2 font-normal"
-                          disabled={!item.machine_version_id}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.nativeEvent.preventDefault();
-                            e.nativeEvent.stopPropagation();
+                    <DropdownMenuContent className="w-52 overflow-visible">
+                      {item.machine_version_id && (
+                        <>
+                          <DropdownMenuItem className="p-0">
+                            <TooltipProvider>
+                              <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                  {/* biome-ignore lint/a11y/noNoninteractiveTabindex: <explanation> */}
+                                  <span tabIndex={0} className="w-full">
+                                    <Button
+                                      variant={"ghost"}
+                                      className="w-full justify-between px-2 font-normal"
+                                      hideLoading={true}
+                                      disabled={
+                                        isCreatingDeployment.production ||
+                                        isProductionDeployed
+                                      }
+                                      onClick={async (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.nativeEvent.preventDefault();
+                                        e.nativeEvent.stopPropagation();
+                                        setIsCreatingDeployment({
+                                          ...isCreatingDeployment,
+                                          production: true,
+                                        });
+                                        const deployment =
+                                          await callServerPromise(
+                                            api({
+                                              url: "deployment",
+                                              init: {
+                                                method: "POST",
+                                                body: JSON.stringify({
+                                                  workflow_id: workflowId,
+                                                  workflow_version_id: item.id,
+                                                  machine_version_id:
+                                                    item.machine_version_id,
+                                                  environment: "production",
+                                                }),
+                                              },
+                                            }),
+                                          );
 
-                            await callServerPromise(
-                              api({
-                                url: "deployment",
-                                init: {
-                                  method: "POST",
-                                  body: JSON.stringify({
-                                    workflow_id: workflowId,
-                                    workflow_version_id: item.id,
+                                        await refetchDeployments();
+                                        setIsCreatingDeployment({
+                                          ...isCreatingDeployment,
+                                          production: false,
+                                        });
+
+                                        setSelectedDeployment(deployment.id);
+                                      }}
+                                    >
+                                      Promote to Production
+                                      {isCreatingDeployment.production ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <CircleArrowUp className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                {isProductionDeployed && (
+                                  <TooltipContent side="left">
+                                    <p>
+                                      This workflow is already promoted to
+                                      production. <br />
+                                      Click the{" "}
+                                      <Badge variant="blue">production</Badge>{" "}
+                                      to view details.
+                                    </p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="p-0">
+                            <TooltipProvider>
+                              <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                  {/* biome-ignore lint/a11y/noNoninteractiveTabindex: <explanation> */}
+                                  <span tabIndex={0} className="w-full">
+                                    <Button
+                                      variant={"ghost"}
+                                      className="w-full justify-between px-2 font-normal"
+                                      hideLoading={true}
+                                      disabled={
+                                        isCreatingDeployment.publicShare ||
+                                        isPublicShareDeployed
+                                      }
+                                      onClick={async (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.nativeEvent.preventDefault();
+                                        e.nativeEvent.stopPropagation();
+                                        setIsCreatingDeployment({
+                                          ...isCreatingDeployment,
+                                          publicShare: true,
+                                        });
+
+                                        const deployment =
+                                          await callServerPromise(
+                                            api({
+                                              url: "deployment",
+                                              init: {
+                                                method: "POST",
+                                                body: JSON.stringify({
+                                                  workflow_id: workflowId,
+                                                  workflow_version_id: item.id,
+                                                  machine_version_id:
+                                                    item.machine_version_id,
+                                                  environment: "public-share",
+                                                  ...(currentWorkflow.description && {
+                                                    description:
+                                                      currentWorkflow.description,
+                                                  }),
+                                                }),
+                                              },
+                                            }),
+                                          );
+                                        await refetchDeployments();
+                                        setSelectedDeployment(deployment.id);
+                                        setIsCreatingDeployment({
+                                          ...isCreatingDeployment,
+                                          publicShare: false,
+                                        });
+                                      }}
+                                    >
+                                      Share
+                                      {isCreatingDeployment.publicShare ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Share className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                {isPublicShareDeployed && (
+                                  <TooltipContent side="left">
+                                    <p>
+                                      This workflow is already shared. <br />
+                                      Click the{" "}
+                                      <Badge variant="secondary">
+                                        public-share
+                                      </Badge>{" "}
+                                      to view details.
+                                    </p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="p-0">
+                            <Button
+                              variant={"ghost"}
+                              className="w-full justify-between px-2 font-normal"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.nativeEvent.preventDefault();
+                                e.nativeEvent.stopPropagation();
+
+                                const response =
+                                  await createDynamicSession.mutateAsync({
+                                    gpu: "A10G",
+                                    machine_id: item.machine_id,
                                     machine_version_id: item.machine_version_id,
-                                    environment: "production",
-                                  }),
-                                },
-                              }),
-                            );
+                                  });
+                                useLogStore.getState().clearLogs();
 
-                            await refetchDeployments();
-                          }}
-                        >
-                          Promote to Production
-                        </Button>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="p-0">
-                        <Button
-                          variant={"ghost"}
-                          className="w-full justify-start px-2 font-normal"
-                          disabled={!item.machine_version_id}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.nativeEvent.preventDefault();
-                            e.nativeEvent.stopPropagation();
-
-                            await callServerPromise(
-                              api({
-                                url: "deployment",
-                                init: {
-                                  method: "POST",
-                                  body: JSON.stringify({
-                                    workflow_id: workflowId,
-                                    workflow_version_id: item.id,
-                                    machine_version_id: item.machine_version_id,
-                                    environment: "public-share",
-                                    ...(currentWorkflow.description && {
-                                      description: currentWorkflow.description,
-                                    }),
-                                  }),
-                                },
-                              }),
-                            );
-
-                            await refetchDeployments();
-                          }}
-                        >
-                          Share
-                        </Button>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="p-0">
-                        <Button
-                          variant={"ghost"}
-                          className="w-full justify-start px-2 font-normal"
-                          disabled={!item.machine_version_id}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.nativeEvent.preventDefault();
-                            e.nativeEvent.stopPropagation();
-
-                            const response =
-                              await createDynamicSession.mutateAsync({
-                                gpu: "A10G",
-                                machine_id: item.machine_id,
-                                machine_version_id: item.machine_version_id,
-                              });
-                            useLogStore.getState().clearLogs();
-
-                            router.navigate({
-                              to: "/sessions/$sessionId",
-                              params: {
-                                sessionId: response.session_id,
-                              },
-                              search: {
-                                workflowId,
-                              },
-                            });
-                          }}
-                        >
-                          Edit
-                        </Button>
-                      </DropdownMenuItem>
+                                router.navigate({
+                                  to: "/sessions/$sessionId",
+                                  params: {
+                                    sessionId: response.session_id,
+                                  },
+                                  search: {
+                                    workflowId,
+                                    // @ts-expect-error
+                                    version: item.version,
+                                  },
+                                });
+                              }}
+                            >
+                              <div className="flex flex-row gap-2">
+                                Edit
+                                <Badge variant="secondary">
+                                  v{item.version}
+                                </Badge>
+                              </div>
+                            </Button>
+                          </DropdownMenuItem>
+                        </>
+                      )}
 
                       {!item.machine_version_id && (
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setOpen(true);
-                          }}
-                        >
-                          Create Deployment
-                        </DropdownMenuItem>
+                        <>
+                          <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuLabel className="relative flex items-center justify-between gap-2 px-2 py-1 font-medium text-sm">
+                                  v{item.version}
+                                  <Info className="h-4 w-4" />
+                                  <span className="-top-1.5 -right-1.5 absolute flex size-3">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+                                    <span className="relative inline-flex size-3 rounded-full bg-yellow-500" />
+                                  </span>
+                                </DropdownMenuLabel>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="left"
+                                className="max-w-[320px]"
+                              >
+                                <div className="flex flex-col gap-2 p-2">
+                                  <h4 className="font-semibold text-sm">
+                                    We've release a new versioning control!
+                                  </h4>
+                                  <p className="text-sm">
+                                    You can try to save a new workspace and
+                                    version of your workflow.
+                                  </p>
+                                  <Link
+                                    // @ts-expect-error
+                                    to="https://comfydeploy.com/docs"
+                                    target="_blank"
+                                    className="flex items-center justify-end gap-1 text-muted-foreground text-sm hover:underline"
+                                  >
+                                    Learn more
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </Link>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="p-0"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              e.nativeEvent.preventDefault();
+                              e.nativeEvent.stopPropagation();
+
+                              setIsCreatingDeployment({
+                                ...isCreatingDeployment,
+                                production: true,
+                              });
+
+                              await callServerPromise(
+                                api({
+                                  url: "deployment",
+                                  init: {
+                                    method: "POST",
+                                    body: JSON.stringify({
+                                      workflow_id: workflowId,
+                                      workflow_version_id: item.id,
+                                      machine_id:
+                                        currentWorkflow.selected_machine_id,
+                                      environment: "production",
+                                    }),
+                                  },
+                                }),
+                              );
+
+                              await refetchDeployments();
+
+                              setIsCreatingDeployment({
+                                ...isCreatingDeployment,
+                                production: false,
+                              });
+                            }}
+                          >
+                            <Button
+                              variant={"ghost"}
+                              className="w-full justify-between gap-2 px-2 font-normal"
+                              disabled={isCreatingDeployment.production}
+                            >
+                              <div className="flex flex-row gap-2">
+                                Promote to
+                                <Badge variant="blue">production</Badge>
+                              </div>
+                              {isCreatingDeployment.production && (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              )}
+                            </Button>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="p-0"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              e.nativeEvent.preventDefault();
+                              e.nativeEvent.stopPropagation();
+
+                              setIsCreatingDeployment({
+                                ...isCreatingDeployment,
+                                staging: true,
+                              });
+
+                              await callServerPromise(
+                                api({
+                                  url: "deployment",
+                                  init: {
+                                    method: "POST",
+                                    body: JSON.stringify({
+                                      workflow_id: workflowId,
+                                      workflow_version_id: item.id,
+                                      machine_id:
+                                        currentWorkflow.selected_machine_id,
+                                      environment: "staging",
+                                    }),
+                                  },
+                                }),
+                              );
+
+                              await refetchDeployments();
+
+                              setIsCreatingDeployment({
+                                ...isCreatingDeployment,
+                                staging: false,
+                              });
+                            }}
+                          >
+                            <Button
+                              variant={"ghost"}
+                              className="w-full justify-between gap-2 px-2 font-normal"
+                              disabled={isCreatingDeployment.staging}
+                            >
+                              <div className="flex flex-row gap-2">
+                                Promote to
+                                <Badge variant="yellow">staging</Badge>
+                              </div>
+                              {isCreatingDeployment.staging && (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              )}
+                            </Button>
+                          </DropdownMenuItem>
+                        </>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -774,11 +1059,11 @@ function RequestPage({
             );
           }}
         />
-        <div className="font-bold mt-4 text-sm">Queues</div>
+        <div className="mt-4 font-bold text-sm">Queues</div>
         <motion.div
           layout
           className={cn(
-            "flex flex-row gap-4 h-full lg:flex-row ring-1 ring-gray-200 rounded-md w-full",
+            "flex h-full w-full flex-row gap-4 overflow-hidden rounded-md ring-1 ring-gray-200 lg:flex-row",
           )}
         >
           <RealtimeWorkflowProvider workflowId={workflowId}>
@@ -787,7 +1072,6 @@ function RequestPage({
         </motion.div>
       </div>
       <WorkflowComponent />
-      {dialog}
     </div>
   );
 }

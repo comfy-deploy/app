@@ -1,17 +1,27 @@
+import { Icon as IconWord } from "@/components/icon-word";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
+import { OrganizationSwitcher, useClerk } from "@clerk/clerk-react";
 import {
   Link,
   useLocation,
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useSidebar } from "./ui/sidebar";
-import { OrganizationSwitcher, useClerk } from "@clerk/clerk-react";
-import { UserMenu } from "./app-sidebar";
-import { Button } from "./ui/button";
+import { delay, motion } from "framer-motion";
 import {
   ArrowLeftIcon,
   ChevronRight,
   CircleGauge,
+  Code,
   CreditCard,
   Database,
   Folder,
@@ -24,28 +34,20 @@ import {
   Settings,
   Workflow,
 } from "lucide-react";
+import { BookOpen, Github, PlayCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { UserMenu } from "./app-sidebar";
+import { ShineBorder } from "./magicui/shine-border";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { delay, motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
-import { Icon as IconWord } from "@/components/icon-word";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuContent,
-  NavigationMenuLink,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { Github, BookOpen, PlayCircle } from "lucide-react";
 import { Separator } from "./ui/separator";
-import { ShineBorder } from "./magicui/shine-border";
+import { useSidebar } from "./ui/sidebar";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
@@ -68,8 +70,8 @@ export function NavBar() {
 
   return (
     <>
-      <div className="sticky top-2 z-50 my-2 w-full">
-        <nav className="flex w-full items-center justify-between ">
+      <div className="sticky top-2 z-50 my-2 w-full ">
+        <nav className="flex w-full items-center justify-between px-2 lg:px-0">
           <div
             className={cn(
               "mx-auto h-[46px] w-full max-w-[520px] rounded-lg border border-gray-200 bg-white",
@@ -103,11 +105,12 @@ export function NavBar() {
                       label="Workflows"
                       icon={Workflow}
                     />
-                    <NavItem to="/home" label="Workspace" icon={Monitor} />
+                    {/* <NavItem to="/home" label="Workspace" icon={Monitor} /> */}
+                    <NavItem to="/machines" label="Machines" icon={Server} />
                     <NavItem
                       to="/deployments"
                       label="Deployments"
-                      icon={Server}
+                      icon={Code}
                     />
                     <NavItem to="/storage" label="Storage" icon={Database} />
                   </div>
@@ -124,17 +127,24 @@ export function NavBar() {
                     <DropdownMenuContent>
                       {/* <DropdownMenuLabel>My Account</DropdownMenuLabel> */}
                       {/* <DropdownMenuSeparator /> */}
-                      <DropdownMenuItem asChild>
+                      {/* <DropdownMenuItem asChild>
                         <Link
                           to="/machines"
                           className="flex items-center gap-2"
                         >
                           <Server className="h-4 w-4" /> Machines
                         </Link>
+                      </DropdownMenuItem> */}
+                      <DropdownMenuItem asChild>
+                        <Link to="/home" className="flex items-center gap-2">
+                          <Monitor className="h-4 w-4" /> Workspace{" "}
+                          <Badge variant="fuchsia">Beta</Badge>
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/assets" className="flex items-center gap-2">
                           <Folder className="h-4 w-4" /> Assets
+                          <Badge variant="fuchsia">Beta</Badge>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -154,16 +164,16 @@ export function NavBar() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/usage" className="flex items-center gap-2">
-                          <CircleGauge className="h-4 w-4" /> Usage
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
                         <Link
                           to="/analytics"
                           className="flex items-center gap-2"
                         >
                           <LineChart className="h-4 w-4" /> Analytics
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/usage" className="flex items-center gap-2">
+                          <CircleGauge className="h-4 w-4" /> Usage
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -203,13 +213,40 @@ export function NavBar() {
 
       <div
         className={cn(
-          "absolute top-0 left-2 z-50 mx-auto my-2 hidden h-[40px] w-fit rounded-lg border border-gray-200 bg-white md:block",
+          "absolute top-0 left-2 z-50 mx-auto my-2 hidden h-[40px] w-fit rounded-lg border border-gray-200 bg-white lg:block",
         )}
       >
         <div className="flex h-full w-full items-center gap-1">
           <UserMenu />
           /
           <OrganizationSwitcher />
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          "absolute top-0 right-2 z-50 mx-auto my-2 hidden h-[40px] w-fit rounded-lg border border-gray-200 bg-white lg:block",
+        )}
+      >
+        <div className="flex h-full w-full items-center gap-4 px-4">
+          <a
+            href="https://www.comfydeploy.com/docs/v2/introduction"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <BookOpen className="h-4 w-4" />
+            Docs
+          </a>
+          <a
+            href="https://discord.com/invite/c222Cwyget"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <DiscordIcon />
+            Discord
+          </a>
         </div>
       </div>
     </>
@@ -240,7 +277,7 @@ export function NavItem({
       className="flex items-center gap-1 rounded-md px-3 py-1 font-medium text-sm transition-all hover:bg-gray-100"
     >
       {Icon && <Icon className="h-4 w-4" />}
-      {label}
+      {label && <span className="hidden md:inline">{label}</span>}
     </Link>
   );
 }

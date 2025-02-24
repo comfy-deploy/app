@@ -8,7 +8,7 @@ import { publicRunStore } from "@/components/run/VersionSelect";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
 import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useParams } from "@tanstack/react-router";
-import { Brush, Loader2, Stars } from "lucide-react";
+import { Pencil, Stars } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Progress } from "@/components/ui/progress";
 import { UserIcon } from "@/components/run/SharePageComponent";
@@ -22,10 +22,8 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -589,7 +587,7 @@ function RouteComponent() {
               className="h-12 w-[52px] shadow-md"
               onClick={() => setIsAdvanceOptionDrawerOpen(true)}
             >
-              <Brush className="h-4 w-4" />
+              <Pencil className="h-4 w-4" />
             </Button>
           </div>
         </motion.div>
@@ -618,18 +616,20 @@ function RouteComponent() {
         </DrawerContent>
       </Drawer>
 
-      <MyDrawer
-        desktopClassName="w-[500px] shadow-lg border-2 border-gray-200"
-        open={!!isImageDetailDrawerOpen}
-        backgroundInteractive={true}
-        onClose={() => setIsImageDetailDrawerOpen(false)}
-      >
-        <RunDetails
-          run_id={selectedImageData?.run_id}
+      {isImageDetailDrawerOpen && (
+        <MyDrawer
+          desktopClassName="w-[500px] shadow-lg border-2 border-gray-200"
+          open={!!isImageDetailDrawerOpen}
+          backgroundInteractive={true}
           onClose={() => setIsImageDetailDrawerOpen(false)}
-          isShare={true}
-        />
-      </MyDrawer>
+        >
+          <RunDetails
+            run_id={selectedImageData?.run_id}
+            onClose={() => setIsImageDetailDrawerOpen(false)}
+            isShare={true}
+          />
+        </MyDrawer>
+      )}
     </>
   );
 }
