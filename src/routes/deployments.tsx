@@ -68,7 +68,7 @@ function RouteComponent() {
   const hasDeployments = deployments && Object.keys(deployments).length > 0;
 
   return (
-    <div className="flex h-full w-full flex-col gap-4 p-4">
+    <div className="flex h-full w-full flex-col gap-4 p-4 max-w-5xl mx-auto">
       {!hasDeployments ? (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-8 text-center">
           <div className="text-lg font-medium">No deployments found</div>
