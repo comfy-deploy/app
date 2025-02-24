@@ -123,6 +123,31 @@ export function MachineList() {
             </div>
           </div>
         ))
+      ) : query.data?.pages[0].length === 0 ? (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-xl border bg-white/50 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Server className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">No machines found</h3>
+            <p className="text-sm text-muted-foreground">
+              Get started by creating your first machine
+            </p>
+          </div>
+          <Button
+            onClick={() => {
+              if (!sub?.features.machineLimited) {
+                navigate({
+                  search: { view: "create" },
+                });
+              }
+            }}
+            disabled={sub?.features.machineLimited}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Machine
+          </Button>
+        </div>
       ) : (
         <VirtualizedInfiniteList
           className="!h-full fab-machine-list mx-auto w-full max-w-[1200px] rounded-xl border"
