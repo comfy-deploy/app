@@ -38,6 +38,7 @@ import { BookOpen, Github, PlayCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { UserMenu } from "./app-sidebar";
 import { ShineBorder } from "./magicui/shine-border";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -47,7 +48,6 @@ import {
 } from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 import { useSidebar } from "./ui/sidebar";
-import { Badge } from "./ui/badge";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
@@ -164,16 +164,16 @@ export function NavBar() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/usage" className="flex items-center gap-2">
-                          <CircleGauge className="h-4 w-4" /> Usage
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
                         <Link
                           to="/analytics"
                           className="flex items-center gap-2"
                         >
                           <LineChart className="h-4 w-4" /> Analytics
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/usage" className="flex items-center gap-2">
+                          <CircleGauge className="h-4 w-4" /> Usage
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>

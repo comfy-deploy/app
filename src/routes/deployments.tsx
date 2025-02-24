@@ -1,29 +1,60 @@
 import { UserIcon } from "@/components/run/SharePageComponent";
 import { Badge } from "@/components/ui/badge";
 import { DisplayWorkflowVersion } from "@/components/workflows/RunsTable";
+import { getEnvColor } from "@/components/workspace/ContainersTable";
 import { getRelativeTime } from "@/lib/get-relative-time";
-import { queryOptions, useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { CopyIcon, ExternalLink, LinkIcon } from "lucide-react";
-import { toast } from "sonner";
-import {
-  useSelectedDeploymentStore,
-  VersionDrawer,
-} from "./workflows/$workflowId/$view.lazy";
-import { useState } from "react";
 import { queryClient } from "@/lib/providers";
 import { cn } from "@/lib/utils";
-import { getEnvColor } from "@/components/workspace/ContainersTable";
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { CopyIcon, ExternalLink, LinkIcon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  VersionDrawer,
+  useSelectedDeploymentStore,
+} from "./workflows/$workflowId/$view.lazy";
 
 const getAllDeploymentsOptions = queryOptions({
   queryKey: ["deployments"],
 });
+
+function PendingComponent() {
+  return (
+    <div className="mx-auto flex w-full max-w-screen-md flex-col gap-4">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="flex w-full flex-col gap-2">
+          <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+          <div className="flex w-full flex-col divide-y">
+            {Array.from({ length: 2 }).map((_, j) => (
+              <div
+                key={j}
+                className="flex w-full items-center justify-between gap-2 p-2"
+              >
+                <div className="flex w-full items-center gap-2">
+                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                  <div className="h-6 w-6 animate-pulse rounded-full bg-gray-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/deployments")({
   component: RouteComponent,
   loader: async ({ context }) => {
     await queryClient.ensureQueryData(getAllDeploymentsOptions);
   },
+  pendingComponent: PendingComponent,
 });
 
 function RouteComponent() {
