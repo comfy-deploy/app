@@ -158,8 +158,6 @@ function WorkflowPageComponent() {
   const { workflow, isLoading: isWorkflowLoading } =
     useCurrentWorkflow(workflowId);
 
-  const { value: version } = useSelectedVersion(workflowId);
-
   switch (currentView) {
     case "requests":
       view = (
@@ -175,20 +173,6 @@ function WorkflowPageComponent() {
         </PaddingLayout>
       );
       break;
-    // case "deployment":
-    //   view = (
-    //     <PaddingLayout>
-    //       <div className="relative mx-auto my-10 w-full max-w-screen-lg">
-    //         <LoadingWrapper tag="api">
-    //           <APIDocs
-    //             domain={process.env.NEXT_PUBLIC_CD_API_URL!}
-    //             workflow_id={workflowId}
-    //           />
-    //         </LoadingWrapper>
-    //       </div>
-    //     </PaddingLayout>
-    //   );
-    //   break;
     case "playground":
       view = (
         <PaddingLayout>
@@ -232,6 +216,9 @@ function WorkflowPageComponent() {
   });
 
   const { data: selectedMachine } = useMachine(workflow?.selected_machine_id);
+
+  const { data: deployments, isLoading: isDeploymentsLoading } =
+    useWorkflowDeployments(workflowId);
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -431,15 +418,18 @@ function WorkflowPageComponent() {
         </div>
       ) : workflow ? (
         <div className="h-full">
-          {!isEditing &&
-            currentView !== "playground" &&
-            currentView !== "gallery" && (
-              <MachineWorkspaceItem
-                machine={selectedMachine}
-                index={0}
-                isInWorkspace={true}
-              />
-            )}
+          {(!isEditing &&
+            currentView !== "gallery" &&
+            currentView !== "playground") ||
+          (currentView === "playground" &&
+            !isDeploymentsLoading &&
+            !deployments?.length) ? (
+            <MachineWorkspaceItem
+              machine={selectedMachine}
+              index={0}
+              isInWorkspace={true}
+            />
+          ) : null}
 
           {view}
         </div>
