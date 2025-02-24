@@ -26,7 +26,14 @@ import { getRelativeTime } from "@/lib/get-relative-time";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Forward, Pencil, Play, User } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Forward,
+  Pencil,
+  Play,
+  User,
+} from "lucide-react";
 import { useQueryState } from "nuqs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 // import Markdown from "react-markdown";
@@ -46,6 +53,8 @@ import {
 } from "../ui/select";
 import { Fab } from "../fab";
 import { MyDrawer } from "../drawer";
+import { useAssetsBrowserStore } from "../workspace/Workspace";
+import { motion } from "framer-motion";
 
 export function Playground(props: {
   title?: ReactNode;
@@ -55,13 +64,15 @@ export function Playground(props: {
   const [runId, setRunId] = useQueryState("run-id");
   const [showRunInputsMobileLayout, setShowRunInputsMobileLayout] =
     useState(false);
+  const [logsCollapsed, setLogsCollapsed] = useState(false);
   const { data: run, isLoading: isRunLoading } = useQuery({
     enabled: !!runId,
     queryKey: ["run", runId],
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
   });
 
-  const { data: deployments } = useWorkflowDeployments(workflow_id);
+  const { data: deployments, isLoading: isDeploymentsLoading } =
+    useWorkflowDeployments(workflow_id);
 
   const [selectedDeployment, setSelectedDeployment] = useQueryState(
     "deployment",
@@ -92,7 +103,7 @@ export function Playground(props: {
 
   return (
     <>
-      <div className="grid h-full w-full grid-rows-[1fr,1fr] gap-4 pt-4 lg:grid-cols-[1fr,minmax(auto,500px)]">
+      {/* <div className="grid h-full w-full grid-rows-[1fr,1fr] gap-4 pt-4 lg:grid-cols-[1fr,minmax(auto,500px)]">
         <div className="flex flex-col gap-4">
           <div className="rounded-sm ring-1 ring-gray-200">
             <RunsTableVirtualized
@@ -118,8 +129,86 @@ export function Playground(props: {
             />
           </CardContent>
         </Card>
+      </div> */}
 
-        <AssetsBrowserPopup />
+      {/* Useless Background */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="pointer-events-none"
+      >
+        <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
+        <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
+        <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
+      </motion.div>
+
+      <div className="flex h-full w-full justify-between">
+        <div className="flex h-full w-[400px] flex-col">
+          <div
+            className={cn(
+              "flex flex-col overflow-hidden",
+              logsCollapsed ? "h-[calc(100%-60px)]" : "h-[calc(60%-20px)]",
+            )}
+          >
+            <span className="mb-1 ml-2 text-muted-foreground text-sm">
+              Edit
+            </span>
+            <div className="flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white p-3">
+              <RunWorkflowInline
+                blocking={false}
+                default_values={default_values}
+                inputs={deployment?.input_types}
+                runOrigin={props.runOrigin}
+                deployment_id={deployment?.id}
+              />
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "mt-2 flex flex-col",
+              logsCollapsed ? "h-[40px]" : "h-[40%] min-h-[150px]",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <span className="ml-2 text-muted-foreground text-sm">Logs</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLogsCollapsed(!logsCollapsed)}
+                className="h-6 px-2"
+              >
+                {logsCollapsed ? (
+                  <ChevronUp size={16} />
+                ) : (
+                  <ChevronDown size={16} />
+                )}
+              </Button>
+            </div>
+            <div
+              className={cn(
+                "mt-2 overflow-auto rounded-sm border border-gray-200 p-2",
+                logsCollapsed
+                  ? "h-0 opacity-0"
+                  : "h-[calc(100%-30px)] opacity-100",
+              )}
+            >
+              {/* Logs content will go here */}
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-4 flex-1">{/* full width image */}</div>
+
+        <div className="flex h-full w-[200px] flex-col">
+          <span className="mb-1 ml-2 text-muted-foreground text-sm">
+            Gallery
+          </span>
+          <div className="mb-4 flex-1 overflow-auto rounded-sm border border-gray-200">
+            {/* Gallery content will go here */}
+          </div>
+        </div>
       </div>
 
       <Fab
@@ -299,17 +388,6 @@ function RunRow({
   });
   const [_, setRunId] = useQueryState("run-id");
 
-  // const { data: userData } = useSWR(
-  //   `${run.user_id}/image`,
-  //   () => getClerkUserData(run.user_id || ""),
-  //   {
-  //     refreshInterval: 1000 * 60 * 5,
-  //   },
-  // );
-
-  // const { data: userData } = useQuery({
-  //   queryKey: ["user", run.user_id],
-  // });
   const { data: versionData } = useQuery<any>({
     enabled: !!run?.workflow_version_id,
     queryKey: ["workflow-version", run?.workflow_version_id],
