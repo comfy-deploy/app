@@ -38,9 +38,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  CreditCard,
   ExternalLink,
   Grid2X2,
-  CreditCard,
   Wallet,
 } from "lucide-react";
 import { type ReactNode, Suspense, memo, useMemo } from "react";
@@ -171,8 +171,8 @@ function RouteComponent() {
   //   (selectedInvoice ? 0 : (usage?.free_tier_credit ?? 0) / 100);
 
   return (
-    <div className="bg-white py-4">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+    <div className="bg-white py-4 w-full">
+      <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
         <Suspense
           fallback={<Skeleton className="h-[28px] w-full max-w-[800px]" />}
         >
@@ -299,7 +299,7 @@ function RouteComponent() {
         <div className="mb-6 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <div className="text-sm text-muted-foreground">Total Usage</div>
+              <div className="text-sm text-muted-foreground">Usage</div>
               <div className="font-semibold text-2xl">
                 $
                 {selectedInvoice?.total_cost?.toFixed(4) ??
@@ -316,18 +316,13 @@ function RouteComponent() {
               </div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Final Total</div>
+              <div className="text-sm text-muted-foreground">Final Usage</div>
               <div className="mt-1 text-2xl font-semibold">
-                {selectedPeriod === "current" ? (
-                  <span className="text-muted-foreground">TBD</span>
-                ) : (
-                  <>
-                    $
-                    {selectedInvoice?.total?.toFixed(4) ??
-                      usage?.final_cost?.toFixed(4) ??
-                      "0.00"}
-                  </>
-                )}
+                $
+                {Math.max(
+                  0,
+                  (selectedInvoice?.total_cost ?? usage?.total_cost ?? 0) - 5,
+                ).toFixed(4)}
               </div>
             </div>
           </div>
@@ -413,7 +408,8 @@ export function UsageBreakdown({
 
   const { data: usageInfo } = useSuspenseQuery<any>({
     queryKey: ["platform", "usage-details"],
-    queryKeyHashFn: (queryKey) => [...queryKey, startDate, endDate].toString(),
+    queryKeyHashFn: (queryKey) =>
+      [...queryKey, startDate.split("T")[0], endDate.split("T")[0]].toString(),
     meta: {
       params: {
         start_time: startDate,
@@ -625,7 +621,7 @@ export function UsageTable(props: {
                   </TableRow>
                 </>
               ) : (
-                <div className="p-4">No usage in the last 30 days</div>
+                <div className="p-4">No usage</div>
               )}
             </TableBody>
           </Table>

@@ -79,6 +79,7 @@ export function ExtraDockerCommands({
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-sm">Extra Docker Commands</h3>
         <Button
+          type="button"
           variant="secondary"
           onClick={() => {
             setEditIndex(-1);
@@ -107,12 +108,14 @@ export function ExtraDockerCommands({
               <div className="flex items-center gap-2">
                 <Badge>{cmd.when}</Badge>
                 <Button
+                  type="button"
                   variant="secondary"
                   onClick={() => openEditDialog(index)}
                 >
                   <Edit size={14} />
                 </Button>
                 <Button
+                  type="button"
                   variant="secondary"
                   onClick={() => deleteCommand(index)}
                 >
@@ -167,7 +170,9 @@ export function ExtraDockerCommands({
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <DialogClose asChild>
-                <Button variant="secondary">Cancel</Button>
+                <Button type="button" variant="secondary">
+                  Cancel
+                </Button>
               </DialogClose>
               <Button type="submit">
                 {editIndex === -1 ? "Add" : "Update"}

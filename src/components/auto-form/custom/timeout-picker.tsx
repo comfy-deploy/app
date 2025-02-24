@@ -45,15 +45,24 @@ export default function AutoFormTimeoutPicker({
     ws_pro: [],
     business: ["pro", "business"],
     creator: ["pro", "business", "creator"],
+    deployment: ["pro", "business", "creator"],
+    deployment_monthly: ["pro", "business", "creator"],
+    deployment_yearly: ["pro", "business", "creator"],
+    business_monthly: ["pro", "business", "creator"],
+    business_yearly: ["pro", "business", "creator"],
+    creator_monthly: ["pro", "business", "creator"],
+    creator_yearly: ["pro", "business", "creator"],
+    creator_legacy_monthly: ["pro"],
   } satisfies Record<string, string[]>;
 
   // Check if the current plan meets or exceeds the required plan
   const isPlanSufficient = (requiredPlan: string | undefined) => {
     if (!requiredPlan) return true;
-    if (plan === "basic" || plan === undefined) return false;
-    return (
-      planHierarchy[plan as keyof typeof planHierarchy] as string[]
-    ).includes(requiredPlan);
+    if (!plan || plan === "basic") return false;
+
+    const allowedPlans =
+      planHierarchy[plan as keyof typeof planHierarchy] ?? [];
+    return allowedPlans.includes(requiredPlan);
   };
 
   // Determine which timeout settings are enabled based on the current plan

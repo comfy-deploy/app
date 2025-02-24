@@ -8,6 +8,7 @@ export const Route = createFileRoute("/pricing")({
 
     return {
       ready: search.ready as boolean | undefined,
+      plan: search.plan as string | undefined,
     };
   },
 });

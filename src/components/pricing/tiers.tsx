@@ -47,10 +47,10 @@ export const PRO_TIER = {
 } satisfies Tier;
 
 export const BUSSINESS_TIER_OLD = {
-  name: "Creator",
-  id: "creator",
+  name: "Deployment",
+  id: "deployment",
   startingAt: false,
-  href: "/api/stripe/checkout?plan=creator",
+  href: "/api/stripe/checkout?plan=deployment",
   priceMonthly: "$100",
   // description: "Scale your product",
   mostPopular: true,
