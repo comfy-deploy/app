@@ -22,8 +22,8 @@ export function RunInputs({
           <Table className="table-fixed">
             <TableHeader className="sticky top-0">
               <TableRow>
-                <TableHead className="w-[200px]">Name</TableHead>
-                <TableHead className="">Input</TableHead>
+                <TableHead className="w-[200px] px-1">Name</TableHead>
+                <TableHead className="px-1">Input</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -63,7 +63,7 @@ import { MyDrawer } from "../drawer";
 import { useAssetsBrowserStore } from "../workspace/Workspace";
 import { motion } from "framer-motion";
 import { VirtualizedInfiniteList } from "../virtualized-infinite-list";
-import { LogsTab } from "../workflows/WorkflowComponent";
+import { LogsTab, RunDetails } from "../workflows/WorkflowComponent";
 import { LogsViewer } from "../log/logs-viewer";
 import { Progress } from "../ui/progress";
 import { Separator } from "../ui/separator";
@@ -156,7 +156,7 @@ export function Playground(props: {
   return (
     <>
       <div className="flex h-full w-full justify-between">
-        <div className="hidden h-full w-[400px] flex-col lg:flex">
+        <div className="hidden h-full w-[400px] flex-col xl:flex">
           <div
             className={cn(
               "flex flex-col transition-all",
@@ -242,7 +242,7 @@ export function Playground(props: {
           </div>
         </div>
 
-        <div className="mx-4 w-full flex-1">
+        <div className="w-full flex-1 lg:mx-4">
           <div className="relative h-full">
             {/* Useless Background */}
             <motion.div
@@ -357,7 +357,7 @@ export function Playground(props: {
 
       <Fab
         refScrollingContainerKey="fab-playground"
-        className="z-50 lg:hidden"
+        className="z-50 xl:hidden"
         mainItem={{
           onClick: () =>
             setShowRunInputsMobileLayout(!showRunInputsMobileLayout),
@@ -371,7 +371,7 @@ export function Playground(props: {
           open={showRunInputsMobileLayout}
           backgroundInteractive={true}
           onClose={() => setShowRunInputsMobileLayout(false)}
-          desktopClassName="w-[500px] lg:hidden shadow-lg border border-gray-200"
+          desktopClassName="w-[500px] xl:hidden shadow-lg border border-gray-200"
         >
           <InputLayout
             deployment={deployment}
@@ -390,79 +390,82 @@ function RunDisplay({ runId }: { runId?: string }) {
   const { data: run, isLoading } = useRun(runId);
   const { total: totalUrlCount } = getTotalUrlCountAndUrls(run?.outputs || []);
 
-  if (isLoading) {
+  // Common container styles for status messages
+  const containerClass = "flex h-full w-full items-center justify-center";
+  const messageClass =
+    "animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm";
+
+  // Handle loading and empty states
+  if (isLoading || !run) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
-          Please wait ...
+      <div className={containerClass}>
+        <p className={messageClass}>
+          {isLoading ? "Please wait ..." : "Press Run to start the queue"}
         </p>
       </div>
     );
   }
 
-  if (!run) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
-          Press Run to start the queue
-        </p>
-      </div>
-    );
-  }
+  // Handle different run statuses
+  switch (run.status) {
+    case "cancelled":
+      return (
+        <div className={containerClass}>
+          <p className={messageClass}>Run cancelled.</p>
+        </div>
+      );
 
-  if (run.status === "cancelled") {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
-          Run cancelled.
-        </p>
-      </div>
-    );
-  }
+    case "failed":
+      return (
+        <div className={containerClass}>
+          <p className={cn(messageClass, "text-red-500")}>
+            Run failed. Scroll down to check the logs for more details.
+          </p>
+        </div>
+      );
 
-  if (run.status === "failed") {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2">
-        <p className="animate-[pulse_4s_ease-in-out_infinite] text-red-500 text-sm">
-          Run failed. You can check the logs for more details.
-        </p>
-        {runId && (
-          <div className="mx-auto max-w-2xl">
-            <LogsTab runId={runId} />
+    case "success":
+      return (
+        <div className="scrollbar-track-transparent scrollbar-thin scrollbar-none h-full overflow-x-hidden overflow-y-scroll">
+          <div className="sticky top-0 flex min-h-[calc(100%-20px)] w-full items-center justify-center">
+            <div className="px-8">
+              <OutputRenderRun
+                run={run}
+                imgClasses={cn(
+                  "shadow-md max-w-full",
+                  totalUrlCount > 1
+                    ? "max-h-[30vh]"
+                    : "max-h-[80vh] object-contain",
+                )}
+                lazyLoading={true}
+                columns={totalUrlCount > 4 ? 3 : 2}
+              />
+            </div>
           </div>
-        )}
-      </div>
-    );
-  }
+          {runId && (
+            <div className="relative z-10 flex w-full items-center justify-center rounded-t-sm border border-gray-200 bg-white/90 p-8 pb-20 drop-shadow-lg backdrop-blur-lg">
+              <ScrollArea className="h-[50vh] w-full max-w-5xl px-4">
+                <RunDetails run_id={runId} isPlayground={true} />
+              </ScrollArea>
+            </div>
+          )}
+        </div>
+      );
 
-  if (run.status === "success") {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="px-8">
-          <OutputRenderRun
-            run={run}
-            imgClasses={cn(
-              "shadow-md max-w-full",
-              totalUrlCount > 1
-                ? "max-h-[30vh]"
-                : "max-h-[80vh] object-contain",
-            )}
-            lazyLoading={true}
-            columns={totalUrlCount > 4 ? 3 : 2}
+    // Default case for running, uploading, not-started, queued
+    default:
+      return (
+        <div className="flex h-full w-full animate-[pulse_4s_ease-in-out_infinite] flex-col items-center justify-center gap-1">
+          <p className="text-muted-foreground text-xs">
+            {run.live_status || "Starting..."}
+          </p>
+          <Progress
+            value={(run.progress || 0) * 100}
+            className="w-64 opacity-60"
           />
         </div>
-      </div>
-    );
+      );
   }
-
-  return (
-    <div className="flex h-full w-full animate-[pulse_4s_ease-in-out_infinite] flex-col items-center justify-center gap-1">
-      <p className="text-muted-foreground text-xs">
-        {run.live_status || "Starting..."}
-      </p>
-      <Progress value={(run.progress || 0) * 100} className="w-64 opacity-60" />
-    </div>
-  );
 }
 
 function RunGallery({ runId }: { runId: string }) {
