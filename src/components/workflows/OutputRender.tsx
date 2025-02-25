@@ -14,7 +14,16 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Download, SearchX } from "lucide-react";
+import {
+  Download,
+  SearchX,
+  CheckCircle,
+  XCircle,
+  Check,
+  X,
+  Minus,
+  Loader2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Carousel,
@@ -339,6 +348,7 @@ export function OutputRenderRun({
   canDownload = false,
   columns = 1,
   displayCount,
+  showNullSkeleton = false,
 }: {
   run: any;
   imgClasses: string;
@@ -347,6 +357,7 @@ export function OutputRenderRun({
   canDownload?: boolean;
   displayCount?: number;
   columns?: number;
+  showNullSkeleton?: boolean;
 }) {
   const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
     run.outputs || [],
@@ -357,6 +368,17 @@ export function OutputRenderRun({
       ? urlList.slice(0, displayCount)
       : urlList;
 
+  if (showNullSkeleton && urlList.length === 0) {
+    return (
+      <div className="relative">
+        <Skeleton className={imgClasses} />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-[8px] text-muted-foreground">No outputs</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <FileURLRenderMulti
       urls={urlsToDisplay}
@@ -366,6 +388,109 @@ export function OutputRenderRun({
       canDownload={canDownload}
       columns={columns}
     />
+  );
+}
+
+// Add this new component for status indicators
+function RunStatusIndicator({ status }: { status: string }) {
+  if (!status) return null;
+
+  let StatusIcon: any;
+  let iconClassName: string;
+  let extraClassName: string;
+
+  switch (status) {
+    case "success":
+      StatusIcon = Check;
+      iconClassName = "text-green-500";
+      extraClassName = "shadow-md";
+      break;
+    case "failed":
+      StatusIcon = X;
+      iconClassName = "text-red-500";
+      extraClassName = "";
+      break;
+    case "cancelled":
+      StatusIcon = Minus;
+      iconClassName = "text-gray-500";
+      extraClassName = "";
+      break;
+    case "running":
+    case "uploading":
+    case "not-started":
+    case "queued":
+      StatusIcon = Loader2;
+      iconClassName = "text-gray-500 animate-spin";
+      extraClassName = "";
+      break;
+    default:
+      return null;
+  }
+
+  return (
+    <div
+      className={cn(
+        "absolute right-1.5 bottom-1.5 z-10 rounded-[6px] p-1 backdrop-blur-md",
+        extraClassName,
+      )}
+    >
+      <StatusIcon size={12} className={iconClassName} />
+    </div>
+  );
+}
+
+export function PlaygroundOutputRenderRun({
+  run,
+  imgClasses,
+}: {
+  run: any;
+  imgClasses: string;
+}) {
+  const { urls: urlList } = getTotalUrlCountAndUrls(run.outputs || []);
+  const urlsToDisplay = urlList.length > 0 ? urlList.slice(0, 1) : [];
+
+  return (
+    <div className="relative h-full">
+      <RunStatusIndicator status={run.status} />
+
+      {urlsToDisplay.length > 0 ? (
+        <>
+          <FileURLRenderMulti
+            urls={urlsToDisplay}
+            imgClasses={imgClasses}
+            canExpandToView={false}
+            lazyLoading={true}
+            canDownload={false}
+            columns={1}
+          />
+          <div className="absolute right-0 bottom-0.5 left-0 h-8 w-[105px] shrink-0 rounded-b-[8px] bg-gradient-to-t from-black/50 to-transparent" />
+        </>
+      ) : (
+        <>
+          <Skeleton className={imgClasses} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span
+              className={cn(
+                "text-[8px] text-muted-foreground",
+                run.status === "cancelled" && "line-through",
+                run.status === "failed" && "text-red-500",
+              )}
+            >
+              {run.status === "cancelled"
+                ? "Cancelled"
+                : run.status === "failed"
+                  ? "Failed"
+                  : run.status === "running" ||
+                      run.status === "uploading" ||
+                      run.status === "not-started" ||
+                      run.status === "queued"
+                    ? "Generating"
+                    : "No outputs"}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

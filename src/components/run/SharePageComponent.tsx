@@ -18,8 +18,12 @@ import { LiveStatus } from "@/components/workflows/LiveStatus";
 import {
   getTotalUrlCountAndUrls,
   OutputRenderRun,
+  PlaygroundOutputRenderRun,
 } from "@/components/workflows/OutputRender";
-import { RunsTableVirtualized } from "@/components/workflows/RunsTable";
+import {
+  RunsTableVirtualized,
+  useRuns,
+} from "@/components/workflows/RunsTable";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { customInputNodes } from "@/lib/customInputNodes";
 import { getRelativeTime } from "@/lib/get-relative-time";
@@ -30,6 +34,7 @@ import {
   ChevronDown,
   ChevronUp,
   Forward,
+  Loader2,
   Pencil,
   Play,
   User,
@@ -55,6 +60,7 @@ import { Fab } from "../fab";
 import { MyDrawer } from "../drawer";
 import { useAssetsBrowserStore } from "../workspace/Workspace";
 import { motion } from "framer-motion";
+import { VirtualizedInfiniteList } from "../virtualized-infinite-list";
 
 export function Playground(props: {
   title?: ReactNode;
@@ -101,36 +107,11 @@ export function Playground(props: {
     }
   }, [runId, run]);
 
+  const runsQuery = useRuns({ workflow_id: workflow_id! });
+  console.log(runsQuery.data);
+
   return (
     <>
-      {/* <div className="grid h-full w-full grid-rows-[1fr,1fr] gap-4 pt-4 lg:grid-cols-[1fr,minmax(auto,500px)]">
-        <div className="flex flex-col gap-4">
-          <div className="rounded-sm ring-1 ring-gray-200">
-            <RunsTableVirtualized
-              className="fab-playground h-[calc(100vh-7rem)]"
-              workflow_id={workflow_id}
-              itemHeight={400}
-              RunRowComponent={RunRow}
-              setInputValues={setDefaultValues}
-            />
-          </div>
-        </div>
-
-        <Card className="h-fit w-full">
-          {props.title}
-
-          <CardContent className="flex w-full flex-col gap-4 px-3 py-2">
-            <InputLayout
-              deployment={deployment}
-              setSelectedDeployment={setSelectedDeployment}
-              deployments={deployments}
-              default_values={default_values}
-              runOrigin={props.runOrigin}
-            />
-          </CardContent>
-        </Card>
-      </div> */}
-
       {/* Useless Background */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -144,35 +125,51 @@ export function Playground(props: {
       </motion.div>
 
       <div className="flex h-full w-full justify-between">
-        <div className="flex h-full w-[400px] flex-col">
+        <div className="hidden h-full w-[400px] flex-col lg:flex">
           <div
             className={cn(
-              "flex flex-col overflow-hidden",
+              "flex flex-col",
               logsCollapsed ? "h-[calc(100%-60px)]" : "h-[calc(60%-20px)]",
             )}
           >
-            <span className="mb-1 ml-2 text-muted-foreground text-sm">
-              Edit
-            </span>
-            <div className="flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white p-3">
-              <RunWorkflowInline
-                blocking={false}
-                default_values={default_values}
-                inputs={deployment?.input_types}
-                runOrigin={props.runOrigin}
-                deployment_id={deployment?.id}
-              />
+            <span className="mb-1 ml-2 font-semibold text-sm">Edit</span>
+            <div className="flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white p-3 shadow-sm">
+              {isDeploymentsLoading ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : deployment ? (
+                <ScrollArea className="h-full">
+                  <RunWorkflowInline
+                    blocking={false}
+                    default_values={default_values}
+                    inputs={deployment?.input_types}
+                    runOrigin={props.runOrigin}
+                    deployment_id={deployment?.id}
+                  />
+                </ScrollArea>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2">
+                  <p className="text-center font-medium text-muted-foreground text-sm">
+                    No deployments found for this workflow.
+                  </p>
+                  <p className="mx-4 text-center text-muted-foreground text-xs leading-5">
+                    Start a new workspace below to save a version, and promote
+                    it to a deployment for testing in the playground.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           <div
             className={cn(
-              "mt-2 flex flex-col",
+              "my-2 flex flex-col",
               logsCollapsed ? "h-[40px]" : "h-[40%] min-h-[150px]",
             )}
           >
             <div className="flex items-center justify-between">
-              <span className="ml-2 text-muted-foreground text-sm">Logs</span>
+              <span className="ml-2 font-semibold text-sm">Logs</span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -188,7 +185,7 @@ export function Playground(props: {
             </div>
             <div
               className={cn(
-                "mt-2 overflow-auto rounded-sm border border-gray-200 p-2",
+                "mt-2 overflow-auto rounded-sm border border-gray-200 p-2 shadow-sm",
                 logsCollapsed
                   ? "h-0 opacity-0"
                   : "h-[calc(100%-30px)] opacity-100",
@@ -199,14 +196,69 @@ export function Playground(props: {
           </div>
         </div>
 
-        <div className="mx-4 flex-1">{/* full width image */}</div>
+        <div className="mx-4 w-full flex-1">
+          <div className="relative h-full">
+            {/* Environment & GPU Info Bar */}
+            {deployment && (
+              <div className="-translate-x-1/2 absolute bottom-4 left-1/2 hidden items-center gap-3 rounded-full border border-gray-200 bg-white/90 p-2 shadow-lg backdrop-blur-sm transition-all hover:shadow-md lg:flex">
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={deployment?.id}
+                    onValueChange={(value) => {
+                      const selectedDeployment = deployments?.find(
+                        (d) => d.id === value,
+                      );
+                      if (selectedDeployment) {
+                        setSelectedDeployment(selectedDeployment.id);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[200px] border-none bg-transparent">
+                      <SelectValue placeholder="Select environment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deployments?.map((dep) => (
+                        <SelectItem key={dep.id} value={dep.id}>
+                          <div className="flex w-full items-center justify-between gap-2">
+                            <Badge
+                              variant="outline"
+                              className={cn(getEnvColor(dep.environment))}
+                            >
+                              {dep.environment}
+                            </Badge>
+                            <span className="text-gray-500 text-xs">
+                              {dep.gpu || "No GPU"}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
-        <div className="flex h-full w-[200px] flex-col">
-          <span className="mb-1 ml-2 text-muted-foreground text-sm">
-            Gallery
-          </span>
-          <div className="mb-4 flex-1 overflow-auto rounded-sm border border-gray-200">
-            {/* Gallery content will go here */}
+        <div className="hidden h-full w-[120px] flex-col lg:flex">
+          <span className="mb-1 ml-2 font-semibold text-sm">Gallery</span>
+          <div className="relative mb-2 flex-1 overflow-hidden rounded-sm border border-gray-200 shadow-sm">
+            <VirtualizedInfiniteList
+              className="!h-full scrollbar-track-transparent scrollbar-thin scrollbar-none p-1.5"
+              queryResult={runsQuery}
+              renderItem={(run) => <RunGallery runId={run?.id} />}
+              estimateSize={107}
+              renderLoading={() => {
+                return [...Array(4)].map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="aspect-square w-[100px] rounded-[8px]"
+                  />
+                ));
+              }}
+            />
+            <div className="pointer-events-none absolute top-0 right-0 left-0 z-10 h-10 bg-gradient-to-b from-white to-transparent" />
+            <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-10 bg-gradient-to-t from-white to-transparent" />
           </div>
         </div>
       </div>
@@ -239,6 +291,40 @@ export function Playground(props: {
         </MyDrawer>
       )}
     </>
+  );
+}
+
+function RunGallery({ runId }: { runId: string }) {
+  const { data: run, isLoading } = useQuery({
+    queryKey: ["run", runId],
+    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+    refetchInterval: (query) => {
+      if (
+        query.state.data?.status === "running" ||
+        query.state.data?.status === "uploading" ||
+        query.state.data?.status === "not-started" ||
+        query.state.data?.status === "queued"
+      ) {
+        return 2000;
+      }
+      return false;
+    },
+    enabled: !!runId,
+  });
+
+  if (isLoading) {
+    return <Skeleton className="aspect-square w-[105px] rounded-[8px]" />;
+  }
+
+  if (!run) {
+    return null;
+  }
+
+  return (
+    <PlaygroundOutputRenderRun
+      run={run as any}
+      imgClasses="w-[105px] aspect-square object-cover rounded-[8px] shrink-0 overflow-hidden"
+    />
   );
 }
 
