@@ -16,6 +16,7 @@ import {
 import { useSelectedVersion } from "@/components/version-select";
 import { LiveStatus } from "@/components/workflows/LiveStatus";
 import {
+  FileURLRender,
   getTotalUrlCountAndUrls,
   OutputRenderRun,
   PlaygroundOutputRenderRun,
@@ -40,6 +41,9 @@ import {
   Play,
   Settings2,
   User,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -152,6 +156,87 @@ export function Playground(props: {
   }, [runId, run, isTweak]);
 
   const runsQuery = useRuns({ workflow_id: workflow_id! });
+  const virtualizerRef = useRef<HTMLDivElement>(null);
+  const lastKeyPressTime = useRef<number>(0);
+  const keyDebounceTime = 150; // milliseconds between allowed key presses
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!runsQuery.data?.pages || runsQuery.data.pages.length === 0) return;
+
+      // Flatten all runs from all pages
+      const allRuns = runsQuery.data.pages.flat();
+      if (!allRuns.length) return;
+
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        // Debounce key presses to prevent rapid navigation
+        const now = Date.now();
+        if (now - lastKeyPressTime.current < keyDebounceTime) {
+          e.preventDefault();
+          return;
+        }
+        lastKeyPressTime.current = now;
+
+        e.preventDefault();
+
+        // Find current index
+        const currentIndex = runId
+          ? allRuns.findIndex((run) => run.id === runId)
+          : -1;
+
+        let newIndex = currentIndex;
+        if (e.key === "ArrowUp") {
+          // Only go up if not at the first item
+          if (currentIndex > 0) {
+            newIndex = currentIndex - 1;
+          } else if (currentIndex === -1) {
+            // If no selection, select the last item
+            newIndex = allRuns.length - 1;
+          }
+          // If already at first item (index 0), do nothing
+        } else {
+          // Only go down if not at the last item
+          if (currentIndex < allRuns.length - 1) {
+            newIndex = currentIndex + 1;
+          } else if (currentIndex === -1) {
+            // If no selection, select the first item
+            newIndex = 0;
+          }
+          // If already at last item, do nothing
+        }
+
+        // Only update if the index actually changed
+        if (newIndex !== currentIndex) {
+          const newRunId = allRuns[newIndex]?.id;
+          if (newRunId) {
+            setRunId(newRunId);
+
+            // Scroll the selected item into view
+            if (virtualizerRef.current) {
+              // Find the element with the matching run ID
+              const elements = virtualizerRef.current.querySelectorAll(
+                `[data-run-id="${newRunId}"]`,
+              );
+              if (elements.length > 0) {
+                // Find the parent element with a data-index attribute
+                const parent = elements[0].closest("[data-index]");
+                if (parent) {
+                  parent.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [runId, runsQuery.data, setRunId]);
 
   return (
     <>
@@ -258,6 +343,12 @@ export function Playground(props: {
 
             <div className="relative z-10 h-full w-full">
               <RunDisplay runId={runId ?? undefined} />
+              <ArrowIndicator
+                disableTop={true}
+                disableLeft={true}
+                disableDown={true}
+                disableRight={true}
+              />
             </div>
 
             {/* Environment & GPU Info Bar */}
@@ -336,6 +427,7 @@ export function Playground(props: {
           <span className="mb-1 ml-2 font-semibold text-sm">Gallery</span>
           <div className="relative mb-2 flex-1 overflow-hidden rounded-sm border border-gray-200 shadow-sm">
             <VirtualizedInfiniteList
+              ref={virtualizerRef}
               className="!h-full scrollbar-track-transparent scrollbar-thin scrollbar-none p-1.5"
               queryResult={runsQuery}
               renderItem={(run) => <RunGallery runId={run?.id} />}
@@ -388,7 +480,45 @@ export function Playground(props: {
 
 function RunDisplay({ runId }: { runId?: string }) {
   const { data: run, isLoading } = useRun(runId);
-  const { total: totalUrlCount } = getTotalUrlCountAndUrls(run?.outputs || []);
+  const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
+    run?.outputs || [],
+  );
+  const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(
+    null,
+  );
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!urlList || urlList.length <= 1) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setViewingImageIndex((prev) =>
+          prev === 0 ? urlList.length - 1 : prev - 1,
+        );
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+
+        if (viewingImageIndex === null) {
+          setViewingImageIndex(0);
+        } else {
+          setViewingImageIndex((prev) =>
+            prev === urlList.length - 1 ? 0 : prev + 1,
+          );
+        }
+      } else if (
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
+        e.key === "Escape"
+      ) {
+        setViewingImageIndex(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [viewingImageIndex, urlList.length]);
 
   // Common container styles for status messages
   const containerClass = "flex h-full w-full items-center justify-center";
@@ -429,23 +559,77 @@ function RunDisplay({ runId }: { runId?: string }) {
         <div className="scrollbar-track-transparent scrollbar-thin scrollbar-none h-full overflow-x-hidden overflow-y-scroll">
           <div className="sticky top-0 flex min-h-[calc(100%-20px)] w-full items-center justify-center">
             <div className="relative px-8">
-              <OutputRenderRun
-                run={run}
-                imgClasses={cn(
-                  "shadow-md max-w-full",
-                  totalUrlCount > 1
-                    ? "max-h-[30vh]"
-                    : "max-h-[80vh] object-contain",
-                )}
-                lazyLoading={true}
-                columns={totalUrlCount > 4 ? 3 : 2}
-              />
+              {viewingImageIndex !== null ? (
+                // Image viewer mode
+                <div className="relative flex flex-col items-center">
+                  {/* Image thumbnails navigation bar */}
+                  <div className="-top-24 absolute flex w-full items-center justify-center">
+                    <div className="flex max-w-full gap-2 overflow-x-auto rounded-sm p-2">
+                      {urlList.map((item, index) => (
+                        <button
+                          type="button"
+                          key={index}
+                          onClick={() => setViewingImageIndex(index)}
+                          className={cn(
+                            "relative flex-shrink-0 overflow-hidden rounded-md transition-all",
+                            viewingImageIndex === index
+                              ? "shadow-md outline outline-2 outline-purple-500 outline-offset-2"
+                              : "opacity-70 ring-transparent hover:opacity-100",
+                          )}
+                        >
+                          <div className="relative h-16 w-16">
+                            <img
+                              src={item.url}
+                              alt={`Thumbnail ${index + 1}`}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <FileURLRender
+                    url={urlList[viewingImageIndex].url}
+                    imgClasses="max-h-[60vh] object-contain shadow-md max-w-full"
+                    lazyLoading={false}
+                  />
+                </div>
+              ) : (
+                // Gallery mode
+                <div className="relative">
+                  <OutputRenderRun
+                    run={run}
+                    imgClasses={cn(
+                      "shadow-md max-w-full",
+                      totalUrlCount > 1
+                        ? "max-h-[30vh]"
+                        : "max-h-[80vh] object-contain",
+                    )}
+                    lazyLoading={true}
+                    columns={totalUrlCount > 4 ? 3 : 2}
+                  />
+                </div>
+              )}
+
               <div className="-bottom-12 absolute right-0 left-0 flex flex-col items-center justify-center">
                 <span className="text-muted-foreground text-xs">
                   Scroll for details
                 </span>
                 <ChevronDown className="h-4 w-4" />
               </div>
+
+              {totalUrlCount > 1 && (
+                <>
+                  <div className="-translate-y-1/2 absolute top-1/2 right-0 flex flex-col items-center justify-center">
+                    <ChevronRight className="h-4 w-4" />
+                  </div>
+                  <div className="-translate-y-1/2 absolute top-1/2 left-0 flex flex-col items-center justify-center">
+                    <ChevronLeft className="h-4 w-4" />
+                  </div>
+                </>
+              )}
             </div>
           </div>
           {runId && (
@@ -492,6 +676,7 @@ function RunGallery({ runId }: { runId: string }) {
         <TooltipTrigger asChild>
           {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
           <div
+            data-run-id={runId}
             className="cursor-pointer"
             onClick={() => {
               if (runId !== currentRunId) {
@@ -550,6 +735,63 @@ function RunGallery({ runId }: { runId: string }) {
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+function ArrowIndicator({
+  disableTop,
+  disableLeft,
+  disableDown,
+  disableRight,
+}: {
+  disableTop: boolean;
+  disableLeft: boolean;
+  disableDown: boolean;
+  disableRight: boolean;
+}) {
+  return (
+    <>
+      <div className="absolute right-2 bottom-8 flex flex-col items-center gap-1">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+          aria-label="Up"
+          disabled={disableTop}
+        >
+          <ChevronUp size={16} />
+        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+            aria-label="Left"
+            disabled={disableLeft}
+          >
+            <ChevronLeft size={16} />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+            aria-label="Down"
+            disabled={disableDown}
+          >
+            <ChevronDown size={16} />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+            aria-label="Right"
+            disabled={disableRight}
+          >
+            <ChevronRight size={16} />
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }
 
