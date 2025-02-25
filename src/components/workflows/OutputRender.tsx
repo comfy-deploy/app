@@ -166,7 +166,7 @@ function FileURLRenderMulti({
   const [openOnIndex, setOpenOnIndex] = useState<number | null>(null);
 
   if (!canExpandToView) {
-    if (columns > 1) {
+    if (columns > 1 && urls.length > 1) {
       return (
         <div className={cn("grid grid-cols-1 gap-2", `grid-cols-${columns}`)}>
           {urls.map((url, i) => (
@@ -463,7 +463,7 @@ export function PlaygroundOutputRenderRun({
             canDownload={false}
             columns={1}
           />
-          <div className="absolute right-0 bottom-0.5 left-0 h-8 w-[105px] shrink-0 rounded-b-[8px] bg-gradient-to-t from-black/50 to-transparent" />
+          <div className="absolute right-0 bottom-0 left-0 h-8 w-[105px] shrink-0 rounded-b-[6px] bg-gradient-to-t from-black/50 to-transparent" />
         </>
       ) : (
         <>

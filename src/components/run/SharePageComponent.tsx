@@ -61,6 +61,42 @@ import { MyDrawer } from "../drawer";
 import { useAssetsBrowserStore } from "../workspace/Workspace";
 import { motion } from "framer-motion";
 import { VirtualizedInfiniteList } from "../virtualized-infinite-list";
+import { LogsTab } from "../workflows/WorkflowComponent";
+import { LogsViewer } from "../log/logs-viewer";
+import { Progress } from "../ui/progress";
+
+type run = {
+  status:
+    | "running"
+    | "uploading"
+    | "not-started"
+    | "queued"
+    | "success"
+    | "cancelled"
+    | "failed";
+  live_status?: string;
+  progress?: number;
+  outputs?: any[];
+};
+
+export function useRun(runId?: string) {
+  const runQuery = useQuery<run>({
+    queryKey: ["run", runId],
+    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+    refetchInterval: (query) => {
+      if (
+        query.state.data?.status !== "success" &&
+        query.state.data?.status !== "failed"
+      ) {
+        return 2000;
+      }
+      return false;
+    },
+    enabled: !!runId,
+  });
+
+  return runQuery;
+}
 
 export function Playground(props: {
   title?: ReactNode;
@@ -100,6 +136,8 @@ export function Playground(props: {
   const lastRunIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    return;
+
     if (runId && run && runId !== lastRunIdRef.current) {
       setDefaultValues(getFormattedInputs(run));
       toast.success("Input values updated.");
@@ -108,28 +146,15 @@ export function Playground(props: {
   }, [runId, run]);
 
   const runsQuery = useRuns({ workflow_id: workflow_id! });
-  console.log(runsQuery.data);
 
   return (
     <>
-      {/* Useless Background */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-        className="pointer-events-none"
-      >
-        <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
-        <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
-        <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
-      </motion.div>
-
       <div className="flex h-full w-full justify-between">
         <div className="hidden h-full w-[400px] flex-col lg:flex">
           <div
             className={cn(
-              "flex flex-col",
-              logsCollapsed ? "h-[calc(100%-60px)]" : "h-[calc(60%-20px)]",
+              "flex flex-col transition-all",
+              logsCollapsed ? "h-[calc(100%-60px)]" : "h-[calc(100%-370px)]",
             )}
           >
             <span className="mb-1 ml-2 font-semibold text-sm">Edit</span>
@@ -164,8 +189,8 @@ export function Playground(props: {
 
           <div
             className={cn(
-              "my-2 flex flex-col",
-              logsCollapsed ? "h-[40px]" : "h-[40%] min-h-[150px]",
+              "my-2 flex flex-col transition-all",
+              logsCollapsed ? "h-[40px]" : "h-[350px]",
             )}
           >
             <div className="flex items-center justify-between">
@@ -187,20 +212,51 @@ export function Playground(props: {
               className={cn(
                 "mt-2 overflow-auto rounded-sm border border-gray-200 p-2 shadow-sm",
                 logsCollapsed
-                  ? "h-0 opacity-0"
-                  : "h-[calc(100%-30px)] opacity-100",
+                  ? "h-0 opacity-0 transition-all"
+                  : "h-[calc(100%-30px)] opacity-100 transition-all",
               )}
             >
-              {/* Logs content will go here */}
+              {runId && run?.modal_function_call_id ? (
+                <LogsTab runId={runId} />
+              ) : (
+                <div className="h-[300px] w-full">
+                  <LogsViewer
+                    logs={[
+                      {
+                        timestamp: 0,
+                        logs: "Listening for logs...",
+                      },
+                    ]}
+                    stickToBottom
+                    hideTimestamp
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div className="mx-4 w-full flex-1">
           <div className="relative h-full">
+            {/* Useless Background */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1 }}
+              className="pointer-events-none absolute inset-0 z-0"
+            >
+              <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
+              <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
+              <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
+            </motion.div>
+
+            <div className="relative z-10 h-full w-full">
+              <RunDisplay runId={runId ?? undefined} />
+            </div>
+
             {/* Environment & GPU Info Bar */}
             {deployment && (
-              <div className="-translate-x-1/2 absolute bottom-4 left-1/2 hidden items-center gap-3 rounded-full border border-gray-200 bg-white/90 p-2 shadow-lg backdrop-blur-sm transition-all hover:shadow-md lg:flex">
+              <div className="-translate-x-1/2 absolute bottom-4 left-1/2 z-20 hidden items-center gap-3 rounded-full border border-gray-200 bg-white/90 p-2 shadow-lg backdrop-blur-sm transition-all hover:shadow-md lg:flex">
                 <div className="flex items-center gap-2">
                   <Select
                     value={deployment?.id}
@@ -294,26 +350,86 @@ export function Playground(props: {
   );
 }
 
-function RunGallery({ runId }: { runId: string }) {
-  const { data: run, isLoading } = useQuery({
-    queryKey: ["run", runId],
-    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
-    refetchInterval: (query) => {
-      if (
-        query.state.data?.status === "running" ||
-        query.state.data?.status === "uploading" ||
-        query.state.data?.status === "not-started" ||
-        query.state.data?.status === "queued"
-      ) {
-        return 2000;
-      }
-      return false;
-    },
-    enabled: !!runId,
-  });
+function RunDisplay({ runId }: { runId?: string }) {
+  const { data: run, isLoading } = useRun(runId);
+  const { total: totalUrlCount } = getTotalUrlCountAndUrls(run?.outputs || []);
 
   if (isLoading) {
-    return <Skeleton className="aspect-square w-[105px] rounded-[8px]" />;
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
+          Please wait ...
+        </p>
+      </div>
+    );
+  }
+
+  if (!run) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
+          Press Run to start the queue
+        </p>
+      </div>
+    );
+  }
+
+  if (run.status === "cancelled") {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
+          Run cancelled. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  if (run.status === "failed") {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="animate-[pulse_4s_ease-in-out_infinite] text-red-500 text-sm">
+          Run failed. You can check the logs for more details.
+        </p>
+      </div>
+    );
+  }
+
+  if (run.status === "success") {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="px-8">
+          <OutputRenderRun
+            run={run}
+            imgClasses={cn(
+              "shadow-md max-w-full",
+              totalUrlCount > 1
+                ? "max-h-[30vh]"
+                : "max-h-[80vh] object-contain",
+            )}
+            lazyLoading={true}
+            columns={totalUrlCount > 4 ? 3 : 2}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full animate-[pulse_4s_ease-in-out_infinite] flex-col items-center justify-center gap-1">
+      <p className="text-muted-foreground text-xs">
+        {run.live_status || "Starting..."}
+      </p>
+      <Progress value={(run.progress || 0) * 100} className="w-64 opacity-60" />
+    </div>
+  );
+}
+
+function RunGallery({ runId }: { runId: string }) {
+  const { data: run, isLoading } = useRun(runId);
+  const [_, setCurrentRunId] = useQueryState("run-id");
+
+  if (isLoading) {
+    return <Skeleton className="aspect-square w-[105px] rounded-[6px]" />;
   }
 
   if (!run) {
@@ -321,10 +437,18 @@ function RunGallery({ runId }: { runId: string }) {
   }
 
   return (
-    <PlaygroundOutputRenderRun
-      run={run as any}
-      imgClasses="w-[105px] aspect-square object-cover rounded-[8px] shrink-0 overflow-hidden"
-    />
+    // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+    <div
+      className="cursor-pointer"
+      onClick={() => {
+        setCurrentRunId(runId);
+      }}
+    >
+      <PlaygroundOutputRenderRun
+        run={run as any}
+        imgClasses="w-[105px] aspect-square object-cover rounded-[6px] shrink-0 overflow-hidden"
+      />
+    </div>
   );
 }
 
