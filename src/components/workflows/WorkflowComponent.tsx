@@ -29,7 +29,13 @@ import { useProgressUpdates } from "@/hooks/use-progress-update";
 import { useAuthStore } from "@/lib/auth-store";
 import { getRelativeTime } from "@/lib/get-relative-time";
 import { EventSourcePolyfill } from "event-source-polyfill";
-import { AlertCircle, ExternalLink, Info, Settings2Icon } from "lucide-react";
+import {
+  AlertCircle,
+  ExternalLink,
+  Info,
+  Settings2Icon,
+  Zap,
+} from "lucide-react";
 import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 import { type ReactNode, useMemo } from "react";
 import { useEffect, useState } from "react";
@@ -44,6 +50,11 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { MyDrawer } from "../drawer";
 import { publicRunStore } from "../run/VersionSelect";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
+import {
+  getEnvColor,
+  useWorkflowDeployments,
+} from "../workspace/ContainersTable";
+import { cn } from "@/lib/utils";
 
 export default function WorkflowComponent() {
   const [runId, setRunId] = useQueryState("run-id");
@@ -75,10 +86,11 @@ export default function WorkflowComponent() {
 
 export function RunDetails(props: {
   run_id: string;
-  onClose: () => void;
+  onClose?: () => void;
   isShare?: boolean;
+  isPlayground?: boolean;
 }) {
-  const { run_id, onClose, isShare = false } = props;
+  const { run_id, onClose, isShare = false, isPlayground = false } = props;
   const isMobile = useMediaQuery("(max-width: 768px)");
   const navigate = useNavigate();
 
@@ -104,10 +116,10 @@ export function RunDetails(props: {
   });
 
   useEffect(() => {
-    if (isShare) {
+    if (isShare || isPlayground) {
       setSelectedTab("inputs");
     }
-  }, [isShare]);
+  }, [isShare, isPlayground]);
 
   if (!run) {
     return (
@@ -155,9 +167,11 @@ export function RunDetails(props: {
         </div>
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleClick}>
-              <Settings2Icon size={16} /> Tweak it
-            </Button>
+            {!isPlayground && (
+              <Button variant="outline" onClick={handleClick}>
+                <Settings2Icon size={16} /> Tweak it
+              </Button>
+            )}
             {process.env.NODE_ENV === "development" &&
               run.machine_type === "comfy-deploy-serverless" && (
                 <Button
@@ -176,7 +190,6 @@ export function RunDetails(props: {
           </div>
         </div>
       </div>
-      {/* <CardContent className="space-y-6" key={run.id}> */}
       <div>
         <div className="grid grid-cols-2 gap-4">
           <InfoItem
@@ -186,31 +199,8 @@ export function RunDetails(props: {
           {!props.isShare && (
             <InfoItem label="GPU" value={<Badge>{run.gpu || "N/A"}</Badge>} />
           )}
-          <InfoItem
-            label="Total Duration"
-            value={
-              // "duration" in run && run.duration ? (
-              //   `${parseFloat(run.duration as string).toFixed(2)}s`
-              // ) : (
-              <RunDuration
-                showTotalDuration
-                run={run as any}
-                liveStatus={null}
-                status={run.status}
-                realtimeStatus={null}
-              />
-              // )
-            }
-          />
-          {/* {"machine" in run && (
-              <InfoItem label="Machine" value={(run.machine as any).name} />
-            )} */}
-          {!props.isShare && run.machine_id && (
-            <InfoItem
-              label="Machine"
-              value={<MachineLink machineId={run.machine_id} />}
-            />
-          )}
+          <RunVersionAndDeployment run={run} />
+          <RunTimeline run={run} />
           {run.batch_id && (
             <InfoItem
               label="Batch"
@@ -234,7 +224,9 @@ export function RunDetails(props: {
         >
           <TabsList className="">
             <TabsTrigger value="inputs">Inputs</TabsTrigger>
-            <TabsTrigger value="outputs">Outputs</TabsTrigger>
+            {!isPlayground && (
+              <TabsTrigger value="outputs">Outputs</TabsTrigger>
+            )}
             <>
               {/* <TabsTrigger value="timeline">Timeline</TabsTrigger> */}
               <TabsTrigger value="logs">Logs</TabsTrigger>
@@ -307,61 +299,209 @@ export function RunDetails(props: {
           </TabsContent>
         </Tabs>
       </div>
-      {/* </CardContent> */}
     </>
   );
 
-  // if (isMobile) {
-  //   console.log("isMobile");
+  return <div className="relative h-fit w-full">{content}</div>;
+}
 
-  //   return (
-  //     <Sheet open={true} onOpenChange={props.onClose} modal={false}>
-  //       <SheetContent side="bottom" className="h-full">
-  //         <ScrollArea className="h-full">{content}</ScrollArea>
-  //       </SheetContent>
-  //     </Sheet>
-  //   );
-  // }
+function RunVersionAndDeployment({ run }: { run: any }) {
+  const { data: versionData, isLoading } = useQuery<any>({
+    queryKey: ["workflow-version", run.workflow_version_id],
+    enabled: !!run.workflow_version_id,
+  });
+  const { data: deploymentData } = useWorkflowDeployments(run.workflow_id);
+
+  if (!versionData || isLoading) return null;
+
+  // Find the matching deployment once instead of multiple times
+  const matchingDeployment = deploymentData?.find(
+    (deployment) => deployment.id === run.deployment_id,
+  );
+  const isDeployment = !!matchingDeployment;
 
   return (
-    <div className="relative h-fit w-full">
-      {/* <button
-        onClick={props.onClose}
-        className="absolute top-2 right-2 rounded-full p-1 hover:bg-gray-200"
-        aria-label="Close"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button> */}
-      {content}
-    </div>
+    <InfoItem
+      label="Run Version"
+      value={
+        <div className="flex items-center gap-2">
+          {isDeployment && (
+            <Badge className={getEnvColor(matchingDeployment.environment)}>
+              {matchingDeployment.environment}
+            </Badge>
+          )}
+          <Badge variant="outline">v{versionData.version}</Badge>
+          {versionData.comment && (
+            <span className="text-muted-foreground text-xs">
+              {versionData.comment}
+            </span>
+          )}
+        </div>
+      }
+    />
   );
 }
 
-function MachineLink({ machineId }: { machineId: string }) {
-  const { data: machine, isLoading } = useMachine(machineId);
+function RunTimeline({ run }: { run: any }) {
+  const queueTime = run.cold_start_duration_total - run.cold_start_duration;
+  const coldStartTime = run.cold_start_duration;
+  const runDuration = run.run_duration;
+  const totalDuration = run.duration || queueTime + coldStartTime + runDuration;
+  const isWarm =
+    run.started_at !== undefined &&
+    (run.cold_start_duration === undefined || run.cold_start_duration <= 5);
 
-  if (isLoading) return <Skeleton className="h-4 w-24" />;
+  // Format time helper function
+  const formatTime = (seconds: number) => {
+    return seconds < 1
+      ? `${(seconds * 1000).toFixed(0)}ms`
+      : `${seconds.toFixed(1)}s`;
+  };
+
+  const getPercentage = (value: number) => {
+    return totalDuration > 0 ? (value / totalDuration) * 100 : 0;
+  };
+
+  const queueEndTime = queueTime;
+  const executionStartTime = queueEndTime + coldStartTime;
+
+  const queuePos = getPercentage(queueTime);
+  const execStartPos = getPercentage(queueTime + coldStartTime);
+  const isStartCloseToQueue = execStartPos - queuePos < 18;
 
   return (
-    <Link
-      href={`/machines/${machineId}`}
-      className="text-primary text-sm hover:underline"
-    >
-      {machine?.name}
-    </Link>
+    <InfoItem
+      label="Run Timeline"
+      value={
+        <div className="mt-2 w-full pb-2">
+          <div className="relative mb-1 flex h-6 w-full">
+            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap font-medium text-gray-600 text-xs">
+              {formatTime(0)}
+            </div>
+
+            <div
+              className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
+              style={{ left: `${queuePos}%` }}
+            >
+              {formatTime(queueEndTime)}
+            </div>
+
+            <div
+              className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
+              style={{ left: `${execStartPos}%` }}
+            >
+              {formatTime(executionStartTime)}
+            </div>
+
+            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap font-medium text-gray-600 text-xs">
+              {formatTime(totalDuration)}
+            </div>
+          </div>
+
+          {/* Timeline - Middle Row */}
+          <div className="relative flex h-5 w-full items-center">
+            {/* Base timeline track */}
+            <div className="absolute h-5 w-full shadow-inner" />
+
+            {/* Queue segment with subtle pattern - no rounded-l */}
+            {queueTime > 0 && (
+              <div
+                className="absolute h-5 overflow-hidden rounded-[2px] bg-gray-300 shadow-sm"
+                style={{
+                  width: `${getPercentage(queueTime) - 1}%`,
+                  left: 6,
+                }}
+              >
+                <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent,5px,rgba(0,0,0,0.1)_5px,rgba(0,0,0,0.1)_10px)] opacity-10" />
+              </div>
+            )}
+
+            {/* Cold start / Warm start segment */}
+            <div
+              className={`absolute h-5 rounded-[2px] shadow-sm ${
+                isWarm
+                  ? "bg-gradient-to-r from-amber-300 to-amber-400"
+                  : "bg-gradient-to-r from-purple-500 to-amber-400"
+              }`}
+              style={{
+                width: `${getPercentage(coldStartTime) - 0.9}%`,
+                left: `${getPercentage(queueTime) + 0.5}%`,
+              }}
+            >
+              {isWarm && (
+                <>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,transparent_70%)] opacity-20" />
+                  <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 transform text-amber-600">
+                    <Zap size={16} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Run duration segment - no rounded-r */}
+            <div
+              className="absolute h-5 rounded-[2px] bg-gradient-to-r from-blue-400 to-blue-600 shadow-sm"
+              style={{
+                width: `${getPercentage(runDuration) - 1.1}%`,
+                left: `${getPercentage(queueTime + coldStartTime) + 0.6}%`,
+              }}
+            >
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-20" />
+            </div>
+
+            <div className="absolute left-0 z-10 h-6 w-0.5 rounded-full bg-gray-700" />
+            <div
+              className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
+              style={{ left: `${queuePos}%` }}
+            />
+            <div
+              className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
+              style={{ left: `${execStartPos}%` }}
+            />
+            <div
+              className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
+              style={{ right: 0 }}
+            />
+          </div>
+
+          <div className="relative mt-1.5 h-8 w-full">
+            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap border-gray-400 border-l-2 pl-1 font-medium text-gray-700 text-xs">
+              Submitted
+            </div>
+
+            <div
+              className="absolute transform whitespace-nowrap font-medium text-xs"
+              style={{
+                left: `${queuePos}%`,
+                transform: `translateX(${isStartCloseToQueue ? "-90%" : "-50%"})`,
+                color: isWarm ? "#d97706" : "#b45309",
+              }}
+            >
+              <div className="flex items-center border-amber-500 border-l-2 pl-1">
+                {isWarm ? "Warm Start" : "Cold Start"}
+              </div>
+            </div>
+
+            <div
+              className="absolute transform whitespace-nowrap font-medium text-blue-700 text-xs"
+              style={{
+                left: `${execStartPos}%`,
+                transform: `translateX(${isStartCloseToQueue ? "-10%" : "-50%"})`,
+              }}
+            >
+              <div className="flex items-center border-blue-500 border-l-2 pl-1">
+                Execution Started
+              </div>
+            </div>
+
+            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap border-green-500 border-r-2 pr-1 font-medium text-green-700 text-xs">
+              Execution Finished
+            </div>
+          </div>
+        </div>
+      }
+      className="col-span-2"
+    />
   );
 }
 
@@ -385,9 +525,17 @@ function FilteredWorkflowExecutionGraph({ run }: { run: any }) {
   return <WorkflowExecutionGraph run={data} />;
 }
 
-function InfoItem({ label, value }: { label: string; value: ReactNode }) {
+function InfoItem({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  className?: string;
+}) {
   return (
-    <div>
+    <div className={cn(className)}>
       <p className="text-muted-foreground text-sm">{label}</p>
       <p className="font-medium">{value}</p>
     </div>
