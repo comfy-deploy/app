@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import type { z } from "zod";
 import { uploadFile } from "../files-api";
 import { publicRunStore } from "./VersionSelect";
+import { useQueryState } from "nuqs";
 
 export async function parseFilesToImgURLs(
   values: Record<string, any>,
@@ -258,6 +259,7 @@ export function RunWorkflowInline({
       >
     >(default_values);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentRunId, setCurrentRunId] = useQueryState("run-id");
 
   const user = useAuth();
   const clerk = useClerk();
@@ -322,9 +324,12 @@ export function RunWorkflowInline({
         throw new Error(await response.text());
       }
 
+      const data = await response.json();
+
       if (runOrigin === "public-share") {
-        const data = await response.json();
         setRunId(data.run_id);
+      } else {
+        setCurrentRunId(data.run_id);
       }
 
       if (model_id) {
@@ -421,7 +426,8 @@ export function RunWorkflowInline({
             </Button>
           )
         }
-        scrollAreaClassName="[&>[data-radix-scroll-area-viewport]]:max-h-[80vh]"
+        scrollAreaClassName="h-full"
+        // scrollAreaClassName="[&>[data-radix-scroll-area-viewport]]:max-h-[calc(60%-100px)]"
       >
         {!hideInputs &&
           inputs?.map((item) => {
