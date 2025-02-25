@@ -30,7 +30,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { getRelativeTime } from "@/lib/get-relative-time";
 import { EventSourcePolyfill } from "event-source-polyfill";
 import { AlertCircle, ExternalLink, Info, Settings2Icon } from "lucide-react";
-import { parseAsString, useQueryState } from "nuqs";
+import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 import { type ReactNode, useMemo } from "react";
 import { useEffect, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
@@ -84,6 +84,7 @@ export function RunDetails(props: {
 
   const [selectedTab, setSelectedTab] = useQueryState("tab", parseAsString);
   const [_, setRunId] = useQueryState("run-id");
+  const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
   const { setInputValues } = publicRunStore();
 
   const { data: run, isLoading } = useQuery<any>({
@@ -126,6 +127,7 @@ export function RunDetails(props: {
       setInputValues(run.workflow_inputs);
     } else {
       setRunId(run.id);
+      setIsTweak(true);
       navigate({
         to: "/workflows/$workflowId/$view",
         params: {

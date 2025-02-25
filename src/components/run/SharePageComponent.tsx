@@ -26,20 +26,22 @@ import {
 } from "@/components/workflows/RunsTable";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { customInputNodes } from "@/lib/customInputNodes";
-import { getRelativeTime } from "@/lib/get-relative-time";
+import { getDuration, getRelativeTime } from "@/lib/get-relative-time";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronUp,
+  Clock,
   Forward,
   Loader2,
   Pencil,
   Play,
+  Settings2,
   User,
 } from "lucide-react";
-import { useQueryState } from "nuqs";
+import { parseAsBoolean, useQueryState } from "nuqs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 // import Markdown from "react-markdown";
 // import remarkGfm from "remark-gfm";
@@ -64,6 +66,7 @@ import { VirtualizedInfiniteList } from "../virtualized-infinite-list";
 import { LogsTab } from "../workflows/WorkflowComponent";
 import { LogsViewer } from "../log/logs-viewer";
 import { Progress } from "../ui/progress";
+import { Separator } from "../ui/separator";
 
 type run = {
   status:
@@ -77,6 +80,9 @@ type run = {
   live_status?: string;
   progress?: number;
   outputs?: any[];
+  id: string;
+  created_at: string;
+  duration?: number;
 };
 
 export function useRun(runId?: string) {
@@ -104,6 +110,7 @@ export function Playground(props: {
 }) {
   const workflow_id = useWorkflowIdInWorkflowPage();
   const [runId, setRunId] = useQueryState("run-id");
+  const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
   const [showRunInputsMobileLayout, setShowRunInputsMobileLayout] =
     useState(false);
   const [logsCollapsed, setLogsCollapsed] = useState(false);
@@ -136,14 +143,13 @@ export function Playground(props: {
   const lastRunIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    return;
-
-    if (runId && run && runId !== lastRunIdRef.current) {
+    if (runId && isTweak && run && runId !== lastRunIdRef.current) {
       setDefaultValues(getFormattedInputs(run));
       toast.success("Input values updated.");
       lastRunIdRef.current = runId;
+      setIsTweak(null);
     }
-  }, [runId, run]);
+  }, [runId, run, isTweak]);
 
   const runsQuery = useRuns({ workflow_id: workflow_id! });
 
@@ -256,40 +262,63 @@ export function Playground(props: {
 
             {/* Environment & GPU Info Bar */}
             {deployment && (
-              <div className="-translate-x-1/2 absolute bottom-4 left-1/2 z-20 hidden items-center gap-3 rounded-full border border-gray-200 bg-white/90 p-2 shadow-lg backdrop-blur-sm transition-all hover:shadow-md lg:flex">
+              <div className="-translate-x-1/2 absolute bottom-4 left-1/2 z-20 hidden lg:flex">
                 <div className="flex items-center gap-2">
-                  <Select
-                    value={deployment?.id}
-                    onValueChange={(value) => {
-                      const selectedDeployment = deployments?.find(
-                        (d) => d.id === value,
-                      );
-                      if (selectedDeployment) {
-                        setSelectedDeployment(selectedDeployment.id);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-8 w-[200px] border-none bg-transparent">
-                      <SelectValue placeholder="Select environment" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {deployments?.map((dep) => (
-                        <SelectItem key={dep.id} value={dep.id}>
-                          <div className="flex w-full items-center justify-between gap-2">
-                            <Badge
-                              variant="outline"
-                              className={cn(getEnvColor(dep.environment))}
-                            >
-                              {dep.environment}
-                            </Badge>
-                            <span className="text-gray-500 text-xs">
-                              {dep.gpu || "No GPU"}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="items-center gap-3 rounded-full border border-gray-200 bg-white/90 p-2 shadow-lg backdrop-blur-sm">
+                    <Select
+                      value={deployment?.id}
+                      onValueChange={(value) => {
+                        const selectedDeployment = deployments?.find(
+                          (d) => d.id === value,
+                        );
+                        if (selectedDeployment) {
+                          setSelectedDeployment(selectedDeployment.id);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-[200px] border-none bg-transparent">
+                        <SelectValue placeholder="Select environment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {deployments?.map((dep) => (
+                          <SelectItem key={dep.id} value={dep.id}>
+                            <div className="flex w-full items-center justify-between gap-2">
+                              <Badge
+                                variant="outline"
+                                className={cn(getEnvColor(dep.environment))}
+                              >
+                                {dep.environment}
+                              </Badge>
+                              <span className="text-gray-500 text-xs">
+                                {dep.gpu || "No GPU"}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="group h-12 w-[50px] rounded-full shadow-lg"
+                          size="icon"
+                          disabled={!runId}
+                          onClick={() => {
+                            setIsTweak(true);
+                          }}
+                        >
+                          <Settings2 className="h-4 w-4 shrink-0" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Tweak this run</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             )}
@@ -378,7 +407,7 @@ function RunDisplay({ runId }: { runId?: string }) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <p className="animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm">
-          Run cancelled. Please try again.
+          Run cancelled.
         </p>
       </div>
     );
@@ -386,10 +415,15 @@ function RunDisplay({ runId }: { runId?: string }) {
 
   if (run.status === "failed") {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2">
         <p className="animate-[pulse_4s_ease-in-out_infinite] text-red-500 text-sm">
           Run failed. You can check the logs for more details.
         </p>
+        {runId && (
+          <div className="mx-auto max-w-2xl">
+            <LogsTab runId={runId} />
+          </div>
+        )}
       </div>
     );
   }
@@ -426,7 +460,7 @@ function RunDisplay({ runId }: { runId?: string }) {
 
 function RunGallery({ runId }: { runId: string }) {
   const { data: run, isLoading } = useRun(runId);
-  const [_, setCurrentRunId] = useQueryState("run-id");
+  const [currentRunId, setCurrentRunId] = useQueryState("run-id");
 
   if (isLoading) {
     return <Skeleton className="aspect-square w-[105px] rounded-[6px]" />;
@@ -437,18 +471,67 @@ function RunGallery({ runId }: { runId: string }) {
   }
 
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-    <div
-      className="cursor-pointer"
-      onClick={() => {
-        setCurrentRunId(runId);
-      }}
-    >
-      <PlaygroundOutputRenderRun
-        run={run as any}
-        imgClasses="w-[105px] aspect-square object-cover rounded-[6px] shrink-0 overflow-hidden"
-      />
-    </div>
+    <TooltipProvider>
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              if (runId !== currentRunId) {
+                setCurrentRunId(runId);
+              } else {
+                setCurrentRunId(null);
+              }
+            }}
+          >
+            <PlaygroundOutputRenderRun
+              run={run as any}
+              isSelected={runId === currentRunId}
+              imgClasses="w-[105px] aspect-square object-cover rounded-[6px] shrink-0 overflow-hidden"
+            />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="w-[250px] p-3 py-2">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between">
+              {run.duration && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-[14px] w-[14px]" />
+                  <span className="text-xs">{getDuration(run.duration)}</span>
+                </div>
+              )}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "px-1.5 py-0 text-[10px]",
+                  run.status === "success"
+                    ? "border-green-200 bg-green-50 text-green-600"
+                    : run.status === "failed"
+                      ? "border-red-200 bg-red-50 text-red-600"
+                      : run.status === "running"
+                        ? "border-blue-200 bg-blue-50 text-blue-600"
+                        : "border-gray-200 bg-gray-50 text-gray-600",
+                )}
+              >
+                {run.status}
+              </Badge>
+            </div>
+          </div>
+
+          <Separator className="my-2" />
+
+          <div className="flex justify-between">
+            <span className="font-mono text-[11px] text-muted-foreground">
+              #{run.id.slice(0, 10)}
+            </span>
+            <span className="text-2xs text-muted-foreground">
+              {getRelativeTime(run.created_at)}
+            </span>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

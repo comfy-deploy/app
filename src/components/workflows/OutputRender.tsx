@@ -442,16 +442,33 @@ function RunStatusIndicator({ status }: { status: string }) {
 export function PlaygroundOutputRenderRun({
   run,
   imgClasses,
+  isSelected = false,
 }: {
   run: any;
   imgClasses: string;
+  isSelected?: boolean;
 }) {
-  const { urls: urlList } = getTotalUrlCountAndUrls(run.outputs || []);
+  const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
+    run.outputs || [],
+  );
   const urlsToDisplay = urlList.length > 0 ? urlList.slice(0, 1) : [];
 
   return (
-    <div className="relative h-full">
+    <div
+      className={cn(
+        "relative h-full transition-transform",
+        isSelected
+          ? "-translate-x-1 hover:-translate-x-1.5"
+          : "hover:-translate-x-1",
+      )}
+    >
       <RunStatusIndicator status={run.status} />
+      {/* Add image count indicator when there are multiple images */}
+      {urlList.length > 1 && (
+        <div className="absolute top-1.5 right-1.5 z-10 rounded-[8px] bg-black/70 px-1.5 font-medium text-2xs text-white">
+          +{urlList.length}
+        </div>
+      )}
 
       {urlsToDisplay.length > 0 ? (
         <>
