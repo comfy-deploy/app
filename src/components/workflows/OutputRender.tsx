@@ -23,6 +23,7 @@ import {
   X,
   Minus,
   Loader2,
+  CircleX,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -412,7 +413,7 @@ function RunStatusIndicator({ status }: { status: string }) {
       break;
     case "cancelled":
       StatusIcon = Minus;
-      iconClassName = "text-gray-500";
+      iconClassName = "text-gray-200";
       extraClassName = "";
       break;
     case "running":
@@ -430,7 +431,7 @@ function RunStatusIndicator({ status }: { status: string }) {
   return (
     <div
       className={cn(
-        "absolute right-1.5 bottom-1.5 z-10 rounded-[6px] p-1 backdrop-blur-md",
+        "absolute right-1.5 bottom-1.5 z-10 rounded-[6px] bg-black/50 p-1 backdrop-blur-md",
         extraClassName,
       )}
     >
@@ -470,6 +471,15 @@ export function PlaygroundOutputRenderRun({
         </div>
       )}
 
+      {isSelected && (
+        <div
+          className="group absolute top-0 left-0 z-20 flex h-full w-full items-center justify-center rounded-[8px] border-4 border-purple-500/70 hover:bg-black/20 hover:backdrop-blur-sm"
+          title="deselect"
+        >
+          <CircleX className="text-gray-200 opacity-0 transition-opacity group-hover:opacity-100" />
+        </div>
+      )}
+
       {urlsToDisplay.length > 0 ? (
         <>
           <FileURLRenderMulti
@@ -484,11 +494,16 @@ export function PlaygroundOutputRenderRun({
         </>
       ) : (
         <>
-          <Skeleton className={imgClasses} />
+          <Skeleton
+            className={cn(
+              imgClasses,
+              run.status === "failed" && "bg-red-500/20",
+            )}
+          />
           <div className="absolute inset-0 flex items-center justify-center">
             <span
               className={cn(
-                "text-[8px] text-muted-foreground",
+                "text-[10px] text-muted-foreground",
                 run.status === "cancelled" && "line-through",
                 run.status === "failed" && "text-red-500",
               )}
