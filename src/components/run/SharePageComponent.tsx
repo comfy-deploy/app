@@ -82,7 +82,7 @@ type run = {
   outputs?: any[];
   id: string;
   created_at: string;
-  duration?: number;
+  run_duration?: number;
 };
 
 export function useRun(runId?: string) {
@@ -428,7 +428,7 @@ function RunDisplay({ runId }: { runId?: string }) {
       return (
         <div className="scrollbar-track-transparent scrollbar-thin scrollbar-none h-full overflow-x-hidden overflow-y-scroll">
           <div className="sticky top-0 flex min-h-[calc(100%-20px)] w-full items-center justify-center">
-            <div className="px-8">
+            <div className="relative px-8">
               <OutputRenderRun
                 run={run}
                 imgClasses={cn(
@@ -440,13 +440,19 @@ function RunDisplay({ runId }: { runId?: string }) {
                 lazyLoading={true}
                 columns={totalUrlCount > 4 ? 3 : 2}
               />
+              <div className="-bottom-12 absolute right-0 left-0 flex flex-col items-center justify-center">
+                <span className="text-muted-foreground text-xs">
+                  Scroll for details
+                </span>
+                <ChevronDown className="h-4 w-4" />
+              </div>
             </div>
           </div>
           {runId && (
-            <div className="relative z-10 flex w-full items-center justify-center rounded-t-sm border border-gray-200 bg-white/90 p-8 pb-20 drop-shadow-lg backdrop-blur-lg">
-              <ScrollArea className="h-[50vh] w-full max-w-5xl px-4">
+            <div className="relative z-10 flex w-full items-center justify-center rounded-t-sm border border-gray-200 bg-white/80 p-8 pb-16 drop-shadow-lg backdrop-blur-lg">
+              <div className="w-full max-w-5xl px-4">
                 <RunDetails run_id={runId} isPlayground={true} />
-              </ScrollArea>
+              </div>
             </div>
           )}
         </div>
@@ -505,10 +511,12 @@ function RunGallery({ runId }: { runId: string }) {
         <TooltipContent side="left" className="w-[250px] p-3 py-2">
           <div className="flex flex-col">
             <div className="flex items-center justify-between">
-              {run.duration && (
+              {run.run_duration && (
                 <div className="flex items-center gap-2">
                   <Clock className="h-[14px] w-[14px]" />
-                  <span className="text-xs">{getDuration(run.duration)}</span>
+                  <span className="text-xs">
+                    {getDuration(run.run_duration)}
+                  </span>
                 </div>
               )}
               <Badge
@@ -665,302 +673,6 @@ export function UserIcon({
   );
 }
 
-function RunRow({
-  run: _run,
-}: {
-  run: any;
-}) {
-  const {
-    data: run,
-    isLoading,
-    refetch,
-  } = useQuery<any>({
-    queryKey: ["run", _run?.id],
-    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
-    refetchInterval: (query) => {
-      if (
-        query.state.data?.status === "running" ||
-        query.state.data?.status === "uploading" ||
-        query.state.data?.status === "not-started" ||
-        query.state.data?.status === "queued"
-      ) {
-        return 2000;
-      }
-      return false;
-    },
-  });
-  const [_, setRunId] = useQueryState("run-id");
-
-  const { data: versionData } = useQuery<any>({
-    enabled: !!run?.workflow_version_id,
-    queryKey: ["workflow-version", run?.workflow_version_id],
-  });
-
-  const { total: totalUrlCount } = getTotalUrlCountAndUrls(run?.outputs || []);
-
-  const DisplayInputs = ({
-    title,
-    input,
-  }: {
-    title: string;
-    input: string | number;
-  }) => {
-    return (
-      <div className="mb-1 flex flex-col">
-        <span className="font-semibold">{title}</span>
-        <span
-          className={`overflow-hidden ${
-            shouldBreakAll(String(input)) ? "break-all" : "break-words"
-          }`}
-        >
-          {String(input)}
-        </span>
-      </div>
-    );
-  };
-
-  const [isScrollable, setIsScrollable] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkScrollable = () => {
-      if (scrollRef.current) {
-        setIsScrollable(
-          scrollRef.current.scrollWidth > scrollRef.current.clientWidth,
-        );
-      }
-    };
-
-    checkScrollable();
-    window.addEventListener("resize", checkScrollable);
-    return () => window.removeEventListener("resize", checkScrollable);
-  }, []);
-
-  if (!run) {
-    return (
-      <div className="flex h-full flex-col overflow-hidden border-b p-2">
-        <div className="grid w-full grid-cols-12 items-center gap-2">
-          <Skeleton className="col-span-1 h-4 w-8" />
-          <Skeleton className="col-span-2 h-6 w-16" />
-          <Skeleton className="col-span-2 h-4 w-12" />
-          <Skeleton className="col-span-2 h-4 w-20" />
-          <div className="col-span-5 flex justify-end">
-            <Skeleton className="h-6 w-24" />
-          </div>
-        </div>
-        <div className="mt-2 flex gap-2">
-          <Skeleton className="h-[340px] w-[340px] flex-shrink-0" />
-          <Skeleton className="h-[340px] w-[340px] flex-shrink-0" />
-          <Skeleton className="h-[340px] w-[340px] flex-shrink-0" />
-          <Skeleton className="h-[340px] w-[340px] flex-shrink-0" />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div
-        className={cn(
-          "flex items-center gap-3 py-2",
-          run.origin === "manual" ? "flex-row-reverse" : "flex-row",
-        )}
-      >
-        <p className="font-mono text-2xs text-muted-foreground">
-          #{run.id.slice(0, 6)}
-        </p>
-        {versionData?.version && (
-          <Badge className="w-fit rounded-[10px] text-xs">
-            {`v${versionData.version}`}
-          </Badge>
-        )}
-        {run.gpu && (
-          <Badge className="w-fit rounded-[10px] text-2xs text-gray-500">
-            {run.gpu}
-          </Badge>
-        )}
-        <p className="flex items-center whitespace-nowrap text-gray-500 text-sm">
-          {getRelativeTime(run.created_at)}
-        </p>
-      </div>
-      <div
-        className={cn(
-          "group flex gap-2",
-          run.origin === "manual" ? "flex-row-reverse" : "flex-row",
-        )}
-      >
-        {run.origin === "manual" && run.user_id ? (
-          <div className="flex flex-col gap-2">
-            <UserIcon user_id={run.user_id} />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-              <User className="h-5 w-5" />
-            </div>
-            <Badge className="w-fit rounded-[10px] text-xs">{run.origin}</Badge>
-          </div>
-        )}
-        <div
-          className={cn(
-            "flex h-full min-w-[240px] max-w-[1400px] flex-wrap rounded-[12px] border drop-shadow-md",
-            totalUrlCount === 1 && "w-[240px] xl:w-auto",
-            totalUrlCount === 2 && "w-[475px] xl:w-auto",
-            totalUrlCount === 3 && "w-[710px] xl:w-auto",
-            (() => {
-              switch (run.status) {
-                case "failed":
-                  return "border-red-300 bg-red-100";
-                case "timeout":
-                  return "border-gray-300 bg-gray-100 opacity-70";
-                default:
-                  return "border-gray-200 bg-white";
-              }
-            })(),
-          )}
-        >
-          <div className="w-full xl:w-64">
-            <div className="flex h-full flex-col items-start justify-center">
-              <div className="w-full px-4 pt-4">
-                <ScrollArea>
-                  <div className="max-h-[150px] text-2xs leading-normal">
-                    {Object.entries(getFormattedInputs(run)).map(
-                      ([key, value]) => (
-                        <DisplayInputs key={key} title={key} input={value} />
-                      ),
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-              <LiveStatus run={run} isForRunPage refetch={refetch} />
-            </div>
-            {run.status === "success" && (
-              <div className="absolute top-2 left-2 flex gap-1 opacity-0 transition-all group-hover:opacity-100">
-                {/* show run output */}
-                {/* <Popover>
-                  <PopoverTrigger>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="bg-gray-200 text-gray-700"
-                    >
-                      <ChevronDown size={16} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[600px]" align="start">
-                    <RunInputs run={run as any} />
-                  </PopoverContent>
-                </Popover> */}
-
-                {/* edit input */}
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="bg-gray-200/80 text-gray-700"
-                        onClick={() => {
-                          setRunId(run.id);
-                        }}
-                      >
-                        <Pencil size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Tweak this run</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                {/* favorite */}
-                {/* <Button
-                  hideLoading
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "bg-gray-200",
-                    favoriteStatus
-                      ? "text-yellow-500 hover:text-yellow-400"
-                      : "text-gray-700"
-                  )}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const newFavoriteStatus =
-                      await toggleWorkflowRunFavoriteStatus(run.id);
-                    toast.success(
-                      newFavoriteStatus
-                        ? "Added to favorites"
-                        : "Removed from favorites"
-                    );
-                    mutateFavoriteStatus();
-                  }}
-                >
-                  <Star size={16} />
-                </Button> */}
-              </div>
-            )}
-          </div>
-
-          {run.status === "running" && (
-            <div className="flex flex-row gap-1 py-1" ref={scrollRef}>
-              <Skeleton className="aspect-square h-[250px] rounded-[8px]" />
-            </div>
-          )}
-          {run.status === "success" && (
-            <ScrollArea className="grid min-h-[238px] flex-[1_0_230px] px-1">
-              <div
-                ref={scrollRef}
-                className={cn("flex max-h-[250px] flex-row gap-1 py-1")}
-              >
-                {/* {imageRender} */}
-                <OutputRenderRun
-                  run={run as any}
-                  imgClasses="max-w-full min-h-[230px] object-cover rounded-[8px]"
-                  canExpandToView={true}
-                  lazyLoading={true}
-                  canDownload={true}
-                />
-              </div>
-
-              {isScrollable && (
-                <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-12 rounded-r-[8px] bg-gradient-to-l from-10% from-white to-transparent" />
-              )}
-            </ScrollArea>
-          )}
-        </div>
-
-        <div className="grid grid-rows-3 opacity-0 transition-opacity group-hover:opacity-100">
-          <div />
-          {/* share */}
-          <div
-            className={cn(
-              "flex items-center",
-              run.origin === "manual" && "justify-end",
-            )}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-transparent text-gray-700"
-              onClick={() => {
-                const url = new URL(window.location.href);
-                url.searchParams.set("view", "api");
-                url.searchParams.set("run-id", run.id);
-                navigator.clipboard.writeText(url.toString());
-                toast.success("Copied to clipboard!");
-              }}
-            >
-              <Forward size={16} />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function getFormattedInputs(run: any): Record<string, any> {
   if (
     run.workflow_inputs &&
@@ -1002,21 +714,4 @@ function getFormattedInputs(run: any): Record<string, any> {
     );
   }
   return {};
-}
-
-function shouldBreakAll(str: string): boolean {
-  // Check if it's a URL
-  try {
-    new URL(str);
-    return true;
-  } catch {}
-
-  // Check if it's JSON
-  try {
-    JSON.parse(str);
-    return true;
-  } catch {}
-
-  // If it's neither a URL nor JSON, return false
-  return false;
 }
