@@ -302,20 +302,27 @@ export function Playground(props: {
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="group h-12 w-[50px] rounded-full shadow-lg"
-                          size="icon"
-                          disabled={!runId}
-                          onClick={() => {
-                            setIsTweak(true);
-                          }}
-                        >
-                          <Settings2 className="h-4 w-4 shrink-0" />
-                        </Button>
+                        {/* biome-ignore lint/a11y/noNoninteractiveTabindex: <explanation> */}
+                        <span tabIndex={0}>
+                          <Button
+                            variant="outline"
+                            className="group h-12 w-[50px] rounded-full shadow-lg"
+                            size="icon"
+                            disabled={!runId}
+                            onClick={() => {
+                              setIsTweak(true);
+                            }}
+                          >
+                            <Settings2 className="h-4 w-4 shrink-0" />
+                          </Button>
+                        </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Tweak this run</p>
+                        {!runId ? (
+                          <p>Please select a run in Gallery</p>
+                        ) : (
+                          <p>Tweak this run</p>
+                        )}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -350,7 +357,7 @@ export function Playground(props: {
 
       <Fab
         refScrollingContainerKey="fab-playground"
-        className="lg:hidden"
+        className="z-50 lg:hidden"
         mainItem={{
           onClick: () =>
             setShowRunInputsMobileLayout(!showRunInputsMobileLayout),
