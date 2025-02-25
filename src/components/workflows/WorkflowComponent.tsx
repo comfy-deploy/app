@@ -343,10 +343,21 @@ function RunVersionAndDeployment({ run }: { run: any }) {
 }
 
 function RunTimeline({ run }: { run: any }) {
-  const queueTime = run.cold_start_duration_total - run.cold_start_duration;
-  const coldStartTime = run.cold_start_duration;
-  const runDuration = run.run_duration;
-  const totalDuration = run.duration || queueTime + coldStartTime + runDuration;
+  // Extract timing data with safeguards for missing/invalid values
+  const coldStartDurationTotal = run.cold_start_duration_total || 0;
+  const coldStartDuration = run.cold_start_duration || 0;
+  const runDuration = run.run_duration || 0;
+  const totalDuration = run.duration || 0;
+
+  // Calculate queue time, ensuring it's not negative
+  const queueTime = Math.max(0, coldStartDurationTotal - coldStartDuration);
+  const coldStartTime = coldStartDuration;
+
+  // Determine if we have complete timing data or just partial data
+  const hasCompleteTimingData =
+    queueTime > 0 && coldStartTime > 0 && runDuration > 0;
+
+  // Check if warm based on cold start duration
   const isWarm =
     run.started_at !== undefined &&
     (run.cold_start_duration === undefined || run.cold_start_duration <= 5);
@@ -374,24 +385,29 @@ function RunTimeline({ run }: { run: any }) {
       label="Run Timeline"
       value={
         <div className="mt-2 w-full pb-2">
+          {/* Time Labels - with conditional rendering */}
           <div className="relative mb-1 flex h-6 w-full">
             <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap font-medium text-gray-600 text-xs">
               {formatTime(0)}
             </div>
 
-            <div
-              className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
-              style={{ left: `${queuePos}%` }}
-            >
-              {formatTime(queueEndTime)}
-            </div>
+            {hasCompleteTimingData && queueTime > 0 && (
+              <div
+                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
+                style={{ left: `${queuePos}%` }}
+              >
+                {formatTime(queueEndTime)}
+              </div>
+            )}
 
-            <div
-              className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
-              style={{ left: `${execStartPos}%` }}
-            >
-              {formatTime(executionStartTime)}
-            </div>
+            {hasCompleteTimingData && coldStartTime > 0 && (
+              <div
+                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
+                style={{ left: `${execStartPos}%` }}
+              >
+                {formatTime(executionStartTime)}
+              </div>
+            )}
 
             <div className="absolute right-0 translate-x-0 transform whitespace-nowrap font-medium text-gray-600 text-xs">
               {formatTime(totalDuration)}
@@ -403,96 +419,126 @@ function RunTimeline({ run }: { run: any }) {
             {/* Base timeline track */}
             <div className="absolute h-5 w-full shadow-inner" />
 
-            {/* Queue segment with subtle pattern - no rounded-l */}
-            {queueTime > 0 && (
+            {/* Conditional rendering based on available data */}
+            {hasCompleteTimingData ? (
+              <>
+                {/* Queue segment with subtle pattern when available */}
+                {queueTime > 0 && (
+                  <div
+                    className="absolute h-5 overflow-hidden rounded-[2px] bg-gray-300 shadow-sm"
+                    style={{
+                      width: `${getPercentage(queueTime) - 1}%`,
+                      left: 6,
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent,5px,rgba(0,0,0,0.1)_5px,rgba(0,0,0,0.1)_10px)] opacity-10" />
+                  </div>
+                )}
+
+                {/* Cold start / Warm start segment when available */}
+                <div
+                  className={`absolute h-5 rounded-[2px] shadow-sm ${
+                    isWarm
+                      ? "bg-gradient-to-r from-amber-300 to-amber-400"
+                      : "bg-gradient-to-r from-purple-500 to-amber-400"
+                  }`}
+                  style={{
+                    width: `${getPercentage(coldStartTime) - 0.9}%`,
+                    left: `${getPercentage(queueTime) + 0.5}%`,
+                  }}
+                >
+                  {isWarm && (
+                    <>
+                      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,transparent_70%)] opacity-20" />
+                      <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 transform text-amber-600">
+                        <Zap size={16} />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Run duration segment when available */}
+                <div
+                  className="absolute h-5 rounded-[2px] bg-gradient-to-r from-blue-400 to-blue-600 shadow-sm"
+                  style={{
+                    width: `${getPercentage(runDuration) - 1.1}%`,
+                    left: `${getPercentage(queueTime + coldStartTime) + 0.6}%`,
+                  }}
+                >
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-20" />
+                </div>
+              </>
+            ) : (
+              // Simplified view when we don't have complete timing data
               <div
-                className="absolute h-5 overflow-hidden rounded-[2px] bg-gray-300 shadow-sm"
+                className="absolute h-5 rounded-[2px] bg-gradient-to-r from-blue-400 to-blue-600 shadow-sm"
                 style={{
-                  width: `${getPercentage(queueTime) - 1}%`,
+                  width: "calc(100% - 12px)",
                   left: 6,
                 }}
               >
-                <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent,5px,rgba(0,0,0,0.1)_5px,rgba(0,0,0,0.1)_10px)] opacity-10" />
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-20" />
               </div>
             )}
 
-            {/* Cold start / Warm start segment */}
-            <div
-              className={`absolute h-5 rounded-[2px] shadow-sm ${
-                isWarm
-                  ? "bg-gradient-to-r from-amber-300 to-amber-400"
-                  : "bg-gradient-to-r from-purple-500 to-amber-400"
-              }`}
-              style={{
-                width: `${getPercentage(coldStartTime) - 0.9}%`,
-                left: `${getPercentage(queueTime) + 0.5}%`,
-              }}
-            >
-              {isWarm && (
-                <>
-                  <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,transparent_70%)] opacity-20" />
-                  <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 transform text-amber-600">
-                    <Zap size={16} />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Run duration segment - no rounded-r */}
-            <div
-              className="absolute h-5 rounded-[2px] bg-gradient-to-r from-blue-400 to-blue-600 shadow-sm"
-              style={{
-                width: `${getPercentage(runDuration) - 1.1}%`,
-                left: `${getPercentage(queueTime + coldStartTime) + 0.6}%`,
-              }}
-            >
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-20" />
-            </div>
-
+            {/* Timeline markers - always show start and end */}
             <div className="absolute left-0 z-10 h-6 w-0.5 rounded-full bg-gray-700" />
-            <div
-              className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
-              style={{ left: `${queuePos}%` }}
-            />
-            <div
-              className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
-              style={{ left: `${execStartPos}%` }}
-            />
+
+            {/* Only show intermediate markers if we have the data */}
+            {hasCompleteTimingData && queueTime > 0 && (
+              <div
+                className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
+                style={{ left: `${queuePos}%` }}
+              />
+            )}
+
+            {hasCompleteTimingData && coldStartTime > 0 && (
+              <div
+                className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
+                style={{ left: `${execStartPos}%` }}
+              />
+            )}
+
             <div
               className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
               style={{ right: 0 }}
             />
           </div>
 
+          {/* Event Labels - with conditional rendering */}
           <div className="relative mt-1.5 h-8 w-full">
             <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap border-gray-400 border-l-2 pl-1 font-medium text-gray-700 text-xs">
               Submitted
             </div>
 
-            <div
-              className="absolute transform whitespace-nowrap font-medium text-xs"
-              style={{
-                left: `${queuePos}%`,
-                transform: `translateX(${isStartCloseToQueue ? "-90%" : "-50%"})`,
-                color: isWarm ? "#d97706" : "#b45309",
-              }}
-            >
-              <div className="flex items-center border-amber-500 border-l-2 pl-1">
-                {isWarm ? "Warm Start" : "Cold Start"}
+            {hasCompleteTimingData && queueTime > 0 && (
+              <div
+                className="absolute transform whitespace-nowrap font-medium text-xs"
+                style={{
+                  left: `${queuePos}%`,
+                  transform: `translateX(${isStartCloseToQueue ? "-90%" : "-50%"})`,
+                  color: isWarm ? "#d97706" : "#b45309",
+                }}
+              >
+                <div className="flex items-center border-amber-500 border-l-2 pl-1">
+                  {isWarm ? "Warm Start" : "Cold Start"}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div
-              className="absolute transform whitespace-nowrap font-medium text-blue-700 text-xs"
-              style={{
-                left: `${execStartPos}%`,
-                transform: `translateX(${isStartCloseToQueue ? "-10%" : "-50%"})`,
-              }}
-            >
-              <div className="flex items-center border-blue-500 border-l-2 pl-1">
-                Execution Started
+            {hasCompleteTimingData && coldStartTime > 0 && (
+              <div
+                className="absolute transform whitespace-nowrap font-medium text-blue-700 text-xs"
+                style={{
+                  left: `${execStartPos}%`,
+                  transform: `translateX(${isStartCloseToQueue ? "-10%" : "-50%"})`,
+                }}
+              >
+                <div className="flex items-center border-blue-500 border-l-2 pl-1">
+                  Execution Started
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="absolute right-0 translate-x-0 transform whitespace-nowrap border-green-500 border-r-2 pr-1 font-medium text-green-700 text-xs">
               Execution Finished
