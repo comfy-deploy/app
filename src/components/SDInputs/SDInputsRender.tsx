@@ -42,7 +42,7 @@ type SDInputsRenderProps = {
     | undefined;
   updateInput: (
     inputID: string,
-    value: string | File | undefined | (string | File)[] | boolean | RGBColor[],
+    value: string | File | undefined | (string | File)[] | boolean | RGBColor[]
   ) => void;
   inputValue: string | any;
 };
@@ -205,6 +205,7 @@ export function SDInputsRender({
       }
       return (
         <SDImageInput
+          isDisplayAssetInput
           key={inputNode.input_id}
           file={inputValue}
           inputClasses="mt-2 bg-gray-50"
@@ -332,7 +333,7 @@ export function SDInputsRender({
                     if (file instanceof FileList) {
                       updateInput(
                         inputNode.input_id,
-                        Array.from(file).map((f) => f),
+                        Array.from(file).map((f) => f)
                       );
                       return;
                     }
@@ -341,7 +342,7 @@ export function SDInputsRender({
                       inputNode.input_id,
                       images.map((currentFile, index) => {
                         return i === index ? file : currentFile;
-                      }),
+                      })
                     );
                   }}
                 />
@@ -517,6 +518,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { SDAssetInput } from "./sd-asset-input";
 
 export function FileDropdown(props: {
   value: string;
@@ -590,7 +592,7 @@ export function FileDropdown(props: {
                             "mr-2 h-4 w-4",
                             value === framework.name
                               ? "opacity-100"
-                              : "opacity-0",
+                              : "opacity-0"
                           )}
                         />
                         {framework.name}

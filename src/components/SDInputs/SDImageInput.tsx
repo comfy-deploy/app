@@ -6,21 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { useAssetBrowserStore } from "@/stores/asset-browser-store";
 import { Eye, Paperclip, Trash } from "lucide-react";
-import React, {
+import {
   type ChangeEvent,
   type DragEvent,
-  ReactElement,
   type ReactNode,
   type RefObject,
   useEffect,
-  useImperativeHandle,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { useAssetsBrowserStore } from "../workspace/Workspace";
+import { SDAssetInput } from "./sd-asset-input";
+import { ImageInputsTooltip } from "../image-inputs-tooltip";
 
 type SDImageInputProps = {
   label?: string;
@@ -31,6 +29,7 @@ type SDImageInputProps = {
   onChange: (file: File | string | undefined | FileList) => void;
   header?: ReactNode;
   accept?: string;
+  isDisplayAssetInput?: boolean;
 };
 
 export function SDImageInput({
@@ -42,6 +41,7 @@ export function SDImageInput({
   multiple,
   header,
   accept = "image/*",
+  isDisplayAssetInput,
 }: SDImageInputProps) {
   const dropRef: RefObject<any> = useRef(null);
   const ImgView: ImgView | null = useMemo(() => {
@@ -110,17 +110,19 @@ export function SDImageInput({
               htmlFor={`file-input-${label}`}
               className="flex items-center justify-center"
             >
-              <div
-                className={cn(
-                  buttonVariants({
-                    variant: "outline",
-                    className:
-                      "cursor-pointer transition-colors hover:bg-gray-50",
-                  }),
-                )}
-              >
-                <Paperclip size={18} />
-              </div>
+              <ImageInputsTooltip tooltipText="Upload">
+                <div
+                  className={cn(
+                    buttonVariants({
+                      variant: "outline",
+                      className:
+                        "cursor-pointer transition-colors hover:bg-gray-50",
+                    })
+                  )}
+                >
+                  <Paperclip size={18} />
+                </div>
+              </ImageInputsTooltip>
             </Label>
             <Input
               id={`file-input-${label}`}
@@ -134,6 +136,7 @@ export function SDImageInput({
               }}
               type="file"
             />
+            {isDisplayAssetInput && <SDAssetInput onChange={onChange} />}
 
             {/* <Button
               onClick={(e) => {
