@@ -392,7 +392,7 @@ function InfoItem({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function LogsTab({ runId }: { runId: string }) {
+export function LogsTab({ runId }: { runId: string }) {
   const [logs, setLogs] = useState<Array<{ timestamp: number; logs: string }>>(
     [],
   );
