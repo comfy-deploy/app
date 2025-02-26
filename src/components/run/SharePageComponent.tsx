@@ -163,6 +163,14 @@ export function Playground(props: {
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
       if (!runsQuery.data?.pages || runsQuery.data.pages.length === 0) return;
 
       // Flatten all runs from all pages
@@ -497,6 +505,15 @@ function RunDisplay({ runId }: { runId?: string }) {
     if (!urlList || urlList.length <= 1) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle arrow keys if we're not in an input field
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         setViewingImageIndex((prev) => {
@@ -627,11 +644,35 @@ function RunDisplay({ runId }: { runId?: string }) {
 
               {totalUrlCount > 1 && (
                 <>
-                  <div className="-translate-y-1/2 absolute top-1/2 right-0 flex flex-col items-center justify-center">
-                    <ChevronRight className="h-4 w-4" />
+                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+                  <div
+                    className="-translate-y-1/2 absolute top-1/2 right-0 flex cursor-pointer flex-col items-center justify-center hover:opacity-80"
+                    onClick={() => {
+                      if (viewingImageIndex === null) {
+                        setViewingImageIndex(0);
+                      } else {
+                        setViewingImageIndex((prev) =>
+                          prev === urlList.length - 1 ? 0 : prev + 1,
+                        );
+                      }
+                    }}
+                  >
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  <div className="-translate-y-1/2 absolute top-1/2 left-0 flex flex-col items-center justify-center">
-                    <ChevronLeft className="h-4 w-4" />
+                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+                  <div
+                    className="-translate-y-1/2 absolute top-1/2 left-0 flex cursor-pointer flex-col items-center justify-center hover:opacity-80"
+                    onClick={() => {
+                      if (viewingImageIndex === null) {
+                        setViewingImageIndex(urlList.length - 1);
+                      } else {
+                        setViewingImageIndex((prev) =>
+                          prev === 0 ? urlList.length - 1 : prev - 1,
+                        );
+                      }
+                    }}
+                  >
+                    <ChevronLeft className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </>
               )}
