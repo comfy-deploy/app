@@ -566,10 +566,13 @@ function RunDisplay({ runId }: { runId?: string }) {
 
     case "failed":
       return (
-        <div className={containerClass}>
+        <div className={cn(containerClass, "flex-col gap-2")}>
           <p className={cn(messageClass, "text-red-500")}>
-            Run failed. Scroll down to check the logs for more details.
+            Run failed. Check the logs for more details.
           </p>
+          <div className="max-w-2xl">
+            <LogsTab runId={run.id} />
+          </div>
         </div>
       );
 
