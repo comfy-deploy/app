@@ -32,6 +32,8 @@ import type { z } from "zod";
 import { uploadFile } from "../files-api";
 import { publicRunStore } from "./VersionSelect";
 
+const MAX_FILE_SIZE_BYTES = 250_000_000; // 250MB
+
 export async function parseFilesToImgURLs(
   values: Record<string, any>,
   toZip = false,
@@ -128,8 +130,8 @@ export function WorkflowInputsForm({
     key: string,
     val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
   ) {
-    if (val instanceof File && val.size > 200000000) {
-      toast.error("Cannot upload files bigger than 200MB");
+    if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
+      toast.error("Cannot upload files bigger than 250MB");
       return;
     }
     setValues((prev: any) => ({ ...prev, [key]: val }));
@@ -372,8 +374,8 @@ export function RunWorkflowInline({
     key: string,
     val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
   ) {
-    if (val instanceof File && val.size > 200000000) {
-      toast.error("Cannot upload files bigger than 200MB");
+    if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
+      toast.error("Cannot upload files bigger than 250MB");
       return;
     }
     setValues((prev) => ({ ...prev, [key]: val }));
