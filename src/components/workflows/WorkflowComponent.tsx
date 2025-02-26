@@ -379,7 +379,8 @@ function RunTimeline({ run }: { run: any }) {
   const execStartPos = getPercentage(queueTime + coldStartTime);
   const isStartCloseToQueue = execStartPos - queuePos < 18;
 
-  const showColdStart = coldStartTime >= 0.1;
+  // Only show cold start segment if duration is greater than zero
+  const showColdStart = coldStartTime > 0;
 
   return (
     <InfoItem
