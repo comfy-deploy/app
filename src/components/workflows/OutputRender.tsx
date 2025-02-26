@@ -126,7 +126,7 @@ export function FileURLRender(props: fileURLRenderProps) {
       fallback={(e) => (
         <div
           className={cn(
-            "flex aspect-square h-full w-full max-w-[200px] flex-col items-center justify-center gap-2 text-gray-600",
+            "flex aspect-square h-full w-full max-w-[200px] flex-col items-center justify-center gap-2 px-4 text-gray-600 text-xs",
             props.imgClasses,
           )}
         >
