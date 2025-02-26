@@ -487,6 +487,11 @@ function RunDisplay({ runId }: { runId?: string }) {
     null,
   );
 
+  // Reset viewingImageIndex when runId changes
+  useEffect(() => {
+    setViewingImageIndex(null);
+  }, [runId]);
+
   // Handle keyboard navigation
   useEffect(() => {
     if (!urlList || urlList.length <= 1) return;
@@ -494,19 +499,16 @@ function RunDisplay({ runId }: { runId?: string }) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        setViewingImageIndex((prev) =>
-          prev === 0 ? urlList.length - 1 : prev - 1,
-        );
+        setViewingImageIndex((prev) => {
+          if (prev === null) return urlList.length - 1;
+          return prev === 0 ? urlList.length - 1 : prev - 1;
+        });
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-
-        if (viewingImageIndex === null) {
-          setViewingImageIndex(0);
-        } else {
-          setViewingImageIndex((prev) =>
-            prev === urlList.length - 1 ? 0 : prev + 1,
-          );
-        }
+        setViewingImageIndex((prev) => {
+          if (prev === null) return 0;
+          return prev === urlList.length - 1 ? 0 : prev + 1;
+        });
       } else if (
         e.key === "ArrowUp" ||
         e.key === "ArrowDown" ||
@@ -518,7 +520,7 @@ function RunDisplay({ runId }: { runId?: string }) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [viewingImageIndex, urlList.length]);
+  }, [viewingImageIndex, urlList]);
 
   // Common container styles for status messages
   const containerClass = "flex h-full w-full items-center justify-center";
@@ -559,7 +561,10 @@ function RunDisplay({ runId }: { runId?: string }) {
         <div className="scrollbar-track-transparent scrollbar-thin scrollbar-none h-full overflow-x-hidden overflow-y-scroll">
           <div className="sticky top-0 flex min-h-[calc(100%-20px)] w-full items-center justify-center">
             <div className="relative px-8">
-              {viewingImageIndex !== null ? (
+              {viewingImageIndex !== null &&
+              urlList &&
+              urlList.length > 0 &&
+              urlList[viewingImageIndex] ? (
                 // Image viewer mode
                 <div className="relative flex flex-col items-center">
                   {/* Image thumbnails navigation bar */}
