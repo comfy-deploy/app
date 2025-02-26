@@ -263,15 +263,13 @@ export function Playground(props: {
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
               ) : deployment ? (
-                <ScrollArea className="h-full">
-                  <RunWorkflowInline
-                    blocking={false}
-                    default_values={default_values}
-                    inputs={deployment?.input_types}
-                    runOrigin={props.runOrigin}
-                    deployment_id={deployment?.id}
-                  />
-                </ScrollArea>
+                <RunWorkflowInline
+                  blocking={false}
+                  default_values={default_values}
+                  inputs={deployment?.input_types}
+                  runOrigin={props.runOrigin}
+                  deployment_id={deployment?.id}
+                />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-2">
                   <p className="text-center font-medium text-muted-foreground text-sm">
