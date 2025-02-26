@@ -104,7 +104,7 @@ function GalleryImage({
         url={outputUrl}
         lazyLoading={true}
         imgClasses={cn(
-          "w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none min-h-[200px]",
+          "w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none",
           !isLoaded && "aspect-square",
         )}
         onLoad={() => setIsLoaded(true)}
