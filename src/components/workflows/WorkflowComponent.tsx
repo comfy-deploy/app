@@ -240,7 +240,7 @@ export function RunDetails(props: {
             value="outputs"
             className="flex w-fit flex-col justify-start gap-2"
           >
-            <ScrollArea className="h-[calc(100vh-380px)]">
+            <ScrollArea className="h-[calc(100vh-490px)]">
               <OutputRenderRun
                 run={run as any}
                 imgClasses="max-w-full min-h-[230px] object-cover rounded-[8px]"
