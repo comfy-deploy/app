@@ -403,14 +403,14 @@ export function Playground(props: {
                         <span tabIndex={0}>
                           <Button
                             variant="outline"
-                            className="group h-12 w-[50px] rounded-full shadow-lg"
-                            size="icon"
+                            className="group h-12 rounded-full shadow-lg"
                             disabled={!runId}
                             onClick={() => {
                               setIsTweak(true);
                             }}
                           >
-                            <Settings2 className="h-4 w-4 shrink-0" />
+                            <Settings2 className="mr-2 h-4 w-4 shrink-0" />
+                            <span>Tweak</span>
                           </Button>
                         </span>
                       </TooltipTrigger>
