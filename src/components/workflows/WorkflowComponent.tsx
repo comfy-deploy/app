@@ -386,14 +386,14 @@ function RunTimeline({ run }: { run: any }) {
       value={
         <div className="mt-2 w-full pb-2">
           {/* Time Labels - with conditional rendering */}
-          <div className="relative mb-1 flex h-6 w-full">
-            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap font-medium text-gray-600 text-xs">
+          <div className="relative flex h-5 w-full">
+            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap font-medium text-[10px] text-gray-600">
               {formatTime(0)}
             </div>
 
             {hasCompleteTimingData && queueTime > 0 && (
               <div
-                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
+                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600"
                 style={{ left: `${queuePos}%` }}
               >
                 {formatTime(queueEndTime)}
@@ -402,14 +402,14 @@ function RunTimeline({ run }: { run: any }) {
 
             {hasCompleteTimingData && coldStartTime > 0 && (
               <div
-                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
+                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600"
                 style={{ left: `${execStartPos}%` }}
               >
                 {formatTime(executionStartTime)}
               </div>
             )}
 
-            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap font-medium text-gray-600 text-xs">
+            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap font-medium text-[10px] text-gray-600">
               {formatTime(totalDuration)}
             </div>
           </div>
@@ -507,41 +507,53 @@ function RunTimeline({ run }: { run: any }) {
 
           {/* Event Labels - with conditional rendering */}
           <div className="relative mt-1.5 h-8 w-full">
-            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap border-gray-400 border-l-2 pl-1 font-medium text-gray-700 text-xs">
+            <div className="-translate-x-0 absolute left-0 transform whitespace-normal border-gray-400 border-l-2 pl-1 font-medium text-[10px] text-gray-700">
               Submitted
             </div>
 
             {hasCompleteTimingData && queueTime > 0 && (
               <div
-                className="absolute transform whitespace-nowrap font-medium text-xs"
+                className="absolute transform whitespace-normal font-medium text-[10px]"
                 style={{
                   left: `${queuePos}%`,
                   transform: `translateX(${isStartCloseToQueue ? "-90%" : "-50%"})`,
                   color: isWarm ? "#d97706" : "#b45309",
                 }}
               >
-                <div className="flex items-center border-amber-500 border-l-2 pl-1">
-                  {isWarm ? "Warm Start" : "Cold Start"}
+                <div className="flex flex-col items-start border-amber-500 border-l-2 pl-1">
+                  {isWarm ? (
+                    <>
+                      <span>Warm</span>
+                      <span>Start</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Cold</span>
+                      <span>Start</span>
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
             {hasCompleteTimingData && coldStartTime > 0 && (
               <div
-                className="absolute transform whitespace-nowrap font-medium text-blue-700 text-xs"
+                className="absolute transform whitespace-normal font-medium text-[10px] text-blue-700"
                 style={{
                   left: `${execStartPos}%`,
                   transform: `translateX(${isStartCloseToQueue ? "-10%" : "-50%"})`,
                 }}
               >
-                <div className="flex items-center border-blue-500 border-l-2 pl-1">
-                  Execution Started
+                <div className="flex flex-col items-start border-blue-500 border-l-2 pl-1">
+                  <span>Execution</span>
+                  <span>Started</span>
                 </div>
               </div>
             )}
 
-            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap border-green-500 border-r-2 pr-1 font-medium text-green-700 text-xs">
-              Execution Finished
+            <div className="absolute right-0 flex translate-x-0 transform flex-col items-end whitespace-normal border-green-500 border-r-2 pr-1 font-medium text-[10px] text-green-700">
+              <span>Execution</span>
+              <span>Finished</span>
             </div>
           </div>
         </div>
