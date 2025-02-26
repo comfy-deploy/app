@@ -520,7 +520,14 @@ function RunTimeline({ run }: { run: any }) {
                   color: isWarm ? "#d97706" : "#b45309",
                 }}
               >
-                <div className="flex flex-col items-start border-amber-500 border-l-2 pl-1">
+                <div
+                  className={cn(
+                    "flex flex-col items-start border-l-2 pl-1",
+                    isWarm
+                      ? "border-amber-500 text-amber-500"
+                      : "border-purple-600 text-purple-600",
+                  )}
+                >
                   {isWarm ? (
                     <>
                       <span>Warm</span>
