@@ -33,12 +33,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "../ui/carousel";
-// import dynamic from "next/dynamic";
-
-// const ModelViewer = dynamic(
-// 	() => import("./ModelViewer").then((mod) => mod.ModelViewer),
-// 	{ ssr: false },
-// );
+import { ShineBorder } from "../magicui/shine-border";
 
 type fileURLRenderProps = {
   url: string;
@@ -421,7 +416,7 @@ function RunStatusIndicator({ status }: { status: string }) {
     case "not-started":
     case "queued":
       StatusIcon = Loader2;
-      iconClassName = "text-gray-500 animate-spin";
+      iconClassName = "text-gray-200 animate-spin";
       extraClassName = "";
       break;
     default:
@@ -473,10 +468,15 @@ export function PlaygroundOutputRenderRun({
 
       {isSelected && (
         <div
-          className="group absolute top-0 left-0 z-20 flex h-full w-full items-center justify-center rounded-[8px] border-4 border-purple-500/70 hover:bg-black/20 hover:backdrop-blur-sm"
+          className="group absolute top-0 left-0 z-20 flex h-full w-full items-center justify-center rounded-[8px] hover:bg-black/20 hover:backdrop-blur-sm"
           title="deselect"
         >
           <CircleX className="text-gray-200 opacity-0 transition-opacity group-hover:opacity-100" />
+          <ShineBorder
+            color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+            className="h-full !min-w-[108px] bg-transparent"
+            borderWidth={4}
+          />
         </div>
       )}
 
