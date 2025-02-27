@@ -166,7 +166,7 @@ export function Fab(props: FinalFabProps & { className?: string }) {
                   }}
                 >
                   <TooltipProvider>
-                    <Tooltip>
+                    <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
                         <div className="flex items-center gap-3">
                           <div className="rounded-[8px] bg-white px-3 py-1 font-medium text-xs shadow-md">
@@ -205,7 +205,7 @@ export function Fab(props: FinalFabProps & { className?: string }) {
 
         {/* Main FAB */}
         <TooltipProvider>
-          <Tooltip>
+          <Tooltip delayDuration={0}>
             <TooltipTrigger>
               <AnimatePresence>
                 <Button

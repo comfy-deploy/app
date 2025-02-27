@@ -1,10 +1,7 @@
-"use client";
-
 import { Icon as IconWord } from "@/components/icon-word";
 
 import {
   Book,
-  BookCheck,
   Box,
   CircleGauge,
   CreditCard,
@@ -24,7 +21,6 @@ import {
 } from "lucide-react";
 
 import { useIsAdminAndMember, useIsAdminOnly } from "@/components/permissions";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Sidebar,
   SidebarContent,
@@ -39,22 +35,18 @@ import {
 } from "@/components/ui/sidebar";
 import { WorkflowDropdown } from "@/components/workflow-dropdown";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
-import { useCurrentPlan } from "@/hooks/use-current-plan";
+import { usePlanType } from "@/hooks/use-current-plan";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { WorkflowsBreadcrumb } from "@/routes/workflows/$workflowId/$view.lazy";
 import { OrganizationSwitcher, UserButton, useAuth } from "@clerk/clerk-react";
 import { Link, useLocation } from "@tanstack/react-router";
-// import { VersionSelectV2 } from "@/components/VersionSelectV2";
-// import { MachineSelect } from "@/components/MachineSelect";
-// import { useCurrentPlan } from "@/components/useCurrentPlan";
 import { motion } from "framer-motion";
-import React, { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VersionSelectV2 } from "./version-select";
 import { MachineSelect } from "./workspace/MachineSelect";
 
 export function UserMenu() {
-  const isAdminOnly = useIsAdminOnly();
   const isAdminAndMember = useIsAdminAndMember();
 
   return (
@@ -118,15 +110,10 @@ export function UserMenu() {
 }
 
 function usePages() {
-  // const pathname = `/${pathnames.split("/")[1]}`;
-
-  // const { has } = useAuth();
-
   const isAdminOnly = useIsAdminOnly();
   const isAdminAndMember = useIsAdminAndMember();
-  const sub = useCurrentPlan();
+  const { isFreePlan } = usePlanType();
 
-  // const pricingPlanFlagEnable = useFeatureFlagEnabled("pricing-plan");
   const pages = [
     {
       name: "Home",
@@ -190,7 +177,7 @@ function usePages() {
         ]
       : []),
 
-    ...(sub?.sub?.plan
+    ...(!isFreePlan
       ? [
           {
             name: "Analytics",

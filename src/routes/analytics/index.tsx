@@ -1,19 +1,22 @@
 import { queryClient } from "@/lib/providers";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import type { CustomerPlan } from "@/hooks/use-current-plan";
 
 export const Route = createFileRoute("/analytics/")({
   loader: async () => {
-    const sub = (await queryClient.ensureQueryData({
-      queryKey: ["platform", "plan"],
-    })) as { sub?: any };
+    const customerPlan = (await queryClient.ensureQueryData({
+      queryKey: ["platform", "autumn", "customer"],
+    })) as CustomerPlan;
 
-    if (!sub?.sub?.plan) {
-      console.log("redirecting");
-      throw redirect({
-        to: "/workflows",
-      });
+    // Replicate the logic from your hook
+    const isFreePlan =
+      !customerPlan?.products ||
+      customerPlan?.products?.id?.toLowerCase() === "free";
+
+    if (isFreePlan) {
+      throw redirect({ to: "/workflows" });
     }
 
-    return { sub };
+    return { customerPlan };
   },
 });
