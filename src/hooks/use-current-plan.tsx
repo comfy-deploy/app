@@ -42,7 +42,7 @@ export interface CustomerPlan {
     id: string;
     name: string;
     status: string;
-  };
+  }[];
   entitlements: {
     feature_id: string;
     balance: number;
@@ -61,18 +61,42 @@ const useCustomerPlan = () => {
 export const usePlanType = () => {
   const { data, isLoading, error } = useCustomerPlan();
 
-  const isPlan = (planName: string): boolean => {
-    return data?.products?.id?.toLowerCase() === planName.toLowerCase();
+  // Find the active product (if any)
+  const activeProduct = data?.products?.find(
+    (product) => product.status.toLowerCase() === "active",
+  );
+
+  /**
+   * Check if user has a specific plan type
+   * @param planName The plan name to check (e.g., "business", "creator")
+   * @param options Configuration options
+   * @param options.activeOnly Only check active plans (default: true)
+   */
+  const hasPlan = (
+    planName: string,
+    options = { activeOnly: true },
+  ): boolean => {
+    if (!data?.products?.length) return false;
+
+    return data.products.some((product) => {
+      const matchesPlan = product.id
+        .toLowerCase()
+        .includes(planName.toLowerCase());
+      return options.activeOnly
+        ? matchesPlan && product.status.toLowerCase() === "active"
+        : matchesPlan;
+    });
   };
 
   const isFreePlan = (): boolean => {
-    return !data?.products || isPlan("free");
+    return !activeProduct || hasPlan("free");
   };
 
   return {
-    currentPlan: data?.products?.name || "free",
+    currentPlan: activeProduct?.name || "free",
+    activeProduct,
     data,
-    isPlan,
+    hasPlan,
     isFreePlan,
     isLoading,
     error,

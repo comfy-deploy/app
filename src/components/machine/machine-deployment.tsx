@@ -7,7 +7,6 @@ import {
   FieldChanges,
   processChanges,
 } from "@/components/machine/machine-version-diff";
-import { CustomNodeList } from "@/components/machines/custom-node-list";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,14 +29,12 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
-import { useCurrentPlan } from "@/hooks/use-current-plan";
+import { usePlanType } from "@/hooks/use-current-plan";
 import { useMachineVersion, useMachineVersions } from "@/hooks/use-machine";
 import { useUserInfo } from "@/hooks/use-user-info";
 import { api } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { differenceInSeconds } from "date-fns";
 import {
@@ -49,7 +46,6 @@ import {
   Ellipsis,
   ExternalLink,
   HardDrive,
-  Library,
   Lock,
   Puzzle,
   RotateCcw,
@@ -279,14 +275,8 @@ export function MachineVersionListItem({
   machine: any;
   target?: string;
 }) {
-  const navigate = useNavigate({
-    from: "/machines/$machineId",
-  });
-  const sub = useCurrentPlan();
-  const isBusinessOrEnterprise = Boolean(
-    sub?.plans?.plans[0] &&
-      ["business", "enterprise"].includes(sub.plans.plans[0].toLowerCase()),
-  );
+  const { hasPlan } = usePlanType();
+  const isBusiness = hasPlan("business");
 
   // Single state to track the build start time
   const [buildStartTime, setBuildStartTime] = useState<Date | null>(null);
@@ -401,7 +391,7 @@ export function MachineVersionListItem({
           <InstantRollback
             machineVersion={machineVersion}
             machine={machine}
-            isBusinessOrEnterprise={isBusinessOrEnterprise}
+            isBusiness={isBusiness}
           />
         </div>
       </div>
@@ -412,11 +402,11 @@ export function MachineVersionListItem({
 function InstantRollback({
   machineVersion,
   machine,
-  isBusinessOrEnterprise,
+  isBusiness,
 }: {
   machineVersion: any;
   machine: any;
-  isBusinessOrEnterprise: boolean;
+  isBusiness: boolean;
 }) {
   const [rollbackAlertOpen, setRollbackAlertOpen] = useState(false);
   const [rebuildAlertOpen, setRebuildAlertOpen] = useState(false);
@@ -429,7 +419,7 @@ function InstantRollback({
   });
 
   const handleRollback = async () => {
-    if (!isBusinessOrEnterprise) {
+    if (!isBusiness) {
       return;
     }
 
@@ -463,7 +453,7 @@ function InstantRollback({
           <DropdownMenuSeparator />
           <DropdownMenuItem
             disabled={
-              !isBusinessOrEnterprise ||
+              !isBusiness ||
               machineVersion.id === machine.machine_version_id ||
               machineVersion.status !== "ready" ||
               machine.status === "building"
@@ -477,7 +467,7 @@ function InstantRollback({
           >
             Rollback
             <DropdownMenuShortcut>
-              {isBusinessOrEnterprise ? (
+              {isBusiness ? (
                 <RotateCcw className="w-4 h-4" />
               ) : (
                 <Lock className="w-4 h-4" />

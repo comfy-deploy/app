@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +14,9 @@ import { useFormStatus } from "react-dom";
 
 import "./cal-init";
 
-import { useCurrentPlan } from "@/hooks/use-current-plan";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { useRouter } from "node_modules/@tanstack/react-router/dist/esm/useRouter";
 import { usePostHog } from "posthog-js/react";
 import Calendar from "./Cal";
 
@@ -55,15 +51,13 @@ async function submitOnboardingForm(prevState: any, formData: FormData) {
 
 export function OnboardingCall() {
   const posthog = usePostHog();
-  const sub = useCurrentPlan();
-  const route = useRouter();
 
   useEffect(() => {
     posthog.capture("pricing_dialog:open");
   }, []);
 
   return (
-    <div className="inset-0 z-[1] bg-white w-full">
+    <div className="inset-0 z-[1] w-full bg-white">
       <div className="flex scroll-m-6 flex-col items-center justify-start pt-10">
         <h1 className="mb-4 text-center font-bold">
           <span className="inline-flex animate-background-shine bg-[length:250%_100%] bg-[linear-gradient(110deg,#1e293b,45%,#939393,55%,#1e293b)] bg-clip-text pb-2 text-5xl text-transparent sm:text-6xl md:text-5xl">

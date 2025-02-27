@@ -1,4 +1,4 @@
-import { useCurrentPlan } from "@/hooks/use-current-plan";
+import { usePlanType } from "@/hooks/use-current-plan";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
@@ -9,15 +9,15 @@ import { DependencyType } from "./auto-form/types";
 import { updateUser } from "./user-api";
 
 export function UserSettings() {
-  const sub = useCurrentPlan();
-  const DEFAULT_MAX_SPEND_LIMIT = sub?.plans ? 1000 : 5;
+  const { isFreePlan } = usePlanType();
+  const DEFAULT_MAX_SPEND_LIMIT = isFreePlan() ? 5 : 1000;
   const { data: userSettings } = useUserSettings();
 
   const enableStorage = userSettings?.enable_custom_output_bucket;
 
   return (
     <div className={cn("mx-auto max-w-lg py-10")}>
-      {!sub?.sub?.plan && (
+      {isFreePlan() && (
         <div className="mb-4 border-yellow-400 border-l-4 bg-yellow-50 p-4">
           <div className="flex">
             <div className="ml-3">
@@ -31,7 +31,7 @@ export function UserSettings() {
       )}
       <InlineAutoForm
         className={cn(
-          !sub?.sub?.plan && "disabled pointer-events-none opacity-50",
+          isFreePlan() && "disabled pointer-events-none opacity-50",
         )}
         buttonTitle="Save"
         formSchema={z.object({
@@ -72,7 +72,7 @@ export function UserSettings() {
         })}
         data={userSettings}
         serverAction={async (data) => {
-          if (!sub?.plans) {
+          if (isFreePlan()) {
             toast.error("Settings are disabled for free tier users.");
             return userSettings;
           }

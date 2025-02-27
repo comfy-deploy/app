@@ -31,10 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  useCurrentPlan,
-  useCurrentPlanWithStatus,
-} from "@/hooks/use-current-plan";
+import { useCurrentPlanWithStatus } from "@/hooks/use-current-plan";
 import {
   Link,
   useMatch,

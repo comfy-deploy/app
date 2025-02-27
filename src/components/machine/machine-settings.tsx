@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import {
   type SubscriptionPlan,
   useCurrentPlan,
+  usePlanType,
 } from "@/hooks/use-current-plan";
 import { useGithubBranchInfo } from "@/hooks/use-github-branch-info";
 import { useUserSettings } from "@/hooks/use-user-settings";
@@ -810,14 +811,7 @@ export function GPUSelectBox({
   className?: string;
 }) {
   const { gpuConfig } = useGPUConfig();
-  const sub = useCurrentPlan() as SubscriptionPlan;
-  console.log(sub);
-  const isBusiness = sub?.plans?.plans?.some(
-    (plan) =>
-      plan.includes("business") ||
-      plan.includes("creator") ||
-      plan.includes("deployment"),
-  );
+  const { isFreePlan } = usePlanType();
 
   return (
     <div className={cn("mt-2", className)}>
@@ -833,24 +827,23 @@ export function GPUSelectBox({
         </SelectTrigger>
         <SelectContent>
           {gpuConfig.map((gpu) => {
-            const isDisabled = !isBusiness && gpu.tier === "business";
             return (
               <SelectItem
                 key={gpu.id}
                 value={gpu.id}
-                disabled={isDisabled}
+                disabled={isFreePlan()}
                 className="w-full pr-8"
               >
                 <div className="flex items-center justify-between gap-2 w-full">
                   <div className="truncate">
                     <span>{gpu.gpuName}</span>
-                    {isDisabled && (
+                    {isFreePlan() && (
                       <Badge
                         variant="outline"
                         className="ml-2 font-normal text-xs"
                       >
                         <Lock className="h-3 w-3 mr-1" />
-                        Business
+                        Paid
                       </Badge>
                     )}
                   </div>
@@ -944,41 +937,17 @@ export function MaxParallelGPUSlider({
   value: number;
   onChange: (value: number) => void;
 }) {
-  const sub = useCurrentPlan();
-  const { data: userSettings } = useUserSettings();
-  const plan = sub?.plans?.plans.filter(
-    (plan: string) => !plan.includes("ws"),
-  )?.[0];
-
-  const planHierarchy: Record<string, { max: number }> = {
-    basic: { max: 1 },
-    pro: { max: 3 },
-    business: { max: 10 },
-    enterprise: { max: 10 },
-    creator: { max: 10 },
-    // for new plans
-    creator_legacy_monthly: { max: 3 },
-    creator_monthly: { max: 1 },
-    creator_yearly: { max: 1 },
-    deployment: { max: 5 },
-    deployment_monthly: { max: 5 },
-    deployment_yearly: { max: 5 },
-    business_monthly: { max: 10 },
-    business_yearly: { max: 10 },
-  };
-
-  let maxGPU = planHierarchy[plan as keyof typeof planHierarchy]?.max || 1;
-  if (userSettings?.max_gpu) {
-    maxGPU = Math.max(maxGPU, userSettings.max_gpu);
-  }
+  const { data: customerPlan } = usePlanType();
+  const maxGPUConcurrency = customerPlan?.entitlements.find(
+    (entitlement) => entitlement.feature_id === "gpu_concurrency_limit",
+  )?.balance;
 
   return (
     <RangeSlider
       value={value}
       onChange={onChange}
       min={1}
-      max={maxGPU}
-      // description=""
+      max={maxGPUConcurrency || 1}
     />
   );
 }

@@ -99,9 +99,6 @@ export function useWorkflowVersion(
 }
 
 export function WorkflowList() {
-  const [modalType, setModalType] = React.useState<"json" | "new" | null>(null);
-  const [view, setView] = React.useState<"list" | "grid">("grid");
-
   const user = useUser();
   const sub = useCurrentPlan();
 

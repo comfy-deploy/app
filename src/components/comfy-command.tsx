@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/command";
 import { LoadingIcon } from "@/components/ui/custom/loading-icon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCurrentPlan } from "@/hooks/use-current-plan";
+import { usePlanType } from "@/hooks/use-current-plan";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
 import { getRelativeTime } from "@/lib/get-relative-time";
@@ -277,8 +277,8 @@ function NavigationPartCommand({ navigate, setOpen }: ComfyCommandProps) {
 }
 
 function AccountPartCommand({ navigate, setOpen }: ComfyCommandProps) {
-  const sub = useCurrentPlan();
   const isAdminOnly = useIsAdminOnly();
+  const { isFreePlan } = usePlanType();
 
   return (
     <CommandGroup heading="Account">
@@ -319,7 +319,7 @@ function AccountPartCommand({ navigate, setOpen }: ComfyCommandProps) {
         </CommandItem>
       )}
 
-      {sub?.sub?.plan && (
+      {!isFreePlan && (
         <CommandItem
           onSelect={() => {
             navigate({

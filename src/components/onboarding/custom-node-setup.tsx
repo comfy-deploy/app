@@ -69,7 +69,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "../ui/drawer";
-import { useCurrentPlan } from "@/hooks/use-current-plan";
+import { usePlanType } from "@/hooks/use-current-plan";
 
 export type DefaultCustomNodeData = {
   title: string;
@@ -533,7 +533,7 @@ function SelectedNodeList({
   const [scriptMode, setScriptMode] = useState(false);
   const [showNewCommand, setShowNewCommand] = useState(false);
   const [commandText, setCommandText] = useState("");
-  const sub = useCurrentPlan();
+  const { isFreePlan } = usePlanType();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -662,7 +662,7 @@ function SelectedNodeList({
         <h2 className="font-medium text-md">
           Selected Nodes ({validation.docker_command_steps.steps.length})
         </h2>
-        {sub?.plans?.plans?.[0] && (
+        {!isFreePlan() && (
           <div className="flex flex-col items-end gap-2 md:flex-row">
             {!scriptMode && (
               <Button
