@@ -241,9 +241,9 @@ export function LeftMenuButtons({ endpoint }: WorkspaceButtonProps) {
   });
 
   const data = useMemo(() => {
-    console.log("=====", "re calculating left menu buttons");
+    console.log("=====", " re calculating left menu buttons");
     return {
-      containerSelector: "body > div.comfyui-body-top > div",
+      containerSelector: ".comfyui-menu",
       buttonConfigs: [
         {
           id: "back",
@@ -529,7 +529,7 @@ export function WorkflowButtons({
 
   const data = useMemo(() => {
     return {
-      containerSelector: "body > div.comfyui-body-top > div",
+      containerSelector: ".comfyui-menu",
       buttonConfigs: [
         {
           id: "workflow-1",
@@ -584,7 +584,7 @@ export function WorkflowButtons({
           },
           onClick: (_: string, __: unknown) => {
             if (!machine) {
-              toast.error("Please create a workspace first");
+              // toast.error("Please create a workspace first");
               setIsNewWorkspaceDialogOpen(true);
               return;
             }
@@ -625,7 +625,7 @@ export function WorkflowButtons({
         },
       ],
       buttonIdPrefix: "cd-button-workflow-",
-      insertBefore: "body > div.comfyui-body-top > div > div.flex-grow",
+      insertBefore: ".comfyui-menu>:nth-of-type(2)",
     };
   }, [
     workflow?.name,
@@ -784,8 +784,7 @@ export function WorkflowButtons({
 export function ClearContainerButtons({ endpoint }: WorkspaceButtonProps) {
   useWorkspaceButtons(
     {
-      containerSelector:
-        "body > div.comfyui-body-top > div > div.flex-grow.min-w-0.app-drag.h-full",
+      containerSelector: ".comfyui-menu>.flex-grow",
       buttonConfigs: [],
       buttonIdPrefix: "cd-button-p-",
       containerStyle: { order: "-1" },
