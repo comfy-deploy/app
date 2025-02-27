@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Fragment, ReactNode, useEffect } from "react";
+import type React from "react";
+import { Fragment, type ReactNode, useEffect } from "react";
 import "./modal-overlay.css";
 
 type ModalProps = {
@@ -26,9 +27,7 @@ const Modal: React.FC<ModalProps> = ({ children, className }) => {
 };
 
 const Overlay: React.FC<OverlayProps> = ({ onClose, overlayClassName }) => {
-  return (
-    <div className={`backdrop ${overlayClassName}`} onClick={onClose}></div>
-  );
+  return <div className={`backdrop ${overlayClassName}`} onClick={onClose} />;
 };
 
 export const ModalOverlay: React.FC<ModalOverlayProps> = ({

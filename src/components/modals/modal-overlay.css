@@ -9,11 +9,11 @@
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.2);
-  z-index: 9;
+  z-index: 90;
 }
 
 .modal {
-  z-index: 10;
+  z-index: 91;
   position: fixed;
   top: 108px;
   bottom: 108px;

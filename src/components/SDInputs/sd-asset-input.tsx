@@ -32,7 +32,7 @@ export const SDAssetInput = ({ onChange }: Props) => {
               variant: "outline",
               className:
                 "cursor-pointer transition-colors hover:bg-gray-50 flex items-center justify-center",
-            })
+            }),
           )}
         >
           <Image size={18} />
