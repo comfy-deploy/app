@@ -117,7 +117,7 @@ export function Playground(props: {
   const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
   const [showRunInputsMobileLayout, setShowRunInputsMobileLayout] =
     useState(false);
-  const [logsCollapsed, setLogsCollapsed] = useState(false);
+  const [logsCollapsed, setLogsCollapsed] = useState(true);
   const { data: run, isLoading: isRunLoading } = useQuery({
     enabled: !!runId,
     queryKey: ["run", runId],
@@ -348,7 +348,7 @@ export function Playground(props: {
             </motion.div>
 
             <div className="relative z-10 h-full w-full">
-              <RunDisplay runId={runId ?? undefined} />
+              <RunDisplay runId={runId ?? undefined} deployment={deployment} />
               <ArrowIndicator
                 disableTop={true}
                 disableLeft={true}
@@ -484,7 +484,10 @@ export function Playground(props: {
   );
 }
 
-function RunDisplay({ runId }: { runId?: string }) {
+function RunDisplay({
+  runId,
+  deployment,
+}: { runId?: string; deployment?: any }) {
   const { data: run, isLoading } = useRun(runId);
   const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
     run?.outputs || [],
@@ -558,6 +561,14 @@ function RunDisplay({ runId }: { runId?: string }) {
   const messageClass =
     "animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm";
 
+  // Handle no deployment
+  if (!deployment) {
+    return (
+      <div className={containerClass}>
+        <p className={messageClass}>Please select a deployment</p>
+      </div>
+    );
+  }
   // Handle loading and empty states
   if (isLoading || !run) {
     return (
