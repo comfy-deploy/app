@@ -40,6 +40,7 @@ import { sendEventToCD, sendWorkflow } from "./sendEventToCD";
 import { Label } from "../ui/label";
 import Cookies from "js-cookie";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { getOptimizedImage } from "@/lib/utils";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -753,7 +754,7 @@ export function WorkflowButtons({
                 >
                   <div className="mb-3 aspect-square overflow-hidden rounded-[10px]">
                     <img
-                      src={template.workflowImageUrl}
+                      src={getOptimizedImage(template.workflowImageUrl)}
                       alt={template.workflowName}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />

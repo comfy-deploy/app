@@ -57,6 +57,7 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { RebuildMachineDialog } from "../machines/machine-list";
+import { getOptimizedImage } from "@/lib/utils";
 
 export function formatExactTime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -109,7 +110,7 @@ const UserInfoForDeployment = ({ machineVersion }: { machineVersion: any }) => {
         {user.username ?? `${user.first_name} ${user.last_name}`}
       </span>
       <img
-        src={user.image_url ?? ""}
+        src={user?.image_url ? getOptimizedImage(user.image_url) : ""}
         alt={`${user.first_name}'s avatar`}
         className="h-[22px] w-[22px] rounded-full"
       />

@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, getOptimizedImage } from "@/lib/utils";
 import {
   Download,
   SearchX,
@@ -109,7 +109,7 @@ function _FileURLRender({
       <img
         onLoad={onLoad}
         className={cn("max-w-[200px]", mediaClasses)}
-        src={url}
+        src={getOptimizedImage(url)}
         alt={filename}
         loading={lazyLoading ? "lazy" : undefined}
         onError={() => setImageError(true)}

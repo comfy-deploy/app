@@ -3,7 +3,7 @@
 import { DownloadButton } from "@/components/download-button";
 // @ts-ignore
 // @ts-ignore
-import { cn } from "@/lib/utils";
+import { cn, getOptimizedImage } from "@/lib/utils";
 
 type fileURLRenderProps = {
   url: string;
@@ -58,16 +58,14 @@ export function FileURLRender({
         style={mediaStyles}
         className={cn("max-w-[200px]", mediaClasses)}
         alt={filename}
-        src={url}
+        src={getOptimizedImage(url)}
       />
     );
   }
   return <DownloadButton filename={filename} href={url} />;
 }
 
-export function OutputRender(props: {
-  url: string;
-}) {
+export function OutputRender(props: { url: string }) {
   const url = props.url;
 
   if (!url) return <></>;

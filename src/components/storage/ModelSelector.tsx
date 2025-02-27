@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn, formatFileSize } from "@/lib/utils";
+import { cn, formatFileSize, getOptimizedImage } from "@/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, ExternalLink, Plus, Search } from "lucide-react";
 import * as React from "react";
@@ -259,7 +259,7 @@ function Content({
                   >
                     {providerIcon && (
                       <img
-                        src={providerIcon}
+                        src={getOptimizedImage(providerIcon)}
                         alt="Provider Icon"
                         className="mr-2 h-4 w-4"
                       />

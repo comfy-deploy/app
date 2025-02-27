@@ -1,3 +1,4 @@
+import { getOptimizedImage } from "@/lib/utils";
 import { comfydeploy_hash } from "@/utils/comfydeploy-hash";
 
 export const defaultWorkflowTemplate = {
@@ -1315,8 +1316,9 @@ export const defaultWorkflowTemplates: defaultWorkflowTemplateType[] = [
     workflowDescription: "Text to image with sd 1.5 base model. ",
     workflowJson: JSON.stringify(defaultWorkflowTemplate.workflow),
     workflowApi: JSON.stringify(defaultWorkflowTemplate.workflow_api),
-    workflowImageUrl:
+    workflowImageUrl: getOptimizedImage(
       "https://comfy-deploy-output.s3.amazonaws.com/outputs/runs/ae92370b-315a-4578-af29-ed83b00828d1/ComfyUI_00001_.png",
+    ),
   },
   {
     workflowId: "sd3.5",
@@ -1324,8 +1326,9 @@ export const defaultWorkflowTemplates: defaultWorkflowTemplateType[] = [
     workflowDescription: "Text to image with latest sd 3.5 model.",
     workflowJson: JSON.stringify(workflow_json_sd3_5),
     workflowApi: JSON.stringify(workflow_api_sd3_5),
-    workflowImageUrl:
+    workflowImageUrl: getOptimizedImage(
       "https://comfy-deploy-output.s3.amazonaws.com/outputs/runs/36febfce-3cb6-4220-9447-33003e58d381/ComfyUI_00001_.png",
+    ),
   },
   {
     workflowId: "flux",
@@ -1334,7 +1337,8 @@ export const defaultWorkflowTemplates: defaultWorkflowTemplateType[] = [
       "Text to image with Flux model, most popular and stunning model.",
     workflowApi: JSON.stringify(workflow_api_flux),
     workflowJson: JSON.stringify(workflow_json_flux),
-    workflowImageUrl:
+    workflowImageUrl: getOptimizedImage(
       "https://cd-misc.s3.us-east-2.amazonaws.com/templates/1zsngynnMzX8g1FWs61ti.png",
+    ),
   },
 ];

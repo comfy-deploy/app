@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getOptimizedImage } from "@/lib/utils";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 
@@ -55,7 +56,7 @@ export function SDImageInputPreview({
             </div>
             <img
               className="w-full rounded-xl drop-shadow-lg"
-              src={image.imgURL}
+              src={getOptimizedImage(image.imgURL)}
               alt={image.imgName}
               width={200}
             />

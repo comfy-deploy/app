@@ -29,7 +29,7 @@ import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { customInputNodes } from "@/lib/customInputNodes";
 import { getDuration, getRelativeTime } from "@/lib/get-relative-time";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
-import { cn } from "@/lib/utils";
+import { cn, getOptimizedImage } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -108,10 +108,7 @@ export function useRun(runId?: string) {
   return runQuery;
 }
 
-export function Playground(props: {
-  title?: ReactNode;
-  runOrigin?: any;
-}) {
+export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
   const workflow_id = useWorkflowIdInWorkflowPage();
   const [runId, setRunId] = useQueryState("run-id");
   const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
@@ -602,7 +599,7 @@ function RunDisplay({ runId }: { runId?: string }) {
                         >
                           <div className="relative h-16 w-16">
                             <img
-                              src={item.url}
+                              src={getOptimizedImage(item.url)}
                               alt={`Thumbnail ${index + 1}`}
                               className="h-full w-full object-cover"
                               loading="lazy"

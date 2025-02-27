@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, getOptimizedImage } from "@/lib/utils";
 import { useState } from "react";
 
 type ImageFallbackProps = {
@@ -31,7 +31,7 @@ export function ImageFallback({
         style={{
           display: loading ? "none" : "block",
         }}
-        src={src}
+        src={getOptimizedImage(src)}
         onError={() => {
           if (onError) {
             onError(new Error("Image failed to load"));

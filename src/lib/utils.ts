@@ -18,3 +18,7 @@ export function formatFileSize(fileSize: number) {
   }
   return sizeString;
 }
+
+export const getOptimizedImage = (url: string) => {
+  return `https://comfydeploy.com/cdn-cgi/image/quality=75/${url}`;
+};

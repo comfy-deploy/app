@@ -59,7 +59,7 @@ import {
   getInputsFromWorkflowAPI,
   getInputsFromWorkflowJSON,
 } from "@/lib/getInputsFromWorkflow";
-import { cn } from "@/lib/utils";
+import { cn, getOptimizedImage } from "@/lib/utils";
 import {
   Link,
   createLazyFileRoute,
@@ -481,7 +481,9 @@ interface WorkflowDescriptionForm {
 
 function RequestPage({
   setIsEditing,
-}: { setIsEditing: (isEditing: boolean) => void }) {
+}: {
+  setIsEditing: (isEditing: boolean) => void;
+}) {
   const { workflowId } = Route.useParams();
   const {
     workflow: currentWorkflow,
@@ -589,7 +591,7 @@ function RequestPage({
               {currentWorkflow?.cover_image ? (
                 <>
                   <img
-                    src={currentWorkflow.cover_image}
+                    src={getOptimizedImage(currentWorkflow.cover_image)}
                     alt="Workflow cover"
                     className="h-full w-full object-cover"
                   />

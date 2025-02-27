@@ -31,7 +31,7 @@ import {
 import { LiveStatus } from "@/components/workflows/LiveStatus";
 import { useRealtimeWorkflow } from "@/components/workflows/RealtimeRunUpdate";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, getOptimizedImage } from "@/lib/utils";
 import {
   useInfiniteQuery,
   useQuery,
@@ -144,10 +144,7 @@ type RunRowRendererProps = {
 
 type RunRowRenderer = (props: RunRowRendererProps) => React.ReactNode;
 
-export function useRuns(props: {
-  workflow_id: string;
-  defaultData?: any;
-}) {
+export function useRuns(props: { workflow_id: string; defaultData?: any }) {
   return useInfiniteQuery({
     queryKey: ["v2", "workflow", props.workflow_id, "runs"],
     meta: {
@@ -454,9 +451,7 @@ function RunRow({
   );
 }
 
-function OutputPreview(props: {
-  runId: string;
-}) {
+function OutputPreview(props: { runId: string }) {
   const { data: run, isLoading } = useQuery<any>({
     queryKey: ["run", props.runId],
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
@@ -492,7 +487,7 @@ function OutputPreview(props: {
         <div key={url.url}>
           <img
             className="h-8 w-8 rounded-[8px] object-cover"
-            src={url.url}
+            src={getOptimizedImage(url.url)}
             alt="Output"
           />
         </div>
