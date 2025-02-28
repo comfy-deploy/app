@@ -612,13 +612,13 @@ function DefaultOption({
                   <div className="relative aspect-video w-full overflow-hidden rounded-md">
                     <div className="absolute inset-0 bg-gradient-to-r from-background to-15% to-transparent" />
                     <img
-                      src={getOptimizedImage(template.workflowImageUrl)}
+                      src={template.workflowImageUrl}
                       className="h-full w-full object-cover"
-                      alt={`$template.workflowNameexample`}
+                      alt={"$template.workflowNameexample"}
                     />
                   </div>
 
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {template.workflowDescription}
                   </p>
                 </div>
