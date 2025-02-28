@@ -2,8 +2,9 @@ import { cn } from "@/lib/utils";
 import { Image } from "lucide-react";
 import { buttonVariants } from "../ui/button";
 import { useState } from "react";
-import { AssetsModal } from "../modals/assets-modal";
 import { ImageInputsTooltip } from "../image-inputs-tooltip";
+import { AssetsBrowserPopup } from "../workspace/assets-browser-drawer";
+import { useAssetsBrowserStore } from "../workspace/Workspace";
 
 interface Props {
   onChange: (file: File | string | undefined | FileList) => void;
@@ -11,9 +12,11 @@ interface Props {
 
 export const SDAssetInput = ({ onChange }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { setOpen } = useAssetsBrowserStore();
 
   const handleClick = () => {
     setIsOpen(true);
+    setOpen(true);
   };
 
   const handleAsset = (asset: AssetType) => {
@@ -31,19 +34,14 @@ export const SDAssetInput = ({ onChange }: Props) => {
             buttonVariants({
               variant: "outline",
               className:
-                "cursor-pointer transition-colors hover:bg-gray-50 flex items-center justify-center",
+                "flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-50",
             }),
           )}
         >
           <Image size={18} />
         </button>
       </ImageInputsTooltip>
-      {isOpen && (
-        <AssetsModal
-          handleAsset={handleAsset}
-          handleClose={() => setIsOpen(false)}
-        />
-      )}
+      {isOpen && <AssetsBrowserPopup isPlayground handleAsset={handleAsset} />}
     </>
   );
 };
