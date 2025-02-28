@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
-import { cn, getOptimizedImage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
 import { defaultWorkflowTemplates } from "@/utils/default-workflow";
 import { useNavigate } from "@tanstack/react-router";
@@ -612,7 +612,7 @@ function DefaultOption({
                   <div className="relative aspect-video w-full overflow-hidden rounded-md">
                     <div className="absolute inset-0 bg-gradient-to-r from-background to-15% to-transparent" />
                     <img
-                      src={getOptimizedImage(template.workflowImageUrl)}
+                      src={template.workflowImageUrl}
                       className="h-full w-full object-cover"
                       alt={`$template.workflowNameexample`}
                     />
