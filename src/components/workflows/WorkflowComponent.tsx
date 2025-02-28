@@ -240,7 +240,7 @@ export function RunDetails(props: {
             value="outputs"
             className="flex w-fit flex-col justify-start gap-2"
           >
-            <ScrollArea className="h-[calc(100vh-380px)]">
+            <ScrollArea className="h-[calc(100vh-490px)]">
               <OutputRenderRun
                 run={run as any}
                 imgClasses="max-w-full min-h-[230px] object-cover rounded-[8px]"
@@ -354,8 +354,7 @@ function RunTimeline({ run }: { run: any }) {
   const coldStartTime = coldStartDuration;
 
   // Determine if we have complete timing data or just partial data
-  const hasCompleteTimingData =
-    queueTime > 0 && coldStartTime > 0 && runDuration > 0;
+  const hasCompleteTimingData = queueTime > 0 && runDuration > 0;
 
   // Check if warm based on cold start duration
   const isWarm =
@@ -380,36 +379,40 @@ function RunTimeline({ run }: { run: any }) {
   const execStartPos = getPercentage(queueTime + coldStartTime);
   const isStartCloseToQueue = execStartPos - queuePos < 18;
 
+  // Only show cold start segment if duration is greater than zero
+  const showColdStart = coldStartTime > 0;
+
   return (
     <InfoItem
       label="Run Timeline"
       value={
         <div className="mt-2 w-full pb-2">
           {/* Time Labels - with conditional rendering */}
-          <div className="relative mb-1 flex h-6 w-full">
-            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap font-medium text-gray-600 text-xs">
+          <div className="relative flex h-5 w-full">
+            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap font-medium text-[10px] text-gray-600">
               {formatTime(0)}
             </div>
 
             {hasCompleteTimingData && queueTime > 0 && (
               <div
-                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
+                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600"
                 style={{ left: `${queuePos}%` }}
               >
                 {formatTime(queueEndTime)}
               </div>
             )}
 
-            {hasCompleteTimingData && coldStartTime > 0 && (
+            {/* Only show cold start time label if we have a cold start duration */}
+            {hasCompleteTimingData && showColdStart && (
               <div
-                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-gray-600 text-xs"
+                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600"
                 style={{ left: `${execStartPos}%` }}
               >
                 {formatTime(executionStartTime)}
               </div>
             )}
 
-            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap font-medium text-gray-600 text-xs">
+            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap font-medium text-[10px] text-gray-600">
               {formatTime(totalDuration)}
             </div>
           </div>
@@ -435,27 +438,29 @@ function RunTimeline({ run }: { run: any }) {
                   </div>
                 )}
 
-                {/* Cold start / Warm start segment when available */}
-                <div
-                  className={`absolute h-5 rounded-[2px] shadow-sm ${
-                    isWarm
-                      ? "bg-gradient-to-r from-amber-300 to-amber-400"
-                      : "bg-gradient-to-r from-purple-500 to-amber-400"
-                  }`}
-                  style={{
-                    width: `${getPercentage(coldStartTime) - 0.9}%`,
-                    left: `${getPercentage(queueTime) + 0.5}%`,
-                  }}
-                >
-                  {isWarm && (
-                    <>
-                      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,transparent_70%)] opacity-20" />
-                      <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 transform text-amber-600">
-                        <Zap size={16} />
-                      </div>
-                    </>
-                  )}
-                </div>
+                {/* Cold start / Warm start segment when available and duration > 0 */}
+                {showColdStart && (
+                  <div
+                    className={`absolute h-5 rounded-[2px] shadow-sm ${
+                      isWarm
+                        ? "bg-gradient-to-r from-amber-300 to-amber-400"
+                        : "bg-gradient-to-r from-purple-500 to-amber-400"
+                    }`}
+                    style={{
+                      width: `${getPercentage(coldStartTime) - 0.9}%`,
+                      left: `${getPercentage(queueTime) + 0.5}%`,
+                    }}
+                  >
+                    {isWarm && (
+                      <>
+                        <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,transparent_70%)] opacity-20" />
+                        <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 transform text-amber-600">
+                          <Zap size={16} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Run duration segment when available */}
                 <div
@@ -492,7 +497,8 @@ function RunTimeline({ run }: { run: any }) {
               />
             )}
 
-            {hasCompleteTimingData && coldStartTime > 0 && (
+            {/* Only show cold start marker if there's a cold start duration */}
+            {hasCompleteTimingData && showColdStart && (
               <div
                 className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
                 style={{ left: `${execStartPos}%` }}
@@ -507,41 +513,66 @@ function RunTimeline({ run }: { run: any }) {
 
           {/* Event Labels - with conditional rendering */}
           <div className="relative mt-1.5 h-8 w-full">
-            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap border-gray-400 border-l-2 pl-1 font-medium text-gray-700 text-xs">
+            <div className="-translate-x-0 absolute left-0 transform whitespace-normal border-gray-400 border-l-2 pl-1 font-medium text-[10px] text-gray-700">
               Submitted
             </div>
 
             {hasCompleteTimingData && queueTime > 0 && (
               <div
-                className="absolute transform whitespace-nowrap font-medium text-xs"
+                className="absolute transform whitespace-normal font-medium text-[10px]"
                 style={{
                   left: `${queuePos}%`,
                   transform: `translateX(${isStartCloseToQueue ? "-90%" : "-50%"})`,
                   color: isWarm ? "#d97706" : "#b45309",
                 }}
               >
-                <div className="flex items-center border-amber-500 border-l-2 pl-1">
-                  {isWarm ? "Warm Start" : "Cold Start"}
+                <div
+                  className={cn(
+                    "flex flex-col items-start border-l-2 pl-1",
+                    isWarm
+                      ? "border-amber-500 text-amber-500"
+                      : "border-purple-600 text-purple-600",
+                  )}
+                >
+                  {!showColdStart ? (
+                    <>
+                      <span>Execution</span>
+                      <span>Started</span>
+                    </>
+                  ) : isWarm ? (
+                    <>
+                      <span>Warm</span>
+                      <span>Start</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Cold</span>
+                      <span>Start</span>
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
-            {hasCompleteTimingData && coldStartTime > 0 && (
+            {/* Only show execution started label if there's a cold start duration */}
+            {hasCompleteTimingData && showColdStart && (
               <div
-                className="absolute transform whitespace-nowrap font-medium text-blue-700 text-xs"
+                className="absolute transform whitespace-normal font-medium text-[10px] text-blue-700"
                 style={{
                   left: `${execStartPos}%`,
                   transform: `translateX(${isStartCloseToQueue ? "-10%" : "-50%"})`,
                 }}
               >
-                <div className="flex items-center border-blue-500 border-l-2 pl-1">
-                  Execution Started
+                <div className="flex flex-col items-start border-blue-500 border-l-2 pl-1">
+                  <span>Execution</span>
+                  <span>Started</span>
                 </div>
               </div>
             )}
 
-            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap border-green-500 border-r-2 pr-1 font-medium text-green-700 text-xs">
-              Execution Finished
+            <div className="absolute right-0 flex translate-x-0 transform flex-col items-end whitespace-normal border-green-500 border-r-2 pr-1 font-medium text-[10px] text-green-700">
+              <span>Execution</span>
+              <span>Finished</span>
             </div>
           </div>
         </div>

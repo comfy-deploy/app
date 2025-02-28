@@ -104,7 +104,7 @@ function GalleryImage({
         url={outputUrl}
         lazyLoading={true}
         imgClasses={cn(
-          "w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none min-h-[200px]",
+          "w-full h-full object-contain max-w-full rounded-[4px] mb-0.5 pointer-events-none",
           !isLoaded && "aspect-square",
         )}
         onLoad={() => setIsLoaded(true)}
@@ -149,6 +149,28 @@ function RenderAlert({
   );
 }
 
+function reorderForMasonry(items: any[], columnCount: number) {
+  const result = [];
+  const itemCount = items.length;
+
+  for (let i = 0; i < itemCount; i++) {
+    // Calculate position as if items were arranged in rows
+    const row = Math.floor(i / columnCount);
+    const col = i % columnCount;
+
+    // Convert to index in column-based layout
+    const newIndex = col * Math.ceil(itemCount / columnCount) + row;
+
+    // Only add if within bounds
+    if (newIndex < itemCount) {
+      result[newIndex] = items[i];
+    }
+  }
+
+  // Filter out any undefined entries
+  return result.filter(Boolean);
+}
+
 export function GalleryView({ workflowID }: GalleryViewProps) {
   const query = useGalleryData(workflowID);
   const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
@@ -158,6 +180,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
   const [loadingCoverId, setLoadingCoverId] = useState<string | null>(null);
   const [coverImageNotified, setSetCoverImageNotified] =
     useQueryState("action");
+  const [columnCount, setColumnCount] = useState(2);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -181,6 +204,22 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
     console.log("runId", runId);
     setIsDrawerOpen(!!runId);
   }, [runId]);
+
+  useEffect(() => {
+    const updateColumnCount = () => {
+      if (window.innerWidth >= 1024) {
+        setColumnCount(4); // lg:columns-4
+      } else if (window.innerWidth >= 640) {
+        setColumnCount(3); // sm:columns-3
+      } else {
+        setColumnCount(2); // columns-2
+      }
+    };
+
+    updateColumnCount();
+    window.addEventListener("resize", updateColumnCount);
+    return () => window.removeEventListener("resize", updateColumnCount);
+  }, []);
 
   const handleCloseRun = () => {
     setRunId(null);
@@ -237,99 +276,102 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
           </div>
         )}
         <div className="m-4 columns-2 gap-0.5 overflow-clip rounded-xl sm:columns-3 lg:columns-4">
-          {query.data?.pages.flat().map((page) => {
-            const outputUrl =
-              page.data?.images?.[0]?.url ||
-              page.data?.gifs?.[0]?.url ||
-              page.data?.mesh?.[0]?.url ||
-              "";
+          {reorderForMasonry(query.data?.pages.flat() || [], columnCount).map(
+            (page) => {
+              const outputUrl =
+                page.data?.images?.[0]?.url ||
+                page.data?.gifs?.[0]?.url ||
+                page.data?.mesh?.[0]?.url ||
+                "";
 
-            const totalTime =
-              Math.round((page.run_duration + page.queue_time) * 10) / 10;
+              const totalTime =
+                Math.round((page.run_duration + page.queue_time) * 10) / 10;
 
-            return (
-              <div key={page.output_id} className="group relative">
-                <GalleryImage
-                  outputUrl={outputUrl}
-                  setRunId={setRunId}
-                  setIsDrawerOpen={setIsDrawerOpen}
-                  runId={page.run_id}
-                />
-                <div className="absolute top-0 right-0 w-full rounded-t-[4px] bg-gradient-to-t from-transparent to-black/70 p-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <div className="flex items-center justify-end">
-                    <DropdownMenu
-                      open={openDropdownId === page.run_id}
-                      onOpenChange={(isOpen) =>
-                        setOpenDropdownId(isOpen ? page.run_id : null)
-                      }
-                    >
-                      <DropdownMenuTrigger>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="hover:bg-transparent"
-                        >
-                          <Ellipsis className="h-3.5 w-3.5 text-white/90" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-52">
-                        {page.data?.images?.[0]?.filename && (
-                          <>
-                            <DropdownMenuLabel>
-                              {page.data?.images?.[0]?.filename}
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                          </>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const a = document.createElement("a");
-                            a.href = outputUrl;
-                            a.download = page.data?.images?.[0]?.filename || "";
-                            a.click();
-                          }}
-                        >
-                          <div className="flex w-full items-center justify-between">
-                            Download <Download className="h-3.5 w-3.5" />
-                          </div>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={loadingCoverId === page.run_id}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            await handleSetAsCoverImage(outputUrl);
-                          }}
-                        >
-                          <div className="flex w-full items-center justify-between">
-                            Set as Cover Image
-                            {loadingCoverId === page.run_id && (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            )}
-                          </div>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-0 left-0 w-full rounded-b-[4px] bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <div className="flex items-center justify-between px-4 py-3 drop-shadow-md">
-                    <div className="flex items-center gap-2">
-                      <span className="text-white/90 text-xs">
-                        {totalTime}s
-                      </span>
-                      {page.data?.images?.[0]?.filename && (
-                        <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] text-white/90">
-                          {page.data?.images?.[0]?.filename}
-                        </span>
-                      )}
+              return (
+                <div key={page.output_id} className="group relative">
+                  <GalleryImage
+                    outputUrl={outputUrl}
+                    setRunId={setRunId}
+                    setIsDrawerOpen={setIsDrawerOpen}
+                    runId={page.run_id}
+                  />
+                  <div className="absolute top-0 right-0 w-full rounded-t-[4px] bg-gradient-to-t from-transparent to-black/70 p-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <div className="flex items-center justify-end">
+                      <DropdownMenu
+                        open={openDropdownId === page.run_id}
+                        onOpenChange={(isOpen) =>
+                          setOpenDropdownId(isOpen ? page.run_id : null)
+                        }
+                      >
+                        <DropdownMenuTrigger>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-transparent"
+                          >
+                            <Ellipsis className="h-3.5 w-3.5 text-white/90" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-52">
+                          {page.data?.images?.[0]?.filename && (
+                            <>
+                              <DropdownMenuLabel>
+                                {page.data?.images?.[0]?.filename}
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const a = document.createElement("a");
+                              a.href = outputUrl;
+                              a.download =
+                                page.data?.images?.[0]?.filename || "";
+                              a.click();
+                            }}
+                          >
+                            <div className="flex w-full items-center justify-between">
+                              Download <Download className="h-3.5 w-3.5" />
+                            </div>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={loadingCoverId === page.run_id}
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              await handleSetAsCoverImage(outputUrl);
+                            }}
+                          >
+                            <div className="flex w-full items-center justify-between">
+                              Set as Cover Image
+                              {loadingCoverId === page.run_id && (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              )}
+                            </div>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <Search className="h-3.5 w-3.5 text-white/90" />
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 w-full rounded-b-[4px] bg-gradient-to-b from-transparent to-black/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <div className="flex items-center justify-between px-4 py-3 drop-shadow-md">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/90 text-xs">
+                          {totalTime}s
+                        </span>
+                        {page.data?.images?.[0]?.filename && (
+                          <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] text-white/90">
+                            {page.data?.images?.[0]?.filename}
+                          </span>
+                        )}
+                      </div>
+                      <Search className="h-3.5 w-3.5 text-white/90" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            },
+          )}
         </div>
 
         <div className="fixed top-0 left-0 h-20 w-full bg-gradient-to-b from-white to-transparent" />

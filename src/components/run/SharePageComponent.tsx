@@ -114,7 +114,7 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
   const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
   const [showRunInputsMobileLayout, setShowRunInputsMobileLayout] =
     useState(false);
-  const [logsCollapsed, setLogsCollapsed] = useState(false);
+  const [logsCollapsed, setLogsCollapsed] = useState(true);
   const { data: run, isLoading: isRunLoading } = useQuery({
     enabled: !!runId,
     queryKey: ["run", runId],
@@ -229,7 +229,7 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
                 if (parent) {
                   parent.scrollIntoView({
                     behavior: "smooth",
-                    block: "nearest",
+                    block: "center",
                   });
                 }
               }
@@ -345,7 +345,7 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
             </motion.div>
 
             <div className="relative z-10 h-full w-full">
-              <RunDisplay runId={runId ?? undefined} />
+              <RunDisplay runId={runId ?? undefined} deployment={deployment} />
               <ArrowIndicator
                 disableTop={true}
                 disableLeft={true}
@@ -481,7 +481,10 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
   );
 }
 
-function RunDisplay({ runId }: { runId?: string }) {
+function RunDisplay({
+  runId,
+  deployment,
+}: { runId?: string; deployment?: any }) {
   const { data: run, isLoading } = useRun(runId);
   const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
     run?.outputs || [],
@@ -489,6 +492,8 @@ function RunDisplay({ runId }: { runId?: string }) {
   const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(
     null,
   );
+  // Add ref for the thumbnails container
+  const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset viewingImageIndex when runId changes
   useEffect(() => {
@@ -534,11 +539,33 @@ function RunDisplay({ runId }: { runId?: string }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [viewingImageIndex, urlList]);
 
+  // New effect to scroll selected thumbnail into view
+  useEffect(() => {
+    if (viewingImageIndex !== null && thumbnailsContainerRef.current) {
+      const thumbnails =
+        thumbnailsContainerRef.current.querySelectorAll("button");
+      if (thumbnails?.[viewingImageIndex]) {
+        thumbnails[viewingImageIndex].scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }
+    }
+  }, [viewingImageIndex]);
+
   // Common container styles for status messages
   const containerClass = "flex h-full w-full items-center justify-center";
   const messageClass =
     "animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm";
 
+  // Handle no deployment
+  if (!deployment) {
+    return (
+      <div className={containerClass}>
+        <p className={messageClass}>Please select a deployment</p>
+      </div>
+    );
+  }
   // Handle loading and empty states
   if (isLoading || !run) {
     return (
@@ -583,31 +610,32 @@ function RunDisplay({ runId }: { runId?: string }) {
                 // Image viewer mode
                 <div className="relative flex flex-col items-center">
                   {/* Image thumbnails navigation bar */}
-                  <div className="-top-24 absolute flex w-full items-center justify-center">
-                    <div className="flex max-w-full gap-2 overflow-x-auto rounded-sm p-2">
-                      {urlList.map((item, index) => (
-                        <button
-                          type="button"
-                          key={index}
-                          onClick={() => setViewingImageIndex(index)}
-                          className={cn(
-                            "relative flex-shrink-0 overflow-hidden rounded-md transition-all",
-                            viewingImageIndex === index
-                              ? "shadow-md outline outline-2 outline-purple-500 outline-offset-2"
-                              : "opacity-70 ring-transparent hover:opacity-100",
-                          )}
-                        >
-                          <div className="relative h-16 w-16">
-                            <img
-                              src={getOptimizedImage(item.url)}
-                              alt={`Thumbnail ${index + 1}`}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                  <div
+                    ref={thumbnailsContainerRef}
+                    className="-top-24 absolute flex max-w-2xl gap-2 overflow-x-auto rounded-sm p-2"
+                  >
+                    {urlList.map((item, index) => (
+                      <button
+                        type="button"
+                        key={index}
+                        onClick={() => setViewingImageIndex(index)}
+                        className={cn(
+                          "relative flex-shrink-0 overflow-hidden rounded-md transition-all",
+                          viewingImageIndex === index
+                            ? "shadow-md outline outline-2 outline-purple-500 outline-offset-2"
+                            : "opacity-70 ring-transparent hover:opacity-100",
+                        )}
+                      >
+                        <div className="relative h-16 w-16">
+                          <img
+                            src={getOptimizedImage(item.url)}
+                            alt={`Thumbnail ${index + 1}`}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      </button>
+                    ))}
                   </div>
 
                   <FileURLRender
@@ -629,6 +657,7 @@ function RunDisplay({ runId }: { runId?: string }) {
                     )}
                     lazyLoading={true}
                     columns={totalUrlCount > 4 ? 3 : 2}
+                    displayCount={totalUrlCount > 9 ? 9 : totalUrlCount}
                   />
                 </div>
               )}
@@ -796,44 +825,51 @@ function ArrowIndicator({
   return (
     <>
       <div className="absolute right-2 bottom-8 flex flex-col items-center gap-1">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
-          aria-label="Up"
-          disabled={disableTop}
-        >
-          <ChevronUp size={16} />
-        </Button>
-        <div className="flex gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
-            aria-label="Left"
-            disabled={disableLeft}
-          >
-            <ChevronLeft size={16} />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
-            aria-label="Down"
-            disabled={disableDown}
-          >
-            <ChevronDown size={16} />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
-            aria-label="Right"
-            disabled={disableRight}
-          >
-            <ChevronRight size={16} />
-          </Button>
-        </div>
+        {/* Instructions */}
+        <span className="hidden flex-col gap-0.5 text-2xs text-muted-foreground lg:flex">
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+              aria-label="Up"
+              disabled={disableTop}
+            >
+              <ChevronUp size={16} />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+              aria-label="Down"
+              disabled={disableDown}
+            >
+              <ChevronDown size={16} />
+            </Button>
+            <span>Navigate Gallery</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+              aria-label="Left"
+              disabled={disableLeft}
+            >
+              <ChevronLeft size={16} />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+              aria-label="Right"
+              disabled={disableRight}
+            >
+              <ChevronRight size={16} />
+            </Button>
+            <span>Navigate Images list</span>
+          </div>
+        </span>
       </div>
     </>
   );

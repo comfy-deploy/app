@@ -40,6 +40,13 @@ import {
 import { type ReactElement, useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
 
+// Add this at the top level of the file
+let setOpenCommandView: ((open: boolean) => void) | null = null;
+
+export function openCommandView() {
+  setOpenCommandView?.(true);
+}
+
 // ------------------Props-------------------
 
 interface ComfyCommandProps {
@@ -71,6 +78,14 @@ export function ComfyCommand() {
   const [isAnyRefetching, setIsAnyRefetching] = useState(false);
   const navigate = useNavigate();
   const router = useRouter();
+
+  // Store the setter in our top-level variable
+  useEffect(() => {
+    setOpenCommandView = setOpen;
+    return () => {
+      setOpenCommandView = null;
+    };
+  }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -423,39 +438,12 @@ function WorkflowActionCommand({
       <CommandGroup heading="Actions">
         <CommandItem
           onSelect={() => {
-            navigate({ to: `/workflows/${workflowId}/workspace` });
-            setOpen(false);
-          }}
-        >
-          <ArrowRight className="!h-4 !w-4 mr-2" />
-          <span>To Workspace...</span>
-        </CommandItem>
-        <CommandItem
-          onSelect={() => {
             navigate({ to: `/workflows/${workflowId}/requests` });
             setOpen(false);
           }}
         >
           <ArrowRight className="!h-4 !w-4 mr-2" />
           <span>To Requests...</span>
-        </CommandItem>
-        <CommandItem
-          onSelect={() => {
-            navigate({ to: `/workflows/${workflowId}/containers` });
-            setOpen(false);
-          }}
-        >
-          <ArrowRight className="!h-4 !w-4 mr-2" />
-          <span>To Containers...</span>
-        </CommandItem>
-        <CommandItem
-          onSelect={() => {
-            navigate({ to: `/workflows/${workflowId}/deployment` });
-            setOpen(false);
-          }}
-        >
-          <ArrowRight className="!h-4 !w-4 mr-2" />
-          <span>To Deployment...</span>
         </CommandItem>
         <CommandItem
           onSelect={() => {

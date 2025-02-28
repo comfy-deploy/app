@@ -7,6 +7,7 @@ import { MachineVersionBadge } from "@/components/machine/machine-version-badge"
 import { useMachine } from "@/hooks/use-machine";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export const Route = createFileRoute("/machines/$machineId/activity")({
   component: RouteComponent,
@@ -39,7 +40,9 @@ function RouteComponent() {
           <span className="text-gray-500 text-sm">Activity</span>
         </div>
         <div className="flex flex-row gap-2">
-          <MachineCostEstimate machineId={machine.id} />
+          <ErrorBoundary fallback={(error) => <div>{error.message}</div>}>
+            <MachineCostEstimate machineId={machine.id} />
+          </ErrorBoundary>
           <LastActiveEvent machineId={machine.id} />
         </div>
       </div>

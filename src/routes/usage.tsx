@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, Suspense, memo, useMemo } from "react";
 import { useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 export const Route = createFileRoute("/usage")({
   component: RouteComponent,
@@ -68,8 +69,8 @@ function RouteComponent() {
 
   // Get current period from the last invoice timestamp in current plan
   const currentPeriod = useMemo(() => {
-    if (!sub?.sub?.last_invoice_timestamp) return null;
-    const start = new Date(sub.sub.last_invoice_timestamp * 1000);
+    if (!sub?.plans?.last_invoice_timestamp) return null;
+    const start = new Date(sub.plans.last_invoice_timestamp * 1000);
     const end = new Date();
     return {
       id: "current",
@@ -78,10 +79,12 @@ function RouteComponent() {
       end,
       period_start: start.toLocaleDateString(),
       period_end: end.toLocaleDateString(),
-      period_start_timestamp: sub.sub.last_invoice_timestamp,
+      period_start_timestamp: sub.plans.last_invoice_timestamp,
       period_end_timestamp: Math.floor(end.getTime() / 1000),
     };
   }, [sub]);
+
+  console.log(currentPeriod);
 
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(
     "current",
@@ -165,17 +168,18 @@ function RouteComponent() {
     }
   };
 
-  // const discountAmount =
-  //   (selectedInvoice?.subtotal - selectedInvoice?.total ?? 0) +
-  //   (selectedInvoice ? 0 : (usage?.credit ?? 0)) +
-  //   (selectedInvoice ? 0 : (usage?.free_tier_credit ?? 0) / 100);
-
   return (
     <div className="bg-white py-4 w-full">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
-        <Suspense
-          fallback={<Skeleton className="h-[28px] w-full max-w-[800px]" />}
-        >
+        <Alert variant="warning" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Under Maintenance</AlertTitle>
+          <AlertDescription>
+            The usage page is currently under maintenance. Some features may be
+            temporarily unavailable. We apologize for any inconvenience.
+          </AlertDescription>
+        </Alert>
+        <Suspense>
           <UnpaidInvoices />
         </Suspense>
         {/* Top row with plan, credit and date selection */}
@@ -193,21 +197,8 @@ function RouteComponent() {
                     className="flex items-center gap-1.5 text-sm"
                   >
                     <CreditCard className="h-3.5 w-3.5" />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const res = await callServerPromise(
-                          api({
-                            url: `platform/stripe/dashboard?redirect_url=${encodeURIComponent(
-                              window.location.href,
-                            )}`,
-                          }),
-                          {
-                            loadingText: "Redirecting to Stripe...",
-                          },
-                        );
-                        window.open(res.url, "_blank");
-                      }}
+                    <Link
+                      to="/pricing"
                       className="flex items-center gap-1 text-sm"
                     >
                       {pricingPlanNameMapping[x]} Plan
@@ -219,15 +210,17 @@ function RouteComponent() {
                           <span className="text-muted-foreground line-through">
                             ${(amount ?? 0) / 100}
                           </span>{" "}
-                          ${(charges ?? 0) / 100}/mo)
+                          ${(charges ?? 0) / 100}/{" "}
+                          {sub.plans?.plans[0].split("_")[1]})
                         </span>
                       ) : (
                         <span className="ml-1">
-                          (${(amount ?? 0) / 100}/mo)
+                          (${(amount ?? 0) / 100}/
+                          {sub.plans?.plans[0].split("_")[1]})
                         </span>
                       )}
                       <ExternalLink size={12} className="ml-1" />
-                    </button>
+                    </Link>
                   </Badge>
                 );
               },
@@ -888,6 +881,7 @@ interface Subscription {
     plans: Array<keyof typeof pricingPlanNameMapping>;
     charges?: number[];
     amount?: number[];
+    last_invoice_timestamp: number;
   };
 }
 
@@ -964,7 +958,7 @@ function UnpaidInvoices() {
   if (unpaidInvoices.length === 0) return null;
 
   return (
-    <Card className="w-full max-w-[800px] p-4">
+    <Card className="mb-6 w-full max-w-[800px] p-4">
       <Alert variant="destructive" className="bg-destructive/5 border-none">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Unpaid Invoices</AlertTitle>
