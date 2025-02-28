@@ -471,13 +471,13 @@ function RunTimeline({ run }: { run: any }) {
               <>
                 {queueTime > 0 && (
                   <div
-                    className="absolute h-5 overflow-hidden rounded-[2px] bg-gray-300 shadow-sm"
+                    className="absolute h-5 overflow-hidden rounded-[2px] bg-gray-200/80 shadow-sm backdrop-blur-sm"
                     style={{
                       width: `${queueWidth}%`,
                       left: 0,
                     }}
                   >
-                    <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent,5px,rgba(0,0,0,0.1)_5px,rgba(0,0,0,0.1)_10px)] opacity-10" />
+                    <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent,5px,rgba(0,0,0,0.05)_5px,rgba(0,0,0,0.05)_10px)] opacity-20" />
                   </div>
                 )}
 
@@ -485,8 +485,8 @@ function RunTimeline({ run }: { run: any }) {
                   <div
                     className={`absolute h-5 rounded-[2px] shadow-sm ${
                       isWarm
-                        ? "bg-gradient-to-r from-amber-300 to-amber-400"
-                        : "bg-gradient-to-r from-purple-500 to-amber-400"
+                        ? "bg-amber-200/70 backdrop-blur-sm"
+                        : "bg-purple-200/70 backdrop-blur-sm"
                     }`}
                     style={{
                       width: `${coldStartWidth}%`,
@@ -495,8 +495,8 @@ function RunTimeline({ run }: { run: any }) {
                   >
                     {isWarm && (
                       <>
-                        <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,transparent_70%)] opacity-20" />
-                        <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 transform text-amber-600">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,transparent_70%)] opacity-30" />
+                        <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 transform text-amber-500/80">
                           <Zap size={16} />
                         </div>
                       </>
@@ -505,25 +505,25 @@ function RunTimeline({ run }: { run: any }) {
                 )}
 
                 <div
-                  className="absolute h-5 rounded-[2px] bg-gradient-to-r from-blue-400 to-blue-600 shadow-sm"
+                  className="absolute h-5 rounded-[2px] bg-blue-200/70 shadow-sm backdrop-blur-sm"
                   style={{
                     width: `${runWidth}%`,
                     left: `${visualExecStartPos}%`,
                   }}
                 >
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-20" />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-30" />
                 </div>
               </>
             ) : (
               // Simplified view when we don't have complete timing data
               <div
-                className="absolute h-5 rounded-[2px] bg-gradient-to-r from-blue-400 to-blue-600 shadow-sm"
+                className="absolute h-5 rounded-[2px] bg-blue-200/70 shadow-sm backdrop-blur-sm"
                 style={{
                   width: "100%",
                   left: 0,
                 }}
               >
-                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-20" />
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-30" />
               </div>
             )}
 
