@@ -10,11 +10,13 @@ import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/clerk-react";
 import { useMatchRoute, useRouter, useSearch } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Sparkle } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "../auto-form/auto-form-dialog";
+import { Badge } from "../ui/badge";
 
 async function getUpgradeOrNewPlan(plan: string, coupon?: string) {
   return api({
@@ -27,10 +29,37 @@ async function getUpgradeOrNewPlan(plan: string, coupon?: string) {
 }
 
 function getButtonLabel(currentPlans: string[], targetPlan: string): string {
-  const onThisPlan = !!currentPlans?.includes(targetPlan);
+  const [planId, billing] = targetPlan.split("_");
+  const isYearly = billing === "yearly";
 
-  if (onThisPlan) {
-    return "Manage";
+  // Check if user is on this plan (either monthly or yearly)
+  const isOnThisPlan = currentPlans?.some((p) => p.startsWith(planId));
+  const isOnYearlyPlan = currentPlans?.includes(`${planId}_yearly`);
+  const isOnMonthlyPlan = currentPlans?.includes(`${planId}_monthly`);
+
+  console.log(
+    currentPlans,
+    planId,
+    isOnThisPlan,
+    isOnYearlyPlan,
+    isOnMonthlyPlan,
+  );
+
+  if (isOnThisPlan) {
+    // If viewing yearly tab and on yearly plan, or viewing monthly tab and on monthly plan
+    if ((isYearly && isOnYearlyPlan) || (!isYearly && isOnMonthlyPlan)) {
+      return "Manage";
+    }
+
+    // If viewing monthly tab and on yearly plan
+    if (!isYearly && isOnYearlyPlan) {
+      return "Manage (Yearly)";
+    }
+
+    // If viewing monthly tab and on monthly plan, or viewing yearly tab
+    if (isYearly && isOnMonthlyPlan) {
+      return "Switch to yearly";
+    }
   }
 
   if (targetPlan === "basic") {
@@ -38,58 +67,71 @@ function getButtonLabel(currentPlans: string[], targetPlan: string): string {
   }
 
   if (currentPlans.length === 0) {
-    return "Get Started (free trial)";
+    return "Get Started";
   }
-
-  // console.log(targetPlan);
-
-  const wsPlanPriority: Record<string, number> = {
-    ws_basic: 1,
-    ws_pro: 2,
-  };
 
   const apiPlanPriority: Record<string, number> = {
     basic: 1,
     pro: 2,
-    enterprise: 3,
-    business: 4,
+    creator: 3,
+    enterprise: 4,
+    deployment: 5,
+    business: 6,
   };
 
   let currentPlanPriority = 0;
   let targetPlanPriority = 0;
 
-  if (targetPlan.includes("ws")) {
-    currentPlanPriority = Math.max(
-      ...currentPlans.map((plan) => wsPlanPriority[plan] || 0),
-    );
-    targetPlanPriority = wsPlanPriority[targetPlan];
-  } else {
-    currentPlanPriority = Math.max(
-      ...currentPlans.map((plan) => apiPlanPriority[plan] || 0),
-    );
-    targetPlanPriority = apiPlanPriority[targetPlan];
-  }
+  currentPlanPriority = Math.max(
+    ...currentPlans.map((plan) => apiPlanPriority[plan.split("_")[0]] || 0),
+  );
+  targetPlanPriority = apiPlanPriority[planId];
 
   if (targetPlanPriority > currentPlanPriority) {
     return "Upgrade";
-  } else if (targetPlanPriority < currentPlanPriority) {
+  }
+
+  if (targetPlanPriority < currentPlanPriority) {
     return "Downgrade";
   }
 
-  return "Get Started"; // Default to "Upgrade" if same level (unlikely case)
+  return "Get Started";
 }
 
-export function UpgradeButton(props: {
-  plan: any;
+interface PlanButtonProps {
+  plan: string;
   href: string;
   className?: string;
   plans?: string[];
   trial?: boolean;
-  data?: Record<string, any>;
+  data?: Record<string, string>;
   allowCoupon?: boolean;
-}) {
+}
+
+interface InvoiceLine {
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  period: {
+    start: number;
+    end: number;
+  };
+}
+
+interface Invoice {
+  lines: {
+    data: InvoiceLine[];
+  };
+  period_end: number;
+  total: number;
+}
+
+export function UpgradeButton(props: PlanButtonProps) {
   const { userId } = useAuth();
-  const [invoice, setInvoice] = useState<any | undefined>();
+  const [invoice, setInvoice] = useState<Invoice | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const router = useRouter();
 
@@ -103,7 +145,7 @@ export function UpgradeButton(props: {
     from: "/pricing",
   });
 
-  const ready = search?.ready;
+  const ready = true; //search?.ready;
 
   let isCustom = (props.plan as any) === "large_enterprise";
   const isBasic = props.plan === "basic";
@@ -120,8 +162,10 @@ export function UpgradeButton(props: {
     <>
       <Modal
         title={label}
-        setOpen={async () => {
-          setInvoice(undefined);
+        setOpen={async (open) => {
+          if (!open) {
+            setInvoice(undefined);
+          }
         }}
         open={invoice !== undefined}
         description="Preview plan changes."
@@ -130,11 +174,13 @@ export function UpgradeButton(props: {
             Icon={Sparkle}
             className={cn(
               "relative w-fit",
-              label === "Manage" && "bg-primary/60",
+              label === "Manage",
               props.className,
+              "group",
             )}
             iconPlacement="right"
-            variant="expandIcon"
+            variant="expandIconOutline"
+            isLoading={isLoading}
             onClick={async () => {
               if (isBasic) {
                 router.navigate({
@@ -166,43 +212,47 @@ export function UpgradeButton(props: {
                 return;
               }
 
-              const invoice = await callServerPromise(
-                getUpgradeOrNewPlan(props.plan, coupon),
-              );
+              setIsLoading(true);
+              try {
+                const invoice = await callServerPromise(
+                  getUpgradeOrNewPlan(props.plan, coupon),
+                );
 
-              if (!invoice || "error" in invoice) {
-                const res = await api({
-                  url: "platform/checkout",
-                  params: {
-                    plan: props.plan,
-                    trial: props.trial,
-                    redirect_url: window.location.href,
-                    coupon,
-                  },
-                });
+                if (!invoice || "error" in invoice) {
+                  const res = await api({
+                    url: "platform/checkout",
+                    params: {
+                      plan: props.plan,
+                      trial: props.trial,
+                      redirect_url: window.location.href,
+                      coupon,
+                    },
+                  });
 
-                if (res.error) {
-                  toast.error(res.error);
+                  if (res.error) {
+                    toast.error(res.error);
+                  } else {
+                    // Invalidate the plan query before redirecting
+
+                    window.location.href = res.url;
+                  }
                 } else {
-                  window.location.href = res.url;
+                  setInvoice(invoice);
                 }
-
-                // window.location.href =
-                //   props.href +
-                //   "&redirect=" +
-                //   encodeURIComponent(window.location.href) +
-                //   (props.trial ? "&trial=true" : "") +
-                //   (props.allowCoupon && coupon
-                //     ? "&coupon=" + encodeURIComponent(coupon)
-                //     : "");
-                // router.push();
-              } else {
-                setInvoice(invoice);
+              } catch (error) {
+                toast.error("Failed to process upgrade request");
+              } finally {
+                setIsLoading(false);
               }
             }}
           >
             {isCustom ? "Book a call" : label}
-            <BlueprintOutline />
+            {(label?.toLowerCase().includes("manage") ||
+              label?.toLowerCase().includes("switch")) && (
+              <Badge variant="cyan" className="ml-2 group-hover:text-white">
+                Current plan
+              </Badge>
+            )}
           </Button>
         }
       >
@@ -239,7 +289,7 @@ export function UpgradeButton(props: {
         ) : null}
         {invoice && (
           <>
-            {invoice.lines.data.map((line) => {
+            {invoice.lines.data.map((line: InvoiceLine) => {
               return (
                 <div
                   key={line.id}
@@ -289,10 +339,13 @@ export function UpgradeButton(props: {
                 if (res.error) {
                   toast.error(res.error);
                 } else {
+                  // Invalidate the plan query before redirecting
+                  await queryClient.invalidateQueries({
+                    queryKey: ["platform", "plan"],
+                  });
+                  setInvoice(undefined); // Close the dialog
                   window.location.href = res.url;
                 }
-
-                await new Promise((resolve) => setTimeout(resolve, 5000));
               }}
             >
               Confirm

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 export const useCurrentPlanQuery = () => {
   return useQuery<any>({
     queryKey: ["platform", "plan"],
+    refetchInterval: 5000,
   });
 };
 
