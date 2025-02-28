@@ -754,7 +754,7 @@ export function WorkflowButtons({
                 >
                   <div className="mb-3 aspect-square overflow-hidden rounded-[10px]">
                     <img
-                      src={getOptimizedImage(template.workflowImageUrl)}
+                      src={template.workflowImageUrl}
                       alt={template.workflowName}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
