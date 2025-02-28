@@ -375,12 +375,57 @@ function RunTimeline({ run }: { run: any }) {
   const queueEndTime = queueTime;
   const executionStartTime = queueEndTime + coldStartTime;
 
-  const queuePos = getPercentage(queueTime);
-  const execStartPos = getPercentage(queueTime + coldStartTime);
-  const isStartCloseToQueue = execStartPos - queuePos < 18;
+  // Replace the single MIN_SEGMENT_PERCENT with specific minimums for each segment
+  const MIN_WIDTHS = {
+    queue: 10, // Queue time minimum width
+    coldStart: 10, // Cold start minimum width
+    run: 24, // Run duration minimum width
+  };
+
+  const getVisualPercentages = () => {
+    // First, calculate how many segments we actually have
+    const hasQueue = queueTime > 0;
+    const hasColdStart = coldStartTime > 0;
+    const hasRun = runDuration > 0;
+
+    // Get base percentages with their specific minimums
+    let queuePercent = hasQueue
+      ? Math.max(getPercentage(queueTime), MIN_WIDTHS.queue)
+      : 0;
+    let coldStartPercent = hasColdStart
+      ? Math.max(getPercentage(coldStartTime), MIN_WIDTHS.coldStart)
+      : 0;
+    let runPercent = hasRun
+      ? Math.max(getPercentage(runDuration), MIN_WIDTHS.run)
+      : 0;
+
+    // Calculate total of current percentages
+    const totalPercent = queuePercent + coldStartPercent + runPercent;
+
+    // If total exceeds 100%, normalize all segments proportionally
+    if (totalPercent > 100) {
+      const normalizationFactor = 100 / totalPercent;
+      queuePercent *= normalizationFactor;
+      coldStartPercent *= normalizationFactor;
+      runPercent *= normalizationFactor;
+    }
+
+    return {
+      queueWidth: queuePercent,
+      coldStartWidth: coldStartPercent,
+      runWidth: runPercent,
+    };
+  };
+
+  // Calculate normalized visual percentages
+  const { queueWidth, coldStartWidth, runWidth } = getVisualPercentages();
 
   // Only show cold start segment if duration is greater than zero
   const showColdStart = coldStartTime > 0;
+
+  // Calculate visual positions for segments
+  const visualQueuePos = queueWidth;
+  const visualExecStartPos = queueWidth + coldStartWidth;
 
   return (
     <InfoItem
@@ -396,17 +441,16 @@ function RunTimeline({ run }: { run: any }) {
             {hasCompleteTimingData && queueTime > 0 && (
               <div
                 className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600"
-                style={{ left: `${queuePos}%` }}
+                style={{ left: `${visualQueuePos}%` }}
               >
                 {formatTime(queueEndTime)}
               </div>
             )}
 
-            {/* Only show cold start time label if we have a cold start duration */}
             {hasCompleteTimingData && showColdStart && (
               <div
                 className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600"
-                style={{ left: `${execStartPos}%` }}
+                style={{ left: `${visualExecStartPos}%` }}
               >
                 {formatTime(executionStartTime)}
               </div>
@@ -425,20 +469,18 @@ function RunTimeline({ run }: { run: any }) {
             {/* Conditional rendering based on available data */}
             {hasCompleteTimingData ? (
               <>
-                {/* Queue segment with subtle pattern when available */}
                 {queueTime > 0 && (
                   <div
                     className="absolute h-5 overflow-hidden rounded-[2px] bg-gray-300 shadow-sm"
                     style={{
-                      width: `${getPercentage(queueTime) - 1}%`,
-                      left: 6,
+                      width: `${queueWidth}%`,
+                      left: 0,
                     }}
                   >
                     <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent,5px,rgba(0,0,0,0.1)_5px,rgba(0,0,0,0.1)_10px)] opacity-10" />
                   </div>
                 )}
 
-                {/* Cold start / Warm start segment when available and duration > 0 */}
                 {showColdStart && (
                   <div
                     className={`absolute h-5 rounded-[2px] shadow-sm ${
@@ -447,8 +489,8 @@ function RunTimeline({ run }: { run: any }) {
                         : "bg-gradient-to-r from-purple-500 to-amber-400"
                     }`}
                     style={{
-                      width: `${getPercentage(coldStartTime) - 0.9}%`,
-                      left: `${getPercentage(queueTime) + 0.5}%`,
+                      width: `${coldStartWidth}%`,
+                      left: `${queueWidth}%`,
                     }}
                   >
                     {isWarm && (
@@ -462,12 +504,11 @@ function RunTimeline({ run }: { run: any }) {
                   </div>
                 )}
 
-                {/* Run duration segment when available */}
                 <div
                   className="absolute h-5 rounded-[2px] bg-gradient-to-r from-blue-400 to-blue-600 shadow-sm"
                   style={{
-                    width: `${getPercentage(runDuration) - 1.1}%`,
-                    left: `${getPercentage(queueTime + coldStartTime) + 0.6}%`,
+                    width: `${runWidth}%`,
+                    left: `${visualExecStartPos}%`,
                   }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-20" />
@@ -478,8 +519,8 @@ function RunTimeline({ run }: { run: any }) {
               <div
                 className="absolute h-5 rounded-[2px] bg-gradient-to-r from-blue-400 to-blue-600 shadow-sm"
                 style={{
-                  width: "calc(100% - 12px)",
-                  left: 6,
+                  width: "100%",
+                  left: 0,
                 }}
               >
                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0)_100%)] opacity-20" />
@@ -493,7 +534,7 @@ function RunTimeline({ run }: { run: any }) {
             {hasCompleteTimingData && queueTime > 0 && (
               <div
                 className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
-                style={{ left: `${queuePos}%` }}
+                style={{ left: `${visualQueuePos}%` }}
               />
             )}
 
@@ -501,7 +542,7 @@ function RunTimeline({ run }: { run: any }) {
             {hasCompleteTimingData && showColdStart && (
               <div
                 className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
-                style={{ left: `${execStartPos}%` }}
+                style={{ left: `${visualExecStartPos}%` }}
               />
             )}
 
@@ -521,9 +562,7 @@ function RunTimeline({ run }: { run: any }) {
               <div
                 className="absolute transform whitespace-normal font-medium text-[10px]"
                 style={{
-                  left: `${queuePos}%`,
-                  transform: `translateX(${isStartCloseToQueue ? "-90%" : "-50%"})`,
-                  color: isWarm ? "#d97706" : "#b45309",
+                  left: `${visualQueuePos}%`,
                 }}
               >
                 <div
@@ -554,13 +593,11 @@ function RunTimeline({ run }: { run: any }) {
               </div>
             )}
 
-            {/* Only show execution started label if there's a cold start duration */}
             {hasCompleteTimingData && showColdStart && (
               <div
                 className="absolute transform whitespace-normal font-medium text-[10px] text-blue-700"
                 style={{
-                  left: `${execStartPos}%`,
-                  transform: `translateX(${isStartCloseToQueue ? "-10%" : "-50%"})`,
+                  left: `${visualExecStartPos}%`,
                 }}
               >
                 <div className="flex flex-col items-start border-blue-500 border-l-2 pl-1">
