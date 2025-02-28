@@ -12,7 +12,12 @@ import { Drawer } from "vaul";
 import { AssetBrowser } from "../asset-browser";
 import { useAssetsBrowserStore } from "./Workspace";
 
-export function AssetsBrowserPopup() {
+interface Props {
+  isPlayground?: boolean;
+  handleAsset?: (asset: AssetType) => void;
+}
+
+export function AssetsBrowserPopup({ isPlayground, handleAsset }: Props) {
   const { open, setOpen, targetNodeData } = useAssetsBrowserStore();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -38,6 +43,10 @@ export function AssetsBrowserPopup() {
           <div className="flex h-full w-full grow flex-col rounded-[16px] bg-zinc-50 p-5">
             <AssetBrowser
               onItemClick={(asset) => {
+                if (isPlayground && handleAsset) {
+                  handleAsset(asset);
+                  return;
+                }
                 if (targetNodeData?.node) {
                   // If we have target node data, update the existing node
                   console.log(targetNodeData);
