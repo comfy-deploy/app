@@ -10,7 +10,6 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { RunDetails } from "./workflows/WorkflowComponent";
 import { MyDrawer } from "./drawer";
@@ -27,17 +26,12 @@ import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { downloadImage } from "@/utils/download-image";
 
 type GalleryViewProps = {
   workflowID: string;
   className?: string;
   paginationClassName?: string;
-};
-
-type setOpenImage = {
-  fileURLs: string[];
-  runID: string;
-  duration: number;
 };
 
 const BATCH_SIZE = 20;
@@ -322,12 +316,11 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                             </>
                           )}
                           <DropdownMenuItem
-                            onClick={() => {
-                              const a = document.createElement("a");
-                              a.href = outputUrl;
-                              a.download =
-                                page.data?.images?.[0]?.filename || "";
-                              a.click();
+                            onClick={async () => {
+                              await downloadImage({
+                                url: outputUrl,
+                                fileName: page.data?.images?.[0]?.filename,
+                              });
                             }}
                           >
                             <div className="flex w-full items-center justify-between">
