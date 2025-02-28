@@ -31,6 +31,7 @@ import {
   Check,
   ChevronRight,
   Copy,
+  Info,
   Settings,
 } from "lucide-react";
 import { DeploymentRow } from "./DeploymentRow";
@@ -1202,10 +1203,20 @@ export function DeploymentSettings({
 
           <div className="flex flex-col gap-2">
             <Badge className="w-fit font-medium text-sm">Keep Always On</Badge>
-            <MaxAlwaysOnSlider
-              value={formData.keep_warm || deployment.keep_warm}
-              onChange={(value) => handleChange("keep_warm", value)}
-            />
+            {deployment.environment === "production" ? (
+              <MaxAlwaysOnSlider
+                value={formData.keep_warm || deployment.keep_warm}
+                onChange={(value) => handleChange("keep_warm", value)}
+              />
+            ) : (
+              <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-700 text-sm">
+                <Info className="h-4 w-4" />
+                <Badge className={getEnvColor(deployment.environment)}>
+                  {deployment.environment}
+                </Badge>{" "}
+                environment is not supported for this feature.
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
