@@ -9,8 +9,8 @@ import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/clerk-react";
-import { useMatchRoute, useRouter, useSearch } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMatchRoute, useRouter, useSearch } from "@tanstack/react-router";
 import { Sparkle } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
@@ -28,22 +28,92 @@ async function getUpgradeOrNewPlan(plan: string, coupon?: string) {
   });
 }
 
-function getButtonLabel(currentPlans: string[], targetPlan: string): string {
+interface PlanButtonProps {
+  plan: string;
+  href: string;
+  className?: string;
+  plans?: string[];
+  trial?: boolean;
+  data?: Record<string, string>;
+  allowCoupon?: boolean;
+  subscription?: any;
+}
+
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  group: string;
+  status: "active" | "scheduled" | "canceled";
+  created_at: number;
+  canceled_at: number | null;
+  processor: {
+    type: string;
+    subscription_id: string | null;
+  };
+  prices: Array<{
+    amount: number;
+    interval: string;
+  }>;
+}
+
+interface InvoiceLine {
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  period: {
+    start: number;
+    end: number;
+  };
+}
+
+interface Invoice {
+  lines: {
+    data: InvoiceLine[];
+  };
+  period_end: number;
+  total: number;
+}
+
+function getButtonLabel(
+  currentPlans: string[],
+  targetPlan: string,
+  scheduledPlans?: SubscriptionPlan[],
+): string {
   const [planId, billing] = targetPlan.split("_");
   const isYearly = billing === "yearly";
+
+  const activeProduct = scheduledPlans?.find(
+    (plan: any) => plan.status === "active",
+  );
+
+  // Check if there's a scheduled plan change
+  const hasScheduledChange = scheduledPlans?.find(
+    (plan) => plan.status === "scheduled",
+  );
+
+  if (hasScheduledChange && activeProduct?.id === targetPlan) {
+    return "Reactivate";
+  }
+
+  if (activeProduct?.id === targetPlan) {
+    return "Manage";
+  }
+
+  if (hasScheduledChange && hasScheduledChange?.id === targetPlan) {
+    if (activeProduct?.canceled_at)
+      return `Scheduled for ${new Date(activeProduct?.canceled_at).toLocaleDateString()}`;
+    return "Scheduled";
+  }
+
+  if (hasScheduledChange) {
+    return "Scheduled plan change";
+  }
 
   // Check if user is on this plan (either monthly or yearly)
   const isOnThisPlan = currentPlans?.some((p) => p.startsWith(planId));
   const isOnYearlyPlan = currentPlans?.includes(`${planId}_yearly`);
   const isOnMonthlyPlan = currentPlans?.includes(`${planId}_monthly`);
-
-  console.log(
-    currentPlans,
-    planId,
-    isOnThisPlan,
-    isOnYearlyPlan,
-    isOnMonthlyPlan,
-  );
 
   if (isOnThisPlan) {
     // If viewing yearly tab and on yearly plan, or viewing monthly tab and on monthly plan
@@ -53,7 +123,7 @@ function getButtonLabel(currentPlans: string[], targetPlan: string): string {
 
     // If viewing monthly tab and on yearly plan
     if (!isYearly && isOnYearlyPlan) {
-      return "Manage (Yearly)";
+      return "Switch to monthly";
     }
 
     // If viewing monthly tab and on monthly plan, or viewing yearly tab
@@ -98,35 +168,6 @@ function getButtonLabel(currentPlans: string[], targetPlan: string): string {
   return "Get Started";
 }
 
-interface PlanButtonProps {
-  plan: string;
-  href: string;
-  className?: string;
-  plans?: string[];
-  trial?: boolean;
-  data?: Record<string, string>;
-  allowCoupon?: boolean;
-}
-
-interface InvoiceLine {
-  id: string;
-  description: string;
-  amount: number;
-  currency: string;
-  period: {
-    start: number;
-    end: number;
-  };
-}
-
-interface Invoice {
-  lines: {
-    data: InvoiceLine[];
-  };
-  period_end: number;
-  total: number;
-}
-
 export function UpgradeButton(props: PlanButtonProps) {
   const { userId } = useAuth();
   const [invoice, setInvoice] = useState<Invoice | undefined>();
@@ -137,7 +178,20 @@ export function UpgradeButton(props: PlanButtonProps) {
 
   const posthog = usePostHog();
 
-  const label = getButtonLabel(props.plans || [], props.plan);
+  // Parse the subscription data from props.data
+  const subscriptionData = props.subscription;
+  console.log(subscriptionData?.products);
+  const hasScheduledChange = subscriptionData?.products?.find(
+    (plan: any) => plan.status === "scheduled",
+  );
+
+  console.log(subscriptionData);
+
+  const label = getButtonLabel(
+    props.plans || [],
+    props.plan,
+    subscriptionData?.products,
+  );
 
   const [coupon, setCoupon] = useState<string>();
 
@@ -158,6 +212,18 @@ export function UpgradeButton(props: PlanButtonProps) {
     isCustom = false;
   }
 
+  const isDisabled =
+    !(hasScheduledChange && props.plan === hasScheduledChange.id) &&
+    !label.includes("Manage") &&
+    !label.includes("Upgrade") &&
+    !label.includes("Downgrade") &&
+    !label.includes("Switch") &&
+    !label.includes("Started") &&
+    !label.includes("Reactivate");
+
+  // Determine if button should be disabled
+  // const isDisabled = hasScheduledChange && label !== "Manage";
+
   return (
     <>
       <Modal
@@ -168,20 +234,34 @@ export function UpgradeButton(props: PlanButtonProps) {
           }
         }}
         open={invoice !== undefined}
-        description="Preview plan changes."
+        description={
+          hasScheduledChange
+            ? "You have a pending plan change. Please cancel it first before making any changes."
+            : "Preview plan changes."
+        }
         trigger={
           <Button
             Icon={Sparkle}
             className={cn(
-              "relative w-fit",
+              "group",
+              "relative",
+              "w-fit",
               label === "Manage",
               props.className,
-              "group",
+              isDisabled && "cursor-not-allowed opacity-50",
             )}
             iconPlacement="right"
             variant="expandIconOutline"
             isLoading={isLoading}
+            disabled={isDisabled}
             onClick={async () => {
+              if (hasScheduledChange && isDisabled) {
+                toast.error(
+                  "You have a pending plan change. Please cancel it first before making any changes.",
+                );
+                return;
+              }
+
               if (isBasic) {
                 router.navigate({
                   to: "/workflows",
@@ -214,30 +294,28 @@ export function UpgradeButton(props: PlanButtonProps) {
 
               setIsLoading(true);
               try {
-                const invoice = await callServerPromise(
-                  getUpgradeOrNewPlan(props.plan, coupon),
-                );
+                // const invoice = await callServerPromise(
+                //   getUpgradeOrNewPlan(props.plan, coupon),
+                // );
 
-                if (!invoice || "error" in invoice) {
-                  const res = await api({
+                // if (!invoice || "error" in invoice) {
+                const res = await callServerPromise(
+                  api({
                     url: "platform/checkout",
                     params: {
                       plan: props.plan,
                       trial: props.trial,
                       redirect_url: window.location.href,
+                      upgrade: true,
                       coupon,
                     },
-                  });
+                  }),
+                );
 
-                  if (res.error) {
-                    toast.error(res.error);
-                  } else {
-                    // Invalidate the plan query before redirecting
-
-                    window.location.href = res.url;
-                  }
-                } else {
-                  setInvoice(invoice);
+                if (res.error) {
+                  toast.error(res.error);
+                } else if (res.url) {
+                  window.location.href = res.url;
                 }
               } catch (error) {
                 toast.error("Failed to process upgrade request");
@@ -248,9 +326,15 @@ export function UpgradeButton(props: PlanButtonProps) {
           >
             {isCustom ? "Book a call" : label}
             {(label?.toLowerCase().includes("manage") ||
-              label?.toLowerCase().includes("switch")) && (
+              label?.toLowerCase().includes("switch") ||
+              label?.toLowerCase().includes("reactivate")) && (
               <Badge variant="cyan" className="ml-2 group-hover:text-white">
                 Current plan
+              </Badge>
+            )}
+            {hasScheduledChange && props.plan === hasScheduledChange.id && (
+              <Badge variant="yellow" className="ml-2">
+                Change Scheduled
               </Badge>
             )}
           </Button>

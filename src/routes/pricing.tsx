@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeButton } from "@/components/pricing/plan-button";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { callServerPromise } from "@/lib/call-server-promise";
 
 export const Route = createFileRoute("/pricing")({
   component: RouteComponent,
@@ -269,11 +270,38 @@ function PricingTier({
   };
 
   // const { data: subscription } = useCurrentPlanWithStatus();
-  // const isCancelled = subscription?.cancel_at_period_end;
-  // const currentPlanMatchesTier = subscription?.plan?.startsWith(tier.id);
+  const { data: _sub } = useCurrentPlanWithStatus();
+
+  // Check if this tier is the user's current plan
+  const isCurrentPlan = _sub?.plans?.plans?.some((plan) =>
+    plan.startsWith(tier.id),
+  );
 
   return (
-    <div className={cn("border-gray-200 flex flex-col", className)}>
+    <div className={cn("border-gray-200 flex flex-col relative", className)}>
+      {isCurrentPlan && (
+        <div className="absolute top-4 right-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const res = await callServerPromise(
+                api({
+                  url: `platform/stripe/dashboard?redirect_url=${encodeURIComponent(
+                    window.location.href,
+                  )}`,
+                }),
+                {
+                  loadingText: "Redirecting to Stripe...",
+                },
+              );
+              window.open(res.url, "_blank");
+            }}
+          >
+            Manage Subscription
+          </Button>
+        </div>
+      )}
       <div className="flex flex-1 flex-col">
         <div className="flex flex-1 flex-col p-4">
           <div>
@@ -399,6 +427,7 @@ function PricingTier({
                     price: isYearly ? tier.priceYearly : tier.priceMonthly,
                     billing: isYearly ? "yearly" : "monthly",
                   }}
+                  subscription={_sub?.plans?.autumn_data}
                 />
                 <Button
                   asChild
@@ -424,6 +453,7 @@ function PricingTier({
                   price: isYearly ? tier.priceYearly : tier.priceMonthly,
                   billing: isYearly ? "yearly" : "monthly",
                 }}
+                subscription={_sub?.plans?.autumn_data}
               />
             )}
           </div>
