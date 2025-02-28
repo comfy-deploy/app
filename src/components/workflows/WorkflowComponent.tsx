@@ -377,7 +377,7 @@ function RunTimeline({ run }: { run: any }) {
 
   // Replace the single MIN_SEGMENT_PERCENT with specific minimums for each segment
   const MIN_WIDTHS = {
-    queue: 10, // Queue time minimum width
+    queue: 15, // Queue time minimum width
     coldStart: 10, // Cold start minimum width
     run: 24, // Run duration minimum width
   };
