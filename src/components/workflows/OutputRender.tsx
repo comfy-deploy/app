@@ -21,6 +21,7 @@ import {
   Minus,
   Loader2,
   CircleX,
+  Expand,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -32,6 +33,7 @@ import {
 } from "../ui/carousel";
 import { ShineBorder } from "../magicui/shine-border";
 import { downloadImage } from "@/utils/download-image";
+import { ImageInputsTooltip } from "../image-inputs-tooltip";
 
 type fileURLRenderProps = {
   url: string;
@@ -180,6 +182,15 @@ function FileURLRenderMulti({
   }
 
   const ImageList = () => {
+    const expandImage = ({ url }: { url: string }) => {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
     return (
       <>
         {urls.map((_, i) => {
@@ -217,6 +228,22 @@ function FileURLRenderMulti({
                 </Badge>
               )}
 
+              {urlImage.url && (
+                <ImageInputsTooltip tooltipText="View full resolution">
+                  <Button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      expandImage({ url: urlImage.url });
+                    }}
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 bg-black bg-opacity-50 text-white opacity-0 transition-all duration-300 hover:bg-black hover:bg-opacity-70 hover:text-white group-hover/item:opacity-100"
+                  >
+                    <Expand size={16} />
+                  </Button>
+                </ImageInputsTooltip>
+              )}
+
               {canDownload && (
                 <Button
                   onClick={async (e) => {
@@ -228,7 +255,7 @@ function FileURLRenderMulti({
                   }}
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 text-white opacity-0 transition-all duration-300 hover:bg-black hover:bg-opacity-70 hover:text-white group-hover/item:opacity-100"
+                  className="absolute right-2 bottom-2 bg-black bg-opacity-50 text-white opacity-0 transition-all duration-300 hover:bg-black hover:bg-opacity-70 hover:text-white group-hover/item:opacity-100"
                 >
                   <Download size={16} />
                 </Button>
