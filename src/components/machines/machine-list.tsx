@@ -338,7 +338,7 @@ export function MachineList() {
               }
             },
             disabled: {
-              disabled: !sub?.sub?.plan,
+              disabled: !(sub?.plans?.plans && sub?.plans?.plans.length > 0),
               disabledText: "Upgrade to create custom machines.",
             },
           },

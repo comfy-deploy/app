@@ -84,7 +84,7 @@ function RouteComponent() {
     };
   }, [sub]);
 
-  console.log(currentPeriod);
+  console.log(sub);
 
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(
     "current",

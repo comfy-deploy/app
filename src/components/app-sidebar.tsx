@@ -470,7 +470,17 @@ function V3Dialog() {
         onMouseLeave={() => setIsHovered(false)}
       >
         <div className="flex flex-col gap-1 text-xs">
-          <div className="font-medium">Introducing New ComfyDeploy</div>
+          <div className="font-medium">
+            {(() => {
+              const targetDate = new Date("2025-03-02"); // 3 days from Feb 27, 2025
+              const today = new Date();
+              const diffTime = Math.ceil(
+                (targetDate.getTime() - today.getTime()) /
+                  (1000 * 60 * 60 * 24),
+              );
+              return `v3 Beta is coming in ${diffTime} days`;
+            })()}
+          </div>
           <div className="text-muted-foreground leading-5">
             New Experience. New Platform. Same ComfyUI.
           </div>
