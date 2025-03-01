@@ -44,6 +44,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  AlertCircle,
 } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -71,6 +72,7 @@ import { LogsTab, RunDetails } from "../workflows/WorkflowComponent";
 import { LogsViewer } from "../log/logs-viewer";
 import { Progress } from "../ui/progress";
 import { Separator } from "../ui/separator";
+import { AlertDescription } from "../ui/alert";
 
 type run = {
   status:
@@ -593,7 +595,16 @@ function RunDisplay({
             Run failed. Check the logs for more details.
           </p>
           <div className="max-w-2xl">
-            <LogsTab runId={run.id} />
+            {run.modal_function_call_id ? (
+              <LogsTab runId={run.id} />
+            ) : (
+              <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-900 p-4 text-gray-300">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="!text-gray-400 text-muted-foreground text-sm">
+                  We're unable to display logs for runs from the workspace.
+                </AlertDescription>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -663,7 +674,7 @@ function RunDisplay({
               )}
 
               <div className="-bottom-12 absolute right-0 left-0 flex flex-col items-center justify-center">
-                <span className="text-muted-foreground text-xs">
+                <span className="whitespace-nowrap text-muted-foreground text-xs">
                   Scroll for details
                 </span>
                 <ChevronDown className="h-4 w-4" />
