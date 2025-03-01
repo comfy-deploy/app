@@ -439,6 +439,7 @@ function ExistingMachine({
                       ...validation,
                       selectedMachineId: checked ? item.id : "",
                       existingMachineMissingNodes: nodeComparison.missingNodes,
+                      existingMachine: item,
                     });
                   }}
                 />
