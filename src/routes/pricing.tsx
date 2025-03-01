@@ -252,11 +252,11 @@ function PricingTier({
     if (price.includes("from")) {
       if (!isYearly) return price;
       const amount = Number.parseInt(price.replace(/\D/g, ""));
-      return `from $${Math.round(amount * 0.8)}`;
+      return `from $${Math.round((amount * 10) / 12)}`;
     }
     if (!isYearly) return price;
     const amount = Number.parseInt(price.replace(/\D/g, ""));
-    return `$${Math.round(amount * 0.8)}`;
+    return `$${Math.round((amount * 10) / 12)}`;
   };
 
   const getYearlyTotal = (price: string) => {
