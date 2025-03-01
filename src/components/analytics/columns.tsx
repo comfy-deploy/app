@@ -20,7 +20,6 @@ import { Check, Minus, X } from "lucide-react";
 import { LoadingIcon } from "../ui/custom/loading-icon";
 import { Skeleton } from "../ui/skeleton";
 import type { ColumnSchema } from "./schema";
-import { getOptimizedImage } from "@/lib/utils";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -111,7 +110,7 @@ export const columns: ColumnDef<ColumnSchema>[] = [
       return (
         <div className="flex items-center gap-3">
           <img
-            src={user?.image_url ? getOptimizedImage(user.image_url) : ""}
+            src={user?.image_url ? user.image_url : ""}
             alt={`${user.first_name}'s avatar`}
             className="h-[20px] w-[20px] rounded-full"
           />
