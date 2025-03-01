@@ -158,11 +158,16 @@ function WorkflowPageComponent() {
   const { workflow, isLoading: isWorkflowLoading } =
     useCurrentWorkflow(workflowId);
 
+  const { data: selectedMachine } = useMachine(workflow?.selected_machine_id);
+
   switch (currentView) {
     case "requests":
       view = (
         <PaddingLayout>
-          <RequestPage setIsEditing={setIsEditing} />
+          <RequestPage
+            setIsEditing={setIsEditing}
+            selectedMachine={selectedMachine}
+          />
         </PaddingLayout>
       );
       break;
@@ -214,8 +219,6 @@ function WorkflowPageComponent() {
     queryKey: ["session", sessionId],
     enabled: !!sessionId,
   });
-
-  const { data: selectedMachine } = useMachine(workflow?.selected_machine_id);
 
   const { data: deployments, isLoading: isDeploymentsLoading } =
     useWorkflowDeployments(workflowId);
@@ -481,8 +484,10 @@ interface WorkflowDescriptionForm {
 
 function RequestPage({
   setIsEditing,
+  selectedMachine,
 }: {
   setIsEditing: (isEditing: boolean) => void;
+  selectedMachine: any;
 }) {
   const { workflowId } = Route.useParams();
   const {
@@ -972,43 +977,65 @@ function RequestPage({
                         </TooltipProvider>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="p-0">
-                        <Button
-                          variant={"ghost"}
-                          className="w-full justify-between px-2 font-normal"
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.nativeEvent.preventDefault();
-                            e.nativeEvent.stopPropagation();
+                      <TooltipProvider>
+                        <Tooltip delayDuration={0}>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuItem className="p-0">
+                              <Button
+                                variant={"ghost"}
+                                className="w-full justify-between px-2 font-normal"
+                                disabled={
+                                  selectedMachine?.type !==
+                                  "comfy-deploy-serverless"
+                                }
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  e.nativeEvent.preventDefault();
+                                  e.nativeEvent.stopPropagation();
 
-                            const response =
-                              await createDynamicSession.mutateAsync({
-                                gpu: "A10G",
-                                machine_id: item.machine_id,
-                                machine_version_id: item.machine_version_id,
-                              });
-                            useLogStore.getState().clearLogs();
+                                  const response =
+                                    await createDynamicSession.mutateAsync({
+                                      gpu: "A10G",
+                                      machine_id: item.machine_id,
+                                      machine_version_id:
+                                        item.machine_version_id,
+                                    });
+                                  useLogStore.getState().clearLogs();
 
-                            router.navigate({
-                              to: "/sessions/$sessionId",
-                              params: {
-                                sessionId: response.session_id,
-                              },
-                              search: {
-                                workflowId,
-                                // @ts-expect-error
-                                version: item.version,
-                              },
-                            });
-                          }}
-                        >
-                          <div className="flex flex-row gap-2">
-                            Edit
-                            <Badge variant="secondary">v{item.version}</Badge>
-                          </div>
-                        </Button>
-                      </DropdownMenuItem>
+                                  router.navigate({
+                                    to: "/sessions/$sessionId",
+                                    params: {
+                                      sessionId: response.session_id,
+                                    },
+                                    search: {
+                                      workflowId,
+                                      // @ts-expect-error
+                                      version: item.version,
+                                    },
+                                  });
+                                }}
+                              >
+                                <div className="flex flex-row gap-2">
+                                  Edit
+                                  <Badge variant="secondary">
+                                    v{item.version}
+                                  </Badge>
+                                </div>
+                              </Button>
+                            </DropdownMenuItem>
+                          </TooltipTrigger>
+                          {selectedMachine?.type !==
+                            "comfy-deploy-serverless" && (
+                            <TooltipContent side="left">
+                              <p>
+                                Workflow editing is not supported on this
+                                machine.
+                              </p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
