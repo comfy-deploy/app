@@ -10,15 +10,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, getOptimizedImage } from "@/lib/utils";
 import {
   Download,
   SearchX,
-  CheckCircle,
-  XCircle,
   Check,
   X,
   Minus,
@@ -34,6 +31,7 @@ import {
   CarouselPrevious,
 } from "../ui/carousel";
 import { ShineBorder } from "../magicui/shine-border";
+import { downloadImage } from "@/utils/download-image";
 
 type fileURLRenderProps = {
   url: string;
@@ -223,14 +221,10 @@ function FileURLRenderMulti({
                 <Button
                   onClick={async (e) => {
                     e.stopPropagation();
-                    const url = urlImage;
-                    const a = document.createElement("a");
-                    a.href = url.url;
-                    a.download = `ComfyImage_${i}`;
-                    a.target = "_blank";
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
+                    await downloadImage({
+                      url: urlImage.url,
+                      fileName: urlImage.file_name,
+                    });
                   }}
                   variant="ghost"
                   size="icon"

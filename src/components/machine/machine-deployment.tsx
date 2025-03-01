@@ -286,7 +286,9 @@ export function MachineVersionListItem({
   const sub = useCurrentPlan();
   const isBusinessOrEnterprise = Boolean(
     sub?.plans?.plans[0] &&
-      ["business", "enterprise"].includes(sub.plans.plans[0].toLowerCase()),
+      ["business", "enterprise", "business_monthly"].includes(
+        sub.plans.plans[0].toLowerCase(),
+      ),
   );
 
   // Single state to track the build start time

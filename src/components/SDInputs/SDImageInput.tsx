@@ -117,7 +117,7 @@ export function SDImageInput({
                       variant: "outline",
                       className:
                         "cursor-pointer transition-colors hover:bg-gray-50",
-                    })
+                    }),
                   )}
                 >
                   <Paperclip size={18} />

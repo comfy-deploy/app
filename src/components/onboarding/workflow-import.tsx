@@ -614,11 +614,11 @@ function DefaultOption({
                     <img
                       src={template.workflowImageUrl}
                       className="h-full w-full object-cover"
-                      alt={`$template.workflowNameexample`}
+                      alt={"$template.workflowNameexample"}
                     />
                   </div>
 
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {template.workflowDescription}
                   </p>
                 </div>
