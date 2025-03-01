@@ -366,13 +366,37 @@ export default function WorkflowImport() {
               }
               console.log("existing: ", validation.machineConfig);
 
-              response = await api({
-                url: `machine/serverless/${validation.selectedMachineId}`,
-                init: {
-                  method: "PATCH",
-                  body: JSON.stringify(validation.machineConfig),
-                },
-              });
+              if (validation.machineConfig.type !== "comfy-deploy-serverless") {
+                await api({
+                  url: `machine/custom/${validation.selectedMachineId}`,
+                  init: {
+                    method: "PATCH",
+                    body: JSON.stringify(validation.machineConfig),
+                  },
+                });
+
+                const workflowResult = await createWorkflow(
+                  validation.selectedMachineId,
+                );
+
+                toast.success(
+                  `Workflow "${validation.workflowName}" created successfully!`,
+                );
+                if (workflowResult.workflow_id) {
+                  window.open(
+                    `/workflows/${workflowResult.workflow_id}/requests`,
+                    "_blank",
+                  );
+                }
+              } else {
+                response = await api({
+                  url: `machine/serverless/${validation.selectedMachineId}`,
+                  init: {
+                    method: "PATCH",
+                    body: JSON.stringify(validation.machineConfig),
+                  },
+                });
+              }
             } else {
               // New machine
               if (
@@ -407,7 +431,7 @@ export default function WorkflowImport() {
             );
             if (workflowResult.workflow_id) {
               window.open(
-                `/workflows/${workflowResult.workflow_id}/workspace`,
+                `/workflows/${workflowResult.workflow_id}/requests`,
                 "_blank",
               );
             }
