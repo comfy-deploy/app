@@ -37,7 +37,7 @@ import {
   useQuery,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { getTotalUrlCountAndUrls } from "./OutputRender";
+import { FileURLRender, getTotalUrlCountAndUrls } from "./OutputRender";
 
 interface RunsTableState {
   selectedRun: any | null;
@@ -485,10 +485,9 @@ function OutputPreview(props: { runId: string }) {
     <div className="flex flex-row items-center gap-2">
       {urlsToDisplay.map((url) => (
         <div key={url.url}>
-          <img
-            className="h-8 w-8 rounded-[8px] object-cover"
-            src={getOptimizedImage(url.url)}
-            alt="Output"
+          <FileURLRender
+            url={url.url}
+            imgClasses="h-8 w-8 rounded-[8px] object-cover"
           />
         </div>
       ))}

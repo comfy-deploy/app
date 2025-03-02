@@ -243,7 +243,7 @@ export function RunDetails(props: {
             <ScrollArea className="h-[calc(100vh-490px)]">
               <OutputRenderRun
                 run={run as any}
-                imgClasses="max-w-full min-h-[230px] object-cover rounded-[8px]"
+                imgClasses="max-w-full h-[230px] object-cover rounded-[8px]"
                 canExpandToView={true}
                 canDownload={true}
                 columns={2}
