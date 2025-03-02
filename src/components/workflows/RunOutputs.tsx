@@ -1,6 +1,3 @@
-"use client";
-
-import { OutputRender } from "@/components/output-render";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-blocks";
@@ -20,6 +17,7 @@ import { ExternalLink } from "lucide-react";
 import { z } from "zod";
 
 import { formatFileSize } from "@/lib/utils";
+import { FileURLRender } from "./OutputRender";
 
 export const WorkflowNodeSchema = z.object({
   id: z.string(),
@@ -173,9 +171,9 @@ export function RunOutputs({ run }: { run: any }) {
                 </TableCell>
                 <TableCell>
                   {typeof file === "string" ? (
-                    <OutputRender url={file} />
+                    <FileURLRender url={file} imgClasses="w-full h-full" />
                   ) : (
-                    <OutputRender url={file.url} />
+                    <FileURLRender url={file.url} imgClasses="w-full h-full" />
                   )}
                 </TableCell>
               </TableRow>
