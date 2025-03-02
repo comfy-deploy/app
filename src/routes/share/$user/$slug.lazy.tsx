@@ -1,4 +1,3 @@
-import { FileURLRender } from "@/components/output-render";
 import {
   parseFilesToImgURLs,
   parseInputValues,
@@ -27,7 +26,10 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { getTotalUrlCountAndUrls } from "@/components/workflows/OutputRender";
+import {
+  FileURLRender,
+  getTotalUrlCountAndUrls,
+} from "@/components/workflows/OutputRender";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
