@@ -1109,8 +1109,8 @@ export function DeploymentSettings({
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-zinc-50 pb-4">
+    <div className="flex flex-col ">
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-zinc-50 pt-1 pb-4">
         <div className="flex items-center gap-4">
           <div className="font-medium text-md">Deployment</div>
           <Select

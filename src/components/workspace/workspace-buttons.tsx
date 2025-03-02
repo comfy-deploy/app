@@ -59,6 +59,8 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
 
   const { data: machine } = useMachine(session?.machine_id);
 
+  const router = useRouter();
+
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const data = useMemo(() => {
     return {
@@ -66,14 +68,18 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
       buttonConfigs: [
         {
           id: "save-image",
-          icon: "pi-save",
-          label: machine ? machine.name : "New Workspace",
+          icon: machine ? "pi-desktop" : undefined,
+          label: machine ? machine.name : "No Workspace",
           style: {
             color: !machine ? "#9ca3af" : "",
           },
           tooltip: "Save the current image to your output directory.",
           event: "save_image",
-          onClick: (_: string, __: unknown) => setIsWorkflowDialogOpen(true),
+          onClick: (_: string, __: unknown) => {
+            if (machine) {
+              window.open(`/machines/${machine.id}`, "_blank");
+            }
+          },
         },
         {
           id: "assets",
@@ -610,7 +616,7 @@ export function WorkflowButtons({
           event: "save_new_workflow",
           onClick: (_: string, __: unknown) => {
             if (!machine) {
-              toast.error("Please create a workspace first");
+              // toast.error("Please create a workspace first");
               setIsNewWorkspaceDialogOpen(true);
               return;
             }

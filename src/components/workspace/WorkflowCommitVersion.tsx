@@ -85,7 +85,7 @@ export function WorkflowCommitVersion({
   const differences = useWorkflowStore((state) => state.differences);
   const workflow = useWorkflowStore((state) => state.workflow);
   const { value: selectedVersion } = useSelectedVersion(workflowId);
-  const [snapshotAction, setSnapshotAction] =
+  let [snapshotAction, setSnapshotAction] =
     useState<SnapshotAction>("CREATE_AND_COMMIT");
 
   const match = useMatch({
@@ -155,6 +155,32 @@ export function WorkflowCommitVersion({
     setSnapshotAction(hasChanges ? "CREATE_AND_COMMIT" : "COMMIT_ONLY");
   }, []);
 
+  const { data: workspace_version, isLoading: is_workspace_version_loading } =
+    useQuery<any>({
+      queryKey: [
+        "machine",
+        "serverless",
+        machine_id,
+        "versions",
+        machine_version_id,
+      ],
+    });
+
+  const is_fluid_machine = !!workspace_version?.modal_image_id;
+
+  if (!is_fluid_machine) {
+    snapshotAction = "COMMIT_ONLY";
+  }
+
+  // Make sure when there isnt any existing versioning.
+  if (
+    is_fluid_machine &&
+    !comfyui_snapshot_loading &&
+    !selectedVersion?.comfyui_snapshot
+  ) {
+    snapshotAction = "CREATE_AND_COMMIT";
+  }
+
   return (
     <InsertModal
       trigger={<></>}
@@ -169,18 +195,19 @@ export function WorkflowCommitVersion({
       }
       extraUI={
         <ScrollArea>
-          {comfyui_snapshot_loading ? (
-            <div className="flex h-full items-center justify-center">
-              Fetching snapshot...
-              <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <SnapshotDiffView
-              newSnapshot={comfyui_snapshot}
-              oldSnapshot={selectedVersion?.comfyui_snapshot}
-              onSnapshotActionChange={handleSnapshotActionChange}
-            />
-          )}
+          {is_fluid_machine &&
+            (comfyui_snapshot_loading ? (
+              <div className="flex h-full items-center justify-center">
+                Fetching snapshot...
+                <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <SnapshotDiffView
+                newSnapshot={comfyui_snapshot}
+                oldSnapshot={selectedVersion?.comfyui_snapshot}
+                onSnapshotActionChange={handleSnapshotActionChange}
+              />
+            ))}
           <DiffView
             className="max-h-[300px]"
             differences={differences}
@@ -192,11 +219,11 @@ export function WorkflowCommitVersion({
       description="Commit a new version of the workflow"
       serverAction={async (data) => {
         if (!userId) return;
-        if (comfyui_snapshot_loading) return;
+        if (comfyui_snapshot_loading && is_fluid_machine) return;
 
         try {
           const prompt = await getPromptWithTimeout();
-          console.log("prompt", prompt);
+          // console.log("prompt", prompt);
 
           const result = await callServerPromise(
             createNewWorkflowVersion({
@@ -204,8 +231,8 @@ export function WorkflowCommitVersion({
               workflow_id: workflowId,
               comment: data.comment,
               machine_id: machine_id,
-              machine_version_id: machine_version_id,
-              comfyui_snapshot: comfyui_snapshot,
+              machine_version_id: is_fluid_machine ? machine_version_id : null,
+              comfyui_snapshot: is_fluid_machine ? comfyui_snapshot : null,
               workflow_data: {
                 workflow: prompt.workflow,
                 workflow_api: prompt.output,
