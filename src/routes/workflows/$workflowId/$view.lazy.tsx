@@ -828,6 +828,7 @@ function RequestPage({
                               variant={"ghost"}
                               className="w-full justify-between gap-2 px-2 font-normal"
                               disabled={isCreatingDeployment.production}
+                              confirm
                             >
                               <div className="flex flex-row gap-2">
                                 Promote to
@@ -879,6 +880,7 @@ function RequestPage({
                               variant={"ghost"}
                               className="w-full justify-between gap-2 px-2 font-normal"
                               disabled={isCreatingDeployment.staging}
+                              confirm
                             >
                               <div className="flex flex-row gap-2">
                                 Promote to

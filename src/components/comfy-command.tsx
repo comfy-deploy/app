@@ -690,7 +690,7 @@ function MachinePartCommand({
         }}
       >
         <Plus className="!h-4 !w-4 mr-2" />
-        <span>Create Serverless Machine...</span>
+        <span>Create Docker Machine...</span>
         {isMachinesPage && (
           <CommandShortcut>
             <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px] text-muted-foreground opacity-100">

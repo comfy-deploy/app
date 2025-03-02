@@ -243,7 +243,7 @@ function SessionsList() {
           </div>
         )}
       </div>
-      <div className="mt-5 font-medium text-sm">Configurations</div>
+      <div className="mt-5 font-medium text-sm">Workspaces</div>
       <Spotlight
         show={showGuide && !!workflowLinkSearch}
         tooltipPosition={{
@@ -713,7 +713,7 @@ function SessionsList() {
           />
         </>
       )}
-      <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
+      {/* <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
         <Link
           to="/machines"
           className="flex items-center gap-1 hover:underline"
@@ -721,7 +721,7 @@ function SessionsList() {
           View all machines
           <ChevronRight className="h-4 w-4" />
         </Link>
-      </div>
+      </div> */}
     </div>
   );
 }

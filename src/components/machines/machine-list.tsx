@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +30,7 @@ import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
 import {
   ChevronDown,
   Cloud,
@@ -44,6 +45,17 @@ import { useState } from "react";
 import semver from "semver";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
+import { motion } from "framer-motion";
+
+const BATCH_SIZE = 20; // Same as in use-machine.ts
+
+interface Machine {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  // Add other machine properties as needed
+}
 
 export function MachineList() {
   const [searchValue, setSearchValue] = useState("");
@@ -53,107 +65,183 @@ export function MachineList() {
   const [expandedMachineId, setExpandedMachineId] = useState<string | null>(
     null,
   );
-  const sub = useCurrentPlan();
-  const hasActiveSub = !sub || !!sub?.sub;
   const navigate = useNavigate({ from: "/machines" });
 
-  const query = useMachines(debouncedSearchValue);
+  type TabType = "docker" | "workspace" | "self-hosted";
+  const [selectedTab, setSelectedTab] = useState<TabType>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    return tabParam === "docker" ||
+      tabParam === "workspace" ||
+      tabParam === "self-hosted"
+      ? tabParam
+      : "docker";
+  });
+
+  const handleTabChange = (value: string) => {
+    setSelectedTab(value as TabType);
+    navigate({
+      search: (prev) => ({ ...prev, tab: value }),
+    });
+  };
+
+  const sub = useCurrentPlan();
+  const hasActiveSub = !sub || !!sub?.sub;
+
+  const query = useMachines(
+    debouncedSearchValue,
+    BATCH_SIZE,
+    undefined,
+    false,
+    selectedTab === "workspace",
+    selectedTab === "self-hosted",
+    selectedTab === "docker",
+  );
 
   return (
-    <div className="mx-auto h-[calc(100vh-80px)] max-h-full w-full max-w-[1500px] px-2 py-4 md:px-10">
-      <div className="flex items-center justify-between gap-2 pb-4">
-        <div className="relative max-w-sm flex-1 hidden">
+    <div className="mx-auto h-[calc(100vh-120px)] max-h-full w-full max-w-[1200px] px-2 py-4 md:px-10">
+      <div className="mb-2 flex items-start justify-between gap-4">
+        <div className="relative w-[300px]">
           <Input
             placeholder="Filter machines..."
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
-            className="pr-12" // Add padding to prevent text overlap with kbd
+            className="pr-12"
           />
-          <kbd className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px] text-muted-foreground opacity-100">
+          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
             <span className="text-xs">⌘</span>K
           </kbd>
         </div>
-        <Tooltip>
-          <TooltipTrigger className="hidden">
-            {sub && (
-              <Badge
-                className={cn(
-                  sub?.features.workflowLimited
-                    ? "border-gray-400 text-gray-500"
-                    : "",
-                )}
-              >
-                <div className="flex items-center gap-2 px-2 text-xs">
-                  {sub?.features.currentMachineCount}/
-                  {sub?.features.machineLimit}
-                </div>
-              </Badge>
-            )}
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>
-              Current Machines: {sub?.features.currentMachineCount} / Limit:{" "}
-              {sub?.features.machineLimit}
-            </p>
-          </TooltipContent>
-        </Tooltip>
+
+        <Tabs value={selectedTab} onValueChange={handleTabChange}>
+          <motion.div className="inline-flex items-center rounded-lg bg-white/95 p-0.5 ring-1 ring-gray-200/50 ">
+            <TabsList className="relative flex w-fit gap-1 bg-transparent">
+              <motion.div layout className="relative">
+                <TabsTrigger
+                  value="docker"
+                  className={cn(
+                    "rounded-md px-4 py-1.5 text-sm font-medium transition-all",
+                    selectedTab === "docker"
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
+                      : "text-gray-600 hover:bg-gray-100",
+                  )}
+                >
+                  Docker Machine
+                </TabsTrigger>
+              </motion.div>
+              <motion.div layout className="relative">
+                <TabsTrigger
+                  value="self-hosted"
+                  className={cn(
+                    "rounded-md px-4 py-1.5 text-sm font-medium transition-all",
+                    selectedTab === "self-hosted"
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
+                      : "text-gray-600 hover:bg-gray-100",
+                  )}
+                >
+                  Self Hosted
+                </TabsTrigger>
+              </motion.div>
+              <motion.div layout className="relative">
+                <TabsTrigger
+                  value="workspace"
+                  className={cn(
+                    "rounded-md px-4 py-1.5 text-sm font-medium transition-all",
+                    selectedTab === "workspace"
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
+                      : "text-gray-600 hover:bg-gray-100",
+                  )}
+                >
+                  Workspace
+                </TabsTrigger>
+              </motion.div>
+            </TabsList>
+          </motion.div>
+        </Tabs>
       </div>
+
       {query.isLoading ? (
-        [...Array(8)].map((_, i) => (
-          <div
-            key={i}
-            className="mb-2 flex h-[80px] w-full animate-pulse items-center justify-between rounded-md border bg-white p-4"
-          >
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-row items-center gap-2">
-                  <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
-                  <div className="h-4 w-60 rounded bg-gray-200" />
+        <div className="mx-auto w-full max-w-[1200px] space-y-2">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={`loading-${i}`}
+              className="flex h-[80px] w-full animate-pulse items-center justify-between rounded-md border bg-white p-4"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-row items-center gap-2">
+                    <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
+                    <div className="h-4 w-60 rounded bg-gray-200" />
+                  </div>
+                  <div className="h-3 w-32 rounded bg-gray-200" />
                 </div>
-                <div className="h-3 w-32 rounded bg-gray-200" />
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-12 rounded-md bg-gray-200" />
+                <div className="h-5 w-20 rounded-md bg-gray-200" />
+                <div className="h-5 w-12 rounded-md bg-gray-200" />
+                <Button variant="ghost" size="icon">
+                  <ChevronDown className={"h-4 w-4"} />
+                </Button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-12 rounded-md bg-gray-200" />
-              <div className="h-5 w-20 rounded-md bg-gray-200" />
-              <div className="h-5 w-12 rounded-md bg-gray-200" />
-              <Button variant="ghost" size="icon">
-                <ChevronDown className={"h-4 w-4"} />
-              </Button>
-            </div>
-          </div>
-        ))
+          ))}
+        </div>
       ) : query.data?.pages[0].length === 0 ? (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-xl border bg-white/50 p-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Server className="h-6 w-6 text-primary" />
+        <div className="mx-auto w-full max-w-[1200px]">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-xl border bg-white/50 p-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Server className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              {selectedTab === "workspace" ? (
+                <>
+                  <h3 className="font-semibold text-lg">No Workspace Found</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Create your first workspace to get started with ComfyUI
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold">No machines found</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Get started by creating your first machine
+                  </p>
+                </>
+              )}
+            </div>
+            {selectedTab === "workspace" ? (
+              <Button
+                onClick={() => {
+                  navigate({ to: "/home" });
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Workspace
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  if (!sub?.features.machineLimited) {
+                    navigate({
+                      search: { view: "create" },
+                    });
+                  }
+                }}
+                disabled={sub?.features.machineLimited}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Machine
+              </Button>
+            )}
           </div>
-          <div>
-            <h3 className="text-lg font-semibold">No machines found</h3>
-            <p className="text-sm text-muted-foreground">
-              Get started by creating your first machine
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              if (!sub?.features.machineLimited) {
-                navigate({
-                  search: { view: "create" },
-                });
-              }
-            }}
-            disabled={sub?.features.machineLimited}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Machine
-          </Button>
         </div>
       ) : (
         <VirtualizedInfiniteList
           className="!h-full fab-machine-list mx-auto w-full max-w-[1200px] rounded-xl border"
           containerClassName="divide-y divide-border"
           queryResult={query}
-          renderItem={(machine, index) => (
+          renderItem={(machine: Machine, index) => (
             <MachineListItem
               key={machine.id}
               index={index}
@@ -173,7 +261,7 @@ export function MachineList() {
               }
             />
           )}
-          renderItemClassName={(machine) =>
+          renderItemClassName={(machine: Machine | null) =>
             cn(
               "z-0 transition-all duration-200",
               machine && expandedMachineId === machine.id && "z-[1]",
@@ -182,7 +270,7 @@ export function MachineList() {
           renderLoading={() => {
             return [...Array(4)].map((_, i) => (
               <div
-                key={i}
+                key={`loading-item-${i}`}
                 className="flex h-[80px] w-full animate-pulse items-center justify-between border bg-white p-4"
               >
                 <div className="flex items-center gap-4">
@@ -214,10 +302,10 @@ export function MachineList() {
         open={openCustomDialog}
         mutateFn={query.refetch}
         setOpen={setOpenCustomDialog}
-        title="Custom Machine"
+        title="Self Hosted Machine"
         disabled={!hasActiveSub}
         tooltip={!hasActiveSub ? "Upgrade in pricing tab!" : ""}
-        description="Add custom comfyui machines to your account."
+        description="Add self hosted comfyui machines to your account."
         serverAction={async (data) => {
           console.log("custom machine", data);
           try {
@@ -319,7 +407,9 @@ export function MachineList() {
         }}
         subItems={[
           {
-            name: "Serverless Machine",
+            name: sub
+              ? `Docker Machine (${sub.features.currentMachineCount}/${sub.features.machineLimit})`
+              : "Docker Machine",
             icon: Cloud,
             onClick: () => {
               if (!sub?.features.machineLimited) {
@@ -328,9 +418,13 @@ export function MachineList() {
                 });
               }
             },
+            disabled: {
+              disabled: sub?.features.machineLimited,
+              disabledText: `Max ${sub?.features.machineLimit} Docker machines for your account. Upgrade to create more machines.`,
+            },
           },
           {
-            name: "Custom Machine",
+            name: "Self Hosted Machine",
             icon: Server,
             onClick: () => {
               if (!sub?.features.machineLimited) {

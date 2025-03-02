@@ -8,6 +8,8 @@ export function useMachines(
   limit?: number,
   include_has_workflows?: boolean,
   is_workspace = false,
+  is_self_hosted = false,
+  is_docker = false,
 ) {
   return useInfiniteQuery<any[]>({
     queryKey: ["machines"],
@@ -18,10 +20,20 @@ export function useMachines(
         search: debouncedSearchValue ?? "",
         is_deleted: false,
         include_has_workflows: include_has_workflows ?? false,
-        is_workspace: is_workspace,
+        is_docker,
+        is_workspace,
+        is_self_hosted,
       },
     },
-    queryKeyHashFn: (queryKey) => [...queryKey, batchSize].toString(),
+    queryKeyHashFn: (queryKey) =>
+      [
+        ...queryKey,
+        debouncedSearchValue ?? "",
+        batchSize,
+        is_workspace,
+        is_self_hosted,
+        is_docker,
+      ].toString(),
     getNextPageParam: (lastPage, allPages) => {
       return lastPage?.length === batchSize
         ? allPages?.length * batchSize
