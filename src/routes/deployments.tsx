@@ -1,20 +1,5 @@
 import { UserIcon } from "@/components/run/SharePageComponent";
 import { Badge } from "@/components/ui/badge";
-import { DisplayWorkflowVersion } from "@/components/workflows/RunsTable";
-import { getEnvColor } from "@/components/workspace/ContainersTable";
-import { getRelativeTime } from "@/lib/get-relative-time";
-import { queryClient } from "@/lib/providers";
-import { cn } from "@/lib/utils";
-import { queryOptions, useQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { CopyIcon, ExternalLink, LinkIcon } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import {
-  VersionDrawer,
-  useSelectedDeploymentStore,
-} from "./workflows/$workflowId/$view.lazy";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -22,8 +7,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DisplayWorkflowVersion } from "@/components/workflows/RunsTable";
+import { getEnvColor } from "@/components/workspace/ContainersTable";
+import { getRelativeTime } from "@/lib/get-relative-time";
+import { queryClient } from "@/lib/providers";
+import { cn } from "@/lib/utils";
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
+import { CopyIcon, Droplets, ExternalLink, LinkIcon } from "lucide-react";
 import { parseAsString, useQueryState } from "nuqs";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  VersionDrawer,
+  useSelectedDeploymentStore,
+} from "./workflows/$workflowId/$view.lazy";
 
 interface Deployment {
   id: string;
@@ -84,11 +84,11 @@ function PendingComponent() {
 
 export const Route = createFileRoute("/deployments")({
   component: RouteComponent,
-  loader: async ({ context }) => {
-    await queryClient.ensureQueryData(
-      getAllDeploymentsOptions(undefined, true),
-    );
-  },
+  // loader: async ({ context }) => {
+  //   await queryClient.ensureQueryData(
+  //     getAllDeploymentsOptions(undefined, true),
+  //   );
+  // },
   pendingComponent: PendingComponent,
 });
 
@@ -161,7 +161,10 @@ function RouteComponent() {
                         : "hover:bg-gray-100 text-gray-600",
                     )}
                   >
-                    Fluid
+                    <div className="flex items-center gap-1.5">
+                      <Droplets className="h-3.5 w-3.5 text-blue-600" />
+                      Fluid
+                    </div>
                   </TabsTrigger>
                 </motion.div>
                 <motion.div layout className="relative">
@@ -225,13 +228,19 @@ function RouteComponent() {
           {filteredDeployments.map(([workflowId, deployments]) => (
             <div
               key={workflowId}
-              className="bg-white border flex flex-col gap-2 rounded-lg w-full"
+              className="bg-white border flex flex-col rounded-lg w-full overflow-hidden "
             >
-              <div className="border-b flex font-medium gap-2 hover:underline items-center p-4 text-sm">
+              <Link
+                to={`/workflows/${workflowId}/$view`}
+                params={{
+                  view: "requests",
+                }}
+                className="flex items-center gap-2 border-b bg-gray-50 p-4 font-medium text-sm hover:underline"
+              >
                 {deployments[0].workflow.name}
                 <ExternalLink className="h-3 w-3" />
-              </div>
-              <div className="flex w-full flex-col divide-y">
+              </Link>
+              <div className="flex w-full flex-col divide-y divide-gray-100 bg-white">
                 {deployments.map((deployment) => (
                   // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
                   <div
@@ -263,7 +272,19 @@ function RouteComponent() {
                       <Badge
                         className={cn(getEnvColor(deployment.environment))}
                       >
-                        {deployment.environment}
+                        {!!deployment.modal_image_id ? (
+                          <div className="flex items-center gap-1">
+                            <div className="rounded-full bg-blue-100 p-0.5">
+                              <Droplets
+                                strokeWidth={2}
+                                className="h-[12px] w-[12px] text-blue-600"
+                              />
+                            </div>
+                            {deployment.environment}
+                          </div>
+                        ) : (
+                          deployment.environment
+                        )}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">

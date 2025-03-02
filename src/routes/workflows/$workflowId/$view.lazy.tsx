@@ -70,6 +70,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronLeft,
   CircleArrowUp,
+  Droplets,
   ExternalLink,
   ImageIcon,
   Info,
@@ -686,14 +687,26 @@ function RequestPage({
                         <Badge
                           key={deployment.id}
                           className={cn(
-                            "w-fit cursor-pointer whitespace-nowrap rounded-sm text-xs",
+                            "w-fit cursor-pointer whitespace-nowrap rounded-md border border-gray-200 bg-gray-100 text-xs hover:shadow-sm",
                             getEnvColor(deployment.environment),
                           )}
                           onClick={() => {
                             setSelectedDeployment(deployment.id);
                           }}
                         >
-                          {deployment?.environment}
+                          {!!deployment.modal_image_id ? (
+                            <div className="flex items-center gap-1">
+                              <div className="rounded-full bg-blue-100 p-0.5">
+                                <Droplets
+                                  strokeWidth={2}
+                                  className="h-[12px] w-[12px] text-blue-600"
+                                />
+                              </div>
+                              {deployment.environment}
+                            </div>
+                          ) : (
+                            deployment.environment
+                          )}
                         </Badge>
                       ))}
                     </div>

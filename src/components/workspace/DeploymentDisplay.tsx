@@ -31,6 +31,7 @@ import {
   Check,
   ChevronRight,
   Copy,
+  Droplets,
   Info,
   Settings,
 } from "lucide-react";
@@ -47,21 +48,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
+import { useSelectedDeploymentStore } from "@/routes/workflows/$workflowId/$view.lazy";
 import { formatDistanceToNow } from "date-fns";
-import { useEffect, useState, useRef } from "react";
-import { toast } from "sonner";
-// import {
-//   CreateDeploymentButton,
-//   CreateDeploymentButtonV2,
-// } from "./VersionSelect";
-import { getEnvColor } from "./ContainersTable";
-// import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
-import { NewStepper } from "./StaticStepper";
-import { VersionDetails } from "./VersionDetails";
-import { useWorkflowDeployments } from "./ContainersTable";
-import { LoadingIcon } from "../ui/custom/loading-icon";
 import { Settings as SettingsIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { MyDrawer } from "../drawer";
+import { useGPUConfig } from "../machine/machine-schema";
 import {
   GPUSelectBox,
   MaxAlwaysOnSlider,
@@ -69,13 +71,19 @@ import {
   WarmTime,
   WorkflowTimeOut,
 } from "../machine/machine-settings";
-import { useSelectedDeploymentStore } from "@/routes/workflows/$workflowId/$view.lazy";
-import { MyDrawer } from "../drawer";
 import type { GpuTypes } from "../onboarding/workflow-machine-import";
-import { api } from "@/lib/api";
-import { callServerPromise } from "@/lib/call-server-promise";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { LoadingIcon } from "../ui/custom/loading-icon";
 import { Input } from "../ui/input";
+// import {
+//   CreateDeploymentButton,
+//   CreateDeploymentButtonV2,
+// } from "./VersionSelect";
+import { getEnvColor } from "./ContainersTable";
+import { useWorkflowDeployments } from "./ContainersTable";
+// import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
+import { NewStepper } from "./StaticStepper";
+import { VersionDetails } from "./VersionDetails";
 
 const curlTemplate = `
 curl --request POST \
@@ -1057,6 +1065,9 @@ export function DeploymentSettings({
   });
   const [isDirty, setIsDirty] = useState(false);
   const { setSelectedDeployment } = useSelectedDeploymentStore();
+  const { gpuConfig } = useGPUConfig();
+
+  const is_fluid = !!deployment.modal_image_id;
 
   const handleChange = <K extends keyof Deployment>(
     key: K,
@@ -1109,7 +1120,7 @@ export function DeploymentSettings({
   };
 
   return (
-    <div className="flex flex-col ">
+    <div className="flex flex-col px-2">
       <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-zinc-50 pt-1 pb-4">
         <div className="flex items-center gap-4">
           <div className="font-medium text-md">Deployment</div>
@@ -1124,12 +1135,26 @@ export function DeploymentSettings({
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue>
-                <Badge
-                  variant="outline"
-                  className={cn(getEnvColor(deployment.environment), "text-sm")}
-                >
-                  {deployment.environment}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      getEnvColor(deployment.environment),
+                      "text-sm",
+                    )}
+                  >
+                    {deployment.environment}
+                  </Badge>
+                  {is_fluid && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1 bg-blue-50 text-blue-700"
+                    >
+                      <Droplets className="h-3 w-3" />
+                      Fluid
+                    </Badge>
+                  )}
+                </div>
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -1139,12 +1164,23 @@ export function DeploymentSettings({
                   value={d.id}
                   className="flex items-center justify-between"
                 >
-                  <Badge
-                    variant="outline"
-                    className={cn(getEnvColor(d.environment), "text-sm")}
-                  >
-                    {d.environment}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={cn(getEnvColor(d.environment), "text-sm")}
+                    >
+                      {d.environment}
+                    </Badge>
+                    {!!d.modal_image_id && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1 bg-blue-50 text-blue-700"
+                      >
+                        <Droplets className="h-3 w-3" />
+                        Fluid
+                      </Badge>
+                    )}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1160,28 +1196,43 @@ export function DeploymentSettings({
             >
               API
             </Button>
-            {deployment.modal_image_id && (
+            {is_fluid && (
               <Button
                 variant={view === "settings" ? "default" : "ghost"}
                 onClick={() => setView("settings")}
                 size="sm"
               >
                 <SettingsIcon className="mr-2 h-4 w-4" />
-                Settings
+                Auto Scaling
               </Button>
             )}
           </div>
         )}
       </div>
 
-      {((view === "settings" && deployment.modal_image_id) ||
+      {((view === "settings" && is_fluid) ||
         deployment.environment === "public-share") && (
-        <form ref={formRef} className="flex flex-col gap-6 p-6">
+        <form ref={formRef} className="flex flex-col gap-6">
           {deployment.environment === "public-share" && (
             <div className="mb-4">
               <ShareLinkDisplay deployment={deployment} />
             </div>
           )}
+
+          {is_fluid && view === "settings" && (
+            <Alert className="border-blue-200 bg-blue-50">
+              <AlertTitle className="text-blue-700 flex items-center gap-2">
+                <Droplets className="h-4 w-4 text-blue-600" />
+                Fluid Deployment
+              </AlertTitle>
+              <AlertDescription className="text-blue-600">
+                This is a Fluid deployment with enhanced stability and
+                auto-scaling capabilities. Configure your auto-scaling settings
+                below to optimize performance and cost.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex flex-col gap-2">
             <Badge className="w-fit font-medium text-sm">GPU</Badge>
             <GPUSelectBox
@@ -1201,28 +1252,29 @@ export function DeploymentSettings({
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Badge className="w-fit font-medium text-sm">Keep Always On</Badge>
-            {deployment.environment === "production" ? (
+          {deployment.environment === "production" ? (
+            <div className="flex flex-col gap-2">
+              <Badge className="w-fit font-medium text-sm">
+                Keep Always On
+              </Badge>
               <MaxAlwaysOnSlider
                 value={formData.keep_warm || deployment.keep_warm}
                 onChange={(value) => handleChange("keep_warm", value)}
               />
-            ) : (
-              <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-700 text-sm">
-                <Info className="h-4 w-4" />
-                <Badge className={getEnvColor(deployment.environment)}>
-                  {deployment.environment}
-                </Badge>{" "}
-                environment is not supported for this feature.
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            // <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-700 text-sm">
+            //   <Info className="h-4 w-4" />
+            //   <Badge className={getEnvColor(deployment.environment)}>
+            //     {deployment.environment}
+            //   </Badge>{" "}
+            //   environment is not supported for this feature.
+            // </div>
+            <></>
+          )}
 
           <div className="flex flex-col gap-2">
-            <Badge className="w-fit font-medium text-sm">
-              Workflow Timeout
-            </Badge>
+            <Badge className="w-fit font-medium text-sm">Run Timeout</Badge>
             <WorkflowTimeOut
               value={formData.run_timeout || deployment.run_timeout}
               onChange={(value) => handleChange("run_timeout", value)}
@@ -1230,11 +1282,58 @@ export function DeploymentSettings({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Badge className="w-fit font-medium text-sm">Warm Time</Badge>
+            <Badge className="w-fit font-medium text-sm">
+              Scale Down Delay
+            </Badge>
             <WarmTime
               value={formData.idle_timeout || deployment.idle_timeout}
               onChange={(value) => handleChange("idle_timeout", value)}
             />
+            <div className="flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 p-4 text-blue-700 text-muted-foreground text-xs">
+              <div className="flex flex-col gap-1">
+                {/* <span className="font-medium">Cost & Usage</span> */}
+                <span>
+                  Longer delay times keep containers warm for subsequent
+                  requests, reducing cold starts but increasing costs.
+                </span>
+                <div className="mt-2 rounded-md bg-white py-2 px-3">
+                  <span className="font-medium">
+                    Estimated extra cost per container:
+                  </span>
+                  <div className="mt-1 font-mono">
+                    {(() => {
+                      const selectedGPU = formData.gpu;
+                      const gpuPrice =
+                        gpuConfig?.find(
+                          (g) =>
+                            g.id.toLowerCase() === selectedGPU?.toLowerCase(),
+                        )?.pricePerSec ?? 0;
+                      const idleSeconds =
+                        formData.idle_timeout || deployment.idle_timeout;
+                      const timeDisplay =
+                        idleSeconds < 60
+                          ? `${idleSeconds} seconds`
+                          : `${(idleSeconds / 60).toFixed(1)} minutes`;
+
+                      const costPerIdle = gpuPrice * 60 * idleSeconds;
+
+                      return `$${costPerIdle.toFixed(3)} per idle period of ${timeDisplay}`;
+                    })()}
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <span>
+                    • Short delay (30s): Minimize costs, more cold starts
+                  </span>
+                  <span className="block">
+                    • Medium delay (5min): Balance cost and performance
+                  </span>
+                  <span className="block">
+                    • Long delay (15min+): Best performance, higher costs
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {isDirty && (

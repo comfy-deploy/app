@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import {
   type SubscriptionPlan,
   useCurrentPlan,
+  useCurrentPlanWithStatus,
 } from "@/hooks/use-current-plan";
 import { useGithubBranchInfo } from "@/hooks/use-github-branch-info";
 import { useUserSettings } from "@/hooks/use-user-settings";
@@ -58,6 +59,7 @@ import {
   useUnsavedChangesWarning,
 } from "../unsaved-changes-warning";
 import { callServerPromise } from "@/lib/call-server-promise";
+import { Skeleton } from "../ui/skeleton";
 
 export function MachineSettingsWrapper({
   machine,
@@ -811,7 +813,7 @@ export function GPUSelectBox({
 }) {
   const { gpuConfig } = useGPUConfig();
   const sub = useCurrentPlan() as SubscriptionPlan;
-  console.log(sub);
+  // console.log(sub);
   const isBusiness = sub?.plans?.plans?.some(
     (plan) =>
       plan.includes("business") ||
@@ -944,8 +946,9 @@ export function MaxParallelGPUSlider({
   value: number;
   onChange: (value: number) => void;
 }) {
-  const sub = useCurrentPlan();
-  const { data: userSettings } = useUserSettings();
+  const { data: sub, isLoading: isSubLoading } = useCurrentPlanWithStatus();
+  const { data: userSettings, isLoading: isUserSettingsLoading } =
+    useUserSettings();
   const plan = sub?.plans?.plans.filter(
     (plan: string) => !plan.includes("ws"),
   )?.[0];
@@ -970,6 +973,22 @@ export function MaxParallelGPUSlider({
   let maxGPU = planHierarchy[plan as keyof typeof planHierarchy]?.max || 1;
   if (userSettings?.max_gpu) {
     maxGPU = Math.max(maxGPU, userSettings.max_gpu);
+  }
+
+  if (isUserSettingsLoading || isSubLoading) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-6" />
+          <Skeleton className="h-4 w-6" />
+        </div>
+        <Skeleton className="h-5 w-full" />
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-10" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1132,7 +1151,7 @@ export function WarmTime({
       onChange={onChange}
       options={options}
       placeholder="Select Warm Time"
-      description="The warm time is the seconds before the container will be stopped after the run is finished. So the next request will reuse the warm container."
+      // description="The warm time is the seconds before the container will be stopped after the run is finished. So the next request will reuse the warm container."
     />
   );
 }

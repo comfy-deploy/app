@@ -1,0 +1,13 @@
+---
+description: This is for any frontend styles
+globs: *.tsx
+alwaysApply: false
+---
+
+# Use Lucide Icons
+
+- When encounted any icons request, use from the lucide icons
+
+# We are using shadcn
+
+- Any compononet request, use from our src/components/ui path for shadcn component
