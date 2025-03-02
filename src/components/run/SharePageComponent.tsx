@@ -561,7 +561,7 @@ function RunDisplay({
     "animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm";
 
   // Handle no deployment
-  if (!deployment) {
+  if (!deployment && !run) {
     return (
       <div className={containerClass}>
         <p className={messageClass}>Please select a deployment</p>

@@ -299,7 +299,7 @@ function LoadingFallback({ mediaClasses }: { mediaClasses?: string }) {
       )}
     >
       <div className="flex flex-col items-center gap-2 text-gray-500">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     </div>
   );
