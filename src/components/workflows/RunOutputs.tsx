@@ -120,7 +120,7 @@ export function RunOutputs({ run }: { run: any }) {
             ...(run.data.images || []),
             ...(run.data.files || []),
             ...(run.data.gifs || []),
-            ...(run.data.mesh || []),
+            ...(run.data.model_files || []),
 
             // for klingAI video outputs
             ...(run.data.video_url || []),

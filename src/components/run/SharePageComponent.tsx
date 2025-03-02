@@ -637,14 +637,10 @@ function RunDisplay({
                             : "opacity-70 ring-transparent hover:opacity-100",
                         )}
                       >
-                        <div className="relative h-16 w-16">
-                          <img
-                            src={getOptimizedImage(item.url)}
-                            alt={`Thumbnail ${index + 1}`}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
+                        <FileURLRender
+                          url={item.url}
+                          imgClasses="h-16 w-16 rounded-[8px] object-cover"
+                        />
                       </button>
                     ))}
                   </div>
@@ -653,6 +649,7 @@ function RunDisplay({
                     url={urlList[viewingImageIndex].url}
                     imgClasses="max-h-[60vh] object-contain shadow-md max-w-full"
                     lazyLoading={false}
+                    isMainView={true}
                   />
                 </div>
               ) : (
@@ -661,7 +658,7 @@ function RunDisplay({
                   <OutputRenderRun
                     run={run}
                     imgClasses={cn(
-                      "shadow-md max-w-full",
+                      "shadow-md max-w-full mx-auto",
                       totalUrlCount > 1
                         ? "max-h-[30vh]"
                         : "max-h-[80vh] object-contain",
@@ -669,6 +666,7 @@ function RunDisplay({
                     lazyLoading={true}
                     columns={totalUrlCount > 4 ? 3 : 2}
                     displayCount={totalUrlCount > 9 ? 9 : totalUrlCount}
+                    isMainView={totalUrlCount === 1}
                   />
                 </div>
               )}
@@ -773,7 +771,7 @@ function RunGallery({ runId }: { runId: string }) {
             <PlaygroundOutputRenderRun
               run={run as any}
               isSelected={runId === currentRunId}
-              imgClasses="w-[105px] aspect-square object-cover rounded-[6px] shrink-0 overflow-hidden"
+              imgClasses="w-[105px] h-[105px] aspect-square object-cover rounded-[6px] shrink-0 overflow-hidden"
             />
           </div>
         </TooltipTrigger>
