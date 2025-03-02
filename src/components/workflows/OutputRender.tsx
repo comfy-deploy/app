@@ -55,6 +55,8 @@ type fileURLRenderProps = {
 
 // Model component for GLB files
 function Model({ url }: { url: string }) {
+  useGLTF.preload(url);
+
   const { scene } = useGLTF(url, undefined, undefined, (loader) => {
     loader.setCrossOrigin("anonymous");
   });
@@ -93,7 +95,6 @@ function ModelLoader() {
   );
 }
 
-// Separate the 3D model component to avoid conditional hook calls
 function ModelRenderer({
   url,
   mediaClasses,
@@ -103,7 +104,6 @@ function ModelRenderer({
   mediaClasses?: string;
   isMainView?: boolean;
 }) {
-  // State for controls - moved from conditional logic
   const [showControls, setShowControls] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [showAxes, setShowAxes] = useState(true);
@@ -154,7 +154,16 @@ function ModelRenderer({
     <div
       className={cn("!shadow-none relative h-[70vh] w-[70vh]", mediaClasses)}
     >
-      <Canvas shadows camera={{ position: [0, 0, 5], fov: 45 }}>
+      <Canvas
+        shadows
+        camera={{ position: [0, 0, 5], fov: 45 }}
+        dpr={[1, 2]}
+        gl={{
+          antialias: true,
+          powerPreference: "high-performance",
+        }}
+        performance={{ min: 0.5 }}
+      >
         {/* Lighting setup with dynamic intensity */}
         <ambientLight intensity={lightIntensity} />
         <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
