@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils";
-import { Slider } from "@radix-ui/react-slider";
-import { Switch } from "@radix-ui/react-switch";
 import { useGLTF, Html, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Grid, Axis3D, RotateCcw, Sun, Settings } from "lucide-react";
 import { useMemo, useEffect, useState, Suspense, lazy } from "react";
 import * as THREE from "three";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 
 // Model component for GLB files
 function Model({ url }: { url: string }) {
