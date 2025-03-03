@@ -1,22 +1,33 @@
 import { cn } from "@/lib/utils";
 import { useGLTF, Html, OrbitControls } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useLoader } from "@react-three/fiber";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Grid, Axis3D, RotateCcw, Sun, Settings } from "lucide-react";
 import { useMemo, useEffect, useState, Suspense, lazy } from "react";
 import * as THREE from "three";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 
-// Model component for GLB files
 function Model({ url }: { url: string }) {
-  useGLTF.preload(url);
+  const fileExtension = url.split(".").pop()?.toLowerCase();
 
-  const { scene } = useGLTF(url, undefined, undefined, (loader) => {
-    loader.setCrossOrigin("anonymous");
-  });
+  let modelScene: THREE.Object3D;
 
-  const clonedScene = useMemo(() => scene.clone(), [scene]);
+  if (fileExtension === "obj") {
+    // Handle OBJ files
+    const obj = useLoader(OBJLoader, url);
+    modelScene = obj;
+  } else {
+    // Handle GLB/GLTF files (default)
+    useGLTF.preload(url);
+    const { scene } = useGLTF(url, undefined, undefined, (loader) => {
+      loader.setCrossOrigin("anonymous");
+    });
+    modelScene = scene;
+  }
+
+  const clonedScene = useMemo(() => modelScene.clone(), [modelScene]);
 
   useEffect(() => {
     if (clonedScene) {
