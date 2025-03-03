@@ -19,6 +19,7 @@ import { Route as StorageImport } from './routes/storage'
 import { Route as SettingsImport } from './routes/settings'
 import { Route as PricingImport } from './routes/pricing'
 import { Route as OnboardingCallImport } from './routes/onboarding-call'
+import { Route as ModelsImport } from './routes/models'
 import { Route as HomeImport } from './routes/home'
 import { Route as DeploymentsImport } from './routes/deployments'
 import { Route as AssetsImport } from './routes/assets'
@@ -81,6 +82,12 @@ const PricingRoute = PricingImport.update({
 const OnboardingCallRoute = OnboardingCallImport.update({
   id: '/onboarding-call',
   path: '/onboarding-call',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ModelsRoute = ModelsImport.update({
+  id: '/models',
+  path: '/models',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -267,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeImport
       parentRoute: typeof rootRoute
     }
+    '/models': {
+      id: '/models'
+      path: '/models'
+      fullPath: '/models'
+      preLoaderRoute: typeof ModelsImport
+      parentRoute: typeof rootRoute
+    }
     '/onboarding-call': {
       id: '/onboarding-call'
       path: '/onboarding-call'
@@ -432,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
   '/home': typeof HomeRoute
+  '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
@@ -462,6 +477,7 @@ export interface FileRoutesByTo {
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
   '/home': typeof HomeRoute
+  '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
@@ -493,6 +509,7 @@ export interface FileRoutesById {
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
   '/home': typeof HomeRoute
+  '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
@@ -525,6 +542,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/deployments'
     | '/home'
+    | '/models'
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
@@ -554,6 +572,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/deployments'
     | '/home'
+    | '/models'
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
@@ -583,6 +602,7 @@ export interface FileRouteTypes {
     | '/assets'
     | '/deployments'
     | '/home'
+    | '/models'
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
@@ -614,6 +634,7 @@ export interface RootRouteChildren {
   AssetsRoute: typeof AssetsRoute
   DeploymentsRoute: typeof DeploymentsRoute
   HomeRoute: typeof HomeRoute
+  ModelsRoute: typeof ModelsRoute
   OnboardingCallRoute: typeof OnboardingCallRoute
   PricingRoute: typeof PricingRoute
   SettingsRoute: typeof SettingsRoute
@@ -644,6 +665,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssetsRoute: AssetsRoute,
   DeploymentsRoute: DeploymentsRoute,
   HomeRoute: HomeRoute,
+  ModelsRoute: ModelsRoute,
   OnboardingCallRoute: OnboardingCallRoute,
   PricingRoute: PricingRoute,
   SettingsRoute: SettingsRoute,
@@ -685,6 +707,7 @@ export const routeTree = rootRoute
         "/assets",
         "/deployments",
         "/home",
+        "/models",
         "/onboarding-call",
         "/pricing",
         "/settings",
@@ -723,6 +746,9 @@ export const routeTree = rootRoute
     },
     "/home": {
       "filePath": "home.tsx"
+    },
+    "/models": {
+      "filePath": "models.tsx"
     },
     "/onboarding-call": {
       "filePath": "onboarding-call.tsx"
