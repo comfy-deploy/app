@@ -138,18 +138,15 @@ export function WorkflowCommitVersion({
     [endpoint],
   );
 
-  const {
-    data: comfyui_snapshot,
-    isLoading: comfyui_snapshot_loading,
-    refetch: refetchComfyuiSnapshot,
-  } = useQuery({
-    queryKey: ["comfyui_snapshot", session_url],
-    queryFn: async () => {
-      if (!session_url) return null;
-      const response = await fetch(`${session_url}/snapshot/get_current`);
-      return response.json();
-    },
-  });
+  const { data: comfyui_snapshot, isLoading: comfyui_snapshot_loading } =
+    useQuery({
+      queryKey: ["comfyui_snapshot", session_url],
+      queryFn: async () => {
+        if (!session_url) return null;
+        const response = await fetch(`${session_url}/snapshot/get_current`);
+        return response.json();
+      },
+    });
 
   const handleSnapshotActionChange = useCallback((hasChanges: boolean) => {
     setSnapshotAction(hasChanges ? "CREATE_AND_COMMIT" : "COMMIT_ONLY");

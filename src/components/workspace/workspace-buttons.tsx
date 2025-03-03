@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { WorkflowList } from "@/components/workflow-dropdown";
-import { VersionList } from "@/components/version-select";
+import { useSelectedVersion, VersionList } from "@/components/version-select";
 import { WorkflowCommitVersion } from "./WorkflowCommitVersion";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useMatch } from "@tanstack/react-router";
@@ -41,6 +41,7 @@ import { Label } from "../ui/label";
 import Cookies from "js-cookie";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { getOptimizedImage } from "@/lib/utils";
+import { diff } from "json-diff-ts";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -471,6 +472,7 @@ export function WorkflowButtons({
   const [isClearWorkflowDialogOpen, setIsClearWorkflowDialogOpen] =
     useState(false);
   const [displayCommit, setDisplayCommit] = useState(false);
+  const [hasSnapshotDiff, setHasSnapshotDiff] = useState(false);
 
   const router = useRouter();
   const workflowId = useWorkflowIdInWorkflowPage();
@@ -478,6 +480,57 @@ export function WorkflowButtons({
     from: "/sessions/$sessionId/",
     shouldThrow: false,
   });
+
+  const { data: session } = useQuery<any>({
+    queryKey: ["session", match?.params.sessionId],
+    enabled: !!match?.params.sessionId,
+  });
+
+  const { data: machine } = useMachine(session?.machine_id);
+
+  const { data: workspace_version } = useQuery<any>({
+    queryKey: [
+      "machine",
+      "serverless",
+      machine_id,
+      "versions",
+      machine_version_id,
+    ],
+  });
+
+  const is_fluid_machine = !!workspace_version?.modal_image_id;
+
+  const { value: selectedVersion } = useSelectedVersion(workflowId);
+  const { data: comfyui_snapshot } = useQuery({
+    queryKey: ["comfyui_snapshot", session?.url],
+    queryFn: async () => {
+      if (!session?.url) return null;
+      const response = await fetch(`${session?.url}/snapshot/get_current`);
+      return response.json();
+    },
+    enabled: !!session?.url,
+    refetchInterval: 2000,
+    refetchIntervalInBackground: false,
+  });
+
+  useEffect(() => {
+    if (!comfyui_snapshot || !selectedVersion || !is_fluid_machine) return;
+    const differences = diff(
+      selectedVersion.comfyui_snapshot,
+      comfyui_snapshot,
+      {
+        keysToSkip: ["pips", "file_custom_nodes"],
+      },
+    );
+
+    setHasSnapshotDiff(
+      Boolean(
+        differences &&
+          differences.length > 0 &&
+          selectedVersion.comfyui_snapshot,
+      ),
+    );
+  }, [comfyui_snapshot, selectedVersion, is_fluid_machine]);
 
   const { workflow } = useCurrentWorkflow(workflowId);
   const query = useWorkflowVersion(workflowId || "", "");
@@ -527,13 +580,6 @@ export function WorkflowButtons({
     }, 1000);
   }, [cdSetup, workflowId, workflowLink]);
 
-  const { data: session, refetch } = useQuery<any>({
-    queryKey: ["session", match?.params.sessionId],
-    enabled: !!match?.params.sessionId,
-  });
-
-  const { data: machine } = useMachine(session?.machine_id);
-
   const data = useMemo(() => {
     return {
       containerSelector: ".comfyui-menu",
@@ -582,12 +628,15 @@ export function WorkflowButtons({
           id: "workflow-2",
           icon: "pi-save",
           // icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3v6"/><circle cx="12" cy="12" r="3"/><path d="M12 15v6"/></g></svg>`,
-          label: "Save",
+          label:
+            hasSnapshotDiff && is_fluid_machine && !hasChanged
+              ? "Update Snapshot"
+              : "Save",
           tooltip: "Commit the current workflow",
           event: "commit",
           style: {
             backgroundColor: "oklch(.476 .114 61.907)",
-            display: !hasChanged ? "none" : "flex",
+            display: !hasChanged && !hasSnapshotDiff ? "none" : "flex",
           },
           onClick: (_: string, __: unknown) => {
             if (!machine) {
@@ -642,6 +691,7 @@ export function WorkflowButtons({
     workflowLink,
     machine?.id,
     machine?.name,
+    hasSnapshotDiff,
   ]);
 
   const [_, setWorkflowId] = useQueryState("workflowId");

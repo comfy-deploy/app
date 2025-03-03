@@ -61,6 +61,7 @@ export function useSelectedVersion(workflow_id?: string) {
     status,
   } = useQuery<any>({
     queryKey: ["workflow", workflow_id, "version", version.toString()],
+    enabled: !!workflow_id,
   });
 
   // const {
