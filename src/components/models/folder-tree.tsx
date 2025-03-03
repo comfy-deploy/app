@@ -1,25 +1,20 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { DownloadingModels } from "@/components/models/downloading-models";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
-  FolderIcon,
-  FileIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  PlusIcon,
-  RefreshCcw,
-  MoreHorizontal,
-  Trash2,
-  Search,
-  FolderPlus,
-  Upload,
-  PencilIcon,
-  CheckCircle2,
-  XCircle,
-  Copy,
-} from "lucide-react";
-import { api } from "@/lib/api";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -27,24 +22,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
+  CheckCircle2,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  Copy,
+  FileIcon,
+  FolderIcon,
+  FolderPlus,
+  MoreHorizontal,
+  PencilIcon,
+  PlusIcon,
+  RefreshCcw,
+  Search,
+  Trash2,
+  Upload,
+  XCircle,
+} from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { DownloadingModels } from "@/components/models/downloading-models";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Label } from "@/components/ui/label";
 
 interface FileEntry {
   path: string;
@@ -66,6 +68,7 @@ interface TreeNode {
   mtime: number;
   size: number;
   isPrivate: boolean;
+  isVirtual?: boolean;
 }
 
 type ModelFilter = "private" | "public" | "all";
@@ -74,7 +77,20 @@ function buildTree(files: FileEntry[], isPrivate: boolean): TreeNode[] {
   const root: TreeNode[] = [];
   const pathMap = new Map<string, TreeNode>(); // Track nodes by their full path
 
+  // Skip inputs folders for public models
+  const shouldSkipPath = (path: string, isPrivate: boolean) => {
+    if (!isPrivate) {
+      return path.includes("/input/") || path === "input";
+    }
+    return false;
+  };
+
   for (const file of files) {
+    // Skip the file if it's in an inputs folder and it's a public model
+    if (shouldSkipPath(file.path, isPrivate)) {
+      continue;
+    }
+
     const parts = file.path.split("/");
     let currentLevel = root;
     let currentPath = "";
@@ -85,6 +101,11 @@ function buildTree(files: FileEntry[], isPrivate: boolean): TreeNode[] {
 
       // Build the current path
       currentPath = currentPath ? `${currentPath}/${part}` : part;
+
+      // Skip this path if it's an inputs folder in public models
+      if (shouldSkipPath(currentPath, isPrivate)) {
+        break;
+      }
 
       // Check if we already have a node for this exact path
       const existingNode = pathMap.get(currentPath);
@@ -274,12 +295,27 @@ function TreeNode({
     }
   };
 
+  // Get total count of all children (files + folders) recursively
+  const getTotalChildrenCount = (node: TreeNode): number => {
+    let count = node.children.length;
+    for (const child of node.children) {
+      if (child.type === 2) {
+        // If it's a folder
+        count += getTotalChildrenCount(child);
+      }
+    }
+    return count;
+  };
+
   return (
     <div>
       <div className="group flex items-center gap-2">
         <button
           type="button"
-          className="flex items-center gap-2 rounded px-2 py-1 hover:bg-accent"
+          className={cn(
+            "flex items-center gap-2 rounded px-2 py-1 hover:bg-accent",
+            node.isVirtual && "text-muted-foreground",
+          )}
           onClick={() => setIsOpen(!isOpen)}
         >
           {node.type === 2 ? (
@@ -289,7 +325,9 @@ function TreeNode({
               ) : (
                 <ChevronRightIcon className="h-4 w-4" />
               )}
-              <FolderIcon className="h-4 w-4" />
+              <FolderIcon
+                className={cn("h-4 w-4", node.isVirtual && "opacity-50")}
+              />
             </>
           ) : (
             <>
@@ -298,6 +336,11 @@ function TreeNode({
             </>
           )}
           <span>{node.name}</span>
+          {node.type === 2 && node.children.length > 0 && (
+            <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+              {getTotalChildrenCount(node)}
+            </span>
+          )}
         </button>
 
         <DropdownMenu>
@@ -560,9 +603,11 @@ function mergeNodes(
   const result: TreeNode[] = [];
   const pathMap = new Map<string, number>(); // Track nodes by path instead of name
 
-  // Helper to check if a node should be included based on its privacy
+  // Helper to check if a node should be included based on its privacy and type
   const shouldIncludeNode = (node: TreeNode) =>
-    (node.isPrivate && showPrivate) || (!node.isPrivate && showPublic);
+    node.type === 2 || // Always include folders
+    (node.isPrivate && showPrivate) || // Include private files when showing private
+    (!node.isPrivate && showPublic); // Include public files when showing public
 
   // Add private nodes if showing private
   if (showPrivate) {
@@ -615,39 +660,38 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
   const [newFolderName, setNewFolderName] = useState("");
   const [frontendFolderPaths, setFrontendFolderPaths] = useState<string[]>([]);
 
-  const { data: privateFiles, isLoading: isLoadingPrivate } = useQuery({
+  const { data: privateFiles, isLoading: isLoadingPrivate } = useQuery<
+    FileEntry[]
+  >({
     queryKey: ["volume", "private-models"],
-    queryFn: async ({ queryKey }) => {
-      const response = await api({
-        url: queryKey.join("/"),
-      });
-      return response as Promise<FileEntry[]>;
-    },
   });
 
-  const { data: publicFiles, isLoading: isLoadingPublic } = useQuery({
+  const { data: publicFiles, isLoading: isLoadingPublic } = useQuery<
+    FileEntry[]
+  >({
     queryKey: ["volume", "public-models"],
-    queryFn: async ({ queryKey }) => {
-      const response = await api({
-        url: queryKey.join("/"),
-      });
-      return response as Promise<FileEntry[]>;
-    },
   });
 
   const privateTree = privateFiles ? buildTree(privateFiles, true) : [];
   const publicTree = publicFiles ? buildTree(publicFiles, false) : [];
 
-  // Inject frontend folders into the tree
-  const injectFrontendFolders = (tree: TreeNode[]): TreeNode[] => {
+  const injectFrontendFolders = (
+    tree: TreeNode[],
+    publicTree: TreeNode[],
+  ): TreeNode[] => {
     const result = [...tree];
+    const pathMap = new Map<string, TreeNode>();
 
-    for (const path of frontendFolderPaths) {
+    // Helper function to add a path to the tree
+    const addPath = (path: string, isVirtual = false) => {
       const parts = path.split("/");
       let currentLevel = result;
+      let currentPath = "";
 
       for (const [index, part] of parts.entries()) {
         const isLast = index === parts.length - 1;
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+
         const existingNode = currentLevel.find((node) => node.name === part);
 
         if (existingNode) {
@@ -657,23 +701,50 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
         } else {
           const newNode: TreeNode = {
             name: part,
-            path: parts.slice(0, index + 1).join("/"),
-            type: 2,
+            path: currentPath,
+            type: 2, // Always a folder
             children: [],
             mtime: Date.now(),
             size: 0,
             isPrivate: true,
+            isVirtual: isVirtual, // Mark if this is just a structure hint
           };
           currentLevel.push(newNode);
+          pathMap.set(currentPath, newNode);
           currentLevel = newNode.children;
         }
       }
+    };
+
+    // First add the frontend folders
+    for (const path of frontendFolderPaths) {
+      addPath(path);
+    }
+
+    // Then inject the public tree structure
+    const processPublicNode = (node: TreeNode, parentPath = "") => {
+      const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+
+      // Only inject folders, not files
+      if (node.type === 2) {
+        addPath(currentPath, true);
+
+        // Process children recursively
+        for (const child of node.children) {
+          processPublicNode(child, currentPath);
+        }
+      }
+    };
+
+    // Process each root node in the public tree
+    for (const node of publicTree) {
+      processPublicNode(node);
     }
 
     return result;
   };
 
-  const injectedPrivateTree = injectFrontendFolders(privateTree);
+  const injectedPrivateTree = injectFrontendFolders(privateTree, publicTree);
 
   const mergedTree = mergeNodes(
     injectedPrivateTree,
@@ -681,6 +752,33 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
     filter === "private" || filter === "all",
     filter === "public" || filter === "all",
   );
+
+  // Helper to check if tree has any visible content based on filter
+  const hasVisibleContent = (nodes: TreeNode[]): boolean => {
+    return nodes.some((node) => {
+      if (node.type === 2) {
+        // For folders, check if they have any visible content
+        return hasVisibleContent(node.children);
+      }
+      // For files, check if they match the current filter
+      return (
+        (node.isPrivate && (filter === "private" || filter === "all")) ||
+        (!node.isPrivate && (filter === "public" || filter === "all"))
+      );
+    });
+  };
+
+  // Check if we have any folders (even empty ones) when in private view
+  const hasFolders = (nodes: TreeNode[]): boolean => {
+    return nodes.some(
+      (node) => node.type === 2 || (node.children && hasFolders(node.children)),
+    );
+  };
+
+  const showEmptyState =
+    filter === "public"
+      ? !hasVisibleContent(mergedTree)
+      : !hasFolders(mergedTree) && !hasVisibleContent(mergedTree);
 
   const deleteFileMutation = useMutation({
     mutationFn: async (path: string) => {
@@ -757,7 +855,7 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
 
   return (
     <div className={cn("flex h-full flex-col gap-4", className)}>
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <h2 className="font-semibold text-lg">Models</h2>
         <div className="flex gap-2">
           <Button
@@ -777,34 +875,139 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
             <FolderPlus className="h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </div> */}
 
       <DownloadingModels />
 
-      <div className="relative">
-        <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search models..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search models..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() =>
+              queryClient.invalidateQueries({ queryKey: ["volume"] })
+            }
+          >
+            <RefreshCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowNewFolderDialog(true)}
+          >
+            <FolderPlus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <Tabs
+          value={filter}
+          onValueChange={(value) => setFilter(value as ModelFilter)}
+        >
+          <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50">
+            <TabsList className="relative flex w-fit gap-1 bg-transparent">
+              <motion.div layout className="relative">
+                <TabsTrigger
+                  value="private"
+                  className={cn(
+                    "font-medium px-4 py-1.5 rounded-md text-sm transition-all",
+                    filter === "private"
+                      ? "bg-gradient-to-b from-white to-gray-100 ring-1 ring-gray-200/50 shadow-sm"
+                      : "hover:bg-gray-100 text-gray-600",
+                  )}
+                >
+                  Private
+                </TabsTrigger>
+              </motion.div>
+              <motion.div layout className="relative">
+                <TabsTrigger
+                  value="public"
+                  className={cn(
+                    "font-medium px-4 py-1.5 rounded-md text-sm transition-all",
+                    filter === "public"
+                      ? "bg-gradient-to-b from-white to-gray-100 ring-1 ring-gray-200/50 shadow-sm"
+                      : "hover:bg-gray-100 text-gray-600",
+                  )}
+                >
+                  Public
+                </TabsTrigger>
+              </motion.div>
+              <motion.div layout className="relative">
+                <TabsTrigger
+                  value="all"
+                  className={cn(
+                    "font-medium px-4 py-1.5 rounded-md text-sm transition-all",
+                    filter === "all"
+                      ? "bg-gradient-to-b from-white to-gray-100 ring-1 ring-gray-200/50 shadow-sm"
+                      : "hover:bg-gray-100 text-gray-600",
+                  )}
+                >
+                  All
+                </TabsTrigger>
+              </motion.div>
+            </TabsList>
+          </motion.div>
+        </Tabs>
       </div>
 
-      <Select value={filter} onValueChange={(v) => setFilter(v as ModelFilter)}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="private">Private</SelectItem>
-          <SelectItem value="public">Public</SelectItem>
-          <SelectItem value="all">All</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto border border-gray-200 bg-muted/20 rounded-sm">
         {isLoadingPrivate || isLoadingPublic ? (
-          <div>Loading...</div>
+          <div className="flex flex-col gap-4 p-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={`loading-${i}`} className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                </div>
+                <div className="flex flex-col divide-y divide-gray-100">
+                  {Array.from({ length: 2 }).map((_, j) => (
+                    <div
+                      key={`loading-item-${j}`}
+                      className="flex items-center gap-2 p-2"
+                    >
+                      <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
+                      <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                      <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : showEmptyState ? (
+          <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-2 p-8 text-center">
+            <div className="rounded-full bg-gray-100 p-3">
+              <FolderIcon className="h-6 w-6 text-gray-400" />
+            </div>
+            <div className="font-medium text-gray-900">No models found</div>
+            <p className="text-sm text-muted-foreground">
+              {filter === "all"
+                ? "No models available. Create a folder and upload your models to get started."
+                : filter === "private"
+                  ? "No private models found. Create a folder and upload your models to get started."
+                  : "No public models available at the moment."}
+            </p>
+            {filter !== "public" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setShowNewFolderDialog(true)}
+              >
+                <FolderPlus className="mr-2 h-4 w-4" />
+                Create Folder
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="flex flex-col">
             {mergedTree.map((node) => (
