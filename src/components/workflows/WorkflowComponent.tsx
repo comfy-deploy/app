@@ -152,7 +152,7 @@ export function RunDetails(props: {
 
   const content = (
     <>
-      <div className="flex flex-row items-center justify-between mb-4">
+      <div className="mb-4 flex flex-row items-center justify-between">
         <div>
           <h2 className="font-bold text-2xl">Run Details</h2>
           <p className="text-muted-foreground">#{run.id.slice(0, 8)}</p>
@@ -243,7 +243,7 @@ export function RunDetails(props: {
             <ScrollArea className="h-[calc(100vh-490px)]">
               <OutputRenderRun
                 run={run as any}
-                imgClasses="max-w-full h-[230px] object-cover rounded-[8px]"
+                imgClasses="max-w-[230px] w-full h-[230px] object-cover object-center rounded-[8px]"
                 canExpandToView={true}
                 canDownload={true}
                 columns={2}
