@@ -112,7 +112,7 @@ export function NavBar() {
                       label="Deployments"
                       icon={Code}
                     />
-                    <NavItem to="/models" label="Storage" icon={Database} />
+                    <NavItem to="/storage" label="Storage" icon={Database} />
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
