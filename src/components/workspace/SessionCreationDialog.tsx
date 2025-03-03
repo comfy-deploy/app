@@ -1,0 +1,304 @@
+import { GPUSelectBox } from "@/components/machine/machine-settings";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useLogStore } from "@/components/workspace/LogContext";
+import {
+  useMachine,
+  useMachines,
+  useMachineVersion,
+} from "@/hooks/use-machine";
+import { useSessionAPI } from "@/hooks/use-session-api";
+import { useRouter } from "@tanstack/react-router";
+import { Loader2, Search } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { useDebounce } from "use-debounce";
+import { Droplets } from "lucide-react";
+
+interface SessionCreationDialogProps {
+  workflowId: string;
+  version: string;
+  machineId?: string;
+  machineName?: string;
+  machineGpu?: string;
+  machineVersionId?: string;
+  modalImageId?: string;
+  machineVersions?: Array<{
+    id: string;
+    version: string;
+    modal_image_id?: string;
+  }>;
+  onClose: () => void;
+}
+
+interface SessionForm {
+  machineId: string;
+  gpu: string;
+  timeout: number;
+}
+
+export function SessionCreationDialog({
+  workflowId,
+  version,
+  machineId: defaultMachineId,
+  machineName,
+  machineGpu,
+  machineVersionId: defaultMachineVersionId,
+  modalImageId,
+  machineVersions = [],
+  onClose,
+}: SessionCreationDialogProps) {
+  const router = useRouter();
+  const { createDynamicSession } = useSessionAPI();
+  const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearchValue] = useDebounce(searchValue, 250);
+  const { data: machinesData } = useMachines(debouncedSearchValue);
+  const machines = machinesData?.pages.flat() ?? [];
+
+  console.log("modalImageId", modalImageId);
+
+  const { data: machineVersionData } = useMachineVersion(
+    defaultMachineId || "",
+    defaultMachineVersionId || "",
+  );
+
+  const isFluidVersion = !!machineVersionData?.modal_image_id;
+
+  const form = useForm<SessionForm>({
+    defaultValues: {
+      machineId: defaultMachineId || "",
+      gpu: "A10G",
+      timeout: 15,
+    },
+  });
+
+  const onSubmit = async (data: SessionForm) => {
+    try {
+      const response = await createDynamicSession.mutateAsync({
+        gpu: data.gpu,
+        timeout: data.timeout,
+        machine_id: data.machineId,
+        machine_version_id: defaultMachineVersionId,
+      });
+
+      useLogStore.getState().clearLogs();
+
+      router.navigate({
+        to: "/sessions/$sessionId",
+        params: {
+          sessionId: response.session_id,
+        },
+        search: {
+          workflowId,
+          version,
+        },
+      });
+
+      onClose();
+    } catch (error) {
+      toast.error("Failed to create session");
+    }
+  };
+
+  const { data: selectedMachine } = useMachine(form.watch("machineId"));
+
+  return (
+    <ScrollArea className="h-full px-1">
+      <div className="flex flex-col gap-6 px-1">
+        <div>
+          <h2 className="font-semibold text-lg">Create Session</h2>
+          <p className="text-muted-foreground text-sm items-center flex gap-2">
+            Configure your session for version{" "}
+            <Badge variant="outline" className="gap-2">
+              {isFluidVersion && (
+                <div className="rounded-full bg-blue-100 p-0.5">
+                  <Droplets
+                    strokeWidth={2}
+                    className="h-[12px] w-[12px] text-blue-600"
+                  />
+                </div>
+              )}
+              v{version}
+            </Badge>
+          </p>
+        </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="machineId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Machine</FormLabel>
+                  {isFluidVersion ? (
+                    <div className="bg-muted border border-input px-3 py-2 rounded-md text-muted-foreground text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                        <span>{selectedMachine?.name}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative mb-2">
+                        <Search className="absolute h-4 left-3 text-muted-foreground top-1/2 w-4 -translate-y-1/2" />
+                        <Input
+                          placeholder="Search machines..."
+                          className="pl-10 text-sm"
+                          value={searchValue}
+                          onChange={(e) => setSearchValue(e.target.value)}
+                        />
+                      </div>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a machine">
+                              {selectedMachine && (
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-green-500" />
+                                  <span>{selectedMachine.name}</span>
+                                  {selectedMachine.gpu && (
+                                    <Badge variant="outline" className="ml-2">
+                                      {selectedMachine.gpu}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {machines.map((machine) => (
+                            <SelectItem
+                              key={machine.id}
+                              value={machine.id}
+                              className="py-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-green-500" />
+                                <span>{machine.name}</span>
+                                {machine.gpu && (
+                                  <Badge variant="outline" className="ml-2">
+                                    {machine.gpu}
+                                  </Badge>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  )}
+                  <FormDescription>
+                    {isFluidVersion
+                      ? "Machine is pre-configured for this fluid version"
+                      : "Choose the machine to run this workflow version on"}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="gpu"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>GPU Type</FormLabel>
+                  <FormControl>
+                    <GPUSelectBox
+                      className="w-full"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isFluidVersion}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {isFluidVersion
+                      ? "GPU type is pre-configured for this fluid version"
+                      : "Select the GPU type for your session"}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="timeout"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Session Timeout</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(Number(value))}
+                    value={field.value.toString()}
+                    // disabled={isFluidVersion}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select timeout">
+                          {field.value} mins
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="2">2 mins</SelectItem>
+                      <SelectItem value="15">15 mins</SelectItem>
+                      <SelectItem value="30">30 mins</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Choose how long the session should run before
+                    auto-termination
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createDynamicSession.isPending}>
+                {createDynamicSession.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Create Session
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+    </ScrollArea>
+  );
+}

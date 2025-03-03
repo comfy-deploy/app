@@ -30,7 +30,8 @@ import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import {
   ChevronDown,
   Cloud,
@@ -45,7 +46,6 @@ import { useState } from "react";
 import semver from "semver";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
-import { motion } from "framer-motion";
 
 const BATCH_SIZE = 20; // Same as in use-machine.ts
 
@@ -114,7 +114,7 @@ export function MachineList() {
         </div>
 
         <Tabs value={selectedTab} onValueChange={handleTabChange}>
-          <motion.div className="inline-flex items-center rounded-lg bg-white/95 p-0.5 ring-1 ring-gray-200/50 ">
+          <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50 ">
             <TabsList className="relative flex w-fit gap-1 bg-transparent">
               <motion.div layout className="relative">
                 <TabsTrigger

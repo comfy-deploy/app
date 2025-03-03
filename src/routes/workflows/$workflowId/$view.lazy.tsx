@@ -1,10 +1,14 @@
 import { GalleryView } from "@/components/GalleryView";
 import { PaddingLayout } from "@/components/PaddingLayout";
+import { MyDrawer } from "@/components/drawer";
 import { LoadingWrapper } from "@/components/loading-wrapper";
+import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 import { NavItem } from "@/components/nav-bar";
 import { useIsAdminAndMember } from "@/components/permissions";
 import { Playground, UserIcon } from "@/components/run/SharePageComponent";
+import { useCreateDeploymentDialog } from "@/components/run/VersionSelect";
 import { SessionItem } from "@/components/sessions/SessionItem";
+import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -28,6 +32,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   SidebarMenu,
   SidebarMenuAction,
@@ -38,6 +43,17 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  UnsavedChangesWarning,
+  useUnsavedChangesWarning,
+} from "@/components/unsaved-changes-warning";
+import { VersionList } from "@/components/version-select";
 import { RealtimeWorkflowProvider } from "@/components/workflows/RealtimeRunUpdate";
 import RunComponent from "@/components/workflows/RunComponent";
 import WorkflowComponent from "@/components/workflows/WorkflowComponent";
@@ -46,20 +62,30 @@ import {
   getEnvColor,
   useWorkflowDeployments,
 } from "@/components/workspace/ContainersTable";
+import { DeploymentConfirmation } from "@/components/workspace/DeploymentConfirmation";
 import {
   APIDocs,
   DeploymentSettings,
 } from "@/components/workspace/DeploymentDisplay";
+import type { Deployment } from "@/components/workspace/DeploymentDisplay";
+import { useLogStore } from "@/components/workspace/LogContext";
 import { LogDisplay } from "@/components/workspace/LogDisplay";
+import { SessionCreationDialog } from "@/components/workspace/SessionCreationDialog";
 import { useSelectedVersion } from "@/components/workspace/Workspace";
 import { WorkspaceStatusBar } from "@/components/workspace/WorkspaceStatusBar";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
+import { useMachine } from "@/hooks/use-machine";
 import { useSessionAPI } from "@/hooks/use-session-api";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
+import { getRelativeTime } from "@/lib/get-relative-time";
 import {
   getInputsFromWorkflowAPI,
   getInputsFromWorkflowJSON,
 } from "@/lib/getInputsFromWorkflow";
 import { cn, getOptimizedImage } from "@/lib/utils";
+import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
+import { useQuery } from "@tanstack/react-query";
 import {
   Link,
   createLazyFileRoute,
@@ -83,34 +109,10 @@ import {
   Workflow,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { useEffect, useState, useRef, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useMachine } from "@/hooks/use-machine";
-import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
-import { VersionList } from "@/components/version-select";
-import { Badge } from "@/components/ui/badge";
-import { getRelativeTime } from "@/lib/get-relative-time";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import {
-  UnsavedChangesWarning,
-  useUnsavedChangesWarning,
-} from "@/components/unsaved-changes-warning";
 import { toast } from "sonner";
 import { create } from "zustand";
-import { MyDrawer } from "@/components/drawer";
-import { api } from "@/lib/api";
-import { callServerPromise } from "@/lib/call-server-promise";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useLogStore } from "@/components/workspace/LogContext";
-import { useCreateDeploymentDialog } from "@/components/run/VersionSelect";
-import type { Deployment } from "@/components/workspace/DeploymentDisplay";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 
 const pages = [
   "workspace",
@@ -483,6 +485,22 @@ interface WorkflowDescriptionForm {
   description: string;
 }
 
+interface DeploymentConfirmationState {
+  isOpen: boolean;
+  environment: "production" | "staging" | "public-share" | null;
+  workflowVersionId: string | null;
+  machineVersionId: string | null;
+  machineId: string | null;
+}
+
+interface SessionCreationState {
+  isOpen: boolean;
+  version: string | null;
+  machineId: string | null;
+  machineVersionId: string | null;
+  modalImageId: string | null;
+}
+
 function RequestPage({
   setIsEditing,
   selectedMachine,
@@ -502,10 +520,20 @@ function RequestPage({
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const [isCreatingDeployment, setIsCreatingDeployment] = useState({
-    production: false,
-    staging: false,
-    publicShare: false,
+  const [deploymentConfirmation, setDeploymentConfirmation] =
+    useState<DeploymentConfirmationState>({
+      isOpen: false,
+      environment: null,
+      workflowVersionId: null,
+      machineVersionId: null,
+      machineId: null,
+    });
+  const [sessionCreation, setSessionCreation] = useState<SessionCreationState>({
+    isOpen: false,
+    version: null,
+    machineId: null,
+    machineVersionId: null,
+    modalImageId: null,
   });
   const router = useRouter();
 
@@ -583,6 +611,65 @@ function RequestPage({
   return (
     <div className="mx-auto flex flex-row">
       <VersionDrawer workflowId={workflowId} />
+      {deploymentConfirmation.isOpen &&
+        deploymentConfirmation.environment &&
+        deploymentConfirmation.workflowVersionId && (
+          <MyDrawer
+            desktopClassName="w-[600px]"
+            open={deploymentConfirmation.isOpen}
+            onClose={() =>
+              setDeploymentConfirmation((prev) => ({ ...prev, isOpen: false }))
+            }
+          >
+            <DeploymentConfirmation
+              workflowId={workflowId}
+              workflowVersionId={deploymentConfirmation.workflowVersionId}
+              environment={deploymentConfirmation.environment}
+              machineId={
+                deploymentConfirmation.machineId ||
+                currentWorkflow?.selected_machine_id
+              }
+              machineVersionId={deploymentConfirmation.machineVersionId}
+              description={currentWorkflow?.description}
+              onClose={() =>
+                setDeploymentConfirmation((prev) => ({
+                  ...prev,
+                  isOpen: false,
+                }))
+              }
+              onSuccess={(deploymentId) => {
+                setDeploymentConfirmation((prev) => ({
+                  ...prev,
+                  isOpen: false,
+                }));
+                refetchDeployments();
+                setSelectedDeployment(deploymentId);
+              }}
+            />
+          </MyDrawer>
+        )}
+      {sessionCreation.isOpen && sessionCreation.version && (
+        <MyDrawer
+          desktopClassName="w-[600px]"
+          open={sessionCreation.isOpen}
+          onClose={() =>
+            setSessionCreation((prev) => ({ ...prev, isOpen: false }))
+          }
+        >
+          <SessionCreationDialog
+            workflowId={workflowId}
+            version={sessionCreation.version}
+            machineId={
+              sessionCreation.machineId || currentWorkflow?.selected_machine_id
+            }
+            modalImageId={sessionCreation.modalImageId}
+            machineVersionId={sessionCreation.machineVersionId}
+            onClose={() =>
+              setSessionCreation((prev) => ({ ...prev, isOpen: false }))
+            }
+          />
+        </MyDrawer>
+      )}
       <div className="mx-auto flex h-full w-full max-w-screen-lg flex-col gap-2">
         <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)}>
           <div className="font-bold text-sm">Description</div>
@@ -736,51 +823,28 @@ function RequestPage({
                                     variant={"ghost"}
                                     className="w-full justify-between px-2 font-normal"
                                     hideLoading={true}
-                                    disabled={
-                                      isCreatingDeployment.production ||
-                                      isProductionDeployed
-                                    }
-                                    onClick={async (e) => {
+                                    disabled={isProductionDeployed}
+                                    onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
                                       e.nativeEvent.preventDefault();
                                       e.nativeEvent.stopPropagation();
-                                      setIsCreatingDeployment({
-                                        ...isCreatingDeployment,
-                                        production: true,
+                                      setDeploymentConfirmation({
+                                        isOpen: true,
+                                        environment: "production",
+                                        workflowVersionId: item.id,
+                                        machineVersionId:
+                                          item.machine_version_id,
+                                        machineId: myDeployments.find(
+                                          (deployment) =>
+                                            deployment.environment ===
+                                            "production",
+                                        )?.machine_id,
                                       });
-                                      const deployment =
-                                        await callServerPromise(
-                                          api({
-                                            url: "deployment",
-                                            init: {
-                                              method: "POST",
-                                              body: JSON.stringify({
-                                                workflow_id: workflowId,
-                                                workflow_version_id: item.id,
-                                                machine_version_id:
-                                                  item.machine_version_id,
-                                                environment: "production",
-                                              }),
-                                            },
-                                          }),
-                                        );
-
-                                      await refetchDeployments();
-                                      setIsCreatingDeployment({
-                                        ...isCreatingDeployment,
-                                        production: false,
-                                      });
-
-                                      setSelectedDeployment(deployment.id);
                                     }}
                                   >
                                     Promote to Production
-                                    {isCreatingDeployment.production ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <CircleArrowUp className="h-4 w-4" />
-                                    )}
+                                    <CircleArrowUp className="h-4 w-4" />
                                   </Button>
                                 </span>
                               </TooltipTrigger>
@@ -802,106 +866,60 @@ function RequestPage({
                         <>
                           <DropdownMenuItem
                             className="p-0"
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               e.nativeEvent.preventDefault();
                               e.nativeEvent.stopPropagation();
-
-                              setIsCreatingDeployment({
-                                ...isCreatingDeployment,
-                                production: true,
-                              });
-
-                              await callServerPromise(
-                                api({
-                                  url: "deployment",
-                                  init: {
-                                    method: "POST",
-                                    body: JSON.stringify({
-                                      workflow_id: workflowId,
-                                      workflow_version_id: item.id,
-                                      machine_id:
-                                        currentWorkflow.selected_machine_id,
-                                      environment: "production",
-                                    }),
-                                  },
-                                }),
-                              );
-
-                              await refetchDeployments();
-
-                              setIsCreatingDeployment({
-                                ...isCreatingDeployment,
-                                production: false,
+                              setDeploymentConfirmation({
+                                isOpen: true,
+                                environment: "production",
+                                workflowVersionId: item.id,
+                                machineVersionId: null,
+                                machineId: myDeployments.find(
+                                  (deployment) =>
+                                    deployment.environment === "production",
+                                )?.machine_id,
                               });
                             }}
                           >
                             <Button
                               variant={"ghost"}
                               className="w-full justify-between gap-2 px-2 font-normal"
-                              disabled={isCreatingDeployment.production}
-                              confirm
                             >
                               <div className="flex flex-row gap-2">
                                 Promote to
                                 <Badge variant="blue">production</Badge>
                               </div>
-                              {isCreatingDeployment.production && (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              )}
                             </Button>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="p-0"
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               e.nativeEvent.preventDefault();
                               e.nativeEvent.stopPropagation();
-
-                              setIsCreatingDeployment({
-                                ...isCreatingDeployment,
-                                staging: true,
-                              });
-
-                              await callServerPromise(
-                                api({
-                                  url: "deployment",
-                                  init: {
-                                    method: "POST",
-                                    body: JSON.stringify({
-                                      workflow_id: workflowId,
-                                      workflow_version_id: item.id,
-                                      machine_id:
-                                        currentWorkflow.selected_machine_id,
-                                      environment: "staging",
-                                    }),
-                                  },
-                                }),
-                              );
-
-                              await refetchDeployments();
-
-                              setIsCreatingDeployment({
-                                ...isCreatingDeployment,
-                                staging: false,
+                              setDeploymentConfirmation({
+                                isOpen: true,
+                                environment: "staging",
+                                workflowVersionId: item.id,
+                                machineVersionId: null,
+                                machineId: myDeployments.find(
+                                  (deployment) =>
+                                    deployment.environment === "staging",
+                                )?.machine_id,
                               });
                             }}
                           >
                             <Button
                               variant={"ghost"}
                               className="w-full justify-between gap-2 px-2 font-normal"
-                              disabled={isCreatingDeployment.staging}
-                              confirm
                             >
                               <div className="flex flex-row gap-2">
                                 Promote to
                                 <Badge variant="yellow">staging</Badge>
                               </div>
-                              {isCreatingDeployment.staging && (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              )}
                             </Button>
                           </DropdownMenuItem>
                         </>
@@ -917,53 +935,29 @@ function RequestPage({
                                   className="w-full justify-between px-2 font-normal"
                                   hideLoading={true}
                                   disabled={
-                                    isCreatingDeployment.publicShare ||
                                     isPublicShareDeployed ||
                                     !item.machine_version_id
                                   }
-                                  onClick={async (e) => {
+                                  onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     e.nativeEvent.preventDefault();
                                     e.nativeEvent.stopPropagation();
-                                    setIsCreatingDeployment({
-                                      ...isCreatingDeployment,
-                                      publicShare: true,
-                                    });
-
-                                    const deployment = await callServerPromise(
-                                      api({
-                                        url: "deployment",
-                                        init: {
-                                          method: "POST",
-                                          body: JSON.stringify({
-                                            workflow_id: workflowId,
-                                            workflow_version_id: item.id,
-                                            machine_version_id:
-                                              item.machine_version_id,
-                                            environment: "public-share",
-                                            ...(currentWorkflow.description && {
-                                              description:
-                                                currentWorkflow.description,
-                                            }),
-                                          }),
-                                        },
-                                      }),
-                                    );
-                                    await refetchDeployments();
-                                    setSelectedDeployment(deployment.id);
-                                    setIsCreatingDeployment({
-                                      ...isCreatingDeployment,
-                                      publicShare: false,
+                                    setDeploymentConfirmation({
+                                      isOpen: true,
+                                      environment: "public-share",
+                                      workflowVersionId: item.id,
+                                      machineVersionId: item.machine_version_id,
+                                      machineId: myDeployments.find(
+                                        (deployment) =>
+                                          deployment.environment ===
+                                          "public-share",
+                                      )?.machine_id,
                                     });
                                   }}
                                 >
                                   Share
-                                  {isCreatingDeployment.publicShare ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Share className="h-4 w-4" />
-                                  )}
+                                  <Share className="h-4 w-4" />
                                 </Button>
                               </span>
                             </TooltipTrigger>
@@ -1000,34 +994,20 @@ function RequestPage({
                                 variant={"ghost"}
                                 className="w-full justify-between px-2 font-normal"
                                 disabled={
-                                  selectedMachine?.type !==
-                                  "comfy-deploy-serverless"
+                                  selectedMachine?.type === "comfy-classic"
                                 }
-                                onClick={async (e) => {
+                                onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   e.nativeEvent.preventDefault();
                                   e.nativeEvent.stopPropagation();
 
-                                  const response =
-                                    await createDynamicSession.mutateAsync({
-                                      gpu: "A10G",
-                                      machine_id: item.machine_id,
-                                      machine_version_id:
-                                        item.machine_version_id,
-                                    });
-                                  useLogStore.getState().clearLogs();
-
-                                  router.navigate({
-                                    to: "/sessions/$sessionId",
-                                    params: {
-                                      sessionId: response.session_id,
-                                    },
-                                    search: {
-                                      workflowId,
-                                      // @ts-expect-error
-                                      version: item.version,
-                                    },
+                                  setSessionCreation({
+                                    isOpen: true,
+                                    version: item.version,
+                                    machineId: item.machine_id,
+                                    machineVersionId: item.machine_version_id,
+                                    modalImageId: item.modal_image_id,
                                   });
                                 }}
                               >
@@ -1040,12 +1020,13 @@ function RequestPage({
                               </Button>
                             </DropdownMenuItem>
                           </TooltipTrigger>
-                          {selectedMachine?.type !==
-                            "comfy-deploy-serverless" && (
+                          {selectedMachine?.type === "comfy-classic" && (
                             <TooltipContent side="left">
                               <p>
-                                Workflow editing is not supported on this
-                                machine.
+                                Workflow editing is not supported on classic
+                                machines.
+                                <br />
+                                Please select a different machine type.
                               </p>
                             </TooltipContent>
                           )}

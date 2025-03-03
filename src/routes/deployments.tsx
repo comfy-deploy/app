@@ -149,7 +149,7 @@ function RouteComponent() {
               setSelectedTab(value as "fluid" | "standard")
             }
           >
-            <motion.div className="inline-flex items-center rounded-lg bg-white/95 p-0.5 ring-1 ring-gray-200/50">
+            <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50">
               <TabsList className="relative flex w-fit gap-1 bg-transparent">
                 <motion.div layout className="relative">
                   <TabsTrigger

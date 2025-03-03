@@ -1,38 +1,38 @@
-import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useSessionAPI } from "@/hooks/use-session-api";
 import { MachineListItem } from "@/components/machines/machine-list-item";
 import { Button } from "@/components/ui/button";
-import {
-  ChevronsUpDown,
-  Play,
-  ChevronRight,
-  Search,
-  X,
-  Trash,
-} from "lucide-react";
-import { useLogStore } from "@/components/workspace/LogContext";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useState, useMemo, useRef } from "react";
-import { cn } from "@/lib/utils";
-import { useMachinesAll } from "@/hooks/use-machine";
-import { Input } from "@/components/ui/input";
-import { MachineStatus } from "./machines/machine-status";
-import { Badge } from "./ui/badge";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { motion, AnimatePresence } from "framer-motion";
-import { Skeleton } from "@/components/ui/skeleton";
-import { api } from "@/lib/api";
-import { callServerPromise } from "@/lib/call-server-promise";
+import { useLogStore } from "@/components/workspace/LogContext";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
-import { useQuery } from "@tanstack/react-query";
-import { UserIcon } from "./run/SharePageComponent";
+import { useMachinesAll } from "@/hooks/use-machine";
+import { useSessionAPI } from "@/hooks/use-session-api";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
 import { getRelativeTime } from "@/lib/get-relative-time";
+import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ChevronRight,
+  ChevronsUpDown,
+  Play,
+  Search,
+  Trash,
+  X,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { MachineStatus } from "./machines/machine-status";
+import { UserIcon } from "./run/SharePageComponent";
+import { Badge } from "./ui/badge";
 import { WorkflowLatestOutput } from "./workflow-list";
 
 export function MachineWorkspaceItem({
@@ -88,7 +88,7 @@ export function MachineWorkspaceItem({
             />
           )}
         </AnimatePresence>
-        <div
+        {/* <div
           className="fixed inset-x-0 bottom-4 z-50 mx-auto max-w-[520px] overflow-hidden rounded-md border border-gray-200 drop-shadow-md transition-all"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -156,7 +156,7 @@ export function MachineWorkspaceItem({
               </div>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
     );
   }
@@ -365,7 +365,7 @@ function MachineSessionList({
   );
 }
 
-function MachineSelectList({
+export function MachineSelectList({
   currentMachine,
   setOpenFocus,
 }: { currentMachine: any; setOpenFocus: (open: boolean) => void }) {

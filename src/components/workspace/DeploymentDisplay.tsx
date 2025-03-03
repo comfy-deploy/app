@@ -32,8 +32,10 @@ import {
   ChevronRight,
   Copy,
   Droplets,
+  Gauge,
   Info,
   Settings,
+  Server,
 } from "lucide-react";
 import { DeploymentRow } from "./DeploymentRow";
 // import { SharePageSettings } from "@/components/SharePageSettings";
@@ -84,6 +86,8 @@ import { useWorkflowDeployments } from "./ContainersTable";
 // import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
 import { NewStepper } from "./StaticStepper";
 import { VersionDetails } from "./VersionDetails";
+import { useNavigate } from "@tanstack/react-router";
+import { useMachine } from "@/hooks/use-machine";
 
 const curlTemplate = `
 curl --request POST \
@@ -308,6 +312,7 @@ export interface Deployment {
     version: number;
   };
   dub_link?: string;
+  machine_id: string;
 }
 
 export function DeploymentDisplay({
@@ -1066,6 +1071,8 @@ export function DeploymentSettings({
   const [isDirty, setIsDirty] = useState(false);
   const { setSelectedDeployment } = useSelectedDeploymentStore();
   const { gpuConfig } = useGPUConfig();
+  const navigate = useNavigate();
+  const { data: machine } = useMachine(deployment.machine_id);
 
   const is_fluid = !!deployment.modal_image_id;
 
@@ -1220,121 +1227,118 @@ export function DeploymentSettings({
           )}
 
           {is_fluid && view === "settings" && (
-            <Alert className="border-blue-200 bg-blue-50">
-              <AlertTitle className="text-blue-700 flex items-center gap-2">
-                <Droplets className="h-4 w-4 text-blue-600" />
-                Fluid Deployment
-              </AlertTitle>
-              <AlertDescription className="text-blue-600">
-                This is a Fluid deployment with enhanced stability and
-                auto-scaling capabilities. Configure your auto-scaling settings
-                below to optimize performance and cost.
-              </AlertDescription>
-            </Alert>
-          )}
+            <>
+              <Alert className="border-blue-200 bg-blue-50">
+                <AlertTitle className="flex items-center gap-2 text-blue-700">
+                  <Droplets className="h-4 w-4 text-blue-600" />
+                  Fluid Deployment
+                </AlertTitle>
+                <AlertDescription className="text-blue-600">
+                  This is a Fluid deployment with enhanced stability and
+                  auto-scaling capabilities. Configure your auto-scaling
+                  settings below to optimize performance and cost.
+                </AlertDescription>
+              </Alert>
 
-          <div className="flex flex-col gap-2">
-            <Badge className="w-fit font-medium text-sm">GPU</Badge>
-            <GPUSelectBox
-              value={formData.gpu}
-              onChange={(value) => handleChange("gpu", value)}
-              className="w-full"
-            />
-          </div>
+              <div className="flex flex-col gap-2">
+                <Badge className="w-fit font-medium text-sm">GPU</Badge>
+                <GPUSelectBox
+                  value={formData.gpu}
+                  onChange={(value) => handleChange("gpu", value)}
+                  className="w-full"
+                />
+              </div>
 
-          <div className="flex flex-col gap-2">
-            <Badge className="w-fit font-medium text-sm">
-              Max Parallel GPU
-            </Badge>
-            <MaxParallelGPUSlider
-              value={formData.concurrency_limit || deployment.concurrency_limit}
-              onChange={(value) => handleChange("concurrency_limit", value)}
-            />
-          </div>
+              <div className="flex flex-col gap-2">
+                <Badge className="w-fit font-medium text-sm">
+                  Max Parallel GPU
+                </Badge>
+                <MaxParallelGPUSlider
+                  value={
+                    formData.concurrency_limit || deployment.concurrency_limit
+                  }
+                  onChange={(value) => handleChange("concurrency_limit", value)}
+                />
+              </div>
 
-          {deployment.environment === "production" ? (
-            <div className="flex flex-col gap-2">
-              <Badge className="w-fit font-medium text-sm">
-                Keep Always On
-              </Badge>
-              <MaxAlwaysOnSlider
-                value={formData.keep_warm || deployment.keep_warm}
-                onChange={(value) => handleChange("keep_warm", value)}
-              />
-            </div>
-          ) : (
-            // <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-700 text-sm">
-            //   <Info className="h-4 w-4" />
-            //   <Badge className={getEnvColor(deployment.environment)}>
-            //     {deployment.environment}
-            //   </Badge>{" "}
-            //   environment is not supported for this feature.
-            // </div>
-            <></>
-          )}
+              {deployment.environment === "production" ? (
+                <div className="flex flex-col gap-2">
+                  <Badge className="w-fit font-medium text-sm">
+                    Keep Always On
+                  </Badge>
+                  <MaxAlwaysOnSlider
+                    value={formData.keep_warm || deployment.keep_warm}
+                    onChange={(value) => handleChange("keep_warm", value)}
+                  />
+                </div>
+              ) : (
+                <></>
+              )}
 
-          <div className="flex flex-col gap-2">
-            <Badge className="w-fit font-medium text-sm">Run Timeout</Badge>
-            <WorkflowTimeOut
-              value={formData.run_timeout || deployment.run_timeout}
-              onChange={(value) => handleChange("run_timeout", value)}
-            />
-          </div>
+              <div className="flex flex-col gap-2">
+                <Badge className="w-fit font-medium text-sm">Run Timeout</Badge>
+                <WorkflowTimeOut
+                  value={formData.run_timeout || deployment.run_timeout}
+                  onChange={(value) => handleChange("run_timeout", value)}
+                />
+              </div>
 
-          <div className="flex flex-col gap-2">
-            <Badge className="w-fit font-medium text-sm">
-              Scale Down Delay
-            </Badge>
-            <WarmTime
-              value={formData.idle_timeout || deployment.idle_timeout}
-              onChange={(value) => handleChange("idle_timeout", value)}
-            />
-            <div className="flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 p-4 text-blue-700 text-muted-foreground text-xs">
-              <div className="flex flex-col gap-1">
-                {/* <span className="font-medium">Cost & Usage</span> */}
-                <span>
-                  Longer delay times keep containers warm for subsequent
-                  requests, reducing cold starts but increasing costs.
-                </span>
-                <div className="mt-2 rounded-md bg-white py-2 px-3">
-                  <span className="font-medium">
-                    Estimated extra cost per container:
-                  </span>
-                  <div className="mt-1 font-mono">
-                    {(() => {
-                      const selectedGPU = formData.gpu;
-                      const gpuPrice =
-                        gpuConfig?.find(
-                          (g) =>
-                            g.id.toLowerCase() === selectedGPU?.toLowerCase(),
-                        )?.pricePerSec ?? 0;
-                      const idleSeconds =
-                        formData.idle_timeout || deployment.idle_timeout;
-                      const timeDisplay =
-                        idleSeconds < 60
-                          ? `${idleSeconds} seconds`
-                          : `${(idleSeconds / 60).toFixed(1)} minutes`;
+              <div className="flex flex-col gap-2">
+                <Badge className="w-fit font-medium text-sm">
+                  Scale Down Delay
+                </Badge>
+                <WarmTime
+                  value={formData.idle_timeout || deployment.idle_timeout}
+                  onChange={(value) => handleChange("idle_timeout", value)}
+                />
+                <div className="flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 p-4 text-blue-700 text-muted-foreground text-xs">
+                  <div className="flex flex-col gap-1">
+                    <span>
+                      Longer delay times keep containers warm for subsequent
+                      requests, reducing cold starts but increasing costs.
+                    </span>
+                    <div className="mt-2 rounded-md bg-white px-3 py-2">
+                      <span className="font-medium">
+                        Estimated extra cost per container:
+                      </span>
+                      <div className="mt-1 font-mono">
+                        {(() => {
+                          const selectedGPU = formData.gpu;
+                          const gpuPrice =
+                            gpuConfig?.find(
+                              (g) =>
+                                g.id.toLowerCase() ===
+                                selectedGPU?.toLowerCase(),
+                            )?.pricePerSec ?? 0;
+                          const idleSeconds =
+                            formData.idle_timeout || deployment.idle_timeout;
+                          const timeDisplay =
+                            idleSeconds < 60
+                              ? `${idleSeconds} seconds`
+                              : `${(idleSeconds / 60).toFixed(1)} minutes`;
 
-                      const costPerIdle = gpuPrice * 60 * idleSeconds;
+                          const costPerIdle = gpuPrice * 60 * idleSeconds;
 
-                      return `$${costPerIdle.toFixed(3)} per idle period of ${timeDisplay}`;
-                    })()}
+                          return `$${costPerIdle.toFixed(3)} per idle period of ${timeDisplay}`;
+                        })()}
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span>
+                        • Short delay (30s): Minimize costs, more cold starts
+                      </span>
+                      <span className="block">
+                        • Medium delay (5min): Balance cost and performance
+                      </span>
+                      <span className="block">
+                        • Long delay (15min+): Best performance, higher costs
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <span>
-                    • Short delay (30s): Minimize costs, more cold starts
-                  </span>
-                  <span className="block">
-                    • Medium delay (5min): Balance cost and performance
-                  </span>
-                  <span className="block">
-                    • Long delay (15min+): Best performance, higher costs
-                  </span>
-                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {isDirty && (
             <div className="flex justify-end gap-2">
@@ -1359,12 +1363,70 @@ export function DeploymentSettings({
       )}
 
       {view === "api" && deployment.environment !== "public-share" && (
-        <APIDocs
-          domain={process.env.NEXT_PUBLIC_CD_API_URL ?? ""}
-          workflow_id={deployment.workflow_id}
-          deployment_id={deployment.id}
-          header={null}
-        />
+        <>
+          {!is_fluid && (
+            <div className="mb-4">
+              <Alert className="border-gray-200 bg-gray-50">
+                <AlertTitle className="flex items-center gap-2">
+                  <Server className="h-4 w-4" />
+                  Standard Deployment
+                </AlertTitle>
+                <AlertDescription className="flex flex-col gap-2">
+                  <span>
+                    This is a standard deployment using machine{" "}
+                    <span className="font-medium">
+                      {machine?.name || "Unknown"}
+                    </span>
+                    . To configure machine settings, visit the machine settings
+                    page.
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex w-fit items-center gap-2"
+                      onClick={() => {
+                        navigate({
+                          to: `/machines/${deployment.machine_id}`,
+                          search: { view: "settings" },
+                        });
+                      }}
+                    >
+                      <Settings className="h-4 w-4" />
+                      Open Machine Settings
+                    </Button>
+                    {machine?.type === "comfy-deploy-serverless" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex w-fit items-center gap-2"
+                        onClick={() => {
+                          navigate({
+                            to: `/machines/${deployment.machine_id}`,
+                            search: (prev) => ({
+                              ...prev,
+                              view: "settings",
+                              "machine-settings-view": "autoscaling" as any,
+                            }),
+                          });
+                        }}
+                      >
+                        <Gauge className="h-4 w-4" />
+                        Configure Auto Scaling
+                      </Button>
+                    )}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+          <APIDocs
+            domain={process.env.NEXT_PUBLIC_CD_API_URL ?? ""}
+            workflow_id={deployment.workflow_id}
+            deployment_id={deployment.id}
+            header={null}
+          />
+        </>
       )}
     </div>
   );
