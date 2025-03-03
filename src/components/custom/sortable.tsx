@@ -143,7 +143,7 @@ function Sortable<TData extends { id: UniqueIdentifier }>({
   const sensors = useSensors(
     useSensor(MouseSensor),
     useSensor(TouchSensor),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
   const config = orientationConfig[orientation];
@@ -185,7 +185,7 @@ function Sortable<TData extends { id: UniqueIdentifier }>({
         ? // https://docs.dndkit.com/api-documentation/draggable/drag-overlay#portals
           createPortal(
             <SortableOverlay activeId={activeId}>{overlay}</SortableOverlay>,
-            document.body
+            document.body,
           )
         : null}
     </DndContext>
@@ -210,7 +210,7 @@ interface SortableOverlayProps
 const SortableOverlay = React.forwardRef<HTMLDivElement, SortableOverlayProps>(
   (
     { activeId, dropAnimation = dropAnimationOpts, children, ...props },
-    ref
+    ref,
   ) => {
     return (
       <DragOverlay dropAnimation={dropAnimation} {...props}>
@@ -226,7 +226,7 @@ const SortableOverlay = React.forwardRef<HTMLDivElement, SortableOverlayProps>(
         ) : null}
       </DragOverlay>
     );
-  }
+  },
 );
 SortableOverlay.displayName = "SortableOverlay";
 
@@ -292,7 +292,7 @@ const SortableItem = React.forwardRef<HTMLDivElement, SortableItemProps>(
         listeners,
         isDragging,
       }),
-      [attributes, listeners, isDragging]
+      [attributes, listeners, isDragging],
     );
     const style: React.CSSProperties = {
       opacity: isDragging ? 0.5 : 1,
@@ -309,7 +309,7 @@ const SortableItem = React.forwardRef<HTMLDivElement, SortableItemProps>(
           className={cn(
             "data-[state=dragging]:cursor-grabbing",
             { "cursor-grab": !isDragging && asTrigger },
-            className
+            className,
           )}
           ref={composeRefs(ref, setNodeRef as React.Ref<HTMLDivElement>)}
           style={style}
@@ -319,7 +319,7 @@ const SortableItem = React.forwardRef<HTMLDivElement, SortableItemProps>(
         />
       </SortableItemContext.Provider>
     );
-  }
+  },
 );
 SortableItem.displayName = "SortableItem";
 
@@ -339,7 +339,7 @@ const SortableDragHandle = React.forwardRef<
       data-state={isDragging ? "dragging" : undefined}
       className={cn(
         "cursor-grab data-[state=dragging]:cursor-grabbing",
-        className
+        className,
       )}
       {...attributes}
       {...listeners}

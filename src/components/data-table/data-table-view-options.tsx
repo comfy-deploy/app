@@ -46,12 +46,12 @@ export function DataTableViewOptions<TData>({
         .getAllColumns()
         .filter(
           (column) =>
-            typeof column.accessorFn !== "undefined" && column.getCanHide()
+            typeof column.accessorFn !== "undefined" && column.getCanHide(),
         )
         .sort((a, b) => {
           return columnOrder.indexOf(a.id) - columnOrder.indexOf(b.id);
         }),
-    [table, columnOrder]
+    [table, columnOrder],
   );
 
   return (
@@ -104,7 +104,7 @@ export function DataTableViewOptions<TData>({
                           "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
                           column.getIsVisible()
                             ? "bg-primary text-primary-foreground"
-                            : "opacity-50 [&_svg]:invisible"
+                            : "opacity-50 [&_svg]:invisible",
                         )}
                       >
                         <Check className={cn("h-4 w-4")} />

@@ -11,7 +11,7 @@ function getItemFromLocalStorage(key: string) {
 
 export function useLocalStorage<T>(
   key: string,
-  initialValue: T
+  initialValue: T,
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [storedValue, setStoredValue] = useState(initialValue);
 
@@ -39,7 +39,7 @@ export function useLocalStorage<T>(
       }
       return setStoredValue;
     },
-    [key, setStoredValue]
+    [key, setStoredValue],
   );
 
   return [storedValue, setValue];

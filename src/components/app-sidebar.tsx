@@ -154,8 +154,8 @@ function usePages() {
         ]
       : []),
     {
-      name: "Storage",
-      path: "/storage",
+      name: "Models",
+      path: "/models",
       icon: Database,
     },
     {
@@ -472,7 +472,7 @@ function V3Dialog() {
         <div className="flex flex-col gap-1 text-xs">
           <div className="font-medium">
             {(() => {
-              const targetDate = new Date("2025-03-02"); // 3 days from Feb 27, 2025
+              const targetDate = new Date("2025-03-05"); // 3 days from Feb 27, 2025
               const today = new Date();
               const diffTime = Math.ceil(
                 (targetDate.getTime() - today.getTime()) /

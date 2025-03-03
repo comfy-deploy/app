@@ -44,12 +44,12 @@ export function DataTableSheetDetails<TData>({
 
   const nextId = React.useMemo(
     () => table.getCoreRowModel().flatRows[index + 1]?.id,
-    [index, table]
+    [index, table],
   );
 
   const prevId = React.useMemo(
     () => table.getCoreRowModel().flatRows[index - 1]?.id,
-    [index, table]
+    [index, table],
   );
 
   const onPrev = React.useCallback(() => {
