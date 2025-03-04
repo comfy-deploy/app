@@ -7,7 +7,7 @@ export const Route = createFileRoute("/analytics/")({
       queryKey: ["platform", "plan"],
     })) as { sub?: any };
 
-    if (!sub?.sub?.plan) {
+    if (!sub?.plans?.plans) {
       console.log("redirecting");
       throw redirect({
         to: "/workflows",
