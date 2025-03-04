@@ -69,6 +69,24 @@ export function SDInputsRender({
     description,
   }: typeof genericProps) => {
     const [isHovering, setIsHovering] = React.useState(false);
+    const [isLocked, setIsLocked] = React.useState(false);
+    const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    const showDescription = () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      setIsHovering(true);
+    };
+
+    const hideDescription = () => {
+      if (!isLocked) {
+        timerRef.current = setTimeout(() => {
+          setIsHovering(false);
+        }, 300);
+      }
+    };
 
     return (
       <div className="flex flex-col">
@@ -97,14 +115,20 @@ export function SDInputsRender({
               </Badge>
             )}
             {description && (
+              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
               <div
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
+                onMouseEnter={showDescription}
+                onMouseLeave={hideDescription}
+                onClick={() => setIsLocked(!isLocked)}
                 className="cursor-help"
               >
                 <HelpCircle
                   size={16}
-                  className={`${isHovering ? "text-foreground" : "text-muted-foreground"} transition-colors`}
+                  className={`${
+                    isHovering || isLocked
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  } transition-colors`}
                 />
               </div>
             )}
@@ -112,13 +136,15 @@ export function SDInputsRender({
         </div>
 
         <AnimatePresence>
-          {description && isHovering && (
+          {description && (isHovering || isLocked) && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
               className="overflow-hidden rounded-md bg-muted/30 text-muted-foreground text-xs"
+              onMouseEnter={showDescription}
+              onMouseLeave={hideDescription}
             >
               <div className="p-2 leading-snug">{description}</div>
             </motion.div>
