@@ -10,6 +10,7 @@ import { SourceSelector } from "./source-selector";
 import { HuggingfaceForm } from "./huggingface-form";
 import { CivitaiForm } from "./civitai-form";
 import { LinkForm } from "./link-form";
+import { LocalUploadForm } from "./local-upload-form";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -39,6 +40,14 @@ export function AddModelDialog({
     setIsSubmitting(true);
 
     try {
+      // For local uploads, we don't need to make an API call as the file is already uploaded
+      if (request.source === "local") {
+        toast.success("Model uploaded successfully");
+        onOpenChange(false);
+        setIsSubmitting(false);
+        return;
+      }
+
       const response = await api({
         url: "volume/model",
         init: {
@@ -83,6 +92,14 @@ export function AddModelDialog({
       case "link":
         return (
           <LinkForm
+            onSubmit={handleSubmit}
+            folderPath={initialFolderPath}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case "local":
+        return (
+          <LocalUploadForm
             onSubmit={handleSubmit}
             folderPath={initialFolderPath}
             isSubmitting={isSubmitting}

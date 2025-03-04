@@ -1,10 +1,5 @@
 import type { StepValidation } from "@/components/onboarding/workflow-import";
 import type { StepComponentProps } from "@/components/step-form";
-import { ModelList } from "@/components/storage/model-list";
-import {
-  ModelListHeader,
-  ModelListView,
-} from "@/components/storage/model-list-view";
 import {
   Accordion,
   AccordionContent,
@@ -35,12 +30,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  type VolFSStructure,
-  type VolFile,
-  type VolFolder,
-  useModels,
-} from "@/hooks/use-model";
 import { cn } from "@/lib/utils";
 import {
   Check,
@@ -51,6 +40,16 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
+import { FolderTree } from "@/components/models/folder-tree";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { AddModelDialog } from "@/components/models/add-model-dialog";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 // -----------------------types------------------------
 
@@ -89,6 +88,13 @@ export type NodeCategory = {
 
 export type NodeCategories = {
   [category: string]: NodeCategory;
+};
+
+export type FileEntry = {
+  path: string;
+  type: 1 | 2; // 1 for file, 2 for folder
+  mtime: number;
+  size: number;
 };
 
 // -----------------------constants------------------------
@@ -194,6 +200,29 @@ export function WorkflowModelCheck({
   );
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
   const [isModelBrowserExpanded, setIsModelBrowserExpanded] = useState(false);
+  const [showAddModelDialog, setShowAddModelDialog] = useState(false);
+  const [selectedFolderPath, setSelectedFolderPath] = useState("");
+
+  // Fetch model data from API
+  const { data: privateFiles, isLoading: isLoadingPrivate } = useQuery({
+    queryKey: ["volume", "private-models"],
+    queryFn: async ({ queryKey }) => {
+      const response = await api({
+        url: queryKey.join("/"),
+      });
+      return response as Promise<FileEntry[]>;
+    },
+  });
+
+  const { data: publicFiles, isLoading: isLoadingPublic } = useQuery({
+    queryKey: ["volume", "public-models"],
+    queryFn: async ({ queryKey }) => {
+      const response = await api({
+        url: queryKey.join("/"),
+      });
+      return response as Promise<FileEntry[]>;
+    },
+  });
 
   const nodesToFocus = useMemo(
     () =>
@@ -255,6 +284,11 @@ export function WorkflowModelCheck({
     }
   }, [selectedNode]);
 
+  const handleAddModel = (folderPath: string) => {
+    setSelectedFolderPath(folderPath);
+    setShowAddModelDialog(true);
+  };
+
   return (
     <div className="flex h-full gap-4">
       <div className="flex-1">
@@ -263,20 +297,19 @@ export function WorkflowModelCheck({
           selectedNode={selectedNode}
           setSelectedNode={setSelectedNode}
           isModelBrowserExpanded={isModelBrowserExpanded}
+          privateFiles={privateFiles}
+          publicFiles={publicFiles}
+          isLoading={isLoadingPrivate || isLoadingPublic}
         />
       </div>
       <div className="relative hidden md:block">
         {isModelBrowserExpanded && (
           <div className="w-[500px] rounded-xl border bg-white p-4 drop-shadow-lg">
             <div className="flex items-center justify-between font-bold">
-              <ModelListHeader />
+              <h2>Model Browser</h2>
             </div>
-            <div className="mt-2">
-              <ModelListView className="h-[calc(70vh)]">
-                <ModelList
-                  apiEndpoint={process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL!}
-                />
-              </ModelListView>
+            <div className="mt-2 h-[calc(70vh)] overflow-auto rounded-md border border-gray-200 bg-muted/20 p-4">
+              <FolderTree onAddModel={handleAddModel} />
             </div>
           </div>
         )}
@@ -306,70 +339,104 @@ export function WorkflowModelCheck({
           </TooltipProvider>
         </div>
       </div>
+
+      {/* Add Model Dialog */}
+      <Dialog open={showAddModelDialog} onOpenChange={setShowAddModelDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Model</DialogTitle>
+          </DialogHeader>
+          <AddModelDialog
+            initialFolderPath={selectedFolderPath}
+            onOpenChange={setShowAddModelDialog}
+            open={showAddModelDialog}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+// Helper function to organize files by category based on folder paths
+function organizeFilesByCategory(
+  files: FileEntry[] | undefined,
+  isPrivate: boolean,
+  nodeCategories: NodeCategories,
+): FileList[] {
+  if (!files) return [];
+
+  const result: FileList[] = [];
+  const categoryMap = new Map<string, FilePaths[]>();
+
+  // Initialize categories
+  for (const [category, _] of Object.entries(nodeCategories)) {
+    categoryMap.set(category, []);
+  }
+
+  // Process each file
+  for (const file of files) {
+    // Only process files (type 1), not folders
+    if (file.type === 1) {
+      const filePath = file.path;
+      const folderPath = filePath.split("/")[0]; // Get the top-level folder
+
+      // Find matching category
+      for (const [category, config] of Object.entries(nodeCategories)) {
+        const folders = Array.isArray(config.folder)
+          ? config.folder
+          : [config.folder];
+
+        if (folders.includes(folderPath)) {
+          const existingPaths = categoryMap.get(category) || [];
+          existingPaths.push({
+            name: filePath,
+            volumeType: isPrivate ? "private" : "public",
+          });
+          categoryMap.set(category, existingPaths);
+        }
+      }
+    }
+  }
+
+  // Convert map to array
+  for (const [category, filePaths] of categoryMap.entries()) {
+    if (filePaths.length > 0) {
+      result.push({ category, filePaths });
+    }
+  }
+
+  return result;
+}
+
 export function getVolumeFileList(
-  publicVolume: VolFSStructure | undefined,
-  privateVolume: VolFSStructure | undefined,
+  privateFiles: FileEntry[] | undefined,
+  publicFiles: FileEntry[] | undefined,
   nodes: NodeCategories,
 ): FileList[] {
-  const fileList: FileList[] = [];
+  const privateFileList = organizeFilesByCategory(privateFiles, true, nodes);
+  const publicFileList = organizeFilesByCategory(publicFiles, false, nodes);
 
-  function findNodeFolder(
-    volume: VolFSStructure,
-    nodes: NodeCategories,
-    volumeType: "public" | "private",
-  ) {
-    for (const [category, node] of Object.entries(nodes)) {
-      const folders = Array.isArray(node.folder) ? node.folder : [node.folder];
+  // Merge the two lists
+  const mergedList: FileList[] = [...privateFileList];
 
-      for (const folderPath of folders) {
-        const folder = volume.contents.find(
-          (item) => item.type === "folder" && item.path === folderPath,
-        ) as VolFolder | undefined;
+  for (const publicCategory of publicFileList) {
+    const existingCategory = mergedList.find(
+      (item) => item.category === publicCategory.category,
+    );
 
-        if (folder) {
-          getFilePaths(folder.contents, category, volumeType);
-        }
-      }
+    if (existingCategory) {
+      // Merge file paths if category already exists
+      existingCategory.filePaths = [
+        ...existingCategory.filePaths,
+        ...publicCategory.filePaths,
+      ];
+    } else {
+      // Add new category if it doesn't exist
+      mergedList.push(publicCategory);
     }
   }
 
-  function getFilePaths(
-    contents: (VolFolder | VolFile)[],
-    category: string,
-    volumeType: "public" | "private",
-  ) {
-    for (const item of contents) {
-      if (item.type === "file") {
-        const currentFile: FilePaths = {
-          name: item.path.split("/").slice(1).join("/"),
-          volumeType: volumeType,
-        };
-        const existingCategory = fileList.find((f) => f.category === category);
-        if (existingCategory) {
-          // If the category exists, add the file to its filePaths
-          existingCategory.filePaths.push(currentFile);
-        } else {
-          // If the category doesn't exist, create a new entry
-          fileList.push({ category, filePaths: [currentFile] });
-        }
-      } else if (item.type === "folder") {
-        getFilePaths(item.contents, category, volumeType); // Recursively process sub-folders
-      }
-    }
-  }
-
-  if (publicVolume) {
-    findNodeFolder(publicVolume, nodes, "public");
-  }
-  if (privateVolume) {
-    findNodeFolder(privateVolume, nodes, "private");
-  }
-
-  return fileList;
+  return mergedList;
 }
 
 export const StatusTooltip = ({
@@ -399,13 +466,18 @@ const OptionList = memo(
     selectedNode,
     setSelectedNode,
     isModelBrowserExpanded,
+    privateFiles,
+    publicFiles,
+    isLoading,
   }: {
     workflowNodeList: WorkflowNode[] | undefined;
     selectedNode: WorkflowNode | null;
     setSelectedNode: (node: WorkflowNode | null) => void;
     isModelBrowserExpanded: boolean;
+    privateFiles: FileEntry[] | undefined;
+    publicFiles: FileEntry[] | undefined;
+    isLoading: boolean;
   }) => {
-    const { public_volume, private_volume } = useModels();
     const [fileList, setFileList] = useState<FileList[]>([]);
 
     // Get all node types that exist in the workflow
@@ -425,13 +497,9 @@ const OptionList = memo(
     );
 
     useEffect(() => {
-      const files = getVolumeFileList(
-        public_volume?.structure,
-        private_volume?.structure,
-        NodeToBeFocus,
-      );
+      const files = getVolumeFileList(privateFiles, publicFiles, NodeToBeFocus);
       setFileList(files);
-    }, [public_volume, private_volume]);
+    }, [privateFiles, publicFiles]);
 
     const isNodeSuccessful = (nodeValue: string, category: string) => {
       return (
@@ -478,7 +546,7 @@ const OptionList = memo(
           <div className="flex flex-row gap-1 whitespace-nowrap">
             {nodeValues.map((value, index) => (
               <StatusBadge
-                key={index}
+                key={`${category}-${nodeToFocus.folder}-${index}`}
                 value={value}
                 category={category}
                 folder={nodeToFocus.folder}
@@ -544,11 +612,14 @@ const OptionList = memo(
 
     if (!workflowNodeList || workflowNodeList.length === 0)
       return <div>You are all set!</div>;
-    if (public_volume === undefined && private_volume === undefined)
+    if (publicFiles === undefined && privateFiles === undefined)
       return (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} className="h-[60px] w-full" />
+            <Skeleton
+              key={`skeleton-${index}-${Math.random()}`}
+              className="h-[60px] w-full"
+            />
           ))}
         </div>
       );
@@ -658,7 +729,7 @@ const OptionList = memo(
                           .sort((a, b) => a.id - b.id)
                           .map((workflowNode, index) => (
                             <div
-                              key={workflowNode.id}
+                              key={`${workflowNode.type}-${workflowNode.id}-${index}`}
                               className={cn(
                                 "mb-0.5 flex flex-col items-center gap-2 rounded-[4px] px-2 py-2",
                                 index % 2 === 1 ? "bg-gray-100" : "",
@@ -718,38 +789,55 @@ export function ModelSelectComboBox({
 }) {
   const [openStates, setOpenStates] = useState<boolean[]>([]);
 
-  const matchCategoryList = useMemo(() => {
-    const nodeType = Object.entries(NodeToBeFocus).find(
-      ([_, node]) => node.type === selectedNode.type,
+  // Find the category for this node type
+  const nodeCategory = useMemo(() => {
+    return Object.entries(NodeToBeFocus).find(
+      ([_, config]) => config.type === selectedNode.type,
     )?.[0];
+  }, [selectedNode.type]);
 
-    if (!nodeType) return null;
+  // Get files for this category
+  const categoryFiles = useMemo(() => {
+    if (!nodeCategory) return null;
+    return fileList.find((file) => file.category === nodeCategory);
+  }, [nodeCategory, fileList]);
 
-    const categoryFiles = fileList.find((file) => file.category === nodeType);
-    if (!categoryFiles) return null;
+  // Number of inputs for this node type
+  const numInputs = useMemo(() => {
+    if (!nodeCategory) return 1;
+    return NodeToBeFocus[nodeCategory].noOfNodes || 1;
+  }, [nodeCategory]);
 
-    const uniqueFiles = categoryFiles.filePaths.reduce((acc, file) => {
-      if (!acc.has(file.name)) {
-        acc.set(file.name, { name: file.name });
-      }
-      return acc;
-    }, new Map());
+  // Initialize open states
+  useEffect(() => {
+    setOpenStates(new Array(numInputs).fill(false));
+  }, [numInputs]);
 
-    return {
-      ...categoryFiles,
-      filePaths: Array.from(uniqueFiles.values()),
-      noOfNodes: NodeToBeFocus[nodeType].noOfNodes || 1,
-    };
-  }, [fileList, selectedNode.type]);
+  // Function to get display name (remove only the first level of the path)
+  const getDisplayName = (path: string) => {
+    if (!path) return "";
+
+    // Split the path by '/'
+    const parts = path.split("/");
+
+    // If there's only one part or no parts, return the original path
+    if (parts.length <= 1) return path;
+
+    // Remove the first part (category) and join the rest
+    return parts.slice(1).join("/");
+  };
 
   const renderComboBox = (index: number) => {
-    const currentValue = selectedNode.widgets_values[index];
-    const isValid = matchCategoryList?.filePaths.some(
+    const currentValue = selectedNode.widgets_values[index] || "";
+    const isValid = categoryFiles?.filePaths.some(
       (file) => file.name === currentValue,
     );
 
     return (
-      <div key={index} className="mb-2 last:mb-0">
+      <div
+        key={`combobox-${selectedNode.id}-${index}`}
+        className="mb-2 last:mb-0"
+      >
         <Popover
           open={openStates[index]}
           onOpenChange={(open) => {
@@ -760,36 +848,20 @@ export function ModelSelectComboBox({
         >
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
+              variant="outline"
               role="combobox"
               aria-expanded={openStates[index]}
               className={cn(
-                "w-full justify-between rounded-full bg-neutral-800 text-gray-300 hover:bg-neutral-800 hover:text-gray-300",
-                isValid
-                  ? "outline outline-neutral-500"
-                  : "outline outline-red-500 outline-offset-2",
+                "w-full justify-between rounded-md",
+                !currentValue || isValid ? "" : "border-red-500",
               )}
             >
-              <div className="flex flex-row items-center font-light">
-                <ChevronLeft className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                {`model / file ${
-                  matchCategoryList?.noOfNodes &&
-                  matchCategoryList.noOfNodes > 1
-                    ? `(${index + 1})`
-                    : ""
-                }`}
-              </div>
-              <div className="flex flex-row items-center">
-                {isValid ? (
-                  <Check className="mr-2 h-4 w-4 shrink-0 text-green-500 opacity-50" />
-                ) : (
-                  <TriangleAlert className="mr-2 h-4 w-4 shrink-0 text-red-500 opacity-50" />
-                )}
-                <span className="max-w-[200px] truncate">
-                  {currentValue || "Select file..."}
-                </span>
-                <ChevronRight className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </div>
+              <span className="truncate">
+                {currentValue
+                  ? getDisplayName(currentValue)
+                  : "Select model..."}
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0">
@@ -798,38 +870,40 @@ export function ModelSelectComboBox({
               <CommandList>
                 <CommandEmpty>No files found.</CommandEmpty>
                 <CommandGroup>
-                  {matchCategoryList?.filePaths
-                    .sort((a, b) => {
-                      if (a.name === currentValue) return -1;
-                      if (b.name === currentValue) return 1;
-                      return 0;
-                    })
-                    .map((file) => (
-                      <CommandItem
-                        key={file.name}
-                        value={file.name.toLowerCase()}
-                        onSelect={(selectedValue: string) => {
-                          const originalCasedFile =
-                            matchCategoryList.filePaths.find(
-                              (f) => f.name.toLowerCase() === selectedValue,
-                            )?.name || selectedValue;
+                  {categoryFiles?.filePaths.map((file) => (
+                    <CommandItem
+                      key={`${file.name}-${index}`}
+                      value={file.name}
+                      onSelect={() => {
+                        // Create a copy of the widgets_values array
+                        const newWidgetsValues = [
+                          ...selectedNode.widgets_values,
+                        ];
 
-                          const newWidgetsValues = [
-                            ...selectedNode.widgets_values,
-                          ];
-                          newWidgetsValues[index] = originalCasedFile;
+                        // Ensure the array is long enough
+                        while (newWidgetsValues.length <= index) {
+                          newWidgetsValues.push("");
+                        }
 
-                          const updatedNode = {
-                            ...selectedNode,
-                            widgets_values: newWidgetsValues,
-                          };
-                          setSelectedNode(updatedNode);
+                        // Update the value at the specified index
+                        newWidgetsValues[index] = file.name;
 
-                          const newStates = [...openStates];
-                          newStates[index] = false;
-                          setOpenStates(newStates);
-                        }}
-                      >
+                        // Create a new node object with the updated widgets_values
+                        const updatedNode = {
+                          ...selectedNode,
+                          widgets_values: newWidgetsValues,
+                        };
+
+                        // Update the selected node
+                        setSelectedNode(updatedNode);
+
+                        // Close the popover
+                        const newStates = [...openStates];
+                        newStates[index] = false;
+                        setOpenStates(newStates);
+                      }}
+                    >
+                      <div className="flex items-center">
                         <Check
                           className={cn(
                             "mr-2 h-4 w-4",
@@ -838,9 +912,10 @@ export function ModelSelectComboBox({
                               : "opacity-0",
                           )}
                         />
-                        {file.name}
-                      </CommandItem>
-                    ))}
+                        <span>{getDisplayName(file.name)}</span>
+                      </div>
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               </CommandList>
             </Command>
@@ -850,11 +925,18 @@ export function ModelSelectComboBox({
     );
   };
 
+  // If no category files are available, show a message
+  if (!categoryFiles || categoryFiles.filePaths.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        No models available for this node type.
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-0.5">
-      {Array.from({ length: matchCategoryList?.noOfNodes || 1 }, (_, index) =>
-        renderComboBox(index),
-      )}
+      {Array.from({ length: numInputs }, (_, index) => renderComboBox(index))}
     </div>
   );
 }
@@ -899,7 +981,10 @@ function NodeDisplay({
           {/* Inputs */}
           <div className="flex flex-col gap-1">
             {selectedNode.inputs?.map((input, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div
+                key={`input-${input.name}-${index}`}
+                className="flex items-center gap-2"
+              >
                 <div className="h-2 w-2 rounded-full bg-purple-400" />
                 <span className="text-gray-300 text-sm">{input.name}</span>
               </div>
@@ -909,7 +994,10 @@ function NodeDisplay({
           {/* Outputs */}
           <div className="flex flex-col items-end gap-1">
             {selectedNode.outputs?.map((output, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div
+                key={`output-${output.name}-${index}`}
+                className="flex items-center gap-2"
+              >
                 <span className="text-gray-300 text-sm">{output.name}</span>
                 <div className="h-2 w-2 rounded-full bg-pink-400" />
               </div>

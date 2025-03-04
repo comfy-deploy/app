@@ -1,5 +1,4 @@
 import { useIsAdminOnly } from "@/components/permissions";
-import { openAddModelModal } from "@/components/storage/model-list-view";
 import {
   CommandDialog,
   CommandEmpty,
@@ -189,7 +188,7 @@ export function ComfyCommand() {
               path: "/machines",
             },
             {
-              Component: StoragePartCommand,
+              Component: ModelCommand,
               path: "/storage",
             },
           ]
@@ -719,13 +718,13 @@ function MachinePartCommand({
             }}
           >
             <Server className="!h-4 !w-4 mr-2" />
-            <div className="flex flex-col leading-snug flex-1 min-w-0">
+            <div className="flex min-w-0 flex-1 flex-col leading-snug">
               <span className="truncate">{machine.name}</span>
               <span className="font-mono text-[9px] text-muted-foreground">
                 {machine.id}
               </span>
             </div>
-            <CommandShortcut className="text-2xs tracking-normal ml-2 flex-shrink-0">
+            <CommandShortcut className="ml-2 flex-shrink-0 text-2xs tracking-normal">
               {getRelativeTime(machine.updated_at)}
             </CommandShortcut>
           </CommandItem>
@@ -735,16 +734,16 @@ function MachinePartCommand({
   );
 }
 
-function StoragePartCommand({ navigate, setOpen }: ComfyCommandProps) {
+function ModelCommand({ navigate, setOpen }: ComfyCommandProps) {
   const router = useRouter();
-  const isStoragePage = router.state.location.pathname === "/storage";
+  const isModelPage = router.state.location.pathname === "/models";
 
   return (
     <CommandGroup heading="Storage">
       <CommandItem
         onSelect={() => {
           navigate({
-            to: "/storage",
+            to: "/models",
           });
           setOpen(false);
           openAddModelModal();
@@ -752,7 +751,7 @@ function StoragePartCommand({ navigate, setOpen }: ComfyCommandProps) {
       >
         <Plus className="!h-4 !w-4 mr-2" />
         <span>Add New Model...</span>
-        {isStoragePage && (
+        {isModelPage && (
           <CommandShortcut>
             <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px] text-muted-foreground opacity-100">
               C

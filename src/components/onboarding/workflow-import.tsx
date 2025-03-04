@@ -724,6 +724,15 @@ function ImportOptions({
           />
           <div
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label="Upload file"
             onDragOver={(e) => {
               e.preventDefault();
               setIsDragging(true);

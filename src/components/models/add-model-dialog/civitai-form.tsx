@@ -72,6 +72,7 @@ export function CivitaiForm({
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [previousValidUrl, setPreviousValidUrl] = useState<string | null>(null);
 
   const debouncedUrl = useDebounce(url, 500);
 
@@ -87,7 +88,22 @@ export function CivitaiForm({
     if (validation?.filename) {
       setFilename(validation.filename);
     }
-  }, [validation?.filename]);
+
+    // If validation fails, clear the previous validation data
+    if (validation && !validation.exists) {
+      // Only clear if the URL has changed since the last successful validation
+      if (url !== previousValidUrl) {
+        setValidation({
+          ...validation,
+          preview_url: undefined,
+          title: undefined,
+        });
+      }
+    } else if (validation?.exists) {
+      // Store the URL that was successfully validated
+      setPreviousValidUrl(url);
+    }
+  }, [validation, url, previousValidUrl]);
 
   const validateUrl = async (modelUrl: string) => {
     setIsValidating(true);
@@ -103,10 +119,23 @@ export function CivitaiForm({
       });
 
       console.log("Civitai validation response:", response);
-      setValidation(response);
+
+      // If validation fails, don't show previous successful validation data
+      if (!response.exists && url !== previousValidUrl) {
+        // Keep the exists status but remove preview data
+        setValidation({
+          ...response,
+          preview_url: undefined,
+          title: undefined,
+        });
+      } else {
+        setValidation(response);
+      }
     } catch (err) {
       console.error("Validation error:", err);
       setError("Failed to validate Civitai URL");
+      // Clear validation data on error
+      setValidation(null);
     } finally {
       setIsValidating(false);
     }
@@ -155,13 +184,23 @@ export function CivitaiForm({
       </div>
 
       {validation?.exists && (
+        <div className="space-y-2">
+          <Label htmlFor="filename">Filename</Label>
+          <Input
+            id="filename"
+            value={filename}
+            onChange={(e) => setFilename(e.target.value)}
+            placeholder="Enter filename"
+          />
+        </div>
+      )}
+
+      {validation?.exists && validation.preview_url && (
         <Alert className="border-green-200 bg-green-50">
           <AlertDescription className="text-green-800">
             <div className="flex flex-col gap-4">
               <div className="font-medium">{validation.title}</div>
-              {validation.preview_url && (
-                <PreviewMedia url={validation.preview_url} />
-              )}
+              <PreviewMedia url={validation.preview_url} />
             </div>
           </AlertDescription>
         </Alert>
@@ -170,6 +209,12 @@ export function CivitaiForm({
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {validation && !validation.exists && (
+        <Alert variant="destructive">
+          <AlertDescription>Failed to validate Civitai URL</AlertDescription>
         </Alert>
       )}
 
@@ -184,7 +229,9 @@ export function CivitaiForm({
             },
           })
         }
-        disabled={isSubmitting || !url.trim() || !validation?.exists}
+        disabled={
+          isSubmitting || !url.trim() || !validation?.exists || !filename.trim()
+        }
       >
         {isSubmitting ? "Downloading..." : "Download"}
       </Button>

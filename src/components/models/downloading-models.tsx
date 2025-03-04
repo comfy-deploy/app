@@ -4,14 +4,10 @@ import { api } from "@/lib/api";
 import type { DownloadingModel } from "@/types/models";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { X, ExternalLink, AlertCircle } from "lucide-react";
+import { Copy, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function DownloadingModels() {
   const { data: downloadingModels, isLoading } = useQuery({
@@ -46,8 +42,6 @@ export function DownloadingModels() {
 }
 
 function DownloadingModelItem({ model }: { model: DownloadingModel }) {
-  const [isOpen, setIsOpen] = useState(false);
-
   const getModelUrl = () => {
     if (model.civitai_url) return model.civitai_url;
     if (model.hf_url) return model.hf_url;
@@ -82,17 +76,20 @@ function DownloadingModelItem({ model }: { model: DownloadingModel }) {
   const sourceName = getSourceName();
   const timeAgo = getTimeAgo();
 
+  const copyModelUrl = () => {
+    if (modelUrl) {
+      navigator.clipboard.writeText(modelUrl);
+      toast.success("Download link copied to clipboard");
+    }
+  };
+
   return (
-    <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      className="rounded-md border bg-card"
-    >
+    <div className="rounded-md border bg-card">
       <div className="p-3">
         <div className="flex items-center justify-between">
-          <div className="flex-1 truncate mr-2">
-            <div className="font-medium truncate">{model.model_name}</div>
-            <div className="text-xs text-muted-foreground">
+          <div className="mr-2 flex-1 truncate">
+            <div className="truncate font-medium">{model.model_name}</div>
+            <div className="text-muted-foreground text-xs">
               {sourceName} • {model.folder_path} • Started {timeAgo}
             </div>
           </div>
@@ -101,25 +98,16 @@ function DownloadingModelItem({ model }: { model: DownloadingModel }) {
               <AlertCircle className="h-5 w-5 text-destructive" />
             )}
             {modelUrl && (
-              <a
-                href={modelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={copyModelUrl}
+                title="Copy download link"
               >
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            )}
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <span className="sr-only">Toggle details</span>
-                {isOpen ? (
-                  <X className="h-4 w-4" />
-                ) : (
-                  <span className="text-xs font-medium">Details</span>
-                )}
+                <Copy className="h-4 w-4" />
               </Button>
-            </CollapsibleTrigger>
+            )}
           </div>
         </div>
 
@@ -130,11 +118,8 @@ function DownloadingModelItem({ model }: { model: DownloadingModel }) {
               model.status === "failed" && "bg-destructive/20",
               "h-2",
             )}
-            indicatorClassName={
-              model.status === "failed" ? "bg-destructive" : undefined
-            }
           />
-          <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+          <div className="mt-1 flex justify-between text-muted-foreground text-xs">
             <span>
               {model.status === "failed"
                 ? "Failed"
@@ -151,45 +136,38 @@ function DownloadingModelItem({ model }: { model: DownloadingModel }) {
         </div>
       </div>
 
-      <CollapsibleContent>
-        <div className="border-t p-3 space-y-2">
-          {model.civitai_model_response?.images &&
-            model.civitai_model_response.images.length > 0 && (
-              <div className="aspect-square w-full max-w-[200px] mx-auto overflow-hidden rounded-md">
-                <img
-                  src={model.civitai_model_response.images[0].url}
-                  alt={model.model_name}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            )}
-
-          {model.civitai_model_response?.description && (
-            <div className="text-sm">
-              <div className="font-medium mb-1">Description</div>
-              <div
-                className="text-muted-foreground text-xs"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    model.civitai_model_response.description.substring(0, 300) +
-                    (model.civitai_model_response.description.length > 300
-                      ? "..."
-                      : ""),
-                }}
+      <div className="space-y-2 border-t p-3">
+        {model.civitai_model_response?.images &&
+          model.civitai_model_response.images.length > 0 && (
+            <div className="mx-auto aspect-square w-full max-w-[200px] overflow-hidden rounded-md">
+              <img
+                src={model.civitai_model_response.images[0].url}
+                alt={model.model_name}
+                className="h-full w-full object-cover"
               />
             </div>
           )}
 
-          {model.error_log && (
-            <div className="text-sm">
-              <div className="font-medium mb-1 text-destructive">Error</div>
-              <pre className="text-xs text-destructive whitespace-pre-wrap bg-destructive/10 p-2 rounded">
-                {model.error_log}
-              </pre>
+        {model.civitai_model_response?.description && (
+          <div className="text-sm">
+            <div className="mb-1 font-medium">Description</div>
+            <div className="text-muted-foreground text-xs">
+              {model.civitai_model_response.description.length > 300
+                ? `${model.civitai_model_response.description.substring(0, 300)}...`
+                : model.civitai_model_response.description}
             </div>
-          )}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+          </div>
+        )}
+
+        {model.error_log && (
+          <div className="text-sm">
+            <div className="mb-1 font-medium text-destructive">Error</div>
+            <pre className="whitespace-pre-wrap rounded bg-destructive/10 p-2 text-destructive text-xs">
+              {model.error_log}
+            </pre>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

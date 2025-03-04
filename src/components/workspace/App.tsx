@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Copy, Download, MoreHorizontal } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import BlurIn from "@/components/magicui/blur-in";
 import {
@@ -13,8 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { sendEventToCD } from "@/components/workspace/sendEventToCD";
-import { useAuth } from "@clerk/clerk-react";
-// for cancel current run
 interface CurrentRun {
   id?: string;
   modal_function_call_id?: string;
@@ -30,11 +27,6 @@ const formatTime = (time: number) => {
   return `${minutes}:${seconds}`;
 };
 
-import { useModelRerfresher } from "../storage/model-list-view";
-// import { useModelRerfresher } from "@/repo/components/ui/custom/storage/model-list-view";
-import { useCDStore } from "./Workspace";
-import { WorkspaceStatusBar } from "./WorkspaceStatusBar";
-
 export function App({
   endpoint,
   children,
@@ -42,27 +34,6 @@ export function App({
   endpoint: string;
   children?: React.ReactNode;
 }) {
-  const refreshModels = useModelRerfresher();
-
-  const { cdSetup, setCDSetup } = useCDStore();
-
-  useEffect(() => {
-    if (cdSetup) refreshModels();
-  }, [refreshModels, cdSetup]);
-
-  const { userId, orgId } = useAuth();
-
-  const [isStopping, setIsStopping] = useState(false);
-
-  const [open, setOpen] = useState(false);
-
-  const [url, setUrl] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setUrl(window.location.href);
-    }
-  }, []);
-
   return (
     <>
       <BlurIn
@@ -83,8 +54,6 @@ export function App({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
-                {/* <DropdownMenuLabel>Workflows</DropdownMenuLabel> */}
-                {/* <DropdownMenuSeparator /> */}
                 <DropdownMenuItem
                   className="flex items-center gap-2"
                   onClick={async () => {
@@ -164,26 +133,7 @@ export function App({
                   <Download size={14} />
                   Download .json
                 </DropdownMenuItem>
-                {/* <DropdownMenuItem
-                disabled={readonly}
-                className="flex items-center gap-2"
-                onClick={() => {
-                  setOpen2(true);
-                }}
-              >
-                <Share size={14}></Share> Share
-              </DropdownMenuItem> */}
-                {/* <DropdownMenuItem
-                disabled={readonly}
-                className="flex items-center gap-2"
-                onClick={() => {
-                  setOpen(true);
-                }}
-              >
-                <CloudUpload size={14}></CloudUpload> Save to new Version
-              </DropdownMenuItem> */}
               </DropdownMenuContent>
-              {/* {!readonly && <ShareAction open={open2} setOpen={setOpen2} />} */}
             </DropdownMenu>
           </div>
         </Card>

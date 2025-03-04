@@ -35,6 +35,13 @@ export interface Model {
   status?: string;
 }
 
+export type FileEntry = {
+  path: string;
+  type: 1 | 2; // 1 for file, 2 for folder
+  mtime: number;
+  size: number;
+};
+
 const modelBrowserState = create<{
   addModelModalOpen: boolean;
   setAddModelModalOpen: (addModelModalOpen: boolean) => void;
@@ -117,7 +124,7 @@ export function useModels() {
 
   const disableCacheRef = useRef(false);
 
-  const { data: private_volume, refetch: _refetchPrivateVolume } = useQuery({
+  const { data: privateFiles, refetch: _refetchPrivateVolume } = useQuery({
     queryKey: ["volume", "private-models"],
     queryFn: async ({ queryKey }) => {
       console.log("refreshing private models");
@@ -130,20 +137,12 @@ export function useModels() {
       });
       setIsPrivateModelRefreshing(false);
       disableCacheRef.current = false;
-      // toast.success("Private Models Refreshed");
-      return {
-        structure: contents.structure as VolFSStructure,
-        models: contents.models as any[],
-      };
+      return contents as FileEntry[];
     },
-    refetchInterval: (data) => {
-      return 30000;
-    },
-    // refetchOnMount: false,
-    // refetchOnWindowFocus: false,
+    refetchInterval: 30000,
   });
 
-  const { data: public_volume, refetch: _refetchPublicVolume } = useQuery({
+  const { data: publicFiles, refetch: _refetchPublicVolume } = useQuery({
     queryKey: ["volume", "public-models"],
     queryFn: async ({ queryKey }) => {
       setIsPublicModelRefreshing(true);
@@ -151,15 +150,8 @@ export function useModels() {
         url: queryKey.join("/"),
       });
       setIsPublicModelRefreshing(false);
-      disableCacheRef.current = false;
-      // toast.success("Public Models Refreshed");
-      return {
-        structure: contents.structure as VolFSStructure,
-        models: contents.models as any[],
-      };
+      return contents as FileEntry[];
     },
-    // refetchOnMount: false,
-    // refetchOnWindowFocus: false,
   });
 
   const { data: downloadingModels, refetch: refetchDownloadingModels } =
@@ -181,88 +173,53 @@ export function useModels() {
     });
 
   const flattenedModels = useMemo<Model[]>(() => {
-    const flatten = (
-      items: (VolFolder | VolFile)[],
-      models: any[],
-      prefix = "",
-      isPrivate: boolean,
-    ): Model[] => {
-      return items.reduce<Model[]>((acc, item) => {
-        const path = `${item.path}`;
-        const pathParts = path.split("/");
-        const category = pathParts.length > 1 ? pathParts[0] : "other";
-        if (item.type === "file") {
-          const name = pathParts.pop() || "";
+    if (!privateFiles || !publicFiles) return [];
+
+    const processFiles = (files: FileEntry[], isPrivate: boolean): Model[] => {
+      const models: Model[] = [];
+
+      for (const file of files) {
+        // Only process files (type 1), not folders (type 2)
+        if (file.type === 1) {
+          const path = file.path;
+          const pathParts = path.split("/");
+          const name = pathParts[pathParts.length - 1];
           const type = pathParts[0];
-          const existingModel = acc.find((m) => m.path === path);
-          if (existingModel) {
-            existingModel.isPrivate = existingModel.isPrivate || isPrivate;
-            existingModel.isPublic = existingModel.isPublic || !isPrivate;
-          } else {
-            const model = models.find((m) => {
-              const folder_path = m.folder_path
-                ? [m.folder_path, m.model_name].join("/")
-                : m.model_name;
-              const status = m.status;
-              if (!folder_path || status !== "success") return false;
-              return folder_path?.includes(path);
-            });
-            if (!model?.id) return acc;
-            acc.push({
-              id: model?.id, // Use path as fallback ID if model is not found
-              path,
-              name,
-              type,
-              isPrivate,
-              isPublic: !isPrivate,
-              category,
-              created_at: model?.created_at || new Date(), // Add created time
-              error_log: model?.error_log || "",
-              status: model?.status || "failed", // Add status field
-              size: model?.size || 0,
-            });
-          }
-        } else if (item.type === "folder" && item.contents) {
-          return [
-            ...acc,
-            ...flatten(item.contents, models, `${path}/`, isPrivate),
-          ];
+          const category = pathParts.length > 1 ? pathParts[0] : "other";
+
+          models.push({
+            id: path, // Use path as ID since we don't have explicit IDs
+            path,
+            name,
+            type,
+            isPrivate,
+            isPublic: !isPrivate,
+            category,
+            created_at: new Date(file.mtime * 1000),
+            size: file.size,
+            status: "success", // Assume success for existing files
+          });
         }
-        return acc;
-      }, []);
+      }
+
+      return models;
     };
 
-    const publicModels = public_volume
-      ? flatten(
-          public_volume.structure.contents,
-          public_volume.models,
-          "",
-          false,
-        )
-      : [];
-    const privateModels = private_volume
-      ? flatten(
-          private_volume.structure.contents,
-          private_volume.models,
-          "",
-          true,
-        )
-      : [];
+    const privateModels = processFiles(privateFiles, true);
+    const publicModels = processFiles(publicFiles, false);
 
-    // Combine and merge public and private models, prioritizing private model IDs
+    // Combine and merge public and private models
     return [...publicModels, ...privateModels].reduce((acc, model) => {
       const existingModel = acc.find((m) => m.path === model.path);
       if (existingModel) {
         existingModel.isPrivate = existingModel.isPrivate || model.isPrivate;
         existingModel.isPublic = existingModel.isPublic || model.isPublic;
-        // If the model is private, use its ID
-        if (model.isPrivate) existingModel.id = model.id;
       } else {
         acc.push(model);
       }
       return acc;
     }, [] as Model[]);
-  }, [public_volume, private_volume]);
+  }, [privateFiles, publicFiles]);
 
   const refetchPrivateVolume = (disableCache = false) => {
     disableCacheRef.current = disableCache;
@@ -276,8 +233,8 @@ export function useModels() {
 
   return {
     flattenedModels,
-    public_volume,
-    private_volume,
+    publicFiles,
+    privateFiles,
     downloadingModels,
     refetchDownloadingModels,
     refetchPrivateVolume,

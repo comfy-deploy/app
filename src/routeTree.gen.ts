@@ -15,7 +15,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Route as rootRoute } from './routes/__root'
 import { Route as WaitlistImport } from './routes/waitlist'
 import { Route as UsageImport } from './routes/usage'
-import { Route as StorageImport } from './routes/storage'
 import { Route as SettingsImport } from './routes/settings'
 import { Route as PricingImport } from './routes/pricing'
 import { Route as OnboardingCallImport } from './routes/onboarding-call'
@@ -58,12 +57,6 @@ const WaitlistRoute = WaitlistImport.update({
 const UsageRoute = UsageImport.update({
   id: '/usage',
   path: '/usage',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const StorageRoute = StorageImport.update({
-  id: '/storage',
-  path: '/storage',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -302,13 +295,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsImport
       parentRoute: typeof rootRoute
     }
-    '/storage': {
-      id: '/storage'
-      path: '/storage'
-      fullPath: '/storage'
-      preLoaderRoute: typeof StorageImport
-      parentRoute: typeof rootRoute
-    }
     '/usage': {
       id: '/usage'
       path: '/usage'
@@ -450,7 +436,6 @@ export interface FileRoutesByFullPath {
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
-  '/storage': typeof StorageRoute
   '/usage': typeof UsageRoute
   '/waitlist': typeof WaitlistRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -481,7 +466,6 @@ export interface FileRoutesByTo {
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
-  '/storage': typeof StorageRoute
   '/usage': typeof UsageRoute
   '/waitlist': typeof WaitlistRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -513,7 +497,6 @@ export interface FileRoutesById {
   '/onboarding-call': typeof OnboardingCallRoute
   '/pricing': typeof PricingRoute
   '/settings': typeof SettingsRoute
-  '/storage': typeof StorageRoute
   '/usage': typeof UsageRoute
   '/waitlist': typeof WaitlistRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -546,7 +529,6 @@ export interface FileRouteTypes {
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
-    | '/storage'
     | '/usage'
     | '/waitlist'
     | '/auth/sign-in'
@@ -576,7 +558,6 @@ export interface FileRouteTypes {
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
-    | '/storage'
     | '/usage'
     | '/waitlist'
     | '/auth/sign-in'
@@ -606,7 +587,6 @@ export interface FileRouteTypes {
     | '/onboarding-call'
     | '/pricing'
     | '/settings'
-    | '/storage'
     | '/usage'
     | '/waitlist'
     | '/auth/sign-in'
@@ -638,7 +618,6 @@ export interface RootRouteChildren {
   OnboardingCallRoute: typeof OnboardingCallRoute
   PricingRoute: typeof PricingRoute
   SettingsRoute: typeof SettingsRoute
-  StorageRoute: typeof StorageRoute
   UsageRoute: typeof UsageRoute
   WaitlistRoute: typeof WaitlistRoute
   AuthSignInRoute: typeof AuthSignInRoute
@@ -669,7 +648,6 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingCallRoute: OnboardingCallRoute,
   PricingRoute: PricingRoute,
   SettingsRoute: SettingsRoute,
-  StorageRoute: StorageRoute,
   UsageRoute: UsageRoute,
   WaitlistRoute: WaitlistRoute,
   AuthSignInRoute: AuthSignInRoute,
@@ -711,7 +689,6 @@ export const routeTree = rootRoute
         "/onboarding-call",
         "/pricing",
         "/settings",
-        "/storage",
         "/usage",
         "/waitlist",
         "/auth/sign-in",
@@ -758,9 +735,6 @@ export const routeTree = rootRoute
     },
     "/settings": {
       "filePath": "settings.tsx"
-    },
-    "/storage": {
-      "filePath": "storage.tsx"
     },
     "/usage": {
       "filePath": "usage.tsx"

@@ -21,6 +21,7 @@ export async function uploadFile(file: File) {
 export async function uploadFileToVolume({
   volumeName,
   file,
+  filename,
   subfolder,
   targetPath,
   apiEndpoint,
@@ -28,6 +29,7 @@ export async function uploadFileToVolume({
 }: {
   volumeName: string;
   file: File;
+  filename?: string;
   subfolder?: string;
   targetPath?: string;
   apiEndpoint: string;
@@ -41,7 +43,7 @@ export async function uploadFileToVolume({
   const url = `${apiEndpoint}`;
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("filename", file.name);
+  formData.append("filename", filename || file.name);
   formData.append("volume_name", volumeName);
   if (targetPath) {
     formData.append("target_path", targetPath);

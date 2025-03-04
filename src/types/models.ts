@@ -1,4 +1,4 @@
-export type ModelSource = "huggingface" | "civitai" | "link";
+export type ModelSource = "huggingface" | "civitai" | "link" | "local";
 
 export interface ModelSourceOption {
   id: ModelSource;
@@ -19,11 +19,20 @@ export interface CivitaiModel {
 export interface AddModelRequest {
   source: ModelSource;
   folderPath: string;
-  filename?: string;
-
-  huggingface?: HuggingfaceModel;
-  civitai?: CivitaiModel;
-  downloadLink?: string;
+  filename: string;
+  huggingface?: {
+    repo: string;
+    file?: string;
+  };
+  civitai?: {
+    url: string;
+  };
+  link?: {
+    url: string;
+  };
+  local?: {
+    originalFilename: string;
+  };
 }
 
 // Verify responses

@@ -64,7 +64,7 @@ export const INPUT_COMPONENTS = {
   comfyuiVersion: AutoFormComfyUIVersion,
   // newWorkflowFromJson: AutoFormNewWorkflowFromJson,
 
-  "select-custom-input": AutoFormSelectInput,
+  "select-custom-input": AutoFormSelectInput, // TODO: remove
 };
 
 /**

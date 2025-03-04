@@ -447,7 +447,7 @@ function TreeNode({
             <DialogTitle>Rename File</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-4">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Original path: <span className="font-medium">{node.path}</span>
             </div>
 
@@ -475,11 +475,7 @@ function TreeNode({
                   ) : null}
                 </div>
               </div>
-              {!isValidName && (
-                <p className="mt-1.5 text-sm text-red-500">
-                  {validationMessage}
-                </p>
-              )}
+              <p className="text-sm text-red-500">{validationMessage}</p>
             </div>
 
             {newName !== node.name && isValidName && (
@@ -539,7 +535,7 @@ function TreeNode({
           <div className="flex flex-col gap-4">
             <div>
               <p>Are you sure you want to delete this file?</p>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 <span className="font-medium">{node.path}</span>
               </p>
               <Alert variant="destructive" className="mt-4">
