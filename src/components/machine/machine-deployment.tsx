@@ -486,12 +486,6 @@ function InstantRollback({
               )}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-          {/* <DropdownMenuItem>
-            Promote to Production
-            <DropdownMenuShortcut>
-              <CircleArrowUp className="w-4 h-4" />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem> */}
           <DropdownMenuItem
             disabled={machineVersion.id !== machine.machine_version_id}
             onClick={(e) => {

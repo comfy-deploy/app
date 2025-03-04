@@ -745,12 +745,16 @@ function RequestPage({
               (deployment: Deployment) =>
                 deployment.workflow_version_id === item.id,
             );
-            const isProductionDeployed = myDeployments?.some(
-              (deployment) => deployment.environment === "production",
-            );
-            const isPublicShareDeployed = myDeployments?.some(
-              (deployment) => deployment.environment === "public-share",
-            );
+            const isProductionDeployed =
+              myDeployments?.some(
+                (deployment: Deployment) =>
+                  deployment.environment === "production",
+              ) ?? false;
+            const isPublicShareDeployed =
+              myDeployments?.some(
+                (deployment: Deployment) =>
+                  deployment.environment === "public-share",
+              ) ?? false;
 
             return (
               <div
@@ -835,11 +839,12 @@ function RequestPage({
                                         workflowVersionId: item.id,
                                         machineVersionId:
                                           item.machine_version_id,
-                                        machineId: myDeployments.find(
-                                          (deployment) =>
-                                            deployment.environment ===
-                                            "production",
-                                        )?.machine_id,
+                                        machineId:
+                                          myDeployments?.find(
+                                            (deployment: Deployment) =>
+                                              deployment.environment ===
+                                              "production",
+                                          )?.machine_id ?? null,
                                       });
                                     }}
                                   >
@@ -876,10 +881,11 @@ function RequestPage({
                                 environment: "production",
                                 workflowVersionId: item.id,
                                 machineVersionId: null,
-                                machineId: myDeployments.find(
-                                  (deployment) =>
-                                    deployment.environment === "production",
-                                )?.machine_id,
+                                machineId:
+                                  myDeployments?.find(
+                                    (deployment: Deployment) =>
+                                      deployment.environment === "production",
+                                  )?.machine_id ?? null,
                               });
                             }}
                           >
@@ -905,10 +911,11 @@ function RequestPage({
                                 environment: "staging",
                                 workflowVersionId: item.id,
                                 machineVersionId: null,
-                                machineId: myDeployments.find(
-                                  (deployment) =>
-                                    deployment.environment === "staging",
-                                )?.machine_id,
+                                machineId:
+                                  myDeployments?.find(
+                                    (deployment: Deployment) =>
+                                      deployment.environment === "staging",
+                                  )?.machine_id ?? null,
                               });
                             }}
                           >
@@ -948,11 +955,12 @@ function RequestPage({
                                       environment: "public-share",
                                       workflowVersionId: item.id,
                                       machineVersionId: item.machine_version_id,
-                                      machineId: myDeployments.find(
-                                        (deployment) =>
-                                          deployment.environment ===
-                                          "public-share",
-                                      )?.machine_id,
+                                      machineId:
+                                        myDeployments?.find(
+                                          (deployment: Deployment) =>
+                                            deployment.environment ===
+                                            "public-share",
+                                        )?.machine_id ?? null,
                                     });
                                   }}
                                 >
