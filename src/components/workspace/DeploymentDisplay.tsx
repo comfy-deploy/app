@@ -1147,7 +1147,7 @@ export function DeploymentSettings({
                     variant="outline"
                     className={cn(
                       getEnvColor(deployment.environment),
-                      "text-sm",
+                      "whitespace-nowrap text-sm",
                     )}
                   >
                     {deployment.environment}
@@ -1174,7 +1174,10 @@ export function DeploymentSettings({
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="outline"
-                      className={cn(getEnvColor(d.environment), "text-sm")}
+                      className={cn(
+                        getEnvColor(d.environment),
+                        "whitespace-nowrap text-sm",
+                      )}
                     >
                       {d.environment}
                     </Badge>
@@ -1473,7 +1476,7 @@ function ShareLinkDisplay({ deployment }: { deployment: Deployment }) {
   };
 
   return (
-    <div className="-m-4 flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-sm">Sharing Link</h3>
