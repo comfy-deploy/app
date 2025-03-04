@@ -65,7 +65,7 @@ export const Route = createRootRouteWithContext<Context>()({
     // Only redirect from root to home if user is signed in
     if (context.clerk?.session && location.pathname === "/") {
       throw redirect({
-        to: "/home",
+        to: "/workflows",
       });
     }
   },
