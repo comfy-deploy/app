@@ -19,7 +19,9 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import type { customInputNodes } from "@/lib/customInputNodes";
-import { CircleAlert, Dice6, Plus, Trash } from "lucide-react";
+import { CircleAlert, Dice6, Plus, Trash, HelpCircle } from "lucide-react";
+import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export type RGBColor = {
   r: number;
@@ -42,7 +44,7 @@ type SDInputsRenderProps = {
     | undefined;
   updateInput: (
     inputID: string,
-    value: string | File | undefined | (string | File)[] | boolean | RGBColor[]
+    value: string | File | undefined | (string | File)[] | boolean | RGBColor[],
   ) => void;
   inputValue: string | any;
 };
@@ -66,19 +68,63 @@ export function SDInputsRender({
     label,
     description,
   }: typeof genericProps) => {
+    const [isHovering, setIsHovering] = React.useState(false);
+
     return (
-      <>
-        {display_name && (
-          <h1 className="mb-2 flex flex-wrap items-center gap-2">
-            <Label htmlFor={display_name}>{display_name}</Label>
-            <Badge>{label}</Badge>
-          </h1>
-        )}
-        {!display_name && label && <Label htmlFor={label}>{label}</Label>}
-        {description && (
-          <p className="text-gray-500 text-xs leading-normal">{description}</p>
-        )}
-      </>
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between">
+          <div className="ml-2 flex items-center gap-2">
+            {display_name && (
+              <Label htmlFor={display_name} className="font-normal text-sm">
+                {display_name}
+              </Label>
+            )}
+            {!display_name && label && (
+              <Label
+                htmlFor={label}
+                className="font-mono text-2xs text-muted-foreground"
+              >
+                {label}
+              </Label>
+            )}
+            {label && display_name && (
+              <Badge
+                variant="outline"
+                className="!text-[9px] h-4 overflow-hidden text-ellipsis whitespace-nowrap px-1 font-mono text-muted-foreground"
+                title={label}
+              >
+                {label}
+              </Badge>
+            )}
+            {description && (
+              <div
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
+                className="cursor-help"
+              >
+                <HelpCircle
+                  size={16}
+                  className={`${isHovering ? "text-foreground" : "text-muted-foreground"} transition-colors`}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {description && isHovering && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden rounded-md bg-muted/30 text-muted-foreground text-xs"
+            >
+              <div className="p-2 leading-snug">{description}</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     );
   };
 
@@ -89,8 +135,9 @@ export function SDInputsRender({
         <SDTextarea
           key={inputNode.input_id}
           value={inputValue || ""}
-          textareaClasses="mt-2 bg-gray-50"
+          textareaClasses="mt-1 bg-gray-50"
           rows={3}
+          placeholder={inputNode.input_id}
           header={header(genericProps)}
           {...genericProps}
           onChange={(e: any) => updateInput(inputNode.input_id, e.target.value)}
@@ -102,7 +149,7 @@ export function SDInputsRender({
         <SDInput
           key={inputNode.input_id}
           value={inputValue || ""}
-          inputClasses="mt-2 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           {...genericProps}
           type="text"
@@ -115,7 +162,7 @@ export function SDInputsRender({
         <SDInput
           key={inputNode.input_id}
           value={inputValue || ""}
-          inputClasses="mt-2 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           {...genericProps}
           type="number"
@@ -129,7 +176,7 @@ export function SDInputsRender({
         <SDInput
           key={inputNode.input_id}
           value={inputValue || ""}
-          inputClasses="mt-2 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           {...genericProps}
           type="number"
@@ -208,7 +255,7 @@ export function SDInputsRender({
           isDisplayAssetInput
           key={inputNode.input_id}
           file={inputValue}
-          inputClasses="mt-2 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           {...genericProps}
           onChange={(file: File | string | undefined | FileList) => {
@@ -225,7 +272,7 @@ export function SDInputsRender({
         <SDVideoInput
           key={inputNode.input_id}
           file={inputValue}
-          inputClasses="mt-2 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           {...genericProps}
           onChange={(file: File | string | undefined) => {
@@ -238,7 +285,7 @@ export function SDInputsRender({
         <SDImageInput
           key={inputNode.input_id}
           file={inputValue}
-          inputClasses="mt-2 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           accept=".exr"
           {...genericProps}
@@ -256,7 +303,7 @@ export function SDInputsRender({
         <SDAudioInput
           key={inputNode.input_id}
           file={inputValue}
-          inputClasses="mt-2 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           {...genericProps}
           onChange={(file: File | string | undefined) => {
@@ -291,7 +338,7 @@ export function SDInputsRender({
         <SDInput
           className=""
           key={inputNode.input_id}
-          inputClasses="mt-2 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           value={inputValue || ""}
           onChange={(e: any) => updateInput(inputNode.input_id, e.target.value)}
@@ -333,7 +380,7 @@ export function SDInputsRender({
                     if (file instanceof FileList) {
                       updateInput(
                         inputNode.input_id,
-                        Array.from(file).map((f) => f)
+                        Array.from(file).map((f) => f),
                       );
                       return;
                     }
@@ -342,7 +389,7 @@ export function SDInputsRender({
                       inputNode.input_id,
                       images.map((currentFile, index) => {
                         return i === index ? file : currentFile;
-                      })
+                      }),
                     );
                   }}
                 />
@@ -367,7 +414,7 @@ export function SDInputsRender({
         <div className="flex flex-col">
           <div>{header(genericProps)}</div>
           <Switch
-            className="mt-2 bg-gray-50"
+            className="mt-1 bg-gray-50"
             key={inputNode.input_id}
             defaultChecked={inputNode.default_value as boolean}
             checked={inputValue as boolean}
@@ -443,7 +490,7 @@ export function SDInputsRender({
             <SDInput
               key={inputNode.input_id}
               value={inputValue || ""}
-              inputClasses="mt-2 bg-gray-50"
+              inputClasses="mt-1 bg-gray-50"
               header={header(genericProps)}
               {...genericProps}
               type="number"
@@ -486,7 +533,7 @@ export function SDInputsRender({
             <SDInput
               className="center w-full "
               key={inputNode.input_id}
-              inputClasses="mt-2"
+              inputClasses="mt-1"
               value={inputValue || ""}
               onChange={(e: any) =>
                 updateInput(inputNode.input_id, e.target.value)
@@ -592,7 +639,7 @@ export function FileDropdown(props: {
                             "mr-2 h-4 w-4",
                             value === framework.name
                               ? "opacity-100"
-                              : "opacity-0"
+                              : "opacity-0",
                           )}
                         />
                         {framework.name}
