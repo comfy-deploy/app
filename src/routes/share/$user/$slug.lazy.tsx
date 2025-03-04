@@ -136,7 +136,14 @@ function RouteComponent() {
     if (inputValues && Object.keys(inputValues).length > 0) {
       setDefaultValues(inputValues);
       setIsImageDetailDrawerOpen(false);
-      setIsAdvanceOptionDrawerOpen(true);
+
+      // Check if screen width is smaller than lg breakpoint (typically 1024px)
+      const isSmallScreen = window.innerWidth < 1024;
+      if (isSmallScreen) {
+        setIsAdvanceOptionDrawerOpen(true);
+      } else {
+        toast.success("Inputs updated");
+      }
     }
   }, [inputValues]);
 
