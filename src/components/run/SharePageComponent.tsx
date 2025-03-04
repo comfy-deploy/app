@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -619,31 +619,34 @@ function RunDisplay({
               urlList.length > 0 &&
               urlList[viewingImageIndex] ? (
                 // Image viewer mode
-                <div className="relative flex flex-col items-center">
-                  {/* Image thumbnails navigation bar */}
-                  <div
+                <div className="flex flex-col items-center">
+                  <ScrollArea
                     ref={thumbnailsContainerRef}
-                    className="-top-24 absolute flex max-w-2xl gap-2 overflow-x-auto rounded-sm p-2"
+                    className="max-w-2xl rounded-sm p-2"
+                    hideVertical
                   >
-                    {urlList.map((item, index) => (
-                      <button
-                        type="button"
-                        key={index}
-                        onClick={() => setViewingImageIndex(index)}
-                        className={cn(
-                          "relative flex-shrink-0 overflow-hidden rounded-md transition-all",
-                          viewingImageIndex === index
-                            ? "shadow-md outline outline-2 outline-purple-500 outline-offset-2"
-                            : "opacity-70 ring-transparent hover:opacity-100",
-                        )}
-                      >
-                        <FileURLRender
-                          url={item.url}
-                          imgClasses="h-16 w-16 rounded-[8px] object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
+                    <div className="flex flex-row gap-2 p-1">
+                      {urlList.map((item, index) => (
+                        <button
+                          type="button"
+                          key={index}
+                          onClick={() => setViewingImageIndex(index)}
+                          className={cn(
+                            "relative flex-shrink-0 overflow-hidden rounded-md transition-all",
+                            viewingImageIndex === index
+                              ? "shadow-md outline outline-2 outline-purple-500 outline-offset-2"
+                              : "opacity-70 ring-transparent hover:opacity-100",
+                          )}
+                        >
+                          <FileURLRender
+                            url={item.url}
+                            imgClasses="h-16 w-16 rounded-[8px] object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
 
                   <FileURLRender
                     url={urlList[viewingImageIndex].url}
@@ -715,7 +718,7 @@ function RunDisplay({
             </div>
           </div>
           {runId && (
-            <div className="relative z-10 flex w-full items-center justify-center rounded-t-sm border border-gray-200 bg-white/80 p-8 pb-16 drop-shadow-lg backdrop-blur-lg">
+            <div className="relative z-10 flex min-h-screen w-full justify-center rounded-t-sm border border-gray-200 bg-white/80 p-8 pb-16 drop-shadow-lg backdrop-blur-lg">
               <div className="w-full max-w-5xl px-4">
                 <RunDetails run_id={runId} isPlayground={true} />
               </div>
