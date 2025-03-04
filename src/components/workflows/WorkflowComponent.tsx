@@ -33,6 +33,7 @@ import {
   AlertCircle,
   ExternalLink,
   Info,
+  Loader2,
   Settings2Icon,
   Zap,
 } from "lucide-react";
@@ -120,6 +121,14 @@ export function RunDetails(props: {
       setSelectedTab("inputs");
     }
   }, [isShare, isPlayground]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
 
   if (!run) {
     return (

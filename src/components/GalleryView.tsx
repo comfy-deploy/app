@@ -246,7 +246,10 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
   const items = query.data?.pages.flat() || [];
 
   // Split items into columns
-  const columns = Array.from({ length: columnCount }, () => []);
+  const columns: GalleryItem[][] = Array.from(
+    { length: columnCount },
+    () => [],
+  );
   items.forEach((item: GalleryItem, index: number) => {
     const columnIndex = index % columnCount;
     columns[columnIndex].push(item);
@@ -282,7 +285,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
         {/* Replace columns with flexbox layout */}
         <div className="m-4 flex gap-0.5 overflow-clip rounded-xl">
           {columns.map((col, i) => (
-            <div key={i} className={widthClass}>
+            <div key={`column-${i}`} className={widthClass}>
               {col.map((page: GalleryItem) => {
                 const outputUrl =
                   page.data?.images?.[0]?.url ||
@@ -305,10 +308,10 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                     <div className="absolute top-0 right-0 w-full rounded-t-[4px] bg-gradient-to-t from-transparent to-black/70 p-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                       <div className="flex items-center justify-end">
                         <DropdownMenu
-                          open={openDropdownId === page.run_id}
+                          open={openDropdownId === page.output_id}
                           onOpenChange={(isOpen) =>
                             setOpenDropdownId(
-                              isOpen ? (page.run_id ?? null) : null,
+                              isOpen ? (page.output_id ?? null) : null,
                             )
                           }
                         >
@@ -343,7 +346,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                               </div>
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              disabled={loadingCoverId === page.run_id}
+                              disabled={loadingCoverId === page.output_id}
                               onClick={async (e) => {
                                 e.preventDefault();
                                 await handleSetAsCoverImage(outputUrl);
@@ -351,7 +354,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                             >
                               <div className="flex w-full items-center justify-between">
                                 Set as Cover Image
-                                {loadingCoverId === page.run_id && (
+                                {loadingCoverId === page.output_id && (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 )}
                               </div>
