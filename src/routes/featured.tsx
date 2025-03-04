@@ -125,11 +125,11 @@ function RouteComponent() {
 
           {/* Hashtags in top right corner */}
           {hashtags.length > 0 && (
-            <div className="absolute top-3 right-3 z-20 flex flex-wrap justify-end gap-1.5">
+            <div className="absolute top-3 right-3 z-20 flex flex-wrap justify-end gap-1">
               {hashtags.map((tag, index) => (
                 <span
                   key={index}
-                  className="rounded-[4px] bg-black/60 px-2 py-0.5 text-2xs text-white backdrop-blur-sm"
+                  className="rounded-[4px] bg-black/50 px-2 py-0.5 text-2xs text-white backdrop-blur-sm"
                 >
                   {tag}
                 </span>
@@ -154,7 +154,7 @@ function RouteComponent() {
               {/* Description with CSS transition */}
               {cleanDescription && (
                 <div className="max-h-0 overflow-hidden opacity-0 transition-all duration-300 group-hover:mt-1 group-hover:max-h-[48px] group-hover:opacity-100">
-                  <p className="line-clamp-2 text-white/80 text-xs">
+                  <p className="line-clamp-2 text-white/80 text-xs leading-[1.4]">
                     {cleanDescription}
                   </p>
                 </div>
