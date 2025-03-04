@@ -161,7 +161,9 @@ export function SDInputsRender({
       return (
         <SDInput
           key={inputNode.input_id}
-          value={inputValue || ""}
+          value={
+            inputValue !== undefined && inputValue !== null ? inputValue : ""
+          }
           inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           {...genericProps}
@@ -175,7 +177,9 @@ export function SDInputsRender({
       return (
         <SDInput
           key={inputNode.input_id}
-          value={inputValue || ""}
+          value={
+            inputValue !== undefined && inputValue !== null ? inputValue : ""
+          }
           inputClasses="mt-1 bg-gray-50"
           header={header(genericProps)}
           {...genericProps}
@@ -205,7 +209,11 @@ export function SDInputsRender({
               step="0.01"
               min={inputNode.min_value}
               max={inputNode.max_value}
-              value={inputValue || ""}
+              value={
+                inputValue !== undefined && inputValue !== null
+                  ? inputValue
+                  : ""
+              }
               onChange={(e: any) => {
                 const newValue = e.target.value;
                 updateInput(inputNode.input_id, newValue);
@@ -235,7 +243,11 @@ export function SDInputsRender({
               step="1"
               min={inputNode.min_value}
               max={inputNode.max_value}
-              value={inputValue || ""}
+              value={
+                inputValue !== undefined && inputValue !== null
+                  ? inputValue
+                  : ""
+              }
               onChange={(e: any) => {
                 const newValue = e.target.value;
                 updateInput(inputNode.input_id, newValue);
