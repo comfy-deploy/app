@@ -75,7 +75,7 @@ function RouteComponent() {
       {sortedGroups.map((groupName) => (
         <div key={groupName} className="mb-12">
           <div className="mb-6 flex items-center gap-4">
-            <h2 className="font-semibold text-2xl">
+            <h2 className="font-medium text-xl">
               {capitalizeFirstLetter(groupName)}
             </h2>
             <div className="h-px flex-grow rounded-full bg-gradient-to-r from-border/50 via-border to-border/50" />
@@ -93,7 +93,7 @@ function RouteComponent() {
       {noTagWorkflows.length > 0 && (
         <div className="mt-12">
           <div className="mb-6 flex items-center gap-4">
-            <h2 className="font-semibold text-2xl">Others</h2>
+            <h2 className="font-medium text-xl">Others</h2>
             <div className="h-px flex-grow rounded-full bg-gradient-to-r from-border/50 via-border to-border/50" />
           </div>
 

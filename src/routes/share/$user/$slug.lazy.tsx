@@ -379,7 +379,7 @@ function RouteComponent() {
           ) : (
             <span className="text-muted-foreground text-sm">{userParam}</span>
           )}
-          <span className="text-muted-foreground text-sm">
+          <span className="max-w-3xl text-muted-foreground text-sm">
             {shareDeployment.description}
           </span>
         </div>
