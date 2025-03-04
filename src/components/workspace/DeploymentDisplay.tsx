@@ -88,6 +88,8 @@ import { NewStepper } from "./StaticStepper";
 import { VersionDetails } from "./VersionDetails";
 import { useNavigate } from "@tanstack/react-router";
 import { useMachine } from "@/hooks/use-machine";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 const curlTemplate = `
 curl --request POST \
@@ -1435,13 +1437,12 @@ export function DeploymentSettings({
   );
 }
 
-export function VersionDrawer({ workflowId }: { workflowId: string }) {
+export function DeploymentDrawer() {
   const { selectedDeployment, setSelectedDeployment } =
     useSelectedDeploymentStore();
-  const { data: deployments } = useWorkflowDeployments(workflowId);
-  const deployment = deployments?.find(
-    (d: Deployment) => d.id === selectedDeployment,
-  );
+  const { data: deployment, isLoading } = useQuery<any>({
+    queryKey: ["deployment", selectedDeployment],
+  });
 
   return (
     <MyDrawer
@@ -1452,13 +1453,41 @@ export function VersionDrawer({ workflowId }: { workflowId: string }) {
       }}
     >
       <ScrollArea className="h-full">
-        {deployment && (
+        {isLoading || (!deployment && selectedDeployment) ? (
+          <div className="flex flex-col px-2">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-zinc-50 pt-1 pb-4">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-9 w-[180px]" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-28" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-4">
+              <Skeleton className="h-24 w-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          </div>
+        ) : deployment ? (
           <DeploymentSettings
             key={deployment.id}
             deployment={deployment}
             onClose={() => setSelectedDeployment(null)}
           />
-        )}
+        ) : null}
       </ScrollArea>
     </MyDrawer>
   );

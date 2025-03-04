@@ -20,10 +20,8 @@ import { CopyIcon, Droplets, ExternalLink, LinkIcon } from "lucide-react";
 import { parseAsString, useQueryState } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  VersionDrawer,
-  useSelectedDeploymentStore,
-} from "./workflows/$workflowId/$view.lazy";
+import { useSelectedDeploymentStore } from "./workflows/$workflowId/$view.lazy";
+import { DeploymentDrawer } from "@/components/workspace/DeploymentDisplay";
 
 interface Deployment {
   id: string;
@@ -303,7 +301,7 @@ function RouteComponent() {
           ))}
         </div>
       )}
-      {selectedWorkflowId && <VersionDrawer workflowId={selectedWorkflowId} />}
+      {selectedWorkflowId && <DeploymentDrawer />}
     </div>
   );
 }

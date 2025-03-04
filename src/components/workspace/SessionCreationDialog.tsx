@@ -33,12 +33,19 @@ import {
 } from "@/hooks/use-machine";
 import { useSessionAPI } from "@/hooks/use-session-api";
 import { useRouter } from "@tanstack/react-router";
-import { Loader2, Search } from "lucide-react";
+import {
+  Droplets,
+  Loader2,
+  Play,
+  Search,
+  StopCircle,
+  ArrowRightToLine,
+  RotateCw,
+} from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
-import { Droplets } from "lucide-react";
 
 interface SessionCreationDialogProps {
   workflowId: string;
@@ -60,6 +67,88 @@ interface SessionForm {
   machineId: string;
   gpu: string;
   timeout: number;
+}
+
+function MachineSessionsList({ machineId }: { machineId: string }) {
+  const { listSession, deleteSession } = useSessionAPI(machineId);
+  const { data: sessions } = listSession;
+  const router = useRouter();
+
+  if (!sessions || sessions.length === 0) {
+    return (
+      <div className="p-4 text-center text-muted-foreground text-sm">
+        No active sessions for this machine
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 px-6 py-3">
+      <div className="space-y-2">
+        {sessions.map((session) => (
+          <div
+            key={session.session_id}
+            className="group flex items-center justify-between rounded-lg border bg-background p-2 hover:bg-blue-50/50"
+          >
+            <div
+              className="flex flex-1 cursor-pointer items-center gap-2 pl-2"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                router.navigate({
+                  to: "/sessions/$sessionId",
+                  params: {
+                    sessionId: session.session_id,
+                  },
+                  search: {
+                    machineId: session.machine_id,
+                  },
+                });
+              }}
+            >
+              <div className="relative flex h-4 w-4 items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <RotateCw className="absolute h-4 w-4 animate-spin text-green-500 opacity-50" />
+              </div>
+              <span className="text-sm">{session.session_id.slice(0, 8)}</span>
+              <Badge variant="outline">{session.gpu}</Badge>
+              <ArrowRightToLine className="ml-auto h-4 w-4 text-blue-500 opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isLoading={deleteSession.isPending}
+                    className=" text-red-500 hover:text-red-600"
+                    Icon={StopCircle}
+                    iconPlacement="right"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // await new Promise((resolve) => setTimeout(resolve, 2000));
+                      try {
+                        await deleteSession.mutateAsync({
+                          sessionId: session.session_id,
+                        });
+                        toast.success("Session stopped successfully");
+                      } catch (error) {
+                        toast.error("Failed to stop session");
+                      }
+                    }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Stop Session</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function SessionCreationDialog({
@@ -162,6 +251,9 @@ export function SessionCreationDialog({
                         <div className="h-2 w-2 rounded-full bg-green-500" />
                         <span>{selectedMachine?.name}</span>
                       </div>
+                      {field.value && (
+                        <MachineSessionsList machineId={field.value} />
+                      )}
                     </div>
                   ) : (
                     <>
@@ -215,6 +307,9 @@ export function SessionCreationDialog({
                           ))}
                         </SelectContent>
                       </Select>
+                      {field.value && (
+                        <MachineSessionsList machineId={field.value} />
+                      )}
                     </>
                   )}
                   <FormDescription>

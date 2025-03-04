@@ -6,7 +6,10 @@ import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 import { NavItem } from "@/components/nav-bar";
 import { useIsAdminAndMember } from "@/components/permissions";
 import { Playground, UserIcon } from "@/components/run/SharePageComponent";
-import { useCreateDeploymentDialog } from "@/components/run/VersionSelect";
+import {
+  useCreateDeploymentDialog,
+  useWorkflowVersion,
+} from "@/components/run/VersionSelect";
 import { SessionItem } from "@/components/sessions/SessionItem";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -65,6 +68,7 @@ import {
 import { DeploymentConfirmation } from "@/components/workspace/DeploymentConfirmation";
 import {
   APIDocs,
+  DeploymentDrawer,
   DeploymentSettings,
 } from "@/components/workspace/DeploymentDisplay";
 import type { Deployment } from "@/components/workspace/DeploymentDisplay";
@@ -84,6 +88,7 @@ import {
   getInputsFromWorkflowJSON,
 } from "@/lib/getInputsFromWorkflow";
 import { cn, getOptimizedImage } from "@/lib/utils";
+import { useAuth } from "@clerk/clerk-react";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -103,6 +108,8 @@ import {
   Loader2,
   MoreHorizontal,
   MoreVertical,
+  Pencil,
+  Play,
   Plus,
   Share,
   Terminal,
@@ -424,7 +431,7 @@ function WorkflowPageComponent() {
         </div>
       ) : workflow ? (
         <div className="h-full">
-          {(!isEditing &&
+          {/* {(!isEditing &&
             currentView !== "gallery" &&
             currentView !== "playground") ||
           (currentView === "playground" &&
@@ -435,7 +442,7 @@ function WorkflowPageComponent() {
               index={0}
               isInWorkspace={true}
             />
-          ) : null}
+          ) : null} */}
 
           {view}
         </div>
@@ -453,33 +460,33 @@ function WorkflowPageComponent() {
   );
 }
 
-export function VersionDrawer({ workflowId }: { workflowId: string }) {
-  const { selectedDeployment, setSelectedDeployment } =
-    useSelectedDeploymentStore();
-  const { data: deployments } = useWorkflowDeployments(workflowId);
-  const deployment = deployments?.find(
-    (d: Deployment) => d.id === selectedDeployment,
-  );
+// export function VersionDrawer({ workflowId }: { workflowId: string }) {
+//   const { selectedDeployment, setSelectedDeployment } =
+//     useSelectedDeploymentStore();
+//   const { data: deployments } = useWorkflowDeployments(workflowId);
+//   const deployment = deployments?.find(
+//     (d: Deployment) => d.id === selectedDeployment,
+//   );
 
-  return (
-    <MyDrawer
-      desktopClassName="w-[600px]"
-      open={!!selectedDeployment}
-      onClose={() => {
-        setSelectedDeployment(null);
-      }}
-    >
-      <ScrollArea className="h-full">
-        {deployment && (
-          <DeploymentSettings
-            deployment={deployment}
-            onClose={() => setSelectedDeployment(null)}
-          />
-        )}
-      </ScrollArea>
-    </MyDrawer>
-  );
-}
+//   return (
+//     <MyDrawer
+//       desktopClassName="w-[600px]"
+//       open={!!selectedDeployment}
+//       onClose={() => {
+//         setSelectedDeployment(null);
+//       }}
+//     >
+//       <ScrollArea className="h-full">
+//         {deployment && (
+//           <DeploymentSettings
+//             deployment={deployment}
+//             onClose={() => setSelectedDeployment(null)}
+//           />
+//         )}
+//       </ScrollArea>
+//     </MyDrawer>
+//   );
+// }
 
 interface WorkflowDescriptionForm {
   description: string;
@@ -516,6 +523,15 @@ function RequestPage({
   } = useCurrentWorkflow(workflowId);
   const { data: deployments, refetch: refetchDeployments } =
     useWorkflowDeployments(workflowId);
+  const { data: versions } = useQuery<any>({
+    queryKey: ["workflow", workflowId, "versions"],
+    meta: {
+      params: {
+        limit: 1,
+        offset: 0,
+      },
+    },
+  });
   const { setSelectedDeployment } = useSelectedDeploymentStore();
   const formRef = useRef<HTMLFormElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -539,6 +555,8 @@ function RequestPage({
 
   const { createDynamicSession } = useSessionAPI();
 
+  const { isSignedIn } = useAuth();
+
   const defaultValues = useMemo(
     () => ({
       description: currentWorkflow?.description ?? "",
@@ -549,6 +567,8 @@ function RequestPage({
   const form = useForm<WorkflowDescriptionForm>({
     defaultValues,
   });
+
+  const latestVersion = versions && versions.length > 0 ? versions?.[0] : null;
 
   // Update form when workflow data is loaded
   useEffect(() => {
@@ -610,7 +630,7 @@ function RequestPage({
 
   return (
     <div className="mx-auto flex flex-row">
-      <VersionDrawer workflowId={workflowId} />
+      <DeploymentDrawer />
       {deploymentConfirmation.isOpen &&
         deploymentConfirmation.environment &&
         deploymentConfirmation.workflowVersionId && (
@@ -733,11 +753,57 @@ function RequestPage({
           controls={controls}
         />
 
-        <div className="mt-4 font-bold text-sm">Versions</div>
+        <div className="mt-4 font-medium text-sm">Versions</div>
+
+        <div className="-mb-6 rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 px-4 pt-2.5 pb-7 relative">
+          <div className="flex flex-row items-center justify-between px-2">
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-muted-foreground">
+                Edit your workflow by starting a session
+              </div>
+            </div>
+
+            <div className="flex flex-row items-center gap-2">
+              <Button
+                variant="shine"
+                size="sm"
+                className="rounded-[9px]"
+                disabled={!latestVersion}
+                onClick={() => {
+                  if (!isSignedIn) {
+                    // Use the clerk hook instead of direct import
+                    router.navigate({
+                      to: "/sign-in",
+                      search: {
+                        redirectTo: window.location.href,
+                      },
+                    });
+                    return;
+                  }
+
+                  setSessionCreation((prev) => ({
+                    ...prev,
+                    isOpen: true,
+                    version: latestVersion?.version || null,
+                    machineId:
+                      latestVersion?.machine_id ||
+                      currentWorkflow?.selected_machine_id,
+                    machineVersionId: latestVersion?.machine_version_id || null,
+                    modalImageId: latestVersion?.modal_image_id || null,
+                  }));
+                }}
+              >
+                Edit v{latestVersion?.version}
+                {/* <Pencil className="ml-2 h-3 w-3" /> */}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <VersionList
           hideSearch
           workflow_id={workflowId || ""}
-          className="w-full rounded-md p-1 ring-1 ring-gray-200"
+          className="w-full rounded-md p-1 ring-1 bg-background ring-gray-200 relative  z-[1] "
           containerClassName="max-h-[200px]"
           height={40}
           renderItem={(item) => {

@@ -9,7 +9,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
-import { OrganizationSwitcher, useClerk } from "@clerk/clerk-react";
+import { OrganizationSwitcher, useAuth, useClerk } from "@clerk/clerk-react";
 import {
   Link,
   useLocation,
@@ -49,6 +49,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 import { useSidebar } from "./ui/sidebar";
+import { queryClient } from "@/lib/providers";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
@@ -60,6 +61,19 @@ export function NavBar() {
   const previousPathname = useRef(pathname);
 
   const [currentRootLevel, setCurrentRootLevel] = useState("/");
+
+  const { orgId } = useAuth();
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // console.log("org_id", orgId);
+    // window.location.reload();
+    queryClient.invalidateQueries();
+  }, [orgId]);
 
   useEffect(() => {
     if (!isRootLevel && previousIsRootLevel.current) {
