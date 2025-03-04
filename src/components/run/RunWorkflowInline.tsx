@@ -32,6 +32,7 @@ import type { z } from "zod";
 import { uploadFile } from "../files-api";
 import { publicRunStore } from "./VersionSelect";
 import { useQueryState } from "nuqs";
+import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE_BYTES = 250_000_000; // 250MB
 
@@ -243,6 +244,7 @@ export function RunWorkflowInline({
   runOrigin = "public-share",
   blocking = true,
   model_id,
+  scrollAreaClassName,
 }: {
   inputs: z.infer<typeof WorkflowInputsType>;
   deployment_id: string;
@@ -252,6 +254,7 @@ export function RunWorkflowInline({
   runOrigin?: any;
   blocking?: boolean;
   model_id?: string;
+  scrollAreaClassName?: string;
 }) {
   const [values, setValues] =
     useState<
@@ -428,7 +431,7 @@ export function RunWorkflowInline({
             </Button>
           )
         }
-        scrollAreaClassName="h-full"
+        scrollAreaClassName={cn("h-full", scrollAreaClassName)}
         // scrollAreaClassName="[&>[data-radix-scroll-area-viewport]]:max-h-[calc(60%-100px)]"
       >
         {!hideInputs &&

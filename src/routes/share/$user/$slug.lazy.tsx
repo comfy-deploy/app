@@ -213,8 +213,14 @@ function RouteComponent() {
     // Add wheel event handler with throttling
     let wheelTimeout: NodeJS.Timeout | null = null;
     const handleWheel = (e: WheelEvent) => {
+      // Check if the event target is inside the RunWorkflowInline component
+      const isOverRunWorkflow = (e.target as HTMLElement).closest(
+        ".run-workflow-inline",
+      );
       const isOverDrawer = (e.target as HTMLElement).closest('[role="dialog"]');
-      if (isOverDrawer) return;
+
+      // Skip gallery scrolling if over RunWorkflowInline or a drawer
+      if (isOverRunWorkflow || isOverDrawer) return;
 
       if (!galleryData?.data?.pages?.[0] || isProcessing) return;
 
@@ -598,13 +604,14 @@ function RouteComponent() {
 
       {/* functions (right) */}
       <div className="-translate-y-1/2 fixed top-1/2 right-2 z-20 hidden lg:block">
-        <div className="w-[500px] rounded-xl border border-gray-200 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all duration-300 hover:shadow-xl">
+        <div className="run-workflow-inline w-[500px] rounded-xl border border-gray-200 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all duration-300 hover:shadow-xl">
           <RunWorkflowInline
             blocking={false}
             default_values={default_values}
             inputs={shareDeployment?.input_types}
             runOrigin="public-share"
             deployment_id={shareDeployment.id}
+            scrollAreaClassName="[&>[data-radix-scroll-area-viewport]]:max-h-[60vh]"
           />
         </div>
       </div>
