@@ -280,7 +280,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
           </div>
         )}
         {/* Replace columns with flexbox layout */}
-        <div className="m-4 flex gap-0.5">
+        <div className="m-4 flex gap-0.5 overflow-clip rounded-xl">
           {columns.map((col, i) => (
             <div key={i} className={widthClass}>
               {col.map((page: GalleryItem) => {
