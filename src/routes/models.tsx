@@ -2,7 +2,6 @@ import { PaddingLayout } from "@/components/PaddingLayout";
 import { AddModelDialog } from "@/components/models/add-model-dialog/index";
 import { FolderTree } from "@/components/models/folder-tree";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 
@@ -20,7 +19,7 @@ export function StoragePage() {
   };
 
   return (
-    <PaddingLayout className="flex h-full w-full flex-col gap-4 py-4 max-w-screen-xl mx-auto">
+    <PaddingLayout className="mx-auto flex h-full w-full max-w-screen-xl flex-col gap-4 py-4">
       <div className="flex h-full flex-1 flex-col gap-2 rounded-md ">
         <Suspense
           fallback={

@@ -112,7 +112,7 @@ export function NavBar() {
                       label="Deployments"
                       icon={Code}
                     />
-                    <NavItem to="/storage" label="Storage" icon={Database} />
+                    <NavItem to="/models" label="Models" icon={Database} />
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -125,16 +125,6 @@ export function NavBar() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      {/* <DropdownMenuLabel>My Account</DropdownMenuLabel> */}
-                      {/* <DropdownMenuSeparator /> */}
-                      {/* <DropdownMenuItem asChild>
-                        <Link
-                          to="/machines"
-                          className="flex items-center gap-2"
-                        >
-                          <Server className="h-4 w-4" /> Machines
-                        </Link>
-                      </DropdownMenuItem> */}
                       <DropdownMenuItem asChild>
                         <Link to="/home" className="flex items-center gap-2">
                           <Monitor className="h-4 w-4" /> Workspace{" "}
@@ -181,9 +171,6 @@ export function NavBar() {
                           <CreditCard className="h-4 w-4" /> Plan
                         </Link>
                       </DropdownMenuItem>
-                      {/* <DropdownMenuItem>Billing</DropdownMenuItem>
-                  <DropdownMenuItem>Team</DropdownMenuItem>
-                  <DropdownMenuItem>Subscription</DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -200,7 +187,6 @@ export function NavBar() {
                   id="nav-bar-items"
                 />
               )}
-              {/* </AnimatePresence> */}
             </div>
           </div>
 
@@ -231,7 +217,7 @@ export function NavBar() {
         <div className="flex h-full w-full items-center gap-4 px-4">
           <a
             href="https://www.comfydeploy.com/docs/v2/introduction"
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-gray-600 text-sm hover:text-gray-900"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -240,7 +226,7 @@ export function NavBar() {
           </a>
           <a
             href="https://discord.com/invite/c222Cwyget"
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-gray-600 text-sm hover:text-gray-900"
             target="_blank"
             rel="noopener noreferrer"
           >
