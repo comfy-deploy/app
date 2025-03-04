@@ -20,6 +20,7 @@ import { Route as PricingImport } from './routes/pricing'
 import { Route as OnboardingCallImport } from './routes/onboarding-call'
 import { Route as ModelsImport } from './routes/models'
 import { Route as HomeImport } from './routes/home'
+import { Route as FeaturedImport } from './routes/featured'
 import { Route as DeploymentsImport } from './routes/deployments'
 import { Route as AssetsImport } from './routes/assets'
 import { Route as ApiKeysImport } from './routes/api-keys'
@@ -87,6 +88,12 @@ const ModelsRoute = ModelsImport.update({
 const HomeRoute = HomeImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const FeaturedRoute = FeaturedImport.update({
+  id: '/featured',
+  path: '/featured',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -260,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeploymentsImport
       parentRoute: typeof rootRoute
     }
+    '/featured': {
+      id: '/featured'
+      path: '/featured'
+      fullPath: '/featured'
+      preLoaderRoute: typeof FeaturedImport
+      parentRoute: typeof rootRoute
+    }
     '/home': {
       id: '/home'
       path: '/home'
@@ -431,6 +445,7 @@ export interface FileRoutesByFullPath {
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
+  '/featured': typeof FeaturedRoute
   '/home': typeof HomeRoute
   '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -461,6 +476,7 @@ export interface FileRoutesByTo {
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
+  '/featured': typeof FeaturedRoute
   '/home': typeof HomeRoute
   '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -492,6 +508,7 @@ export interface FileRoutesById {
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
+  '/featured': typeof FeaturedRoute
   '/home': typeof HomeRoute
   '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -524,6 +541,7 @@ export interface FileRouteTypes {
     | '/api-keys'
     | '/assets'
     | '/deployments'
+    | '/featured'
     | '/home'
     | '/models'
     | '/onboarding-call'
@@ -553,6 +571,7 @@ export interface FileRouteTypes {
     | '/api-keys'
     | '/assets'
     | '/deployments'
+    | '/featured'
     | '/home'
     | '/models'
     | '/onboarding-call'
@@ -582,6 +601,7 @@ export interface FileRouteTypes {
     | '/api-keys'
     | '/assets'
     | '/deployments'
+    | '/featured'
     | '/home'
     | '/models'
     | '/onboarding-call'
@@ -613,6 +633,7 @@ export interface RootRouteChildren {
   ApiKeysRoute: typeof ApiKeysRoute
   AssetsRoute: typeof AssetsRoute
   DeploymentsRoute: typeof DeploymentsRoute
+  FeaturedRoute: typeof FeaturedRoute
   HomeRoute: typeof HomeRoute
   ModelsRoute: typeof ModelsRoute
   OnboardingCallRoute: typeof OnboardingCallRoute
@@ -643,6 +664,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiKeysRoute: ApiKeysRoute,
   AssetsRoute: AssetsRoute,
   DeploymentsRoute: DeploymentsRoute,
+  FeaturedRoute: FeaturedRoute,
   HomeRoute: HomeRoute,
   ModelsRoute: ModelsRoute,
   OnboardingCallRoute: OnboardingCallRoute,
@@ -684,6 +706,7 @@ export const routeTree = rootRoute
         "/api-keys",
         "/assets",
         "/deployments",
+        "/featured",
         "/home",
         "/models",
         "/onboarding-call",
@@ -720,6 +743,9 @@ export const routeTree = rootRoute
     },
     "/deployments": {
       "filePath": "deployments.tsx"
+    },
+    "/featured": {
+      "filePath": "featured.tsx"
     },
     "/home": {
       "filePath": "home.tsx"

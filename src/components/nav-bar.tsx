@@ -32,6 +32,7 @@ import {
   Monitor,
   Server,
   Settings,
+  Sparkles,
   Workflow,
 } from "lucide-react";
 import { BookOpen, Github, PlayCircle } from "lucide-react";
@@ -128,6 +129,15 @@ export function NavBar() {
                       <DropdownMenuItem asChild>
                         <Link to="/home" className="flex items-center gap-2">
                           <Monitor className="h-4 w-4" /> Workspace{" "}
+                          <Badge variant="fuchsia">Beta</Badge>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          to="/featured"
+                          className="flex items-center gap-2"
+                        >
+                          <Sparkles className="h-4 w-4" /> Featured
                           <Badge variant="fuchsia">Beta</Badge>
                         </Link>
                       </DropdownMenuItem>
