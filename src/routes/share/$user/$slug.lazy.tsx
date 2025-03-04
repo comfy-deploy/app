@@ -281,6 +281,7 @@ function RouteComponent() {
 
     setCompletedImageUrls([url]);
     setSelectedImageIndex(index);
+    setIsImageDetailDrawerOpen(true);
     setRunId("");
     setIsRunComplete(false);
   };
@@ -339,9 +340,9 @@ function RouteComponent() {
         transition={{ duration: 1 }}
         className="pointer-events-none"
       >
-        <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
-        <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
-        <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
+        <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 left-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl lg:left-[calc(50%-250px)]" />
+        <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 left-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300 lg:left-[calc(50%-250px)]" />
+        <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 left-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600 lg:left-[calc(50%-250px)]" />
       </motion.div>
 
       <div className="mx-auto w-full max-w-[1400px] gap-6 p-4">
@@ -384,14 +385,7 @@ function RouteComponent() {
         )}
       </AnimatePresence>
 
-      <div
-        className={cn(
-          "-translate-y-1/2 absolute top-1/2 z-20 transition-all duration-1000 ease-in-out",
-          isImageDetailDrawerOpen
-            ? "-translate-x-1/2 left-[calc(50%-250px)]" // Move right by half the drawer width (500px/2)
-            : "-translate-x-1/2 left-1/2",
-        )}
-      >
+      <div className="-translate-y-1/2 -translate-x-1/2 absolute top-1/2 left-1/2 z-20 lg:left-[calc(50%-250px)]">
         <AnimatePresence mode="wait" initial={false}>
           {getDisplayState() === "initial" && (
             <motion.div
@@ -461,7 +455,7 @@ function RouteComponent() {
 
       {/* Left */}
 
-      <div className={cn("-translate-y-1/2 fixed top-1/2 left-2 z-20")}>
+      <div className="-translate-y-1/2 fixed top-1/2 left-2 z-20">
         <motion.div
           initial={{ opacity: 0, x: -100 }}
           animate={
@@ -526,8 +520,8 @@ function RouteComponent() {
         <div className="pointer-events-none absolute bottom-0 left-0 h-10 w-full bg-gradient-to-t from-white to-transparent" />
       </div>
 
-      {/* functions */}
-      <div className="-translate-x-1/2 fixed bottom-6 left-1/2">
+      {/* functions (bottom) */}
+      <div className="-translate-x-1/2 fixed bottom-6 left-1/2 lg:hidden">
         <motion.div
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
@@ -593,6 +587,19 @@ function RouteComponent() {
             </Button>
           </div>
         </motion.div>
+      </div>
+
+      {/* functions (right) */}
+      <div className="-translate-y-1/2 fixed top-1/2 right-2 z-20 hidden lg:block">
+        <div className="w-[500px] rounded-xl border border-gray-200 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all duration-300 hover:shadow-xl">
+          <RunWorkflowInline
+            blocking={false}
+            default_values={default_values}
+            inputs={shareDeployment?.input_types}
+            runOrigin="public-share"
+            deployment_id={shareDeployment.id}
+          />
+        </div>
       </div>
 
       <Drawer
