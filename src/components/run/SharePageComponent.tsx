@@ -391,41 +391,6 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
                 disableRight={true}
               />
             </div>
-
-            {/* Environment & GPU Info Bar */}
-            {deployment && (
-              <div className="-translate-x-1/2 absolute bottom-4 left-1/2 z-20 hidden lg:flex">
-                <div className="flex items-center gap-2">
-                  <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        {/* biome-ignore lint/a11y/noNoninteractiveTabindex: <explanation> */}
-                        <span tabIndex={0}>
-                          <Button
-                            variant="outline"
-                            className="group h-12 rounded-full shadow-lg"
-                            disabled={!runId}
-                            onClick={() => {
-                              setIsTweak(true);
-                            }}
-                          >
-                            <Settings2 className="mr-2 h-4 w-4 shrink-0" />
-                            <span>Tweak</span>
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {!runId ? (
-                          <p>Please select a run in Gallery</p>
-                        ) : (
-                          <p>Tweak this run</p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

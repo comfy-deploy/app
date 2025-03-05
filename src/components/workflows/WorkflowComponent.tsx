@@ -176,11 +176,9 @@ export function RunDetails(props: {
         </div>
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            {!isPlayground && (
-              <Button variant="outline" onClick={handleClick}>
-                <Settings2Icon size={16} /> Tweak it
-              </Button>
-            )}
+            <Button variant="outline" onClick={handleClick}>
+              <Settings2Icon size={16} /> Tweak it
+            </Button>
             {process.env.NODE_ENV === "development" &&
               run.machine_type === "comfy-deploy-serverless" && (
                 <Button
