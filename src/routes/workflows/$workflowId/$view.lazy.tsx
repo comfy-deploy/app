@@ -1,24 +1,15 @@
 import { GalleryView } from "@/components/GalleryView";
 import { PaddingLayout } from "@/components/PaddingLayout";
 import { MyDrawer } from "@/components/drawer";
-import { LoadingWrapper } from "@/components/loading-wrapper";
-import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 import { NavItem } from "@/components/nav-bar";
 import { useIsAdminAndMember } from "@/components/permissions";
 import { Playground, UserIcon } from "@/components/run/SharePageComponent";
-import {
-  useCreateDeploymentDialog,
-  useWorkflowVersion,
-} from "@/components/run/VersionSelect";
 import { SessionItem } from "@/components/sessions/SessionItem";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -35,10 +26,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -66,19 +55,13 @@ import {
   useWorkflowDeployments,
 } from "@/components/workspace/ContainersTable";
 import { DeploymentConfirmation } from "@/components/workspace/DeploymentConfirmation";
-import {
-  APIDocs,
-  DeploymentDrawer,
-  DeploymentSettings,
-} from "@/components/workspace/DeploymentDisplay";
+import { DeploymentDrawer } from "@/components/workspace/DeploymentDisplay";
 import type { Deployment } from "@/components/workspace/DeploymentDisplay";
-import { useLogStore } from "@/components/workspace/LogContext";
 import { LogDisplay } from "@/components/workspace/LogDisplay";
 import {
   MachineSessionsList,
   SessionCreationDialog,
 } from "@/components/workspace/SessionCreationDialog";
-import { useSelectedVersion } from "@/components/workspace/Workspace";
 import { WorkspaceStatusBar } from "@/components/workspace/WorkspaceStatusBar";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
@@ -86,37 +69,19 @@ import { useSessionAPI } from "@/hooks/use-session-api";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { getRelativeTime } from "@/lib/get-relative-time";
-import {
-  getInputsFromWorkflowAPI,
-  getInputsFromWorkflowJSON,
-} from "@/lib/getInputsFromWorkflow";
 import { cn, getOptimizedImage } from "@/lib/utils";
 import { useAuth } from "@clerk/clerk-react";
-import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Link,
-  createLazyFileRoute,
-  notFound,
-  useRouter,
-} from "@tanstack/react-router";
+import { Link, createLazyFileRoute, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronLeft,
   CircleArrowUp,
   Droplets,
-  ExternalLink,
   ImageIcon,
-  Info,
-  Loader2,
-  MoreHorizontal,
   MoreVertical,
-  Pencil,
-  Play,
-  Plus,
   Share,
   Terminal,
-  Workflow,
   RotateCw,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
@@ -234,11 +199,6 @@ function WorkflowPageComponent() {
     enabled: !!sessionId,
   });
 
-  // const { data: deployments, isLoading: isDeploymentsLoading } =
-  //   useWorkflowDeployments(workflowId);
-
-  // const [isHovering, setIsHovering] = useState(false);
-
   return (
     <div className="relative flex h-full w-full flex-col">
       <Portal
@@ -297,17 +257,6 @@ function WorkflowPageComponent() {
                           <SidebarMenu className="">
                             <SidebarMenuItem>
                               <div className="flex items-center gap-0.5">
-                                {/* <SidebarMenuButton>
-                                  <SessionCreate
-                                    workflowId={workflowId}
-                                    setSessionId={setSessionId}
-                                    asChild={true}
-                                  >
-                                    <div className="flex items-center gap-0.5">
-                                      <Plus size={16} /> Create Session
-                                    </div>
-                                  </SessionCreate>
-                                </SidebarMenuButton> */}
                                 {currentView === "workspace" &&
                                   tab === "workspace" &&
                                   sessionSelected && (
@@ -365,25 +314,6 @@ function WorkflowPageComponent() {
                       ))}
                     </SidebarMenuSub>
                   )}
-
-                  {/* TODO: Add share options */}
-                  {/* {tab === "playground" && isAdminAndMember && (
-                <DropdownMenu>
-                  {dialog}
-                  {privateDialog}
-                  <DropdownMenuTrigger asChild>
-                    <SidebarMenuAction className="mr-4">
-                      <MoreHorizontal />
-                    </SidebarMenuAction>
-                  </DropdownMenuTrigger>˝
-                  <DropdownMenuContent className="w-56" forceMount>
-                    {menuItem}
-                    <span className="pointer-events-none opacity-30">
-                      {privateMenuItem}
-                    </span>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )} */}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -436,22 +366,7 @@ function WorkflowPageComponent() {
           </div>
         </div>
       ) : workflow ? (
-        <div className="h-full">
-          {/* {(!isEditing &&
-            currentView !== "gallery" &&
-            currentView !== "playground") ||
-          (currentView === "playground" &&
-            !isDeploymentsLoading &&
-            !deployments?.length) ? (
-            <MachineWorkspaceItem
-              machine={selectedMachine}
-              index={0}
-              isInWorkspace={true}
-            />
-          ) : null} */}
-
-          {view}
-        </div>
+        <div className="h-full">{view}</div>
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-4">
           <div className="text-muted-foreground">Workflow not found</div>
@@ -465,34 +380,6 @@ function WorkflowPageComponent() {
     </div>
   );
 }
-
-// export function VersionDrawer({ workflowId }: { workflowId: string }) {
-//   const { selectedDeployment, setSelectedDeployment } =
-//     useSelectedDeploymentStore();
-//   const { data: deployments } = useWorkflowDeployments(workflowId);
-//   const deployment = deployments?.find(
-//     (d: Deployment) => d.id === selectedDeployment,
-//   );
-
-//   return (
-//     <MyDrawer
-//       desktopClassName="w-[600px]"
-//       open={!!selectedDeployment}
-//       onClose={() => {
-//         setSelectedDeployment(null);
-//       }}
-//     >
-//       <ScrollArea className="h-full">
-//         {deployment && (
-//           <DeploymentSettings
-//             deployment={deployment}
-//             onClose={() => setSelectedDeployment(null)}
-//           />
-//         )}
-//       </ScrollArea>
-//     </MyDrawer>
-//   );
-// }
 
 interface WorkflowDescriptionForm {
   description: string;
@@ -514,6 +401,20 @@ interface SessionCreationState {
   modalImageId: string | null;
 }
 
+interface Version {
+  id: string;
+  comfyui_snapshot: string;
+  version: string;
+  machine_id: string;
+  machine_version_id: string;
+  modal_image_id: string;
+  comment: string;
+  created_at: string;
+  user_id: string;
+  workflow: string;
+  workflow_api: string;
+}
+
 function RequestPage({
   setIsEditing,
   selectedMachine,
@@ -529,7 +430,7 @@ function RequestPage({
   } = useCurrentWorkflow(workflowId);
   const { data: deployments, refetch: refetchDeployments } =
     useWorkflowDeployments(workflowId);
-  const { data: versions } = useQuery<any>({
+  const { data: versions } = useQuery<Version[]>({
     queryKey: ["workflow", workflowId, "versions"],
     meta: {
       params: {
@@ -579,13 +480,11 @@ function RequestPage({
 
   const [isHovering, setIsHovering] = useState(false);
 
-  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
-    null,
-  );
+  const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
 
   useEffect(() => {
     if (latestVersion) {
-      setSelectedVersionId(latestVersion.id);
+      setSelectedVersion(latestVersion);
     }
   }, [latestVersion]);
 
@@ -668,7 +567,9 @@ function RequestPage({
                 deploymentConfirmation.machineId ||
                 currentWorkflow?.selected_machine_id
               }
-              machineVersionId={deploymentConfirmation.machineVersionId}
+              machineVersionId={
+                deploymentConfirmation.machineVersionId ?? undefined
+              }
               description={currentWorkflow?.description}
               onClose={() =>
                 setDeploymentConfirmation((prev) => ({
@@ -701,8 +602,8 @@ function RequestPage({
             machineId={
               sessionCreation.machineId || currentWorkflow?.selected_machine_id
             }
-            modalImageId={sessionCreation.modalImageId}
-            machineVersionId={sessionCreation.machineVersionId}
+            modalImageId={sessionCreation.modalImageId ?? undefined}
+            machineVersionId={sessionCreation.machineVersionId ?? undefined}
             onClose={() =>
               setSessionCreation((prev) => ({ ...prev, isOpen: false }))
             }
@@ -865,7 +766,7 @@ function RequestPage({
           className="relative z-[1] w-full rounded-md bg-background p-1 ring-1 ring-gray-200"
           containerClassName="max-h-[234px]"
           height={30}
-          renderItem={(item) => {
+          renderItem={(item: Version) => {
             const myDeployments = deployments?.filter(
               (deployment: Deployment) =>
                 deployment.workflow_version_id === item.id,
@@ -882,7 +783,7 @@ function RequestPage({
               ) ?? false;
 
             // Check if this item is selected
-            const isSelected = selectedVersionId === item.id;
+            const isSelected = selectedVersion?.id === item.id;
 
             // Extract the edit function
             const handleEditVersion = () => {
@@ -905,12 +806,12 @@ function RequestPage({
                 className={cn(
                   "flex flex-row items-center justify-between gap-2 rounded-[6px] px-4 transition-colors hover:bg-gray-100",
                   isSelected && "bg-gray-200 hover:bg-gray-200",
-                  item.version === 1 && "rounded-b-sm",
+                  item.version === "1" && "rounded-b-sm",
                   item.version === versions?.[versions.length - 1]?.version &&
                     "rounded-t-sm",
                 )}
                 onClick={() => {
-                  setSelectedVersionId(item.id);
+                  setSelectedVersion(item);
                 }}
                 onDoubleClick={() => {
                   handleEditVersion();
@@ -923,7 +824,7 @@ function RequestPage({
                         <div
                           className={cn(
                             "absolute w-[2px] bg-gray-300",
-                            item.version === 1
+                            item.version === "1"
                               ? "top-0 h-[50%]"
                               : item.version === versions?.[0]?.version
                                 ? "bottom-0 h-[50%]"
@@ -962,7 +863,7 @@ function RequestPage({
                             setSelectedDeployment(deployment.id);
                           }}
                         >
-                          {!!deployment.modal_image_id ? (
+                          {deployment.modal_image_id ? (
                             <div className="flex items-center gap-1">
                               <div className="rounded-full bg-blue-100 p-0.5">
                                 <Droplets
@@ -1321,7 +1222,7 @@ function SessionCount({ machineId }: { machineId: string }) {
         <div className="h-2 w-2 rounded-full bg-green-500" />
         <RotateCw className="absolute h-4 w-4 animate-spin text-green-500 opacity-50" />
       </div>
-      <span className="text-xs text-muted-foreground">
+      <span className="text-muted-foreground text-xs">
         {sessions.length} active
       </span>
     </div>
