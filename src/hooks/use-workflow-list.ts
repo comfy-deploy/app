@@ -8,6 +8,9 @@ export function useWorkflowList(
 ) {
   return useInfiniteQuery<any[]>({
     queryKey: ["workflows"],
+    queryKeyHashFn: (queryKey) => {
+      return [...queryKey, debouncedSearchValue, limit].join(",");
+    },
     meta: {
       limit: limit,
       offset: 0,
