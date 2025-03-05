@@ -922,7 +922,7 @@ function RequestPage({
                       <>
                         <div
                           className={cn(
-                            "absolute w-[2px] bg-orange-400",
+                            "absolute w-[2px] bg-gray-300",
                             item.version === 1
                               ? "top-0 h-[50%]"
                               : item.version === versions?.[0]?.version
@@ -930,7 +930,7 @@ function RequestPage({
                                 : "h-full",
                           )}
                         />
-                        <div className="relative z-10 h-[6.5px] w-[6.5px] rounded-full bg-orange-400" />
+                        <div className="relative z-10 flex h-[6px] w-[6px] items-center justify-center rounded-full bg-gray-300" />
                       </>
                     )}
                   </div>
