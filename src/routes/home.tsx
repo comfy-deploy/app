@@ -194,6 +194,40 @@ function SessionsList() {
 
   return (
     <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-2 pt-2 pb-20">
+      <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-blue-900">Welcome to v3!</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="https://v2.app.comfydeploy.com"
+              target="_blank"
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Visit old version <ExternalLink className="ml-1 inline h-3 w-3" />
+            </Link>
+            <Link
+              to="https://www.comfydeploy.com/blog/v3"
+              target="_blank"
+              className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200"
+            >
+              Learn more <ExternalLink className="ml-1 inline h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Badge variant="secondary" className="bg-blue-100/50">
+            <Check className="mr-1 h-3 w-3" /> Stateful Workspace
+          </Badge>
+          <Badge variant="secondary" className="bg-blue-100/50">
+            <Check className="mr-1 h-3 w-3" /> ComfyUI Manager Support
+          </Badge>
+          <Badge variant="secondary" className="bg-blue-100/50">
+            <Check className="mr-1 h-3 w-3" /> Instant API Endpoint
+          </Badge>
+        </div>
+      </div>
       <RecentWorkflows />
       <div className="font-medium text-sm mt-4">Active ComfyUI</div>
       <div className="flex flex-col divide-y divide-border overflow-hidden rounded-3xl border bg-gray-50">
