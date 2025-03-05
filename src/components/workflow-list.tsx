@@ -70,7 +70,7 @@ export function useWorkflowVersion(
   workflow_id?: string,
   debouncedSearchValue?: string,
 ) {
-  const BATCH_SIZE = 5;
+  const BATCH_SIZE = 10;
   return useInfiniteQuery<any[]>({
     queryKey: ["workflow", workflow_id, "versions"],
     enabled: !!workflow_id,

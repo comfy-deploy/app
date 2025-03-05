@@ -234,10 +234,10 @@ function WorkflowPageComponent() {
     enabled: !!sessionId,
   });
 
-  const { data: deployments, isLoading: isDeploymentsLoading } =
-    useWorkflowDeployments(workflowId);
+  // const { data: deployments, isLoading: isDeploymentsLoading } =
+  //   useWorkflowDeployments(workflowId);
 
-  const [isHovering, setIsHovering] = useState(false);
+  // const [isHovering, setIsHovering] = useState(false);
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -579,6 +579,16 @@ function RequestPage({
 
   const [isHovering, setIsHovering] = useState(false);
 
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (latestVersion) {
+      setSelectedVersionId(latestVersion.id);
+    }
+  }, [latestVersion]);
+
   // Update form when workflow data is loaded
   useEffect(() => {
     if (!isLoadingWorkflow && currentWorkflow) {
@@ -701,7 +711,7 @@ function RequestPage({
       )}
       <div className="mx-auto flex h-full w-full max-w-screen-lg flex-col gap-2">
         <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="font-bold text-sm">Description</div>
+          <div className="font-medium text-sm">Description</div>
           <div className="flex flex-row gap-4">
             <textarea
               {...form.register("description")}
@@ -852,9 +862,9 @@ function RequestPage({
         <VersionList
           hideSearch
           workflow_id={workflowId || ""}
-          className="w-full rounded-md p-1 ring-1 bg-background ring-gray-200 relative  z-[1] "
-          containerClassName="max-h-[200px]"
-          height={40}
+          className="relative z-[1] w-full rounded-md bg-background p-1 ring-1 ring-gray-200"
+          containerClassName="max-h-[234px]"
+          height={30}
           renderItem={(item) => {
             const myDeployments = deployments?.filter(
               (deployment: Deployment) =>
@@ -871,14 +881,61 @@ function RequestPage({
                   deployment.environment === "public-share",
               ) ?? false;
 
+            // Check if this item is selected
+            const isSelected = selectedVersionId === item.id;
+
+            // Extract the edit function
+            const handleEditVersion = () => {
+              if (selectedMachine?.type === "comfy-classic") {
+                return; // Disabled condition
+              }
+
+              setSessionCreation({
+                isOpen: true,
+                version: item.version,
+                machineId: item.machine_id,
+                machineVersionId: item.machine_version_id,
+                modalImageId: item.modal_image_id,
+              });
+            };
+
             return (
+              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
               <div
                 className={cn(
-                  "flex flex-row items-center justify-between gap-2 rounded-md px-4 py-2 transition-colors hover:bg-gray-100",
+                  "flex flex-row items-center justify-between gap-2 rounded-[6px] px-4 transition-colors hover:bg-gray-100",
+                  isSelected && "bg-gray-200 hover:bg-gray-200",
+                  item.version === 1 && "rounded-b-sm",
+                  item.version === versions?.[versions.length - 1]?.version &&
+                    "rounded-t-sm",
                 )}
+                onClick={() => {
+                  setSelectedVersionId(item.id);
+                }}
+                onDoubleClick={() => {
+                  handleEditVersion();
+                }}
               >
-                <div className="grid grid-cols-[38px_auto_1fr] items-center gap-4">
-                  <Badge className="w-fit whitespace-nowrap rounded-sm text-xs">
+                <div className="grid grid-cols-[14px_38px_auto_1fr] items-center gap-4">
+                  <div className="flex h-full items-center justify-center">
+                    {versions && (
+                      <>
+                        <div
+                          className={cn(
+                            "absolute w-[2px] bg-orange-400",
+                            item.version === 1
+                              ? "top-0 h-[50%]"
+                              : item.version === versions?.[0]?.version
+                                ? "bottom-0 h-[50%]"
+                                : "h-full",
+                          )}
+                        />
+                        <div className="relative z-10 h-[6.5px] w-[6.5px] rounded-full bg-orange-400" />
+                      </>
+                    )}
+                  </div>
+
+                  <Badge className="!py-0 !text-2xs w-fit whitespace-nowrap rounded-sm">
                     v{item.version}
                   </Badge>
 
@@ -896,7 +953,12 @@ function RequestPage({
                             "w-fit cursor-pointer whitespace-nowrap rounded-md border border-gray-200 bg-gray-100 text-xs hover:shadow-sm",
                             getEnvColor(deployment.environment),
                           )}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.nativeEvent.preventDefault();
+                            e.nativeEvent.stopPropagation();
+
                             setSelectedDeployment(deployment.id);
                           }}
                         >
@@ -920,13 +982,14 @@ function RequestPage({
                     <div />
                   )}
                   <UserIcon user_id={item.user_id} className="h-5 w-5" />
-                  <div className="whitespace-nowrap text-muted-foreground text-xs">
+                  <div className="whitespace-nowrap text-2xs text-muted-foreground">
                     {getRelativeTime(item.created_at)}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       asChild
-                      className="h-full w-full rounded-sm p-2 hover:bg-white"
+                      className="h-full w-full rounded-sm p-2 hover:bg-gray-50"
+                      onClick={(e) => e.stopPropagation()} // Prevent triggering the row click
                     >
                       <MoreVertical size={16} />
                     </DropdownMenuTrigger>
@@ -1124,14 +1187,7 @@ function RequestPage({
                                   e.stopPropagation();
                                   e.nativeEvent.preventDefault();
                                   e.nativeEvent.stopPropagation();
-
-                                  setSessionCreation({
-                                    isOpen: true,
-                                    version: item.version,
-                                    machineId: item.machine_id,
-                                    machineVersionId: item.machine_version_id,
-                                    modalImageId: item.modal_image_id,
-                                  });
+                                  handleEditVersion();
                                 }}
                               >
                                 <div className="flex flex-row gap-2">
@@ -1162,7 +1218,7 @@ function RequestPage({
             );
           }}
         />
-        <div className="mt-4 font-bold text-sm">Queues</div>
+        <div className="mt-4 font-medium text-sm">Queues</div>
         <motion.div
           layout
           className={cn(
