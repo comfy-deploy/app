@@ -799,8 +799,12 @@ function RequestPage({
                   }));
                 }}
               >
-                Edit v{latestVersion?.version}
-                {/* <Pencil className="ml-2 h-3 w-3" /> */}
+                Edit
+                {latestVersion?.version && (
+                  <Badge className="ml-2 bg-gray-300 py-0.5">
+                    v{latestVersion?.version}
+                  </Badge>
+                )}
               </Button>
             </div>
           </div>
