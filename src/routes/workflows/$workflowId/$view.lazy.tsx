@@ -13,6 +13,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/ui/code-blocks";
 import { Portal } from "@/components/ui/custom/portal";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -83,12 +85,19 @@ import {
   Share,
   Terminal,
   RotateCw,
+  ExternalLink,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { create } from "zustand";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const pages = [
   "workspace",
@@ -596,18 +605,28 @@ function RequestPage({
             setSessionCreation((prev) => ({ ...prev, isOpen: false }))
           }
         >
-          <SessionCreationDialog
-            workflowId={workflowId}
-            version={sessionCreation.version}
-            machineId={
-              sessionCreation.machineId || currentWorkflow?.selected_machine_id
-            }
-            modalImageId={sessionCreation.modalImageId ?? undefined}
-            machineVersionId={sessionCreation.machineVersionId ?? undefined}
-            onClose={() =>
-              setSessionCreation((prev) => ({ ...prev, isOpen: false }))
-            }
-          />
+          <div className="flex h-full flex-col">
+            <div className="mb-4 flex-none">
+              <SessionCreationDialog
+                workflowId={workflowId}
+                version={sessionCreation.version}
+                machineId={
+                  sessionCreation.machineId ||
+                  currentWorkflow?.selected_machine_id
+                }
+                modalImageId={sessionCreation.modalImageId ?? undefined}
+                machineVersionId={sessionCreation.machineVersionId ?? undefined}
+                onClose={() =>
+                  setSessionCreation((prev) => ({ ...prev, isOpen: false }))
+                }
+              />
+            </div>
+            {selectedVersion?.comfyui_snapshot && (
+              <div className="mt-auto max-h-[50vh] overflow-auto">
+                <SnapshotDetails selectedVersion={selectedVersion} />
+              </div>
+            )}
+          </div>
         </MyDrawer>
       )}
       <div className="mx-auto flex h-full w-full max-w-screen-lg flex-col gap-2">
@@ -1225,6 +1244,224 @@ function SessionCount({ machineId }: { machineId: string }) {
       <span className="text-muted-foreground text-xs">
         {sessions.length} active
       </span>
+    </div>
+  );
+}
+
+function SnapshotDetails({ selectedVersion }: { selectedVersion: Version }) {
+  const snapshot = selectedVersion.comfyui_snapshot;
+  const dependencies = Object.keys(snapshot.pips || {});
+
+  const dependenciesText = JSON.stringify(snapshot.pips || {}, null, 2);
+
+  return (
+    <div className="mt-2 rounded-md border border-gray-200 bg-white px-5 py-3 text-sm">
+      <div className="flex w-full items-center justify-between pr-4">
+        <h3 className="font-semibold text-base">ComfyUI Configuration</h3>
+        <Badge variant="outline" className="bg-blue-50 px-2 text-blue-700">
+          v{selectedVersion.version}
+        </Badge>
+      </div>
+
+      <Accordion type="multiple" defaultValue={["comfyui"]} className="w-full">
+        {/* Main Configuration Section */}
+        <AccordionItem value="comfyui">
+          <AccordionTrigger>Configuration Details</AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-2">
+              {/* ComfyUI Version */}
+              <div>
+                <div className="mb-1.5 font-medium text-gray-500 text-xs uppercase tracking-wide">
+                  ComfyUI Version
+                </div>
+                <div className="flex items-center">
+                  <code className="w-full rounded-[10px] border border-gray-100 bg-gray-50 p-2 font-mono text-2xs text-gray-800">
+                    {snapshot.comfyui}
+                  </code>
+                </div>
+              </div>
+
+              {/* Custom Nodes */}
+              <div>
+                <div className="mb-1.5 font-medium text-gray-500 text-xs uppercase tracking-wide">
+                  Custom Nodes
+                </div>
+                <div className="grid gap-1">
+                  {[
+                    ...Object.entries(snapshot.cnr_custom_nodes || {}).map(
+                      ([name, version]) => ({
+                        name,
+                        version,
+                        type: "cnr",
+                      }),
+                    ),
+                    ...Object.entries(snapshot.git_custom_nodes || {}).map(
+                      ([url, details]) => {
+                        const urlParts = url
+                          .replace("https://github.com/", "")
+                          .replace(/\.git$/, "")
+                          .split("/");
+                        return {
+                          name: urlParts[1] || url,
+                          author: urlParts[0] || "unknown",
+                          hash: details.hash,
+                          disabled: details.disabled,
+                          url,
+                          type: "git",
+                        };
+                      },
+                    ),
+                  ].map((node, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex items-center justify-between rounded-[10px] border px-3 py-1",
+                        node.disabled
+                          ? "border-red-100 bg-red-50"
+                          : "border-gray-100 bg-gray-50",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="flex-shrink-0">
+                          {node.type === "cnr" ? (
+                            <Badge className="!text-2xs border-purple-200 bg-purple-100 py-0 text-purple-700">
+                              CNR
+                            </Badge>
+                          ) : (
+                            <Badge className="!text-2xs border-blue-200 bg-blue-100 py-0 text-blue-700">
+                              GIT
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 overflow-hidden">
+                          <span className="truncate font-medium">
+                            {node.name}
+                          </span>
+
+                          {node.type === "cnr" ? (
+                            <span className="text-gray-500 text-xs">
+                              v{node.version}
+                            </span>
+                          ) : (
+                            <>
+                              <span className="text-gray-400 text-xs">by</span>
+                              <span className="text-gray-600 text-xs">
+                                {node.author}
+                              </span>
+                              <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-2xs text-gray-500">
+                                {node.hash.substring(0, 7)}
+                              </code>
+                            </>
+                          )}
+
+                          {node.disabled && (
+                            <Badge
+                              variant="outline"
+                              className="ml-1 h-5 bg-red-50 px-1 text-red-500"
+                            >
+                              disabled
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {node.type === "git" && (
+                        <a
+                          href={`${node.url.replace(/\.git$/, "")}/commit/${node.hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 flex-shrink-0 rounded-full p-1 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-700"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Advanced Configuration Section */}
+        <AccordionItem value="advanced">
+          <AccordionTrigger>
+            <div className="flex items-center">
+              Advanced Configuration
+              <Badge
+                variant="outline"
+                className="ml-2 bg-gray-100 text-gray-700"
+              >
+                {dependencies.length +
+                  (snapshot.file_custom_nodes?.length || 0)}{" "}
+                items
+              </Badge>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-4">
+              {/* Python Dependencies */}
+              <div>
+                <div className="mb-1.5 font-medium text-gray-500 text-xs uppercase tracking-wide">
+                  Python Dependencies
+                  <Badge
+                    variant="outline"
+                    className="ml-2 bg-gray-100 text-gray-700"
+                  >
+                    {dependencies.length}
+                  </Badge>
+                </div>
+                <CodeBlock
+                  code={dependenciesText}
+                  lang="json"
+                  className="h-[200px] text-2xs"
+                />
+              </div>
+
+              {/* File Custom Nodes */}
+              {snapshot.file_custom_nodes?.length > 0 && (
+                <div>
+                  <div className="mb-1.5 font-medium text-gray-500 text-xs uppercase tracking-wide">
+                    File Custom Nodes
+                    <Badge
+                      variant="outline"
+                      className="ml-2 bg-gray-100 text-gray-700"
+                    >
+                      {snapshot.file_custom_nodes.length}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                    {snapshot.file_custom_nodes.map((node, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "flex items-center justify-between rounded border px-2 py-1 text-xs",
+                          node.disabled
+                            ? "border-red-100 bg-red-50"
+                            : "border-gray-100 bg-gray-50",
+                        )}
+                      >
+                        <span className="truncate font-mono">
+                          {node.filename}
+                        </span>
+                        {node.disabled && (
+                          <Badge
+                            variant="outline"
+                            className="ml-2 bg-red-50 text-red-500"
+                          >
+                            disabled
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
