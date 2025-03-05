@@ -83,7 +83,7 @@ function MachineSessionsList({ machineId }: { machineId: string }) {
   }
 
   return (
-    <div className="space-y-2 px-6 py-3">
+    <div className="space-y-2 px-1 py-1">
       <div className="space-y-2">
         {sessions.map((session) => (
           <div

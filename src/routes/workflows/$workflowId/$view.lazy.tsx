@@ -114,6 +114,7 @@ import {
   Share,
   Terminal,
   Workflow,
+  RotateCw,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -763,7 +764,12 @@ function RequestPage({
               </div>
             </div>
 
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row items-center gap-4">
+              {latestVersion?.machine_id && (
+                <div className="flex items-center gap-2">
+                  <SessionCount machineId={latestVersion.machine_id} />
+                </div>
+              )}
               <Button
                 variant="shine"
                 size="sm"
@@ -1155,5 +1161,24 @@ export function WorkflowsBreadcrumb() {
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
+  );
+}
+
+function SessionCount({ machineId }: { machineId: string }) {
+  const { listSession } = useSessionAPI(machineId);
+  const { data: sessions } = listSession;
+
+  if (!sessions?.length) return null;
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="relative flex h-4 w-4 items-center justify-center">
+        <div className="h-2 w-2 rounded-full bg-green-500" />
+        <RotateCw className="absolute h-4 w-4 animate-spin text-green-500 opacity-50" />
+      </div>
+      <span className="text-xs text-muted-foreground">
+        {sessions.length} active
+      </span>
+    </div>
   );
 }
