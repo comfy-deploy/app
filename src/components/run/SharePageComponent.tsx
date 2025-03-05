@@ -255,7 +255,43 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
               logsCollapsed ? "h-[calc(100%-60px)]" : "h-[calc(100%-370px)]",
             )}
           >
-            <span className="mb-1 ml-2 font-semibold text-sm">Edit</span>
+            <div className="mb-1 flex items-center justify-between">
+              <span className="ml-2 font-semibold text-sm">Edit</span>
+              <div className="items-center gap-3 rounded-sm border border-gray-200 bg-white/90 backdrop-blur-sm">
+                <Select
+                  value={deployment?.id}
+                  onValueChange={(value) => {
+                    const selectedDeployment = deployments?.find(
+                      (d) => d.id === value,
+                    );
+                    if (selectedDeployment) {
+                      setSelectedDeployment(selectedDeployment.id);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[200px] border-none bg-transparent">
+                    <SelectValue placeholder="Select environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {deployments?.map((dep) => (
+                      <SelectItem key={dep.id} value={dep.id}>
+                        <div className="flex w-full items-center justify-between gap-2">
+                          <Badge
+                            variant="outline"
+                            className={cn(getEnvColor(dep.environment))}
+                          >
+                            {dep.environment}
+                          </Badge>
+                          <span className="text-gray-500 text-xs">
+                            {dep.gpu || "No GPU"}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white p-3 shadow-sm">
               {isDeploymentsLoading ? (
                 <div className="flex h-full items-center justify-center">
@@ -360,41 +396,6 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
             {deployment && (
               <div className="-translate-x-1/2 absolute bottom-4 left-1/2 z-20 hidden lg:flex">
                 <div className="flex items-center gap-2">
-                  <div className="items-center gap-3 rounded-full border border-gray-200 bg-white/90 p-2 shadow-lg backdrop-blur-sm">
-                    <Select
-                      value={deployment?.id}
-                      onValueChange={(value) => {
-                        const selectedDeployment = deployments?.find(
-                          (d) => d.id === value,
-                        );
-                        if (selectedDeployment) {
-                          setSelectedDeployment(selectedDeployment.id);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-8 w-[200px] border-none bg-transparent">
-                        <SelectValue placeholder="Select environment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {deployments?.map((dep) => (
-                          <SelectItem key={dep.id} value={dep.id}>
-                            <div className="flex w-full items-center justify-between gap-2">
-                              <Badge
-                                variant="outline"
-                                className={cn(getEnvColor(dep.environment))}
-                              >
-                                {dep.environment}
-                              </Badge>
-                              <span className="text-gray-500 text-xs">
-                                {dep.gpu || "No GPU"}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
