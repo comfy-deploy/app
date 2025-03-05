@@ -1211,6 +1211,52 @@ function RequestPage({
                           )}
                         </Tooltip>
                       </TooltipProvider>
+                      {item.workflow && (
+                        <DropdownMenuItem className="p-0">
+                          <Button
+                            variant={"ghost"}
+                            className="w-full justify-between px-2 font-normal"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              e.nativeEvent.preventDefault();
+                              e.nativeEvent.stopPropagation();
+                              navigator.clipboard.writeText(
+                                JSON.stringify(item.workflow),
+                              );
+                              toast.success(
+                                "Workflow JSON copied to clipboard",
+                              );
+                            }}
+                          >
+                            <div className="flex flex-row gap-2">
+                              Copy Workflow (JSON)
+                            </div>
+                          </Button>
+                        </DropdownMenuItem>
+                      )}
+                      {item.workflow_api && (
+                        <DropdownMenuItem className="p-0">
+                          <Button
+                            variant={"ghost"}
+                            className="w-full justify-between px-2 font-normal"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              e.nativeEvent.preventDefault();
+                              e.nativeEvent.stopPropagation();
+                              navigator.clipboard.writeText(
+                                JSON.stringify(item.workflow_api),
+                              );
+                              toast.success("Workflow API copied to clipboard");
+                            }}
+                          >
+                            <div className="flex flex-row gap-2">
+                              Copy Workflow (API)
+                            </div>
+                          </Button>
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
