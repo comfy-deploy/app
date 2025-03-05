@@ -1256,11 +1256,9 @@ function SnapshotDetails({ selectedVersion }: { selectedVersion: Version }) {
 
   return (
     <div className="mt-2 rounded-md border border-gray-200 bg-white px-5 py-3 text-sm">
-      <div className="flex w-full items-center justify-between pr-4">
+      <div className="flex w-full items-center justify-between">
         <h3 className="font-semibold text-base">ComfyUI Configuration</h3>
-        <Badge variant="outline" className="bg-blue-50 px-2 text-blue-700">
-          v{selectedVersion.version}
-        </Badge>
+        <Badge variant="secondary">v{selectedVersion.version}</Badge>
       </div>
 
       <Accordion type="multiple" defaultValue={["comfyui"]} className="w-full">
