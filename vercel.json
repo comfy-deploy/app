@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/button",
+      "destination": "/comfydeploy-button.svg"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

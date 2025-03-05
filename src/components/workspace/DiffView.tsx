@@ -1,13 +1,21 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { diff } from "json-diff-ts";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export function DiffView({
   workflow,
   oldWorkflow,
+  className,
   differences,
-}: { workflow: any; oldWorkflow: any; differences: any }) {
+}: {
+  workflow: any;
+  oldWorkflow: any;
+  className?: string;
+  differences: any;
+}) {
   console.log(differences);
 
   // Update the getNodeInfoFromChanges function to also get node types from the workflow
@@ -221,7 +229,7 @@ export function DiffView({
   };
 
   return (
-    <div className="space-y-6 pr-4">
+    <div className={cn("space-y-6 pr-4", className)}>
       {Array.from(
         groupAllChangesByNodeType(groupedChanges, nodeInfo, oldNodeInfo),
       ).map(([nodeType, changes]) => (
@@ -420,6 +428,254 @@ export function DiffView({
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+type SnapshotDiffViewProps = {
+  newSnapshot: any;
+  oldSnapshot: any;
+  onSnapshotActionChange: (hasChanges: boolean) => void;
+};
+
+export function SnapshotDiffView({
+  newSnapshot,
+  oldSnapshot,
+  onSnapshotActionChange,
+}: SnapshotDiffViewProps) {
+  const differences = diff(oldSnapshot, newSnapshot, {
+    keysToSkip: ["pips", "file_custom_nodes"],
+  });
+
+  // Effect to update snapshot action based on differences
+  useEffect(() => {
+    // Only consider it a change if we have both snapshots and actual differences
+    const hasChanges = Boolean(
+      differences && differences.length > 0 && oldSnapshot,
+    );
+
+    onSnapshotActionChange(hasChanges);
+  }, [differences, oldSnapshot, onSnapshotActionChange]);
+
+  // Helper to extract repo info
+  const getRepoInfo = (url: string) => {
+    const parts = url.replace("https://github.com/", "").split("/");
+    return {
+      author: parts[0],
+      repo: parts[1],
+    };
+  };
+
+  if (!differences || differences.length === 0 || !oldSnapshot) {
+    return (
+      <div className="flex flex-col items-center justify-center px-8 py-4 text-center">
+        <div className="mb-2 rounded-full bg-green-50 p-1">
+          <svg
+            className="h-6 w-6 text-green-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <h3 className="font-medium text-gray-900 text-sm">
+          No differences found
+        </h3>
+        <p className="text-2xs text-gray-500">The snapshots are identical</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 text-sm">
+      {differences.map((change) => {
+        if (change.key === "comfyui") {
+          return (
+            <div
+              key="comfyui"
+              className="flex w-full items-center justify-between rounded-sm border bg-gray-50 p-2"
+            >
+              <Badge className="!text-xs !py-0">ComfyUI Version</Badge>
+              <div className="flex items-center gap-2 font-mono text-xs">
+                <span className="rounded-[4px] bg-red-50 px-2 py-0.5 text-2xs text-red-600">
+                  {change.oldValue?.slice(0, 7)}
+                </span>
+                <span className="text-gray-400">→</span>
+                <span className="rounded-[4px] bg-green-50 px-2 py-0.5 text-2xs text-green-600">
+                  {change.value?.slice(0, 7)}
+                </span>
+              </div>
+            </div>
+          );
+        }
+
+        if (change.key === "cnr_custom_nodes") {
+          return (
+            <div key="cnr_custom_nodes" className="rounded-sm border p-2">
+              <Badge className="!text-xs !py-0 mb-2">Custom Nodes</Badge>
+              <div className="space-y-1">
+                {change.changes?.map((nodeChange: any) => {
+                  if (nodeChange.type === "REMOVE") {
+                    return (
+                      <div
+                        key={nodeChange.key}
+                        className="flex w-full items-center gap-2 rounded-[4px] bg-red-50 px-2 py-0.5 text-xs"
+                      >
+                        <span className="font-medium text-red-600">-</span>
+                        <span className="font-medium">{nodeChange.key}</span>
+                        <span className="text-gray-600">
+                          v{nodeChange.value}
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  if (nodeChange.type === "ADD") {
+                    return (
+                      <div
+                        key={nodeChange.key}
+                        className="flex w-full items-center gap-2 rounded-[4px] bg-green-50 px-2 py-0.5 text-xs"
+                      >
+                        <span className="font-medium text-green-600">+</span>
+                        <span className="font-medium">{nodeChange.key}</span>
+                        <span className="text-gray-600">
+                          v{nodeChange.value}
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  // UPDATE case (version change)
+                  if (nodeChange.type === "UPDATE") {
+                    return (
+                      <div
+                        key={nodeChange.key}
+                        className="flex w-full items-center justify-between px-2 py-0.5"
+                      >
+                        <span className="font-medium">{nodeChange.key}</span>
+                        <div className="flex items-center gap-2 font-mono text-xs">
+                          <span className="rounded-[4px] bg-red-50 px-2 py-0.5 text-2xs text-red-600">
+                            v{nodeChange.oldValue}
+                          </span>
+                          <span className="text-gray-400">→</span>
+                          <span className="rounded-[4px] bg-green-50 px-2 py-0.5 text-2xs text-green-600">
+                            v{nodeChange.value}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+          );
+        }
+
+        if (change.key === "git_custom_nodes") {
+          return (
+            <div key="git_custom_nodes" className="rounded-sm border p-2">
+              <Badge className="!text-xs !py-0 mb-2">Custom Nodes</Badge>
+              <div className="space-y-1">
+                {change.changes?.map((nodeChange: any) => {
+                  const { author, repo } = getRepoInfo(nodeChange.key);
+
+                  if (nodeChange.type === "REMOVE") {
+                    return (
+                      <div
+                        key={nodeChange.key}
+                        className="flex w-full items-center gap-2 rounded-[4px] bg-red-50 px-2 py-0.5 text-xs"
+                      >
+                        <span className="font-medium text-red-600">-</span>
+                        <span className="text-gray-600">{author}/</span>
+                        <span className="font-medium">{repo}</span>
+                      </div>
+                    );
+                  }
+
+                  if (nodeChange.type === "ADD") {
+                    return (
+                      <div
+                        key={nodeChange.key}
+                        className="flex w-full items-center gap-2 rounded-[4px] bg-green-50 px-2 py-0.5 text-xs"
+                      >
+                        <span className="font-medium text-green-600">+</span>
+                        <span className="text-gray-600">{author}/</span>
+                        <span className="font-medium">{repo}</span>
+                      </div>
+                    );
+                  }
+
+                  // UPDATE case
+                  return (
+                    <div key={nodeChange.key}>
+                      <div className="flex w-full items-center justify-between px-2 py-0.5">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="font-medium text-blue-600">↻</span>
+                          <span className="text-gray-600">{author}/</span>
+                          <span className="font-medium">{repo}</span>
+                        </div>
+                        {nodeChange.changes?.some(
+                          (c) => c.key === "disabled",
+                        ) && (
+                          <div className="text-gray-600 text-xs">
+                            {nodeChange.changes.map((subChange: any) => {
+                              if (subChange.key === "disabled") {
+                                return (
+                                  <div
+                                    key="disabled"
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Badge
+                                      variant={
+                                        subChange.value ? "secondary" : "green"
+                                      }
+                                      className="!text-2xs"
+                                    >
+                                      {subChange.value ? "Disabled" : "Enabled"}
+                                    </Badge>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                        )}
+                        {nodeChange.changes?.map((subChange: any) => {
+                          if (subChange.key === "hash") {
+                            return (
+                              <div
+                                className="ml-4 flex items-center gap-2 font-mono text-xs"
+                                key={subChange.key}
+                              >
+                                <span className="rounded-[4px] bg-red-50 px-2 py-0.5 text-2xs text-red-600">
+                                  {subChange.oldValue?.slice(0, 7)}
+                                </span>
+                                <span className="text-gray-400">→</span>
+                                <span className="rounded-[4px] bg-green-50 px-2 py-0.5 text-2xs text-green-600">
+                                  {subChange.value?.slice(0, 7)}
+                                </span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })}
     </div>
   );
 }

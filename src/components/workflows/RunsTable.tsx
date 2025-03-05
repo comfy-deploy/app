@@ -31,12 +31,13 @@ import {
 import { LiveStatus } from "@/components/workflows/LiveStatus";
 import { useRealtimeWorkflow } from "@/components/workflows/RealtimeRunUpdate";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, getOptimizedImage } from "@/lib/utils";
 import {
   useInfiniteQuery,
   useQuery,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { FileURLRender, getTotalUrlCountAndUrls } from "./OutputRender";
 
 interface RunsTableState {
   selectedRun: any | null;
@@ -59,6 +60,7 @@ export function RunsTable(props: {
   filterWorkspace?: boolean;
   loadingIndicatorClassName?: string;
   defaultData?: any;
+  className?: string;
 }) {
   const selectedRun = useRunsTableStore((state) => state.selectedRun);
 
@@ -88,6 +90,7 @@ export function RunsTable(props: {
         )}
       >
         <RunsTableVirtualized
+          className={props.className}
           defaultData={props.defaultData}
           workflow_id={props.workflow_id}
           minimal={props.minimal}
@@ -128,7 +131,7 @@ export function RunsTable(props: {
   );
 }
 
-const DEFAULT_ITEM_HEIGHT = 40; // Keep the default, but allow it to be overridden
+const DEFAULT_ITEM_HEIGHT = 50; // Keep the default, but allow it to be overridden
 const BATCH_SIZE = 20; // Adjust this value based on your needs
 
 // Create a new prop type for the custom row renderer
@@ -141,10 +144,7 @@ type RunRowRendererProps = {
 
 type RunRowRenderer = (props: RunRowRendererProps) => React.ReactNode;
 
-export function useRuns(props: {
-  workflow_id: string;
-  defaultData?: any;
-}) {
+export function useRuns(props: { workflow_id: string; defaultData?: any }) {
   return useInfiniteQuery({
     queryKey: ["v2", "workflow", props.workflow_id, "runs"],
     meta: {
@@ -183,7 +183,7 @@ export function RunsTableVirtualized(props: {
 
   const [filterFavorites, setFilterFavorites] = useQueryState("favorite");
 
-  const { socket, workflowId, connectionStatus } = useRealtimeWorkflow();
+  // const { socket, workflowId, connectionStatus } = useRealtimeWorkflow();
 
   const {
     data,
@@ -268,14 +268,18 @@ export function RunsTableVirtualized(props: {
   }
 
   if (!data || flatData.length === 0) {
-    return <>No runs available</>;
+    return (
+      <div className="flex h-full items-center justify-center p-4 text-muted-foreground text-xs">
+        No runs available
+      </div>
+    );
   }
 
   const { workflow_api, workflow_inputs, run_log, ...rest } = run ?? {};
 
   return (
     <div>
-      <div className="relative">
+      {/* <div className="relative">
         <div className="-top-10 absolute right-28 z-10 flex flex-row gap-2 p-2">
           <Tooltip>
             <TooltipTrigger>
@@ -296,15 +300,14 @@ export function RunsTableVirtualized(props: {
                   ? "Connected"
                   : "Disconnected"}
               </p>
-              {/* <p>Socket: {socket?.active ? "Connected" : "Disconnected"}</p> */}
             </TooltipContent>
           </Tooltip>
         </div>
-      </div>
+      </div> */}
       <div
         ref={parentRef}
         className={cn(
-          "scrollbar scrollbar-thumb-gray-200 scrollbar-track-transparent h-[calc(100vh-10rem)] overflow-y-scroll",
+          "scrollbar scrollbar-thumb-gray-200 scrollbar-track-transparent h-[calc(100vh-14rem)] overflow-y-scroll",
           props.className,
         )}
       >
@@ -313,8 +316,8 @@ export function RunsTableVirtualized(props: {
             height: `${rowVirtualizer.getTotalSize()}px`,
             width: "100%",
             position: "relative",
-            marginBottom: "16px",
-            marginTop: "16px",
+            // marginBottom: "16px",
+            // marginTop: "16px",
           }}
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -367,7 +370,7 @@ export function RunsTableVirtualized(props: {
             <LoadingSpinner />
           </div>
         )}
-        <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-full rounded-b-md bg-gradient-to-b from-transparent to-white" />
+        {/* <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-full rounded-b-md bg-gradient-to-b from-transparent to-white" /> */}
         {/* <ScrollBar orientation="vertical" /> */}
       </div>
     </div>
@@ -376,8 +379,8 @@ export function RunsTableVirtualized(props: {
 
 function LoadingRow() {
   return (
-    <div className="flex h-full items-center justify-between overflow-hidden border-b p-2">
-      <div className="grid w-full grid-cols-12 items-center gap-2">
+    <div className="flex h-[50px] items-center justify-between overflow-hidden border-b px-2">
+      <div className="grid w-full grid-cols-12 items-center">
         <Skeleton className="col-span-1 h-4 w-8" />
         <Skeleton className="col-span-2 h-6 w-16" />
         <Skeleton className="col-span-2 h-4 w-12" />
@@ -410,9 +413,12 @@ function RunRow({
 
   return (
     <div
-      className={`flex h-full cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm hover:bg-gray-100 ${
-        isSelected ? "border border-black bg-gray-50 shadow-sm" : ""
-      }`}
+      className={cn(
+        "flex h-[50px] cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm transition-shadow",
+        isSelected
+          ? "bg-gray-50 shadow-md"
+          : "hover:bg-gray-100 hover:shadow-sm",
+      )}
       onClick={() => {
         onSelect();
       }}
@@ -422,7 +428,7 @@ function RunRow({
           #{truncatedId}
         </span>
         <span className="col-span-2">
-          <DisplayVersion versionId={run.workflow_version_id} />
+          <DisplayWorkflowVersion versionId={run.workflow_version_id} />
         </span>
         <span className="col-span-2">
           {run.gpu && (
@@ -434,7 +440,10 @@ function RunRow({
         <span className="col-span-3 text-2xs text-gray-500">
           {getRelativeTime(run.created_at)}
         </span>
-        <div className="col-span-4 flex items-center justify-end gap-2">
+        <div className="col-span-2">
+          <OutputPreview runId={run.id} />
+        </div>
+        <div className="col-span-2 flex items-center justify-end gap-2">
           <LiveStatus run={run} refetch={refetch} />
         </div>
       </div>
@@ -442,9 +451,58 @@ function RunRow({
   );
 }
 
+function OutputPreview(props: { runId: string }) {
+  const { data: run, isLoading } = useQuery<any>({
+    queryKey: ["run", props.runId],
+    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+    refetchInterval: (query) => {
+      if (
+        query.state.data?.status === "running" ||
+        query.state.data?.status === "uploading" ||
+        query.state.data?.status === "not-started" ||
+        query.state.data?.status === "queued"
+      ) {
+        return 2000;
+      }
+      return false;
+    },
+  });
+
+  if (isLoading) return <Skeleton className="h-6 w-24" />;
+
+  const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
+    run.outputs || [],
+  );
+
+  const MAX_DISPLAY = 2;
+  const urlsToDisplay =
+    urlList.length > 0 ? urlList.slice(0, MAX_DISPLAY) : urlList;
+  const remainingCount = urlList.length - MAX_DISPLAY;
+
+  if (urlsToDisplay.length === 0) return null;
+
+  return (
+    <div className="flex flex-row items-center gap-2">
+      {urlsToDisplay.map((url) => (
+        <div key={url.url}>
+          <FileURLRender
+            url={url.url}
+            imgClasses="h-8 w-8 rounded-[8px] object-cover"
+          />
+        </div>
+      ))}
+      {remainingCount > 0 && (
+        <div className="ml-1 text-2xs text-muted-foreground">
+          +{remainingCount} more
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LoadingState() {
   return (
-    <div className="flex flex-col space-y-4 p-4">
+    <div className="flex flex-col">
       {[...Array(5)].map((_, index) => (
         <LoadingRow key={index} />
       ))}
@@ -458,9 +516,14 @@ function LoadingSpinner() {
   );
 }
 
-function DisplayVersion(props: { versionId?: string }) {
+export function DisplayWorkflowVersion(props: {
+  versionId?: string;
+  className?: string;
+  variant?: any;
+}) {
   const { data: version, isLoading } = useQuery({
     queryKey: ["workflow-version", props.versionId],
+    enabled: !!props.versionId,
     queryFn: async ({ queryKey }) => {
       const response = await api({ url: queryKey.join("/") });
       return response;
@@ -471,11 +534,22 @@ function DisplayVersion(props: { versionId?: string }) {
 
   if (!version)
     return (
-      <Badge className="w-fit rounded-[10px] px-2 py-1 text-xs">N/A</Badge>
+      <Badge
+        className={cn(
+          "w-fit rounded-[10px] px-2 py-1 text-xs",
+          props.className,
+        )}
+        variant={props.variant}
+      >
+        N/A
+      </Badge>
     );
 
   return (
-    <Badge className="w-fit rounded-[10px] px-2 py-1 text-xs">
+    <Badge
+      className={cn("w-fit rounded-[10px] px-2 py-1 text-xs", props.className)}
+      variant={props.variant}
+    >
       v{version?.version}
     </Badge>
   );

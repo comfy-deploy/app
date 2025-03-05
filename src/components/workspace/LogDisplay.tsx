@@ -99,7 +99,9 @@ const LogEntryView = ({
   </div>
 );
 
-export function LogDisplay() {
+export function LogDisplay(props: {
+  control?: boolean;
+}) {
   const state = useLog();
 
   const {
@@ -180,57 +182,59 @@ export function LogDisplay() {
     // >
     // </ExpandableDialog>
     <div className="w-[540px]">
-      <div className="flex items-center justify-start pb-2">
+      {/* <div className="flex items-center justify-start pb-2">
         <div className="flex w-10 items-center justify-center font-semibold">
           Log
         </div>
         <FileClock size={16} />
-      </div>
-      <div className="flex justify-between pb-2">
-        <div className={`flex gap-2`}>
-          <LogTypeBadge
-            type="All"
-            icon={<FileClock size={14} />}
-            count={totalCount}
-          />
-          <LogTypeBadge
-            type="Error"
-            icon={<CircleX size={14} />}
-            count={errorCount}
-          />
-          <LogTypeBadge
-            type="Warning"
-            icon={<TriangleAlert size={14} />}
-            count={warningCount}
-          />
+      </div> */}
+      {props.control && (
+        <div className="flex justify-between pb-2">
+          <div className={`flex gap-2`}>
+            <LogTypeBadge
+              type="All"
+              icon={<FileClock size={14} />}
+              count={totalCount}
+            />
+            <LogTypeBadge
+              type="Error"
+              icon={<CircleX size={14} />}
+              count={errorCount}
+            />
+            <LogTypeBadge
+              type="Warning"
+              icon={<TriangleAlert size={14} />}
+              count={warningCount}
+            />
+          </div>
+          <div className={`flex gap-1`}>
+            <Button
+              className="h-8 w-8"
+              variant="ghost"
+              size="icon"
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                clearLogs();
+                toast.success("Cleared logs!");
+              }}
+            >
+              <Trash2 size={16} />
+            </Button>
+            <Button
+              className="h-8 w-8"
+              variant="ghost"
+              size="icon"
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(logs, null, 2));
+                toast.success("Copied to clipboard!");
+              }}
+            >
+              <Copy size={16} />
+            </Button>
+          </div>
         </div>
-        <div className={`flex gap-1`}>
-          <Button
-            className="h-8 w-8"
-            variant="ghost"
-            size="icon"
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={() => {
-              clearLogs();
-              toast.success("Cleared logs!");
-            }}
-          >
-            <Trash2 size={16} />
-          </Button>
-          <Button
-            className="h-8 w-8"
-            variant="ghost"
-            size="icon"
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={() => {
-              navigator.clipboard.writeText(JSON.stringify(logs, null, 2));
-              toast.success("Copied to clipboard!");
-            }}
-          >
-            <Copy size={16} />
-          </Button>
-        </div>
-      </div>
+      )}
       <ScrollArea
         ref={scrollAreaRef}
         className={`h-[440px] rounded-md bg-gray-950 p-4 font-mono text-gray-400 text-xs transition-all duration-300`}

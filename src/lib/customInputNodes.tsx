@@ -17,26 +17,8 @@ export const customInputNodes = {
   ComfyUIDeployExternalEnum: "string group - (enum)",
   ComfyUIDeployExternalColor: "string - (hex color code)",
   ComfyUIDeployExternalAudio: "string - (public audio url)",
+  ComfyUIDeployExternalEXR: "string - (public exr image url)",
 } as const;
-
-export type CustomInputNodesTypeMap = {
-  ComfyUIDeployExternalText: string;
-  ComfyUIDeployExternalTextAny: string;
-  ComfyUIDeployExternalTextSingleLine: string;
-  ComfyUIDeployExternalImage: string;
-  ComfyUIDeployExternalImageAlpha: string;
-  ComfyUIDeployExternalNumber: number;
-  ComfyUIDeployExternalNumberInt: number;
-  ComfyUIDeployExternalLora: string;
-  ComfyUIDeployExternalCheckpoint: string;
-  ComfyDeployWebscoketImageInput: ArrayBuffer;
-  ComfyUIDeployExternalImageBatch: string[];
-  ComfyUIDeployExternalVideo: string;
-  ComfyUIDeployExternalBoolean: boolean;
-  ComfyUIDeployExternalNumberSlider: number;
-  ComfyUIDeployExternalNumberSliderInt: number;
-  ComfyUIDeployExternalAudio: string;
-};
 
 export type InputsType = keyof typeof customInputNodes;
 // ... existing code ...

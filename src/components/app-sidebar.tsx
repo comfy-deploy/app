@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Folder,
   Github,
+  Home,
   Key,
   LineChart,
   MessageCircle,
@@ -51,8 +52,9 @@ import { motion } from "framer-motion";
 import React, { use, useEffect, useRef, useState } from "react";
 import { VersionSelectV2 } from "./version-select";
 import { MachineSelect } from "./workspace/MachineSelect";
+import { getOptimizedImage } from "@/lib/utils";
 
-function UserMenu() {
+export function UserMenu() {
   const isAdminOnly = useIsAdminOnly();
   const isAdminAndMember = useIsAdminAndMember();
 
@@ -127,6 +129,11 @@ function usePages() {
 
   // const pricingPlanFlagEnable = useFeatureFlagEnabled("pricing-plan");
   const pages = [
+    {
+      name: "Home",
+      path: "/home",
+      icon: Home,
+    },
     {
       name: "Workflows",
       path: "/workflows",
@@ -509,7 +516,9 @@ function V3Dialog() {
                 }}
               >
                 <img
-                  src="https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/third.webp"
+                  src={getOptimizedImage(
+                    "https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/third.webp",
+                  )}
                   alt="Platform Preview 3"
                   className="w-full rounded-[6px] border border-gray-200 object-cover shadow-lg"
                   loading="lazy"
@@ -532,7 +541,9 @@ function V3Dialog() {
                 }}
               >
                 <img
-                  src="https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/second.webp"
+                  src={getOptimizedImage(
+                    "https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/second.webp",
+                  )}
                   alt="Platform Preview 2"
                   className="w-full rounded-[6px] border border-gray-200 object-cover shadow-lg"
                   loading="lazy"
@@ -555,7 +566,9 @@ function V3Dialog() {
                 }}
               >
                 <img
-                  src="https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/first.webp"
+                  src={getOptimizedImage(
+                    "https://cd-misc.s3.us-east-2.amazonaws.com/sidebar/first.webp",
+                  )}
                   alt="Platform Preview 1"
                   className="w-full rounded-[6px] border border-gray-200 object-cover shadow-lg"
                   loading="lazy"

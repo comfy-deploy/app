@@ -144,13 +144,19 @@ export function MachineListItem({
   machineActionItemList,
   index,
   className,
+  overrideRightSide,
+  showMigrateDialog = true,
+  children,
 }: {
   machine: any;
-  isExpanded: boolean;
-  setIsExpanded: (isExpanded: boolean) => void;
-  machineActionItemList: React.ReactNode;
+  isExpanded?: boolean;
+  setIsExpanded?: (isExpanded: boolean) => void;
+  machineActionItemList?: React.ReactNode;
   index: number;
   className?: string;
+  overrideRightSide?: React.ReactNode;
+  showMigrateDialog?: boolean;
+  children?: React.ReactNode;
 }) {
   const { data: events, isLoading } = useMachineEvents(machine.id);
   const { hasActiveEvents } = useHasActiveEvents(machine.id);
@@ -171,9 +177,9 @@ export function MachineListItem({
   const content = (
     <div
       className={cn(
-        "group relative flex min-h-[80px] w-full flex-col items-center overflow-hidden rounded-none bg-white p-4",
+        "group relative flex w-full flex-col items-center overflow-hidden rounded-none bg-white px-4 py-3",
         isStale && "bg-gray-50 contrast-75",
-        index % 2 === 0 && "bg-gray-50",
+        index % 2 !== 0 && "bg-gray-50",
         className,
       )}
     >
@@ -212,7 +218,7 @@ export function MachineListItem({
                 }}
                 search={{ view: undefined }}
               >
-                <h2 className="whitespace-nowrap font-medium text-base">
+                <h2 className="whitespace-nowrap font-normal text-sm tracking-normal">
                   {machine.name}
                 </h2>
               </Link>
@@ -259,7 +265,7 @@ export function MachineListItem({
             )}
           </div>
 
-          <MigrateOldMachineDialog machine={machine} />
+          {showMigrateDialog && <MigrateOldMachineDialog machine={machine} />}
         </div>
         <Link
           to={"/machines/$machineId"}
@@ -269,38 +275,42 @@ export function MachineListItem({
         />
         <div className="flex w-full flex-row items-center justify-end gap-2">
           <div className="flex flex-row items-center gap-2 z-10">
-            {!isExpanded && (
-              <div className="hidden xl:block min-w-40 xl:w-full xl:max-w-[250px]">
-                <MachineListItemEvents
-                  isExpanded={false}
-                  events={{ data: events, isLoading }}
-                  machine={machine}
-                />
-              </div>
+            {overrideRightSide ?? (
+              <>
+                {!isExpanded && (
+                  <div className="hidden xl:block min-w-40 xl:w-full xl:max-w-[250px]">
+                    <MachineListItemEvents
+                      isExpanded={false}
+                      events={{ data: events, isLoading }}
+                      machine={machine}
+                    />
+                  </div>
+                )}
+                <Badge
+                  variant={hasActiveEvents ? "green" : "secondary"}
+                  className="!text-2xs !font-semibold flex items-center gap-1"
+                >
+                  {hasActiveEvents ? (
+                    <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+                  ) : (
+                    <Pause className="h-3 w-3 text-muted-foreground" />
+                  )}
+                  {hasActiveEvents ? "Running" : "Idle"}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="min-w-12 h-12"
+                  onClick={() => setIsExpanded?.(!isExpanded)}
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isExpanded ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+              </>
             )}
-            <Badge
-              variant={hasActiveEvents ? "green" : "secondary"}
-              className="!text-2xs !font-semibold flex items-center gap-1"
-            >
-              {hasActiveEvents ? (
-                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
-              ) : (
-                <Pause className="h-3 w-3 text-muted-foreground" />
-              )}
-              {hasActiveEvents ? "Running" : "Idle"}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-w-12 h-12"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-200 ${
-                  isExpanded ? "rotate-180" : ""
-                }`}
-              />
-            </Button>
           </div>
         </div>
       </div>
@@ -453,6 +463,8 @@ export function MachineListItem({
           )}
         </div>
       </div>
+
+      {children}
     </div>
   );
 

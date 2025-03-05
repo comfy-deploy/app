@@ -1,26 +1,6 @@
-import { api } from "@/lib/api";
 import { queryClient } from "@/lib/providers";
-import { QueryClient, useQueries, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-
-// const githubQueryClient = new QueryClient({
-//   defaultOptions: {
-//     queries: {
-//       staleTime: 1000 * 60 * 60, // 1 hour
-//       gcTime: 1000 * 60 * 60 * 24, // 24 hours
-//       retry: 2,
-//     },
-//   },
-// });
-
-// function fetchBranchInfo(gitUrl: string) {
-//   return api({
-//     url: "branch-info",
-//     params: { git_url: gitUrl },
-//   });
-// }
 
 // Helper function for non-hook usage with the dedicated client
 export async function getBranchInfo(gitUrl: string): Promise<BranchInfoData> {
@@ -37,8 +17,9 @@ export async function getBranchInfo(gitUrl: string): Promise<BranchInfoData> {
 }
 
 // Hook version
-export function useGithubBranchInfo(gitUrl: string) {
+export function useGithubBranchInfo(gitUrl: string, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["branch-info"],
     queryKeyHashFn: (queryKey) => [...queryKey, gitUrl].toString(),
     meta: {
@@ -68,82 +49,3 @@ const BranchInfoSchema = z.object({
 });
 
 export type BranchInfoData = z.infer<typeof BranchInfoSchema>;
-
-type GitUrl<T extends string | string[]> = T;
-type BranchInfoResult<T extends string | string[]> = T extends string[]
-  ? BranchInfoData[]
-  : BranchInfoData;
-
-export function useBranchInfoQuery<T extends string | string[]>(
-  gitUrl?: GitUrl<T>,
-) {
-  const urls = Array.isArray(gitUrl) ? gitUrl : [gitUrl];
-
-  const queries = useQueries({
-    queries: [
-      ...urls.map((url) => ({
-        queryKey: ["branch-info", url],
-        queryFn: async () => {
-          const result = await api({
-            url: "branch-info",
-            params: { git_url: url },
-          });
-          return result;
-        },
-      })),
-    ],
-  });
-
-  return {
-    data: queries.map((query) => query.data) as BranchInfoResult<T>,
-    isLoading: queries.some((query) => query.isLoading),
-    error: queries.find((query) => query.error)?.error,
-  };
-}
-
-interface BranchInfoProps<T extends string | string[]> {
-  gitUrl?: GitUrl<T>;
-}
-
-export function useBranchInfo<T extends string | string[]>({
-  gitUrl,
-}: BranchInfoProps<T>) {
-  const { data, error, isLoading } = useBranchInfoQuery<T>(gitUrl);
-  const [toastId, setToastId] = useState<string | number>();
-
-  useEffect(() => {
-    if (isLoading && !toastId) {
-      setToastId(toast.loading("Fetching repo info..."));
-    }
-
-    if (error) {
-      toast.dismiss(toastId);
-      toast.error(`Failed to fetch branch info: ${error.message}`);
-      console.error(error);
-    }
-
-    if (data) {
-      toast.dismiss(toastId);
-    }
-
-    return () => {
-      if (toastId) {
-        toast.dismiss(toastId);
-        setToastId(undefined);
-      }
-    };
-  }, [data, error, isLoading]);
-
-  if (!gitUrl)
-    return {
-      data: null,
-      error: "No git url provided",
-      isLoading: false,
-    };
-
-  return {
-    data,
-    error,
-    isLoading,
-  };
-}

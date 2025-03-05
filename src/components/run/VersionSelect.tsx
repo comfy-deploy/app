@@ -113,11 +113,13 @@ type PublicRunStore = {
   runId: string;
   status: status | null;
   logs: LogsType;
+  inputValues: Record<string, any>;
   addLogs: (logs: LogsType) => void;
   setImage: (image: { url: string }[]) => void;
   setLoading: (loading: boolean) => void;
   setRunId: (runId: string) => void;
   setStatus: (status: status) => void;
+  setInputValues: (inputTypes: Record<string, any>) => void;
 };
 
 export const publicRunStore = create<PublicRunStore>((set) => ({
@@ -126,11 +128,12 @@ export const publicRunStore = create<PublicRunStore>((set) => ({
   runId: "",
   status: null,
   logs: [],
+  inputValues: {},
   setImage: (image) => set({ image }),
   setLoading: (loading) => set({ loading }),
   setRunId: (runId) => set({ runId }),
   setStatus: (status) => set({ status }),
-
+  setInputValues: (inputTypes) => set({ inputValues: inputTypes }),
   addLogs: (logs) => set((state) => ({ logs: [...state.logs, ...logs] })),
 }));
 
@@ -465,7 +468,7 @@ export function RunWorkflowButton({
   );
 }
 
-export function CreateDeploymentButtonV2({
+export function useCreateDeploymentDialog({
   workflow_id,
 }: {
   workflow_id: string;
@@ -489,7 +492,7 @@ export function CreateDeploymentButtonV2({
     "production",
   );
 
-  const { dialog, open, setOpen } = useConfirmServerActionDialog({
+  return useConfirmServerActionDialog({
     action: async () => {
       if (!machine) return;
 
@@ -575,20 +578,20 @@ export function CreateDeploymentButtonV2({
     description: "Deploy your workflow to a machine",
   });
 
-  return (
-    <>
-      <Button
-        iconPlacement="right"
-        disabled={!machine}
-        Icon={Plus}
-        onClick={() => setOpen(true)}
-        variant="default"
-      >
-        Deploy
-      </Button>
-      {dialog}
-    </>
-  );
+  // return (
+  //   <>
+  //     <Button
+  //       iconPlacement="right"
+  //       disabled={!machine}
+  //       Icon={Plus}
+  //       onClick={() => setOpen(true)}
+  //       variant="default"
+  //     >
+  //       Deploy
+  //     </Button>
+  //     {dialog}
+  //   </>
+  // );
 }
 
 export async function getWorkflowJSON(

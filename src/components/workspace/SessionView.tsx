@@ -1,358 +1,252 @@
-"use client";
-
-import { useUpdateServerActionDialog } from "@/components/auto-form/auto-form-dialog";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { UploadZone } from "@/components/upload/upload-zone";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
-import { useSessionAPI } from "@/hooks/use-session-api";
 import { useAuthStore } from "@/lib/auth-store";
-import { machineGPUOptions } from "@/lib/schema";
-import { cn } from "@/lib/utils";
 import { EventSourcePolyfill } from "event-source-polyfill";
-import { Info } from "lucide-react";
-import { Loader2 } from "lucide-react";
-import { useQueryState } from "nuqs";
-import { useEffect } from "react";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-import { App } from "./App";
 import { useLogStore } from "./LogContext";
 import { LogDisplay } from "./LogDisplay";
 import Workspace from "./Workspace";
-// import { OnBoardingDialog } from "@/repo/components/ui/custom/workspace/OnBoardingDialog";
-// import { SessionList } from "@/repo/components/ui/custom/workspace/SessionList";
-// import { ModelsListLayout } from "@/repo/components/ui/custom/workspace/Windows";
-// import { WorkspaceProvider } from "./WorkspaceContext";
 import { useCDStore } from "./Workspace";
-import { sendEventToCD } from "./sendEventToCD";
-import { SessionCreate } from "./session-create";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "../ui/badge";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Button } from "../ui/button";
 
-const staticUrl = process.env.COMFYUI_FRONTEND_URL!;
-console.log(staticUrl);
+export function getSessionStatus(session: any, isLive: boolean | undefined) {
+  if (!session) {
+    return {
+      message: "Session Not Found",
+      description: "The session may have expired or been terminated.",
+      isError: true,
+    };
+  }
 
-export function SessionCreator(props: {
-  workflowId: string;
-  workflowLatestVersion: any;
+  if (session.timeout_end) {
+    const timeoutDate = new Date(session.timeout_end);
+    const now = new Date();
+    if (now > timeoutDate) {
+      return {
+        message: "Session Timeout",
+        description: `Session timed out at ${timeoutDate.toLocaleTimeString()}`,
+        isError: true,
+      };
+    }
+  }
+
+  if (isLive === false) {
+    return {
+      message: "Connecting",
+      description: "Attempting to connect to your session...",
+      isError: false,
+    };
+  }
+
+  if (session.status === "error") {
+    return {
+      message: "Session Error",
+      description: session.error || "An error occurred with your session.",
+      isError: true,
+    };
+  }
+
+  return {
+    message: "Warming Up",
+    description: "Your session is being prepared. This may take a few moments.",
+    isError: false,
+  };
+}
+
+export function SessionLoading({
+  session,
+  isLive,
+  isLoadingSession,
+}: {
+  session?: any;
+  isLive?: boolean;
+  isLoadingSession?: boolean;
 }) {
-  const { workflow } = useCurrentWorkflow(props.workflowId);
-  const machineId = workflow?.selected_machine_id;
-
-  const { data: machine } = useMachine(machineId);
-
-  const machineBuilderVersion = machine?.machine_builder_version;
-  // console.log("machineBuilderVersion", machineBuilderVersion);
-
-  // const [machineId] = useSelectedMachine(undefined, workflow, true);
-
-  const { cdSetup, setCDSetup } = useCDStore();
-
-  const { createSession, listSession, deleteSession } =
-    useSessionAPI(machineId);
-
-  const { data: sessions } = listSession;
-
-  // const sessions = [
-  //   {
-  //     user_id: "user_2ZA6vuKD3IJXju16oJVQGLBcWwg",
-  //     org_id: "org_2bWQ1FoWC3Wro391TurkeVG77pC",
-  //     id: "0aa3a0b0-200d-444b-a2c7-7c8edb84bcdd",
-  //     gpu: "A10G",
-  //     gpu_provider: "modal",
-  //     updated_at: "2024-09-24T23:56:18.819Z",
-  //     modal_function_id: "fc-01J8K7DRZHDBX7WG54HR59M5RX",
-  //     start_time: "2024-09-24T23:56:25.878Z",
-  //     machine_id: "5641fb6c-8a19-47aa-aa1c-1a98194f3b5f",
-  //     end_time: null,
-  //     ws_gpu: null,
-  //     created_at: "2024-09-24T23:56:26.337Z",
-  //     session_id: "77f275fe-2f55-4e74-8072-b27cdd2700c9",
-  //     tunnel_url: null,
-  //   },
-  //   {
-  //     user_id: "user_2ZA6vuKD3IJXju16oJVQGLBcWwg",
-  //     org_id: "org_2bWQ1FoWC3Wro391TurkeVG77pC",
-  //     id: "c68adef1-c712-4258-a1c3-4e3eb4d108dc",
-  //     gpu: "A10G",
-  //     gpu_provider: "modal",
-  //     updated_at: "2024-09-24T23:56:23.859Z",
-  //     modal_function_id: "fc-01J8K7DM27Y1GJW176TA5FBB6F",
-  //     start_time: "2024-09-24T23:56:20.740Z",
-  //     machine_id: "5641fb6c-8a19-47aa-aa1c-1a98194f3b5f",
-  //     end_time: null,
-  //     ws_gpu: null,
-  //     created_at: "2024-09-24T23:56:23.122Z",
-  //     session_id: "abda3ab2-cb78-45ad-b3ef-78f33e3ed4fb",
-  //     tunnel_url: "https://mpyfls0cgmucem.r8.modal.host",
-  //   },
-  // ];
-
-  const [sessionId, setSessionId] = useQueryState("sessionId", {
-    defaultValue: "",
+  const status = getSessionStatus(session, isLive);
+  const now = new Date();
+  const isTimeout = now > new Date(session?.timeout_end);
+  const navigate = useNavigate();
+  const { workflowId } = useSearch({
+    from: "/sessions/$sessionId/",
   });
 
-  const { open, ui, setOpen } = useUpdateServerActionDialog({
-    title: "Create Session",
-    description: "Create a new session",
-    formSchema: z.object({
-      gpu: z.enum(machineGPUOptions).describe("GPU"),
-      timeout: z.number().min(5).describe("Timeout in minutes"),
-    }),
-    buttonTitle: "Create Session",
-    data: {
-      gpu: (localStorage.getItem("lastGPUSelection") ||
-        "A10G") as (typeof machineGPUOptions)[number],
-      timeout: Number.parseInt(
-        localStorage.getItem("lastTimeoutSelection") || "15",
-      ),
-    },
-    fieldConfig: {
-      gpu: {
-        fieldType: "timeoutPicker",
-        inputProps: {
-          optionsForTier: [
-            ["CPU", , "CPU"],
-            ["T4", , "T4 (16GB)"],
-            ["A10G", , "A10G (24GB)"],
-            ["L4", , "L4 (24GB)"],
-            ["L40S", , "L40S (48GB)"],
-            ["A100", "business", "A100 (40GB)"],
-            ["A100-80GB", "business", "A100-80GB (80GB)"],
-            ["H100", "business", "H100 (80GB)"],
-          ],
-        },
-      },
-      timeout: {
-        inputProps: {
-          value: 15,
-          min: 1,
-          max: 60,
-        },
-        fieldType: "slider",
-        description: "Set the timeout for the session",
-      },
-    },
-    serverAction: async (data) => {
-      try {
-        localStorage.setItem("lastGPUSelection", data.gpu);
-        localStorage.setItem("lastTimeoutSelection", data.timeout.toString());
-
-        const response = await createSession.mutateAsync(data);
-        console.log("response", response);
-        useLogStore.getState().clearLogs();
-        await listSession.refetch();
-        setSessionId(response.session_id);
-      } catch (e) {
-        toast.error(`Failed to create session: ${e}`);
-      }
-    },
-  });
-
-  const session = sessions?.find((session) => session.session_id === sessionId);
-  const url = session?.tunnel_url;
-
-  useEffect(() => {
-    setCDSetup(false);
-  }, [sessionId]);
-
-  useLogListener({ sessionId });
-
-  // probably session closed
-  useEffect(() => {
-    if (sessionId === "preview") {
-      return;
-    }
-    if (sessionId && !session) {
-      setSessionId("");
-    }
-
-    // if (session) {
-    //   useGPUStore.getState().setGpuEventId(session.id);
-    // }
-  }, [session, sessionId]);
-
-  // const sessionUI = (
-  //   <div className="flex h-full w-full flex-col items-center justify-center">
-  //     {!sessions || sessions?.length === 0 ? (
-  //       create
-  //     ) : (
-  //       <SessionList
-  //         sessions={sessions}
-  //         onOpenSession={async (session) => {
-  //           setSessionId(session);
-  //         }}
-  //         onCancelSession={async (session) => {
-  //           setSessionId("preview");
-  //           await deleteSession.mutateAsync({
-  //             sessionId: session,
-  //           });
-  //         }}
-  //       >
-  //         {create}
-  //       </SessionList>
-  //     )}
-  //   </div>
-  // );
-
-  if (sessionId === "preview") {
-    return (
-      <>
-        {ui}
-        <UploadZone
-          className="relative flex h-full w-full"
-          iframeEndpoint={staticUrl}
-        >
-          <div className="flex h-full w-full flex-col">
-            <Workspace
-              key={props.workflowId}
-              nativeMode={false}
-              endpoint={staticUrl}
-              workflowJson={props.workflowLatestVersion.workflow}
-            />
-            <App endpoint={staticUrl}>
-              <div className="flex w-full justify-between gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="mx-2 flex cursor-help items-center gap-1">
-                        <span className="text-gray-600 text-sm">
-                          Preview Mode
-                        </span>
-                        <Info className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>
-                        You're currently viewing a edit-only preview of this
-                        workflow. To run the workflow, you'll need to create a
-                        new ComfyUI session.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="flex items-center gap-1"
-                  Icon={X}
-                  iconPlacement="left"
-                  onClick={() => {
-                    setSessionId("");
-                  }}
-                >
-                  Close Preview
-                </Button>
-
-                {/* <Button
-                  variant="default"
-                  size="sm"
-                  className="flex items-center gap-1"
-                  Icon={Plus}
-                  iconPlacement="left"
-                  onClick={() => {
-                    setOpen({
-                      gpu: (localStorage.getItem("lastGPUSelection") ||
-                        "A10G") as (typeof machineGPUOptions)[number],
-                      timeout: Number.parseInt(
-                        localStorage.getItem("lastTimeoutSelection") || "15",
-                      ),
-                    });
-                  }}
-                >
-                  Session
-                </Button> */}
-                {/* <ModelsButton isPreview={true} /> */}
-              </div>
-            </App>
-          </div>
-          {/* <AssetsPanel /> */}
-        </UploadZone>
-      </>
-    );
-  }
-
-  if (Number.parseInt(machineBuilderVersion) < 4) {
-    return (
-      <div className={cn("flex h-full w-full items-center justify-center")}>
-        Machine builder version {machineBuilderVersion} is not supported for
-        workspace.
-      </div>
-    );
-  }
-
-  if (sessionId && machineId && url) {
-    return (
-      <>
-        {/* <UploadZone
-          className="relative flex h-full w-full"
-          iframeEndpoint={url}
-        > */}
-        <div className="flex h-full w-full flex-col">
-          <Workspace
-            key={props.workflowId}
-            nativeMode={true}
-            endpoint={url}
-            workflowJson={props.workflowLatestVersion.workflow}
-          />
-        </div>
-        {/* <AssetsPanel /> */}
-        {/* </UploadZone> */}
-        {ui}
-      </>
-    );
-  }
-
-  if (sessionId && machineId && !url) {
+  if (isLoadingSession) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center">
-        <Card className="flex flex-col items-center gap-4 p-6">
+        <div className="flex flex-col items-center gap-4 p-6">
           <h2 className="flex items-center gap-2 font-semibold">
-            Warming Up <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            Loading Session{" "}
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
           </h2>
           <p className="text-center text-muted-foreground text-xs">
-            Your session is being prepared. This may take a few moments.
+            Please wait while we load your session...
           </p>
-          <LogDisplay />
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center">
-      <div className="flex items-center gap-2">
-        {/* <SidebarMenuButton> */}
-        <SessionCreate
-          btnSize="sm"
-          workflowId={props.workflowId}
-          setSessionId={setSessionId}
-          btnText="Start ComfyUI"
-        />
-        {/* </SidebarMenuButton> */}
-        {/* <Button
-          variant="outline"
-          size="sm"
-          className="flex flex-row gap-1"
-          onClick={() => {
-            setSessionId("preview");
-          }}
-        >
-          Preview Workflow <Eye size={16} />
-        </Button> */}
+    <div className="flex h-full w-full flex-col items-center justify-center">
+      <div className="flex flex-col items-center gap-4 p-6">
+        <h2 className="flex items-center gap-2 font-semibold">
+          {status.message}{" "}
+          {!status.isError && (
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          )}
+        </h2>
+        <p className="text-center text-muted-foreground text-xs">
+          {status.description}
+        </p>
+
+        {!session || isTimeout ? (
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (workflowId) {
+                navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: { workflowId, view: "requests" },
+                });
+              } else {
+                navigate({
+                  to: "/home",
+                });
+              }
+            }}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" /> Back
+          </Button>
+        ) : (
+          <LogDisplay />
+        )}
       </div>
     </div>
   );
 }
 
-function useLogListener({ sessionId }: { sessionId: string }) {
+export function SessionCreator(props: {
+  workflowId?: string;
+  workflowLatestVersion?: any;
+  sessionIdOverride?: string;
+}) {
+  const { cdSetup, setCDSetup } = useCDStore();
+
+  const sessionId = props.sessionIdOverride;
+
+  const { data: session, isLoading: isLoadingSession } = useQuery<any>({
+    enabled: !!sessionId,
+    queryKey: ["session", sessionId],
+    refetchInterval: 1000,
+  });
+
+  const { workflow, isLoading: isLoadingWorkflow } = useCurrentWorkflow(
+    props.workflowId ?? null,
+  );
+
+  const { data: machine, isLoading } = useMachine(
+    workflow?.selected_machine_id,
+  );
+
+  // const [workflowLink, setWorkflowLink] = useQueryState(
+  //   "workflowLink",
+  //   parseAsString,
+  // );
+
+  // const { data: workflowLinkJson, isFetching } = useQuery({
+  //   queryKey: ["workflow", "link", workflowLink],
+  //   enabled: !!workflowLink,
+  //   queryFn: async () => {
+  //     if (!workflowLink) return;
+  //     console.log("fetching workflowLink", workflowLink);
+  //     const response = await fetch(workflowLink);
+  //     if (!response.ok) throw new Error("Failed to fetch workflow");
+  //     return response.json();
+  //   },
+  //   staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  //   refetchOnWindowFocus: false,
+  //   refetchOnReconnect: false,
+  // });
+
+  // useEffect(() => {
+  //   if (!cdSetup) return;
+  //   if (!workflowLinkJson) return;
+
+  //   console.log("sending workflow", workflowLinkJson);
+  //   sendWorkflow(workflowLinkJson);
+  // }, [workflowLinkJson, cdSetup]);
+
+  const url = session?.tunnel_url || session?.url;
+
+  useEffect(() => {
+    setCDSetup(false);
+  }, [sessionId]);
+
+  useLogListener({ sessionId: sessionId || "" });
+
+  const { data: isLive } = useQuery({
+    queryKey: ["session", "live", url],
+    queryFn: async ({ queryKey }) => {
+      if (!url) return null;
+      try {
+        const response = await fetch(url, { method: "HEAD" });
+        if (!response.ok) throw new Error("Failed to connect");
+        return true;
+      } catch (e) {
+        // Only show toast if we previously had a successful connection
+        const prevIsLive = queryKey[3] as boolean | undefined;
+        if (prevIsLive) {
+          toast.error("Session disconnected");
+          setCDSetup(false);
+        }
+        return false;
+      }
+    },
+    enabled: !!url,
+    refetchInterval: 2000,
+  });
+
+  if (!sessionId)
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        Machine builder version{" "}
+        <Badge className="mx-2">{machine?.machine_builder_version}</Badge> and{" "}
+        <Badge className="mx-2">{machine?.type}</Badge> is not supported for
+        workflow preview.
+      </div>
+    );
+
+  if (!url || !isLive) {
+    return (
+      <SessionLoading
+        session={session}
+        isLive={isLive ?? false}
+        isLoadingSession={isLoadingSession}
+      />
+    );
+  }
+
+  if (url && isLive) {
+    return (
+      <>
+        <div className="flex h-full w-full flex-col">
+          <Workspace
+            sessionIdOverride={props.sessionIdOverride}
+            nativeMode={true}
+            endpoint={url}
+          />
+        </div>
+      </>
+    );
+  }
+}
+
+function useLogListener({ sessionId }: { sessionId?: string }) {
   const fetchToken = useAuthStore((state) => state.fetchToken);
 
   useEffect(() => {

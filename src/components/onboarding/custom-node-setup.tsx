@@ -14,7 +14,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { getBranchInfo } from "@/hooks/use-github-branch-info";
-import type { BranchInfoData } from "@/hooks/use-github-branch-info";
 import { cn } from "@/lib/utils";
 import {
   DndContext,

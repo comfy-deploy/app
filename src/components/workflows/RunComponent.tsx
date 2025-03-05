@@ -21,24 +21,12 @@ export default function RunComponent(props: {
   }
 
   return (
-    <motion.div className="w-full" layout>
-      <div className="relative h-fit w-full min-w-0">
-        <CardContent className="px-0 pt-6">
-          <h2 className="mb-4 font-bold text-2xl">Requests</h2>
-          <LoadingWrapper tag="runs">
-            <>
-              <RunsTable
-                workflow_id={workflow_id}
-                defaultData={props.defaultData}
-              />
-              <RunWorkflowButton
-                className="absolute top-6 right-4"
-                workflow_id={workflow_id}
-              />
-            </>
-          </LoadingWrapper>
-        </CardContent>
-      </div>
-    </motion.div>
+    <div className="relative h-full w-full min-w-0">
+      <RunsTable
+        workflow_id={workflow_id}
+        defaultData={props.defaultData}
+        className="h-[300px]"
+      />
+    </div>
   );
 }

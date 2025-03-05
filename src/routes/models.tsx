@@ -20,7 +20,7 @@ export function StoragePage() {
   };
 
   return (
-    <PaddingLayout className="flex h-full w-full flex-col gap-4 py-4 max-w-screen-xl mx-auto">
+    <PaddingLayout className="mx-auto flex h-full w-full max-w-screen-xl flex-col gap-4 py-4">
       <div className="flex h-full flex-1 flex-col gap-2 rounded-md ">
         <Suspense
           fallback={

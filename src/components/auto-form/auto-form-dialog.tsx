@@ -47,6 +47,7 @@ type DataModalProps<
   keepDialogWhenSubmit?: boolean;
   children?: React.ReactNode;
   containerClassName?: string;
+  actionButtonName?: string;
 };
 
 export function useConfirmServerActionDialog<T>(props: {
@@ -265,6 +266,7 @@ export function InsertModal<
           values={props.data}
           fieldConfig={props.fieldConfig}
           formSchema={props.formSchema}
+          extraUI={props.extraUI}
           onSubmit={async (data) => {
             setIsLoading(true);
             await props.serverAction(data);
@@ -289,7 +291,7 @@ export function InsertModal<
               Icon={Plus}
               iconPlacement="right"
             >
-              Create
+              {props.actionButtonName ?? "Create"}
             </Button>
           </div>
         </AutoForm>

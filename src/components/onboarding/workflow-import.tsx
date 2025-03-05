@@ -116,12 +116,29 @@ function getStepNavigation(
 
     case 2: // Select Machine
       return {
+        // next: (() => {
+        //   // If using default template, skip to machine settings (4) or end (null) based on machine type
+        //   if (validation.importOption === "default") {
+        //     return validation.machineOption === "existing" &&
+        //       validation.existingMachine?.type === "classic"
+        //       ? null // Skip to end if classic machine
+        //       : 4; // Go to machine settings if not classic
+        //   }
+        //   // If importing, go to model checking
+        //   return 3;
+        // })(),
         next: validation.importOption === "default" ? 4 : 3,
         prev: validation.importOption === "default" ? 0 : 1,
       };
 
     case 3: // Model Checking
       return {
+        // next:
+        //   validation.machineOption === "existing" &&
+        //   validation.existingMachine?.type === "classic"
+        //     ? null // Skip to end if classic machine
+        //     : 4, // Go to machine settings if not classic
+
         next: 4,
         prev: 2,
       };
@@ -638,11 +655,11 @@ function DefaultOption({
                     <img
                       src={template.workflowImageUrl}
                       className="h-full w-full object-cover"
-                      alt={`${template.workflowName} example`}
+                      alt={"$template.workflowNameexample"}
                     />
                   </div>
 
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {template.workflowDescription}
                   </p>
                 </div>

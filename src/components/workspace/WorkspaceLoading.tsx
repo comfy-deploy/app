@@ -3,6 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { getMachineBuildProgress } from "@/hooks/use-machine-build-progress";
 import { AnimatePresence, easeOut, motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { LogDisplay } from "./LogDisplay";
 
 interface MessageProgress {
   message: string;
@@ -19,10 +20,10 @@ export function WorkspaceLoading({
   progress = 0,
 }: WorkspaceLoadingProps) {
   return (
-    <div className="relative flex h-full w-full items-center justify-center bg-[#1e1e1e]">
+    <div className="relative flex h-full w-full items-center justify-center bg-background">
       {/* Grid background */}
       <div
-        className="absolute inset-0 opacity-50"
+        className="absolute inset-0 opacity-5"
         style={{
           backgroundImage: `linear-gradient(#2c2c2c 1px, transparent 1px),
                            linear-gradient(90deg, #2c2c2c 1px, transparent 1px)`,
@@ -31,7 +32,7 @@ export function WorkspaceLoading({
       />
 
       <div className="relative z-10 flex flex-col items-center">
-        <div className="mb-8 text-sm">
+        <div className="mb-2 text-sm">
           <AnimatePresence mode="wait">
             {messages
               .filter(({ startProgress }, index, arr) => {
@@ -54,9 +55,12 @@ export function WorkspaceLoading({
               ))}
           </AnimatePresence>
         </div>
+        <div className="mb-8 w-40">
+          <Progress value={progress} className="h-1" />
+        </div>
 
         {/* Node representation */}
-        <div className="relative flex items-start space-x-20">
+        <div className="relative flex items-start space-x-20 hidden">
           {/* Left node */}
           <div className="flex h-24 w-40 flex-col justify-between rounded-md bg-[#3c3c3c] p-2 shadow-lg">
             <div className="flex justify-start">
@@ -97,6 +101,8 @@ export function WorkspaceLoading({
             />
           </svg>
         </div>
+
+        <LogDisplay />
       </div>
     </div>
   );

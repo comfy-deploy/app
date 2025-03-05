@@ -109,7 +109,7 @@ const UserInfoForDeployment = ({ machineVersion }: { machineVersion: any }) => {
         {user.username ?? `${user.first_name} ${user.last_name}`}
       </span>
       <img
-        src={user.image_url ?? ""}
+        src={user?.image_url ? user.image_url : ""}
         alt={`${user.first_name}'s avatar`}
         className="h-[22px] w-[22px] rounded-full"
       />
@@ -273,9 +273,11 @@ export function MachineDeployment(props: { machine: any }) {
 export function MachineVersionListItem({
   machineVersion,
   machine,
+  target,
 }: {
   machineVersion: any;
   machine: any;
+  target?: string;
 }) {
   const navigate = useNavigate({
     from: "/machines/$machineId",
@@ -318,10 +320,11 @@ export function MachineVersionListItem({
   }, [machineVersion.status, buildStartTime, machineVersion.created_at]);
 
   return (
-    <div className="border-b px-4 hover:bg-gray-100">
-      <div className="grid grid-cols-[minmax(120px,1fr)_minmax(150px,1fr)_minmax(100px,1fr)_minmax(250px,auto)] items-center gap-x-4">
+    <div className="border-b px-4 hover:bg-gray-100 @container w-full">
+      <div className="grid grid-cols-[minmax(120px,1fr)_minmax(250px,auto)] @xl:grid-cols-[minmax(120px,1fr)_minmax(150px,1fr)_minmax(100px,1fr)_minmax(250px,auto)] items-center gap-x-4">
         {/* Wrap only the content that should be clickable in Link */}
         <Link
+          target={target}
           key={machineVersion.id}
           className="contents"
           to={`/machines/${machine.id}/${machineVersion.id}`}
@@ -345,7 +348,7 @@ export function MachineVersionListItem({
           </div>
 
           {/* Status and Time */}
-          <div className="flex flex-row gap-4">
+          <div className="flex-row gap-4 hidden @xl:flex">
             <div className="flex min-w-0 items-center gap-x-1.5">
               <MachineStatusBadge
                 status={machineVersion.status}
@@ -384,7 +387,7 @@ export function MachineVersionListItem({
           </div>
 
           {/* GPU and Nodes */}
-          <div className="grid grid-cols-[auto,1fr] items-center gap-x-2">
+          <div className="grid grid-cols-[auto,1fr] items-center gap-x-2 hidden @xl:grid">
             <HardDrive className="h-[14px] w-[14px] shrink-0" />
             <div className="flex items-center">
               <span className="text-xs text-gray-600">
@@ -483,12 +486,6 @@ function InstantRollback({
               )}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-          {/* <DropdownMenuItem>
-            Promote to Production
-            <DropdownMenuShortcut>
-              <CircleArrowUp className="w-4 h-4" />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem> */}
           <DropdownMenuItem
             disabled={machineVersion.id !== machine.machine_version_id}
             onClick={(e) => {

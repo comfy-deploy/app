@@ -3,8 +3,28 @@
 import { api } from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-export function useSessionAPI(machineId: string | null) {
+export function useSessionAPI(machineId?: string | null) {
   return {
+    createDynamicSession: useMutation({
+      mutationKey: ["session", "dynamic"],
+      mutationFn: async (data: any) => {
+        try {
+          const response = await api({
+            url: "session/dynamic",
+            init: {
+              method: "POST",
+              body: JSON.stringify({
+                ...data,
+              }),
+            },
+          });
+
+          return response;
+        } catch (e) {
+          throw e;
+        }
+      },
+    }),
     createSession: useMutation({
       mutationKey: ["session", machineId],
       mutationFn: async (data: any) => {
@@ -16,7 +36,7 @@ export function useSessionAPI(machineId: string | null) {
             init: {
               method: "POST",
               body: JSON.stringify({
-                machine_id: machineId,
+                machine_id: data?.machineId || machineId,
                 ...data,
               }),
             },
@@ -45,12 +65,12 @@ export function useSessionAPI(machineId: string | null) {
     listSession: useQuery<any[]>({
       queryKey: ["sessions"],
       refetchInterval: 2000,
-      enabled: !!machineId,
       meta: {
         params: {
           machine_id: machineId,
         },
       },
+      enabled: !!machineId,
       // queryFn: async () => {
       //   return await api({
       //     url: "session",

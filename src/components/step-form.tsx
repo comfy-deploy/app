@@ -163,10 +163,10 @@ export function StepForm<T>({
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen relative w-full flex-col">
       {!hideProgressBar && (
-        <div className="sticky top-0 left-0 z-50 w-full max-w-5xl mx-auto mt-10">
-          <div className="relative bg-background  overflow-hidden">
+        <div className="left-0 max-w-5xl mx-auto mt-10 sticky top-0 w-full z-50">
+          <div className="bg-background overflow-hidden relative">
             <Breadcrumb>
               <BreadcrumbList>
                 {steps.map((stepItem, index) => {
@@ -175,18 +175,26 @@ export function StepForm<T>({
                     const visitedSteps = new Set<number>();
 
                     while (currentCheck < targetIndex) {
-                      if (visitedSteps.has(currentCheck)) return false;
+                      if (visitedSteps.has(currentCheck)) return false; // Prevent infinite loops
                       visitedSteps.add(currentCheck);
 
                       const nav = getStepNavigation(currentCheck, validation);
-                      if (
-                        nav.next !== targetIndex &&
-                        nav.next !== currentCheck + 1
-                      )
-                        return false;
-                      currentCheck++;
+
+                      // If there's no next step, this path is invalid
+                      if (nav.next === null) return false;
+
+                      // If the next step takes us directly to target, that's valid
+                      if (nav.next === targetIndex) return true;
+
+                      // If the next step goes beyond our target, this path is invalid
+                      if (nav.next > targetIndex) return false;
+
+                      // Continue checking from the next step
+                      currentCheck = nav.next;
                     }
-                    return true;
+
+                    // If we reached the target through valid steps, it's accessible
+                    return currentCheck === targetIndex;
                   };
 
                   const isAccessible = isStepAccessible(index);
@@ -195,7 +203,7 @@ export function StepForm<T>({
                     .some((_, i) => isStepAccessible(index + 1 + i));
 
                   return isAccessible ? (
-                    <BreadcrumbItem key={index}>
+                    <BreadcrumbItem key={`step-${stepItem.id}`}>
                       <BreadcrumbLink
                         onClick={
                           index !== step
@@ -203,7 +211,7 @@ export function StepForm<T>({
                             : undefined
                         }
                         className={cn(
-                          "cursor-pointer relative",
+                          "relative cursor-pointer",
                           index === step ? "text-primary" : "",
                         )}
                       >
@@ -223,7 +231,7 @@ export function StepForm<T>({
                         {index === step && (
                           <motion.div
                             layoutId="underline"
-                            className="absolute bottom-0 left-0 right-0 h-[1px] bg-current"
+                            className="absolute bg-current bottom-0 h-[1px] left-0 right-0"
                             transition={{
                               type: "spring",
                               bounce: 0.2,

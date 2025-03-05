@@ -1,21 +1,37 @@
 "use client";
 
 import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-label";
+import type * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
 import {
   Controller,
-  ControllerProps,
-  FieldPath,
-  FieldValues,
+  type ControllerProps,
+  type FieldPath,
+  type FieldValues,
   FormProvider,
   useFormContext,
 } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
-const Form = FormProvider;
+const Form = ({
+  children,
+  ...props
+}: React.ComponentProps<typeof FormProvider>) => {
+  return (
+    <TooltipProvider>
+      <FormProvider {...props}>{children}</FormProvider>
+    </TooltipProvider>
+  );
+};
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -66,6 +82,8 @@ const useFormField = () => {
 
 type FormItemContextValue = {
   id: string;
+  description?: React.ReactNode;
+  setDescription?: (description: React.ReactNode) => void;
 };
 
 const FormItemContext = React.createContext<FormItemContextValue>(
@@ -77,9 +95,10 @@ const FormItem = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   const id = React.useId();
+  const [description, setDescription] = React.useState<React.ReactNode>();
 
   return (
-    <FormItemContext.Provider value={{ id }}>
+    <FormItemContext.Provider value={{ id, description, setDescription }}>
       <div ref={ref} className={cn("space-y-2", className)} {...props} />
     </FormItemContext.Provider>
   );
@@ -90,15 +109,42 @@ const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField();
+  const { error, formItemId, formDescriptionId } = useFormField();
+  const formContext = React.useContext(FormFieldContext);
+  const itemContext = React.useContext(FormItemContext);
+
+  // Get description content if available
+  const descriptionElement = itemContext.description;
+
+  const labelElement = (
+    <div className="flex items-center gap-2">
+      <Label
+        ref={ref}
+        className={cn(error && "text-destructive", className)}
+        htmlFor={formItemId}
+        {...props}
+      />
+      {descriptionElement && (
+        <HelpCircle className="h-4 w-4 text-muted-foreground" />
+      )}
+    </div>
+  );
+
+  if (!descriptionElement) {
+    return labelElement;
+  }
 
   return (
-    <Label
-      ref={ref}
-      className={cn(error && "text-destructive", className)}
-      htmlFor={formItemId}
-      {...props}
-    />
+    <Tooltip>
+      <TooltipTrigger asChild className="cursor-help">
+        {labelElement}
+      </TooltipTrigger>
+      <TooltipContent>
+        <div id={formDescriptionId} className="text-sm">
+          {descriptionElement}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 });
 FormLabel.displayName = "FormLabel";
@@ -129,17 +175,17 @@ FormControl.displayName = "FormControl";
 const FormDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
   const { formDescriptionId } = useFormField();
+  const itemContext = React.useContext(FormItemContext);
 
-  return (
-    <p
-      ref={ref}
-      id={formDescriptionId}
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
-  );
+  React.useEffect(() => {
+    if (itemContext?.setDescription) {
+      itemContext.setDescription(children);
+    }
+  }, [children, itemContext]);
+
+  return null;
 });
 FormDescription.displayName = "FormDescription";
 

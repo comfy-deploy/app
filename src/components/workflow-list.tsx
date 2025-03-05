@@ -30,6 +30,7 @@ import {
   Image,
   MoreHorizontal,
   PinIcon,
+  PinOff,
   Play,
   Workflow,
 } from "lucide-react";
@@ -130,7 +131,7 @@ export function WorkflowList() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex w-full flex-row items-center gap-2 px-4 py-4">
+      <div className="flex w-full flex-row items-center gap-2 px-4 py-4 hidden">
         <div className="relative max-w-sm flex-1">
           <Input
             placeholder="Filter workflows..."
@@ -259,12 +260,50 @@ function WorkflowCardSkeleton() {
   );
 }
 
-function WorkflowCard({
+export function WorkflowLatestOutput({
+  workflow,
+  className,
+}: {
+  workflow: any;
+  className?: string;
+}) {
+  const { data: latest_runs } = useQuery<any[]>({
+    queryKey: ["workflow", workflow.id, "run", "latest"],
+    queryKeyHashFn: (queryKey) => [...queryKey, "latest"].toString(),
+  });
+
+  const latest_output = latest_runs?.[0]?.outputs?.[0]?.data;
+  const lastest_run_at = latest_runs?.[0]?.created_at;
+  const status = latest_runs?.[0]?.status;
+  return (
+    <>
+      {latest_output?.images?.[0]?.url ? (
+        <FileURLRender
+          url={latest_output.images[0].url}
+          imgClasses={cn("w-full h-full rounded-[8px] object-cover", className)}
+        />
+      ) : (
+        <div
+          className={cn(
+            "flex h-full flex-col items-center justify-center",
+            className,
+          )}
+        >
+          <Workflow size={20} strokeWidth={1.5} className=" text-gray-400" />
+        </div>
+      )}
+    </>
+  );
+}
+
+export function WorkflowCard({
   workflow,
   mutate,
+  className,
 }: {
   workflow: any;
   mutate: () => void;
+  className?: string;
 }) {
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState<string>();
@@ -282,7 +321,7 @@ function WorkflowCard({
 
   const isAdminAndMember = useIsAdminAndMember();
 
-  const { data: latest_runs } = useQuery<any[]>({
+  const { data: latest_runs, isLoading: isLoadingLatestRun } = useQuery<any[]>({
     queryKey: ["workflow", workflow.id, "run", "latest"],
     queryKeyHashFn: (queryKey) => [...queryKey, "latest"].toString(),
   });
@@ -376,17 +415,20 @@ function WorkflowCard({
       <Link
         href={
           isAdminAndMember
-            ? `/workflows/${workflow.id}/workspace`
+            ? `/workflows/${workflow.id}/requests`
             : `/workflows/${workflow.id}/playground`
         }
-        className="flex w-full flex-col md:max-w-[320px]"
+        className={cn("flex w-full flex-col md:max-w-[320px]", className)}
       >
-        <Card className="group relative flex aspect-square h-[320px] w-full flex-col overflow-hidden rounded-md">
+        <Card
+          className={cn(
+            "group relative flex aspect-square h-[320px] w-full flex-col overflow-hidden rounded-md",
+          )}
+        >
           <div className="h-full w-full">
-            {latest_output?.images?.[0] && latest_output.images[0].url ? (
+            {workflow.cover_image || latest_output?.images?.[0]?.url ? (
               <FileURLRender
-                url={latest_output.images[0].url}
-                // alt={workflow.name}
+                url={workflow.cover_image || latest_output.images[0].url}
                 imgClasses="w-full h-full max-w-full max-h-full rounded-[8px] object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
               />
             ) : (
@@ -399,44 +441,6 @@ function WorkflowCard({
               </div>
             )}
           </div>
-          <div className="absolute right-0 bottom-0 left-0 px-2 py-2 opacity-0 transition-all duration-300 group-hover:opacity-100">
-            <div className="flex items-center justify-center gap-2">
-              <AdminAndMember>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full "
-                  href={`/workflows/${workflow.id}/workspace`}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full "
-                  href={`/workflows/${workflow.id}/requests`}
-                >
-                  <Code className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full "
-                  href={`/workflows/${workflow.id}/playground`}
-                >
-                  <Play className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full "
-                  href={`/workflows/${workflow.id}/gallery`}
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
-              </AdminAndMember>
-            </div>
-          </div>
           <div className="absolute top-2 right-2">
             <AdminAndMember>
               <DropdownMenu>
@@ -448,7 +452,14 @@ function WorkflowCard({
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-44"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                >
                   <DropdownMenuLabel>Workflow Actions</DropdownMenuLabel>
                   <DropdownMenuItem onClick={(e) => openRenameDialog(e)}>
                     Rename
@@ -484,6 +495,16 @@ function WorkflowCard({
                     Delete
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Link
+                      to={`/workflows/${workflow.id}/gallery`}
+                      // @ts-expect-error
+                      search={{ action: "set-cover-image" }}
+                      className="w-full"
+                    >
+                      Set Cover Image
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={async (e) => {
                       e.stopPropagation();
@@ -501,7 +522,14 @@ function WorkflowCard({
                       mutate();
                     }}
                   >
-                    {workflow.pinned ? "Unpin" : "Pin"}
+                    <div className="flex w-full items-center justify-between">
+                      {workflow.pinned ? "Unpin" : "Pin"}
+                      {workflow.pinned ? (
+                        <PinOff className="h-4 w-4 rotate-45" />
+                      ) : (
+                        <PinIcon className="h-4 w-4 rotate-45" />
+                      )}
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -516,7 +544,7 @@ function WorkflowCard({
         </Card>
         <div className="flex flex-col px-2 pt-2">
           <div className="flex w-full flex-row justify-between truncate font-semibold text-gray-700 text-md">
-            <div className="mr-2 truncate">{workflow.name}</div>
+            <div className="mr-2 truncate text-sm">{workflow.name}</div>
             {status && (
               <Badge
                 variant={status === "success" ? "success" : "secondary"}
@@ -527,17 +555,19 @@ function WorkflowCard({
             )}
           </div>
           <div className="flex flex-row justify-between">
-            <div className="flex items-center gap-2 truncate text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 truncate text-2xs text-muted-foreground">
               {workflow.user_id && (
                 <UserIcon user_id={workflow.user_id} className="h-4 w-4" />
               )}
               {workflow.user_name || "Unknown"}
             </div>
-            <div className="shrink-0 text-xs">
+            <div className="shrink-0 text-2xs">
               {lastest_run_at ? (
                 getRelativeTime(lastest_run_at)
+              ) : isLoadingLatestRun ? (
+                <Skeleton className="h-4 w-4" />
               ) : (
-                <Skeleton className="h-4 w-16" />
+                <></>
               )}
             </div>
           </div>

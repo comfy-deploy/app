@@ -23,16 +23,20 @@ export const SDForm = React.forwardRef(
     ref,
   ) => {
     return (
-      <form className="flex w-full flex-col gap-2" onSubmit={onSubmit}>
+      <form className="flex h-full w-full flex-col gap-2" onSubmit={onSubmit}>
         {!hideChildren && (
-          <ScrollArea className={scrollAreaClassName || "max-h-[400px]"}>
-            <div className="flex w-full flex-col gap-2 px-1 pb-2">
-              {children}
-            </div>
-          </ScrollArea>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className={scrollAreaClassName || "h-full"}>
+              <div className="flex w-full flex-col gap-2 px-1 pb-2">
+                {children}
+              </div>
+            </ScrollArea>
+          </div>
         )}
-        {actionArea}
+        {actionArea && <div className="flex-shrink-0">{actionArea}</div>}
       </form>
     );
   },
 );
+
+SDForm.displayName = "SDForm";

@@ -45,6 +45,12 @@ export function MachineOverview({ machine }: { machine: any }) {
     );
   }, [machine?.machine_version_id, machineVersionsAll, isLoadingVersions]);
 
+  const targetMachineVersion = useMemo(() => {
+    return machineVersionsAll?.find(
+      (version: any) => version.id === machine.machine_version_id,
+    );
+  }, [machineVersionsAll, machine.machine_version_id]);
+
   return (
     <div className="w-full">
       <div className="px-4 py-1">
@@ -57,7 +63,25 @@ export function MachineOverview({ machine }: { machine: any }) {
 
       <div className="grid grid-cols-1 gap-8 px-4 py-2">
         <MachineVersionWrapper machine={machine} />
-        <MachineSettingsWrapper machine={machine} />
+
+        {targetMachineVersion?.modal_image_id && (
+          <div className="">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Edit machine</AlertTitle>
+              <AlertDescription>
+                To edit this machine, please start a session, and then save
+                snapshots.
+              </AlertDescription>
+            </Alert>
+            <div className="pointer-events-none opacity-50">
+              <MachineSettingsWrapper machine={machine} />
+            </div>
+          </div>
+        )}
+        {!targetMachineVersion?.modal_image_id && (
+          <MachineSettingsWrapper machine={machine} />
+        )}
       </div>
     </div>
   );
@@ -296,7 +320,7 @@ export function LastActiveEvent({ machineId }: { machineId: string }) {
             hasActiveEvents ? "text-yellow-500" : "text-gray-600",
           )}
         >
-          Last Active: {getLastActiveText(events)}
+          {getLastActiveText(events)}
         </span>
       </Badge>
     </div>

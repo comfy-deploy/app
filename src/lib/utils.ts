@@ -42,3 +42,6 @@ export function formatTime(seconds: number): string {
     return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
   }
 }
+export const getOptimizedImage = (url: string) => {
+  return `https://comfydeploy.com/cdn-cgi/image/quality=75/${url}`;
+};

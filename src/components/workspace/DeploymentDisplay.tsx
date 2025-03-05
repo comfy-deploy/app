@@ -25,7 +25,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getInputsFromWorkflow } from "@/lib/getInputsFromWorkflow";
 // import type { findAllDeployments } from "@/server/findAllRuns";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, ChevronRight, Copy } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  Copy,
+  Droplets,
+  Gauge,
+  Info,
+  Settings,
+  Server,
+} from "lucide-react";
 import { DeploymentRow } from "./DeploymentRow";
 // import { SharePageSettings } from "@/components/SharePageSettings";
 import Steps from "./Steps";
@@ -39,18 +50,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
+import { useSelectedDeploymentStore } from "@/routes/workflows/$workflowId/$view.lazy";
 import { formatDistanceToNow } from "date-fns";
-import { useEffect, useState } from "react";
+import { Settings as SettingsIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { MyDrawer } from "../drawer";
+import { useGPUConfig } from "../machine/machine-schema";
+import {
+  GPUSelectBox,
+  MaxAlwaysOnSlider,
+  MaxParallelGPUSlider,
+  WarmTime,
+  WorkflowTimeOut,
+} from "../machine/machine-settings";
+import type { GpuTypes } from "../onboarding/workflow-machine-import";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { LoadingIcon } from "../ui/custom/loading-icon";
+import { Input } from "../ui/input";
 // import {
 //   CreateDeploymentButton,
 //   CreateDeploymentButtonV2,
 // } from "./VersionSelect";
 import { getEnvColor } from "./ContainersTable";
+import { useWorkflowDeployments } from "./ContainersTable";
 // import { useFeatureFlags } from "@/components/FeatureFlagsProvider";
 import { NewStepper } from "./StaticStepper";
 import { VersionDetails } from "./VersionDetails";
+import { useNavigate } from "@tanstack/react-router";
+import { useMachine } from "@/hooks/use-machine";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 const curlTemplate = `
 curl --request POST \
@@ -259,6 +298,24 @@ export function OutputRender() {
   return <></>
 }
 `;
+
+export interface Deployment {
+  id: string;
+  environment: string;
+  workflow_id: string;
+  workflow_version_id: string;
+  gpu: GpuTypes;
+  concurrency_limit: number;
+  run_timeout: number;
+  idle_timeout: number;
+  keep_warm: number;
+  modal_image_id?: string;
+  version?: {
+    version: number;
+  };
+  dub_link?: string;
+  machine_id: string;
+}
 
 export function DeploymentDisplay({
   deployment,
@@ -482,103 +539,57 @@ export function DeploymentDisplay({
     </Dialog>
   );
 }
-import { CreateDeploymentButtonV2 } from "../run/VersionSelect";
-import { useWorkflowDeployments } from "./ContainersTable";
+
+export interface APIDocsProps {
+  workflow_id: string;
+  domain: string;
+  model?: any;
+  deployment_id?: string;
+  header?: React.ReactNode;
+}
 
 export function APIDocs({
   workflow_id,
   domain,
   model,
-}: {
-  workflow_id: string;
-  domain: string;
-  model?: any;
-}) {
+  deployment_id,
+  header,
+}: APIDocsProps) {
   const { data: deployments } = useWorkflowDeployments(workflow_id);
-
-  const [selectedDeployment, setSelectedDeployment] = useState<any | undefined>(
-    undefined,
-  );
+  const [selectedDeployment, setSelectedDeployment] = useState<any>(null);
 
   useEffect(() => {
     if (deployments && deployments.length > 0) {
-      // Find the first deployment that doesn't end with "share"
-      const firstNonShareDeployment = deployments.find(
+      const NonShareDeployment = deployments.filter(
         (deployment) => !deployment.environment.endsWith("share"),
       );
-      setSelectedDeployment(firstNonShareDeployment || deployments[0]);
+
+      setSelectedDeployment(
+        NonShareDeployment.find((d) => d.id === deployment_id),
+      );
     }
-  }, [deployments]);
+  }, [deployments, deployment_id]);
+
+  if (!selectedDeployment) {
+    return (
+      <div className="flex items-center justify-center">
+        <LoadingIcon />
+      </div>
+    );
+  }
 
   const workflowInput = selectedDeployment
     ? getInputsFromWorkflow(selectedDeployment.version)
     : [];
 
-  function getEnvironmentColor(environment: string) {
-    switch (environment.toLowerCase()) {
-      case "production":
-        return "bg-green-100 border-green-500 text-green-700";
-      case "staging":
-        return "bg-yellow-100 border-yellow-500 text-yellow-700";
-      default:
-        return "bg-blue-100 border-blue-500 text-blue-700";
-    }
-  }
-
   return (
     <div className="flex flex-col gap-4">
-      {!model && (
-        <h2 className="flex items-center justify-between gap-2 font-bold text-2xl">
-          Deployment
-          <CreateDeploymentButtonV2 workflow_id={workflow_id} />
-        </h2>
-      )}
+      {header}
 
-      {!model && <VersionDetails workflow_id={workflow_id} />}
-      {!model && deployments && deployments.length > 0 && (
-        <Card className="p-4">
-          <div className="space-y-2">
-            {deployments
-              .filter((deployment) => !deployment.environment.endsWith("share"))
-              .map((deployment) => (
-                <div
-                  key={deployment.id}
-                  className="grid grid-cols-5 items-center gap-2 text-sm"
-                >
-                  <Badge
-                    variant="outline"
-                    className={cn(getEnvColor(deployment.environment), "w-fit")}
-                  >
-                    {deployment.environment}
-                  </Badge>
-                  <Badge variant="secondary" className="w-fit">
-                    v{deployment.version?.version || "N/A"}
-                  </Badge>
-                  <Badge variant="outline" className="w-fit">
-                    {deployment.machine?.name || "N/A"}
-                  </Badge>
-                  <span className="w-fit text-gray-500">
-                    {formatDistanceToNow(new Date(deployment.updated_at), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      toast.success("Copied to clipboard");
-                      navigator.clipboard.writeText(deployment.id);
-                    }}
-                    title="Copy Deployment ID"
-                    className="w-fit"
-                  >
-                    {deployment.id.slice(0, 8)}...
-                    <Copy className="ml-1" size={16} />
-                  </Button>
-                </div>
-              ))}
-          </div>
-        </Card>
+      {!model && (
+        <VersionDetails
+          workflow_version_id={selectedDeployment?.workflow_version_id}
+        />
       )}
 
       {!(!model && deployments && deployments.length > 0) && (
@@ -591,30 +602,11 @@ export function APIDocs({
         </Card>
       )}
 
-      {/* {v2RunApi && (
-        <div className="mb-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700">
-          <p className="font-semibold">
-            You have v2 API enabled, please update your machine to v4 in machine
-            settings [Advanced]
-          </p>
-          <Link
-            href="https://docs.comfydeploy.com"
-            className="text-blue-600 hover:underline inline-flex items-center mt-2"
-          >
-            Visit our docs
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </div>
-      )} */}
-
-      {/* {selectedDeployment && ( */}
       <Tabs defaultValue={"client2"} className="w-full gap-2 text-sm">
         <TabsList className="mb-2">
-          <TabsTrigger value="client">V1</TabsTrigger>
-          <TabsTrigger value="client2">V2</TabsTrigger>
+          <TabsTrigger value="client2">TypeScript</TabsTrigger>
           <TabsTrigger value="client3">REST</TabsTrigger>
           <TabsTrigger value="js">Other SDKs</TabsTrigger>
-          {/* <TabsTrigger value="curl">CURL</TabsTrigger> */}
         </TabsList>
         <TabsContent
           className="!mt-0 flex w-full flex-col gap-2"
@@ -624,7 +616,7 @@ export function APIDocs({
             steps={[
               {
                 title: "Install the typescript comfydeploy SDK",
-                content: <CodeBlock lang="bash" code={`npm i comfydeploy`} />,
+                content: <CodeBlock lang="bash" code={"npm i comfydeploy"} />,
               },
               {
                 title: "Initialize your client ",
@@ -655,42 +647,13 @@ export function APIDocs({
                 title: (
                   <div className="flex w-full items-center justify-between gap-2">
                     Create a run via deployment id{" "}
-                    {!model && (
-                      <Select
-                        value={selectedDeployment?.id}
-                        onValueChange={(value) => {
-                          const deployment = deployments?.find(
-                            (d) => d.id === value,
-                          );
-                          if (deployment) {
-                            setSelectedDeployment(deployment);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[200px] capitalize">
-                          <SelectValue placeholder="Select a deployment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {deployments?.map((deployment) => (
-                            <SelectItem
-                              key={deployment.id}
-                              value={deployment.id}
-                              className="flex items-center justify-between capitalize"
-                            >
-                              {/* <span>{deployment.environment}</span> */}
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  getEnvColor(deployment.environment),
-                                )}
-                              >
-                                {deployment.environment}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Badge
+                      className={cn(
+                        getEnvColor(selectedDeployment?.environment),
+                      )}
+                    >
+                      {selectedDeployment?.environment}
+                    </Badge>
                   </div>
                 ),
                 content: (
@@ -796,23 +759,11 @@ export function APIDocs({
           className="!mt-0 flex w-full flex-col gap-2"
           value="client2"
         >
-          {/* {!v2RunApi && (
-            <div className="mb-4 border-blue-500 border-l-4 bg-blue-100 p-4 text-blue-700">
-              You don't have v2 API enabled, please enable it in{" "}
-              <Link
-                href="/settings"
-                className="mt-2 inline-flex items-center text-blue-600 hover:underline"
-              >
-                settings
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </div>
-          )} */}
           <NewStepper
             steps={[
               {
                 title: "Install the typescript comfydeploy SDK",
-                content: <CodeBlock lang="bash" code={`npm i comfydeploy`} />,
+                content: <CodeBlock lang="bash" code={"npm i comfydeploy"} />,
               },
               {
                 title: "Initialize your client",
@@ -843,42 +794,6 @@ export function APIDocs({
                 title: (
                   <div className="flex w-full items-center justify-between gap-2">
                     Create a run via deployment id{" "}
-                    {!model && (
-                      <Select
-                        value={selectedDeployment?.id}
-                        onValueChange={(value) => {
-                          const deployment = deployments?.find(
-                            (d) => d.id === value,
-                          );
-                          if (deployment) {
-                            setSelectedDeployment(deployment);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[200px] capitalize">
-                          <SelectValue placeholder="Select a deployment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {deployments?.map((deployment) => (
-                            <SelectItem
-                              key={deployment.id}
-                              value={deployment.id}
-                              className="flex items-center justify-between capitalize"
-                            >
-                              {/* <span>{deployment.environment}</span> */}
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  getEnvColor(deployment.environment),
-                                )}
-                              >
-                                {deployment.environment}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
                   </div>
                 ),
                 content: (
@@ -956,42 +871,14 @@ export function APIDocs({
                 title: (
                   <div className="flex w-full items-center justify-between gap-2">
                     Create a run via deployment id{" "}
-                    {!model && (
-                      <Select
-                        value={selectedDeployment?.id}
-                        onValueChange={(value) => {
-                          const deployment = deployments?.find(
-                            (d) => d.id === value,
-                          );
-                          if (deployment) {
-                            setSelectedDeployment(deployment);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[200px] capitalize">
-                          <SelectValue placeholder="Select a deployment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {deployments?.map((deployment) => (
-                            <SelectItem
-                              key={deployment.id}
-                              value={deployment.id}
-                              className="flex items-center justify-between capitalize"
-                            >
-                              {/* <span>{deployment.environment}</span> */}
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  getEnvColor(deployment.environment),
-                                )}
-                              >
-                                {deployment.environment}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        getEnvColor(selectedDeployment?.environment),
+                      )}
+                    >
+                      {selectedDeployment?.environment}
+                    </Badge>
                   </div>
                 ),
                 content: (
@@ -1068,33 +955,16 @@ export function APIDocs({
               Check out our comprehensive documentation for in-depth guides and
               examples.
             </p>
-            <Link
-              href="https://docs.comfydeploy.com"
+            <a
+              href="https://api.comfydeploy.com"
+              target="_blank"
               className="mt-2 inline-flex items-center text-blue-600 hover:underline"
+              rel="noreferrer"
             >
               Visit our docs
               <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
+            </a>
           </div>
-          {/* Trigger the workflow */}
-          {/* <CodeBlock
-                lang="js"
-                code={formatCode(
-                  jsTemplate,
-                  selectedDeployment,
-                  domain,
-                  workflowInput,
-                )}
-              />
-              Check the status of the run, and retrieve the outputs
-              <CodeBlock
-                lang="js"
-                code={formatCode(
-                  jsTemplate_checkStatus,
-                  selectedDeployment,
-                  domain,
-                )}
-              /> */}
         </TabsContent>
         <TabsContent className="!mt-2 flex flex-col gap-2" value="curl">
           <CodeBlock
@@ -1115,7 +985,6 @@ export function APIDocs({
           />
         </TabsContent>
       </Tabs>
-      {/* )} */}
     </div>
   );
 }
@@ -1181,4 +1050,497 @@ export function formatCode({
       process.env.NEXT_PUBLIC_CD_API_URL ?? "http://localhost:3011",
     )
     .replace("<MODEL_ID>", model_id ?? "<MODEL_ID>");
+}
+
+export function DeploymentSettings({
+  deployment,
+  onClose,
+}: {
+  deployment: Deployment;
+  onClose?: () => void;
+}) {
+  const [view, setView] = useState<"api" | "settings">("api");
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { data: deployments } = useWorkflowDeployments(deployment.workflow_id);
+  const [formData, setFormData] = useState<Partial<Deployment>>({
+    gpu: deployment.gpu || "A10G",
+    concurrency_limit: deployment.concurrency_limit || 2,
+    keep_warm: deployment.keep_warm || 0,
+    run_timeout: deployment.run_timeout || 300,
+    idle_timeout: deployment.idle_timeout || 60,
+  });
+  const [isDirty, setIsDirty] = useState(false);
+  const { setSelectedDeployment } = useSelectedDeploymentStore();
+  const { gpuConfig } = useGPUConfig();
+  const navigate = useNavigate();
+  const { data: machine } = useMachine(deployment.machine_id);
+
+  const is_fluid = !!deployment.modal_image_id;
+
+  const handleChange = <K extends keyof Deployment>(
+    key: K,
+    value: Deployment[K],
+  ) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    setIsDirty(true);
+  };
+
+  const handleReset = () => {
+    setFormData({
+      gpu: deployment.gpu || "A10G",
+      concurrency_limit: deployment.concurrency_limit || 2,
+      keep_warm: deployment.keep_warm || 0,
+      run_timeout: deployment.run_timeout || 300,
+      idle_timeout: deployment.idle_timeout || 60,
+    });
+    setIsDirty(false);
+  };
+
+  const handleSave = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+
+    try {
+      await callServerPromise(
+        api({
+          url: `deployment/${deployment.id}`,
+          init: {
+            method: "PATCH",
+            body: JSON.stringify({
+              gpu: formData.gpu,
+              concurrency_limit: formData.concurrency_limit,
+              keep_warm: formData.keep_warm,
+              run_timeout: formData.run_timeout,
+              idle_timeout: formData.idle_timeout,
+            }),
+          },
+        }),
+      );
+
+      toast.success("Settings saved successfully");
+      setIsDirty(false);
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      toast.error("Failed to save settings");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col px-2">
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-zinc-50 pt-1 pb-4">
+        <div className="flex items-center gap-4">
+          <div className="font-medium text-md">Deployment</div>
+          <Select
+            value={deployment.id}
+            onValueChange={(value) => {
+              const newDeployment = deployments?.find((d) => d.id === value);
+              if (newDeployment) {
+                setSelectedDeployment(newDeployment.id);
+              }
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      getEnvColor(deployment.environment),
+                      "whitespace-nowrap text-sm",
+                    )}
+                  >
+                    {deployment.environment}
+                  </Badge>
+                  {is_fluid && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1 bg-blue-50 text-blue-700"
+                    >
+                      <Droplets className="h-3 w-3" />
+                      Fluid
+                    </Badge>
+                  )}
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {deployments?.map((d) => (
+                <SelectItem
+                  key={d.id}
+                  value={d.id}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        getEnvColor(d.environment),
+                        "whitespace-nowrap text-sm",
+                      )}
+                    >
+                      {d.environment}
+                    </Badge>
+                    {!!d.modal_image_id && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1 bg-blue-50 text-blue-700"
+                      >
+                        <Droplets className="h-3 w-3" />
+                        Fluid
+                      </Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {deployment.environment !== "public-share" && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant={view === "api" ? "default" : "ghost"}
+              onClick={() => setView("api")}
+              size="sm"
+            >
+              API
+            </Button>
+            {is_fluid && (
+              <Button
+                variant={view === "settings" ? "default" : "ghost"}
+                onClick={() => setView("settings")}
+                size="sm"
+              >
+                <SettingsIcon className="mr-2 h-4 w-4" />
+                Auto Scaling
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {((view === "settings" && is_fluid) ||
+        deployment.environment === "public-share") && (
+        <form ref={formRef} className="flex flex-col gap-6">
+          {deployment.environment === "public-share" && (
+            <div className="mb-4">
+              <ShareLinkDisplay deployment={deployment} />
+            </div>
+          )}
+
+          {is_fluid && view === "settings" && (
+            <>
+              <Alert className="border-blue-200 bg-blue-50">
+                <AlertTitle className="flex items-center gap-2 text-blue-700">
+                  <Droplets className="h-4 w-4 text-blue-600" />
+                  Fluid Deployment
+                </AlertTitle>
+                <AlertDescription className="text-blue-600">
+                  This is a Fluid deployment with enhanced stability and
+                  auto-scaling capabilities. Configure your auto-scaling
+                  settings below to optimize performance and cost.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex flex-col gap-2">
+                <Badge className="w-fit font-medium text-sm">GPU</Badge>
+                <GPUSelectBox
+                  value={formData.gpu}
+                  onChange={(value) => handleChange("gpu", value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Badge className="w-fit font-medium text-sm">
+                  Max Parallel GPU
+                </Badge>
+                <MaxParallelGPUSlider
+                  value={
+                    formData.concurrency_limit || deployment.concurrency_limit
+                  }
+                  onChange={(value) => handleChange("concurrency_limit", value)}
+                />
+              </div>
+
+              {deployment.environment === "production" ? (
+                <div className="flex flex-col gap-2">
+                  <Badge className="w-fit font-medium text-sm">
+                    Keep Always On
+                  </Badge>
+                  <MaxAlwaysOnSlider
+                    value={formData.keep_warm || deployment.keep_warm}
+                    onChange={(value) => handleChange("keep_warm", value)}
+                  />
+                </div>
+              ) : (
+                <></>
+              )}
+
+              <div className="flex flex-col gap-2">
+                <Badge className="w-fit font-medium text-sm">Run Timeout</Badge>
+                <WorkflowTimeOut
+                  value={formData.run_timeout || deployment.run_timeout}
+                  onChange={(value) => handleChange("run_timeout", value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Badge className="w-fit font-medium text-sm">
+                  Scale Down Delay
+                </Badge>
+                <WarmTime
+                  value={formData.idle_timeout || deployment.idle_timeout}
+                  onChange={(value) => handleChange("idle_timeout", value)}
+                />
+                <div className="flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 p-4 text-blue-700 text-muted-foreground text-xs">
+                  <div className="flex flex-col gap-1">
+                    <span>
+                      Longer delay times keep containers warm for subsequent
+                      requests, reducing cold starts but increasing costs.
+                    </span>
+                    <div className="mt-2 rounded-md bg-white px-3 py-2">
+                      <span className="font-medium">
+                        Estimated extra cost per container:
+                      </span>
+                      <div className="mt-1 font-mono">
+                        {(() => {
+                          const selectedGPU = formData.gpu;
+                          const gpuPrice =
+                            gpuConfig?.find(
+                              (g) =>
+                                g.id.toLowerCase() ===
+                                selectedGPU?.toLowerCase(),
+                            )?.pricePerSec ?? 0;
+                          const idleSeconds =
+                            formData.idle_timeout || deployment.idle_timeout;
+                          const timeDisplay =
+                            idleSeconds < 60
+                              ? `${idleSeconds} seconds`
+                              : `${(idleSeconds / 60).toFixed(1)} minutes`;
+
+                          const costPerIdle = gpuPrice * 60 * idleSeconds;
+
+                          return `$${costPerIdle.toFixed(3)} per idle period of ${timeDisplay}`;
+                        })()}
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span>
+                        • Short delay (30s): Minimize costs, more cold starts
+                      </span>
+                      <span className="block">
+                        • Medium delay (5min): Balance cost and performance
+                      </span>
+                      <span className="block">
+                        • Long delay (15min+): Best performance, higher costs
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {isDirty && (
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={handleReset}
+                disabled={isLoading}
+              >
+                Reset
+              </Button>
+              <Button onClick={handleSave} disabled={isLoading}>
+                {isLoading ? (
+                  <LoadingIcon className="mr-2 h-4 w-4" />
+                ) : (
+                  <SettingsIcon className="mr-2 h-4 w-4" />
+                )}
+                Save Changes
+              </Button>
+            </div>
+          )}
+        </form>
+      )}
+
+      {view === "api" && deployment.environment !== "public-share" && (
+        <>
+          {!is_fluid && (
+            <div className="mb-4">
+              <Alert className="border-gray-200 bg-gray-50">
+                <AlertTitle className="flex items-center gap-2">
+                  <Server className="h-4 w-4" />
+                  Standard Deployment
+                </AlertTitle>
+                <AlertDescription className="flex flex-col gap-2">
+                  <span>
+                    This is a standard deployment using machine{" "}
+                    <span className="font-medium">
+                      {machine?.name || "Unknown"}
+                    </span>
+                    . To configure machine settings, visit the machine settings
+                    page.
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex w-fit items-center gap-2"
+                      onClick={() => {
+                        navigate({
+                          to: `/machines/${deployment.machine_id}`,
+                          search: { view: "settings" },
+                        });
+                      }}
+                    >
+                      <Settings className="h-4 w-4" />
+                      Open Machine Settings
+                    </Button>
+                    {machine?.type === "comfy-deploy-serverless" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex w-fit items-center gap-2"
+                        onClick={() => {
+                          navigate({
+                            to: `/machines/${deployment.machine_id}`,
+                            search: (prev) => ({
+                              ...prev,
+                              view: "settings",
+                              "machine-settings-view": "autoscaling" as any,
+                            }),
+                          });
+                        }}
+                      >
+                        <Gauge className="h-4 w-4" />
+                        Configure Auto Scaling
+                      </Button>
+                    )}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+          <APIDocs
+            domain={process.env.NEXT_PUBLIC_CD_API_URL ?? ""}
+            workflow_id={deployment.workflow_id}
+            deployment_id={deployment.id}
+            header={null}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+export function DeploymentDrawer() {
+  const { selectedDeployment, setSelectedDeployment } =
+    useSelectedDeploymentStore();
+  const { data: deployment, isLoading } = useQuery<any>({
+    queryKey: ["deployment", selectedDeployment],
+  });
+
+  return (
+    <MyDrawer
+      desktopClassName="w-[600px]"
+      open={!!selectedDeployment}
+      onClose={() => {
+        setSelectedDeployment(null);
+      }}
+    >
+      <ScrollArea className="h-full">
+        {isLoading || (!deployment && selectedDeployment) ? (
+          <div className="flex flex-col px-2">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-zinc-50 pt-1 pb-4">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-9 w-[180px]" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-28" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-4">
+              <Skeleton className="h-24 w-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          </div>
+        ) : deployment ? (
+          <DeploymentSettings
+            key={deployment.id}
+            deployment={deployment}
+            onClose={() => setSelectedDeployment(null)}
+          />
+        ) : null}
+      </ScrollArea>
+    </MyDrawer>
+  );
+}
+
+function ShareLinkDisplay({ deployment }: { deployment: Deployment }) {
+  const [copying, setCopying] = useState(false);
+
+  const handleCopy = async () => {
+    if (!deployment.dub_link) return;
+    setCopying(true);
+    await navigator.clipboard.writeText(deployment.dub_link);
+    toast.success("Link copied to clipboard!");
+    setTimeout(() => setCopying(false), 1000);
+  };
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-sm">Sharing Link</h3>
+          <Badge variant="secondary" className="bg-zinc-100 text-zinc-700">
+            Public
+          </Badge>
+        </div>
+      </div>
+      {deployment.dub_link ? (
+        <div className="flex gap-2">
+          <Input
+            readOnly
+            value={deployment.dub_link}
+            className="border-zinc-200 bg-zinc-50 font-mono text-xs"
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleCopy}
+            className="shrink-0 transition-all duration-200 hover:bg-zinc-50"
+          >
+            {copying ? (
+              <Check className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between rounded-md bg-amber-50 p-3 text-amber-700">
+          <span className="text-sm">
+            No sharing link available. Please reshare again.
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }

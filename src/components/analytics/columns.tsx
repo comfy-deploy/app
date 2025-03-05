@@ -110,7 +110,7 @@ export const columns: ColumnDef<ColumnSchema>[] = [
       return (
         <div className="flex items-center gap-3">
           <img
-            src={user.image_url ?? ""}
+            src={user?.image_url ? user.image_url : ""}
             alt={`${user.first_name}'s avatar`}
             className="h-[20px] w-[20px] rounded-full"
           />

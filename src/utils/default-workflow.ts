@@ -1,3 +1,4 @@
+import { getOptimizedImage } from "@/lib/utils";
 import { comfydeploy_hash } from "@/utils/comfydeploy-hash";
 
 export const defaultWorkflowTemplate = {
@@ -1308,6 +1309,356 @@ const workflow_api_flux = {
   },
 };
 
+const workflow_json_wan_1_5 = {
+  last_node_id: 48,
+  last_link_id: 94,
+  nodes: [
+    {
+      id: 8,
+      type: "VAEDecode",
+      pos: [1210, 190],
+      size: [210, 46],
+      flags: {},
+      order: 8,
+      mode: 0,
+      inputs: [
+        { name: "samples", type: "LATENT", link: 35 },
+        { name: "vae", type: "VAE", link: 76 },
+      ],
+      outputs: [
+        { name: "IMAGE", type: "IMAGE", links: [56, 93], slot_index: 0 },
+      ],
+      properties: { "Node name for S&R": "VAEDecode" },
+      widgets_values: [],
+    },
+    {
+      id: 39,
+      type: "VAELoader",
+      pos: [866.3932495117188, 499.18597412109375],
+      size: [306.36004638671875, 58],
+      flags: {},
+      order: 0,
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: "VAE", type: "VAE", links: [76], slot_index: 0 }],
+      properties: { "Node name for S&R": "VAELoader" },
+      widgets_values: ["wan_2.1_vae.safetensors"],
+    },
+    {
+      id: 40,
+      type: "EmptyHunyuanLatentVideo",
+      pos: [520, 620],
+      size: [315, 130],
+      flags: {},
+      order: 1,
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: "LATENT", type: "LATENT", links: [91], slot_index: 0 }],
+      properties: { "Node name for S&R": "EmptyHunyuanLatentVideo" },
+      widgets_values: [832, 480, 33, 1],
+    },
+    {
+      id: 37,
+      type: "UNETLoader",
+      pos: [485.1220397949219, 57.094566345214844],
+      size: [346.7470703125, 82],
+      flags: {},
+      order: 2,
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: "MODEL", type: "MODEL", links: [92], slot_index: 0 }],
+      properties: { "Node name for S&R": "UNETLoader" },
+      widgets_values: ["wan2.1_t2v_1.3B_bf16.safetensors", "default"],
+    },
+    {
+      id: 47,
+      type: "SaveWEBM",
+      pos: [2367.213134765625, 193.6114959716797],
+      size: [315, 130],
+      flags: {},
+      order: 10,
+      mode: 4,
+      inputs: [{ name: "images", type: "IMAGE", link: 93 }],
+      outputs: [],
+      properties: { "Node name for S&R": "SaveWEBM" },
+      widgets_values: ["ComfyUI", "vp9", 24, 32],
+    },
+    {
+      id: 3,
+      type: "KSampler",
+      pos: [863, 187],
+      size: [315, 262],
+      flags: {},
+      order: 7,
+      mode: 0,
+      inputs: [
+        { name: "model", type: "MODEL", link: 92 },
+        { name: "positive", type: "CONDITIONING", link: 46 },
+        { name: "negative", type: "CONDITIONING", link: 52 },
+        { name: "latent_image", type: "LATENT", link: 91 },
+      ],
+      outputs: [{ name: "LATENT", type: "LATENT", links: [35], slot_index: 0 }],
+      properties: { "Node name for S&R": "KSampler" },
+      widgets_values: [
+        440133508534424,
+        "randomize",
+        30,
+        6,
+        "uni_pc",
+        "simple",
+        1,
+      ],
+    },
+    {
+      id: 28,
+      type: "SaveAnimatedWEBP",
+      pos: [1443.9658203125, 270.1347961425781],
+      size: [870.8511352539062, 643.7430419921875],
+      flags: {},
+      order: 9,
+      mode: 0,
+      inputs: [{ name: "images", type: "IMAGE", link: 56 }],
+      outputs: [],
+      properties: {},
+      widgets_values: ["ComfyUI", 16, false, 90, "default"],
+    },
+    {
+      id: 38,
+      type: "CLIPLoader",
+      pos: [-144.17140197753906, 37.38432693481445],
+      size: [390, 82],
+      flags: {},
+      order: 3,
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: "CLIP", type: "CLIP", links: [74, 75], slot_index: 0 }],
+      properties: { "Node name for S&R": "CLIPLoader" },
+      widgets_values: [
+        "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "wan",
+        "default",
+      ],
+    },
+    {
+      id: 6,
+      type: "CLIPTextEncode",
+      pos: [415, 186],
+      size: [285.6, 54],
+      flags: {},
+      order: 6,
+      mode: 0,
+      inputs: [
+        { name: "clip", type: "CLIP", link: 74 },
+        { name: "text", type: "STRING", widget: { name: "text" }, link: 94 },
+      ],
+      outputs: [
+        {
+          name: "CONDITIONING",
+          type: "CONDITIONING",
+          links: [46],
+          slot_index: 0,
+        },
+      ],
+      title: "CLIP Text Encode (Positive Prompt)",
+      properties: { "Node name for S&R": "CLIPTextEncode" },
+      widgets_values: [
+        "a fox moving quickly in a beautiful winter scenery nature trees sunset tracking camera",
+      ],
+      color: "#232",
+      bgcolor: "#353",
+    },
+    {
+      id: 48,
+      type: "ComfyUIDeployExternalText",
+      pos: [-111.12504577636719, 193.05276489257812],
+      size: [400, 200],
+      flags: {},
+      order: 4,
+      mode: 0,
+      inputs: [],
+      outputs: [{ name: "text", type: "STRING", links: [94] }],
+      properties: { "Node name for S&R": "ComfyUIDeployExternalText" },
+      widgets_values: [
+        "input_text",
+        "a fox moving quickly in a beautiful winter scenery nature trees sunset tracking camera",
+        "",
+        "",
+      ],
+    },
+    {
+      id: 7,
+      type: "CLIPTextEncode",
+      pos: [397.1144104003906, 374.4494323730469],
+      size: [425.27801513671875, 180.6060791015625],
+      flags: {},
+      order: 5,
+      mode: 0,
+      inputs: [{ name: "clip", type: "CLIP", link: 75 }],
+      outputs: [
+        {
+          name: "CONDITIONING",
+          type: "CONDITIONING",
+          links: [52],
+          slot_index: 0,
+        },
+      ],
+      title: "CLIP Text Encode (Negative Prompt)",
+      properties: { "Node name for S&R": "CLIPTextEncode" },
+      widgets_values: [
+        "Overexposure, static, blurred details, subtitles, paintings, pictures, still, overall gray, worst quality, low quality, JPEG compression residue, ugly, mutilated, redundant fingers, poorly painted hands, poorly painted faces, deformed, disfigured, deformed limbs, fused fingers, cluttered background, three legs, a lot of people in the background, upside down",
+      ],
+      color: "#322",
+      bgcolor: "#533",
+    },
+  ],
+  links: [
+    [35, 3, 0, 8, 0, "LATENT"],
+    [46, 6, 0, 3, 1, "CONDITIONING"],
+    [52, 7, 0, 3, 2, "CONDITIONING"],
+    [56, 8, 0, 28, 0, "IMAGE"],
+    [74, 38, 0, 6, 0, "CLIP"],
+    [75, 38, 0, 7, 0, "CLIP"],
+    [76, 39, 0, 8, 1, "VAE"],
+    [91, 40, 0, 3, 3, "LATENT"],
+    [92, 37, 0, 3, 0, "MODEL"],
+    [93, 8, 0, 47, 0, "IMAGE"],
+    [94, 48, 0, 6, 1, "STRING"],
+  ],
+  groups: [],
+  config: {},
+  extra: {
+    ds: {
+      scale: 0.6934334949441607,
+      offset: [192.49830752961296, 87.129214921161],
+    },
+    node_versions: {
+      "comfy-core": "0.3.18",
+      "comfyui-deploy": "b3df94d1affcf7ce05ee7eeda99989194bcd9159",
+    },
+  },
+  version: 0.4,
+};
+
+const workflow_api_wan_1_5 = {
+  "3": {
+    inputs: {
+      seed: 440133508534424,
+      steps: 30,
+      cfg: 6,
+      sampler_name: "uni_pc",
+      scheduler: "simple",
+      denoise: 1,
+      model: ["37", 0],
+      positive: ["6", 0],
+      negative: ["7", 0],
+      latent_image: ["40", 0],
+    },
+    class_type: "KSampler",
+    _meta: {
+      title: "KSampler",
+    },
+  },
+  "6": {
+    inputs: {
+      text: ["48", 0],
+      clip: ["38", 0],
+    },
+    class_type: "CLIPTextEncode",
+    _meta: {
+      title: "CLIP Text Encode (Positive Prompt)",
+    },
+  },
+  "7": {
+    inputs: {
+      text: "Overexposure, static, blurred details, subtitles, paintings, pictures, still, overall gray, worst quality, low quality, JPEG compression residue, ugly, mutilated, redundant fingers, poorly painted hands, poorly painted faces, deformed, disfigured, deformed limbs, fused fingers, cluttered background, three legs, a lot of people in the background, upside down",
+      clip: ["38", 0],
+    },
+    class_type: "CLIPTextEncode",
+    _meta: {
+      title: "CLIP Text Encode (Negative Prompt)",
+    },
+  },
+  "8": {
+    inputs: {
+      samples: ["3", 0],
+      vae: ["39", 0],
+    },
+    class_type: "VAEDecode",
+    _meta: {
+      title: "VAE Decode",
+    },
+  },
+  "28": {
+    inputs: {
+      filename_prefix: "ComfyUI",
+      fps: 16,
+      lossless: false,
+      quality: 90,
+      method: "default",
+      images: ["8", 0],
+    },
+    class_type: "SaveAnimatedWEBP",
+    _meta: {
+      title: "SaveAnimatedWEBP",
+    },
+  },
+  "37": {
+    inputs: {
+      unet_name: "wan2.1_t2v_1.3B_bf16.safetensors",
+      weight_dtype: "default",
+    },
+    class_type: "UNETLoader",
+    _meta: {
+      title: "Load Diffusion Model",
+    },
+  },
+  "38": {
+    inputs: {
+      clip_name: "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      type: "wan",
+      device: "default",
+    },
+    class_type: "CLIPLoader",
+    _meta: {
+      title: "Load CLIP",
+    },
+  },
+  "39": {
+    inputs: {
+      vae_name: "wan_2.1_vae.safetensors",
+    },
+    class_type: "VAELoader",
+    _meta: {
+      title: "Load VAE",
+    },
+  },
+  "40": {
+    inputs: {
+      width: 832,
+      height: 480,
+      length: 33,
+      batch_size: 1,
+    },
+    class_type: "EmptyHunyuanLatentVideo",
+    _meta: {
+      title: "EmptyHunyuanLatentVideo",
+    },
+  },
+  "48": {
+    inputs: {
+      input_id: "input_text",
+      default_value:
+        "a fox moving quickly in a beautiful winter scenery nature trees sunset tracking camera",
+      display_name: "",
+      description: "",
+    },
+    class_type: "ComfyUIDeployExternalText",
+    _meta: {
+      title: "External Text (ComfyUI Deploy)",
+    },
+  },
+};
+
 export const defaultWorkflowTemplates: defaultWorkflowTemplateType[] = [
   {
     workflowId: "sd1.5",
@@ -1315,8 +1666,9 @@ export const defaultWorkflowTemplates: defaultWorkflowTemplateType[] = [
     workflowDescription: "Text to image with sd 1.5 base model. ",
     workflowJson: JSON.stringify(defaultWorkflowTemplate.workflow),
     workflowApi: JSON.stringify(defaultWorkflowTemplate.workflow_api),
-    workflowImageUrl:
+    workflowImageUrl: getOptimizedImage(
       "https://comfy-deploy-output.s3.amazonaws.com/outputs/runs/ae92370b-315a-4578-af29-ed83b00828d1/ComfyUI_00001_.png",
+    ),
   },
   {
     workflowId: "sd3.5",
@@ -1324,8 +1676,9 @@ export const defaultWorkflowTemplates: defaultWorkflowTemplateType[] = [
     workflowDescription: "Text to image with latest sd 3.5 model.",
     workflowJson: JSON.stringify(workflow_json_sd3_5),
     workflowApi: JSON.stringify(workflow_api_sd3_5),
-    workflowImageUrl:
+    workflowImageUrl: getOptimizedImage(
       "https://comfy-deploy-output.s3.amazonaws.com/outputs/runs/36febfce-3cb6-4220-9447-33003e58d381/ComfyUI_00001_.png",
+    ),
   },
   {
     workflowId: "flux",
@@ -1334,7 +1687,18 @@ export const defaultWorkflowTemplates: defaultWorkflowTemplateType[] = [
       "Text to image with Flux model, most popular and stunning model.",
     workflowApi: JSON.stringify(workflow_api_flux),
     workflowJson: JSON.stringify(workflow_json_flux),
-    workflowImageUrl:
+    workflowImageUrl: getOptimizedImage(
       "https://cd-misc.s3.us-east-2.amazonaws.com/templates/1zsngynnMzX8g1FWs61ti.png",
+    ),
+  },
+  {
+    workflowId: "wan2.1",
+    workflowName: "Wan v2.1",
+    workflowDescription: "Text to image with latest Wan 2.1 model.",
+    workflowApi: JSON.stringify(workflow_api_wan_1_5),
+    workflowJson: JSON.stringify(workflow_json_wan_1_5),
+    workflowImageUrl: getOptimizedImage(
+      "https://comfy-deploy-output.s3.us-east-2.amazonaws.com/outputs/runs/51f156ca-e988-445f-83a2-70bb95b5e5b7/ComfyUI_00003_.webp",
+    ),
   },
 ];

@@ -36,6 +36,12 @@ export default defineConfig({
   },
   tools: {
     rspack: {
+      cache: true,
+      experiments: {
+        cache: {
+          type: "persistent",
+        },
+      },
       optimization: {
         minimizer: [
           new rspack.SwcJsMinimizerRspackPlugin({

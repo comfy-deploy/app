@@ -105,7 +105,7 @@ export function MachineCreate() {
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <h1 className="mb-4 font-medium text-xl">
-                {cloneMachineId ? "Clone Machine" : "Create Machine"}
+                {cloneMachineId ? "Clone Machine" : "Create Docker Machine"}
               </h1>
               <div className="mb-1">
                 <div className="mb-2">
