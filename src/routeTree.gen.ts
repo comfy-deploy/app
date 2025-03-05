@@ -20,7 +20,7 @@ import { Route as PricingImport } from './routes/pricing'
 import { Route as OnboardingCallImport } from './routes/onboarding-call'
 import { Route as ModelsImport } from './routes/models'
 import { Route as HomeImport } from './routes/home'
-import { Route as FeaturedImport } from './routes/featured'
+import { Route as ExploreImport } from './routes/explore'
 import { Route as DeploymentsImport } from './routes/deployments'
 import { Route as AssetsImport } from './routes/assets'
 import { Route as ApiKeysImport } from './routes/api-keys'
@@ -91,9 +91,9 @@ const HomeRoute = HomeImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const FeaturedRoute = FeaturedImport.update({
-  id: '/featured',
-  path: '/featured',
+const ExploreRoute = ExploreImport.update({
+  id: '/explore',
+  path: '/explore',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -267,11 +267,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeploymentsImport
       parentRoute: typeof rootRoute
     }
-    '/featured': {
-      id: '/featured'
-      path: '/featured'
-      fullPath: '/featured'
-      preLoaderRoute: typeof FeaturedImport
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreImport
       parentRoute: typeof rootRoute
     }
     '/home': {
@@ -445,7 +445,7 @@ export interface FileRoutesByFullPath {
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
-  '/featured': typeof FeaturedRoute
+  '/explore': typeof ExploreRoute
   '/home': typeof HomeRoute
   '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -476,7 +476,7 @@ export interface FileRoutesByTo {
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
-  '/featured': typeof FeaturedRoute
+  '/explore': typeof ExploreRoute
   '/home': typeof HomeRoute
   '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -508,7 +508,7 @@ export interface FileRoutesById {
   '/api-keys': typeof ApiKeysRoute
   '/assets': typeof AssetsRoute
   '/deployments': typeof DeploymentsRoute
-  '/featured': typeof FeaturedRoute
+  '/explore': typeof ExploreRoute
   '/home': typeof HomeRoute
   '/models': typeof ModelsRoute
   '/onboarding-call': typeof OnboardingCallRoute
@@ -541,7 +541,7 @@ export interface FileRouteTypes {
     | '/api-keys'
     | '/assets'
     | '/deployments'
-    | '/featured'
+    | '/explore'
     | '/home'
     | '/models'
     | '/onboarding-call'
@@ -571,7 +571,7 @@ export interface FileRouteTypes {
     | '/api-keys'
     | '/assets'
     | '/deployments'
-    | '/featured'
+    | '/explore'
     | '/home'
     | '/models'
     | '/onboarding-call'
@@ -601,7 +601,7 @@ export interface FileRouteTypes {
     | '/api-keys'
     | '/assets'
     | '/deployments'
-    | '/featured'
+    | '/explore'
     | '/home'
     | '/models'
     | '/onboarding-call'
@@ -633,7 +633,7 @@ export interface RootRouteChildren {
   ApiKeysRoute: typeof ApiKeysRoute
   AssetsRoute: typeof AssetsRoute
   DeploymentsRoute: typeof DeploymentsRoute
-  FeaturedRoute: typeof FeaturedRoute
+  ExploreRoute: typeof ExploreRoute
   HomeRoute: typeof HomeRoute
   ModelsRoute: typeof ModelsRoute
   OnboardingCallRoute: typeof OnboardingCallRoute
@@ -664,7 +664,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiKeysRoute: ApiKeysRoute,
   AssetsRoute: AssetsRoute,
   DeploymentsRoute: DeploymentsRoute,
-  FeaturedRoute: FeaturedRoute,
+  ExploreRoute: ExploreRoute,
   HomeRoute: HomeRoute,
   ModelsRoute: ModelsRoute,
   OnboardingCallRoute: OnboardingCallRoute,
@@ -706,7 +706,7 @@ export const routeTree = rootRoute
         "/api-keys",
         "/assets",
         "/deployments",
-        "/featured",
+        "/explore",
         "/home",
         "/models",
         "/onboarding-call",
@@ -744,8 +744,8 @@ export const routeTree = rootRoute
     "/deployments": {
       "filePath": "deployments.tsx"
     },
-    "/featured": {
-      "filePath": "featured.tsx"
+    "/explore": {
+      "filePath": "explore.tsx"
     },
     "/home": {
       "filePath": "home.tsx"

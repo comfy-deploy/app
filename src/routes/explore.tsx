@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
 
-export const Route = createFileRoute("/featured")({
+export const Route = createFileRoute("/explore")({
   component: RouteComponent,
 });
 

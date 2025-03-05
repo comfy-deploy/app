@@ -147,11 +147,8 @@ export function NavBar() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link
-                          to="/featured"
-                          className="flex items-center gap-2"
-                        >
-                          <Sparkles className="h-4 w-4" /> Featured
+                        <Link to="/explore" className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4" /> Explore
                           <Badge variant="fuchsia">Beta</Badge>
                         </Link>
                       </DropdownMenuItem>
