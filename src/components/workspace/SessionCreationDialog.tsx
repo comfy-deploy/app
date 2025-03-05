@@ -69,7 +69,7 @@ interface SessionForm {
   timeout: number;
 }
 
-function MachineSessionsList({ machineId }: { machineId: string }) {
+export function MachineSessionsList({ machineId }: { machineId: string }) {
   const { listSession, deleteSession } = useSessionAPI(machineId);
   const { data: sessions } = listSession;
   const router = useRouter();
@@ -83,70 +83,68 @@ function MachineSessionsList({ machineId }: { machineId: string }) {
   }
 
   return (
-    <div className="space-y-2 px-1 py-1">
-      <div className="space-y-2">
-        {sessions.map((session) => (
+    <div className="space-y-1 px-1 py-1">
+      {sessions.map((session) => (
+        <div
+          key={session.session_id}
+          className="group flex items-center justify-between rounded-lg border bg-background p-2 hover:bg-blue-50/50"
+        >
           <div
-            key={session.session_id}
-            className="group flex items-center justify-between rounded-lg border bg-background p-2 hover:bg-blue-50/50"
+            className="flex flex-1 cursor-pointer items-center gap-2 pl-2"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              router.navigate({
+                to: "/sessions/$sessionId",
+                params: {
+                  sessionId: session.session_id,
+                },
+                search: {
+                  machineId: session.machine_id,
+                },
+              });
+            }}
           >
-            <div
-              className="flex flex-1 cursor-pointer items-center gap-2 pl-2"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                router.navigate({
-                  to: "/sessions/$sessionId",
-                  params: {
-                    sessionId: session.session_id,
-                  },
-                  search: {
-                    machineId: session.machine_id,
-                  },
-                });
-              }}
-            >
-              <div className="relative flex h-4 w-4 items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-green-500" />
-                <RotateCw className="absolute h-4 w-4 animate-spin text-green-500 opacity-50" />
-              </div>
-              <span className="text-sm">{session.session_id.slice(0, 8)}</span>
-              <Badge variant="outline">{session.gpu}</Badge>
-              <ArrowRightToLine className="ml-auto h-4 w-4 text-blue-500 opacity-0 transition-opacity group-hover:opacity-100" />
+            <div className="relative flex h-4 w-4 items-center justify-center">
+              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <RotateCw className="absolute h-4 w-4 animate-spin text-green-500 opacity-50" />
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    isLoading={deleteSession.isPending}
-                    className=" text-red-500 hover:text-red-600"
-                    Icon={StopCircle}
-                    iconPlacement="right"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      // await new Promise((resolve) => setTimeout(resolve, 2000));
-                      try {
-                        await deleteSession.mutateAsync({
-                          sessionId: session.session_id,
-                        });
-                        toast.success("Session stopped successfully");
-                      } catch (error) {
-                        toast.error("Failed to stop session");
-                      }
-                    }}
-                  />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Stop Session</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <span className="text-sm">{session.session_id.slice(0, 8)}</span>
+            <Badge variant="outline">{session.gpu}</Badge>
+            <ArrowRightToLine className="ml-auto h-4 w-4 text-blue-500 opacity-0 transition-opacity group-hover:opacity-100" />
           </div>
-        ))}
-      </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  isLoading={deleteSession.isPending}
+                  className=" text-red-500 hover:text-red-600"
+                  Icon={StopCircle}
+                  iconPlacement="right"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // await new Promise((resolve) => setTimeout(resolve, 2000));
+                    try {
+                      await deleteSession.mutateAsync({
+                        sessionId: session.session_id,
+                      });
+                      toast.success("Session stopped successfully");
+                    } catch (error) {
+                      toast.error("Failed to stop session");
+                    }
+                  }}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Stop Session</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      ))}
     </div>
   );
 }

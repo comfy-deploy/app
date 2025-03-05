@@ -74,7 +74,10 @@ import {
 import type { Deployment } from "@/components/workspace/DeploymentDisplay";
 import { useLogStore } from "@/components/workspace/LogContext";
 import { LogDisplay } from "@/components/workspace/LogDisplay";
-import { SessionCreationDialog } from "@/components/workspace/SessionCreationDialog";
+import {
+  MachineSessionsList,
+  SessionCreationDialog,
+} from "@/components/workspace/SessionCreationDialog";
 import { useSelectedVersion } from "@/components/workspace/Workspace";
 import { WorkspaceStatusBar } from "@/components/workspace/WorkspaceStatusBar";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
@@ -233,6 +236,8 @@ function WorkflowPageComponent() {
 
   const { data: deployments, isLoading: isDeploymentsLoading } =
     useWorkflowDeployments(workflowId);
+
+  const [isHovering, setIsHovering] = useState(false);
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -554,8 +559,6 @@ function RequestPage({
   });
   const router = useRouter();
 
-  const { createDynamicSession } = useSessionAPI();
-
   const { isSignedIn } = useAuth();
 
   const defaultValues = useMemo(
@@ -570,6 +573,11 @@ function RequestPage({
   });
 
   const latestVersion = versions && versions.length > 0 ? versions?.[0] : null;
+
+  const { listSession } = useSessionAPI(latestVersion?.machine_id);
+  const { data: sessions } = listSession;
+
+  const [isHovering, setIsHovering] = useState(false);
 
   // Update form when workflow data is loaded
   useEffect(() => {
@@ -756,58 +764,89 @@ function RequestPage({
 
         <div className="mt-4 font-medium text-sm">Versions</div>
 
-        <div className="-mb-6 rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 px-4 pt-2.5 pb-7 relative">
-          <div className="flex flex-row items-center justify-between px-2">
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-muted-foreground">
-                Edit your workflow by starting a session
+        <div
+          className={cn(
+            "relative rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 px-4 pt-2.5 pb-10",
+            sessions?.length ? "-mb-6" : "-mb-4",
+          )}
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
+          <motion.div
+            animate={{
+              marginBottom: isHovering && sessions?.length ? "-28px" : "-24px",
+            }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            <div className="flex flex-row items-center justify-between px-2">
+              <div className="flex items-center gap-3">
+                <div className="text-muted-foreground text-sm">
+                  Edit your workflow by starting a session
+                </div>
+              </div>
+
+              <div className="flex flex-row items-center gap-4">
+                {latestVersion?.machine_id && (
+                  <div className="flex items-center gap-2">
+                    <SessionCount machineId={latestVersion.machine_id} />
+                  </div>
+                )}
+                <Button
+                  variant="shine"
+                  size="sm"
+                  className="rounded-[9px]"
+                  disabled={!latestVersion}
+                  onClick={() => {
+                    if (!isSignedIn) {
+                      // Use the clerk hook instead of direct import
+                      router.navigate({
+                        to: "/sign-in",
+                        search: {
+                          redirectTo: window.location.href,
+                        },
+                      });
+                      return;
+                    }
+
+                    setSessionCreation((prev) => ({
+                      ...prev,
+                      isOpen: true,
+                      version: latestVersion?.version || null,
+                      machineId:
+                        latestVersion?.machine_id ||
+                        currentWorkflow?.selected_machine_id,
+                      machineVersionId:
+                        latestVersion?.machine_version_id || null,
+                      modalImageId: latestVersion?.modal_image_id || null,
+                    }));
+                  }}
+                >
+                  Edit
+                  {latestVersion?.version && (
+                    <Badge className="ml-2 bg-gray-300 py-0.5">
+                      v{latestVersion?.version}
+                    </Badge>
+                  )}
+                </Button>
               </div>
             </div>
 
-            <div className="flex flex-row items-center gap-4">
-              {latestVersion?.machine_id && (
-                <div className="flex items-center gap-2">
-                  <SessionCount machineId={latestVersion.machine_id} />
-                </div>
-              )}
-              <Button
-                variant="shine"
-                size="sm"
-                className="rounded-[9px]"
-                disabled={!latestVersion}
-                onClick={() => {
-                  if (!isSignedIn) {
-                    // Use the clerk hook instead of direct import
-                    router.navigate({
-                      to: "/sign-in",
-                      search: {
-                        redirectTo: window.location.href,
-                      },
-                    });
-                    return;
-                  }
-
-                  setSessionCreation((prev) => ({
-                    ...prev,
-                    isOpen: true,
-                    version: latestVersion?.version || null,
-                    machineId:
-                      latestVersion?.machine_id ||
-                      currentWorkflow?.selected_machine_id,
-                    machineVersionId: latestVersion?.machine_version_id || null,
-                    modalImageId: latestVersion?.modal_image_id || null,
-                  }));
+            {latestVersion?.machine_id && sessions && sessions?.length > 0 && (
+              <motion.div
+                className="mt-2 overflow-hidden"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{
+                  height: isHovering ? "auto" : 0,
+                  opacity: isHovering ? 1 : 0,
                 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
               >
-                Edit
-                {latestVersion?.version && (
-                  <Badge className="ml-2 bg-gray-300 py-0.5">
-                    v{latestVersion?.version}
-                  </Badge>
-                )}
-              </Button>
-            </div>
-          </div>
+                <div className="rounded-t-lg border border-gray-200 bg-zinc-100 p-1 shadow-inner">
+                  <MachineSessionsList machineId={latestVersion?.machine_id} />
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
         </div>
 
         <VersionList
