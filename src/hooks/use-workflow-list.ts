@@ -2,11 +2,14 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 const BATCH_SIZE = 20;
 
-export function useWorkflowList(debouncedSearchValue: string) {
+export function useWorkflowList(
+  debouncedSearchValue: string,
+  limit: number = BATCH_SIZE,
+) {
   return useInfiniteQuery<any[]>({
     queryKey: ["workflows"],
     meta: {
-      limit: BATCH_SIZE,
+      limit: limit,
       offset: 0,
       params: {
         search: debouncedSearchValue ?? "",

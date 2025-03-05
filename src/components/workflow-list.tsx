@@ -296,12 +296,14 @@ export function WorkflowLatestOutput({
   );
 }
 
-function WorkflowCard({
+export function WorkflowCard({
   workflow,
   mutate,
+  className,
 }: {
   workflow: any;
   mutate: () => void;
+  className?: string;
 }) {
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState<string>();
@@ -319,7 +321,7 @@ function WorkflowCard({
 
   const isAdminAndMember = useIsAdminAndMember();
 
-  const { data: latest_runs } = useQuery<any[]>({
+  const { data: latest_runs, isLoading: isLoadingLatestRun } = useQuery<any[]>({
     queryKey: ["workflow", workflow.id, "run", "latest"],
     queryKeyHashFn: (queryKey) => [...queryKey, "latest"].toString(),
   });
@@ -416,9 +418,13 @@ function WorkflowCard({
             ? `/workflows/${workflow.id}/requests`
             : `/workflows/${workflow.id}/playground`
         }
-        className="flex w-full flex-col md:max-w-[320px]"
+        className={cn("flex w-full flex-col md:max-w-[320px]", className)}
       >
-        <Card className="group relative flex aspect-square h-[320px] w-full flex-col overflow-hidden rounded-md">
+        <Card
+          className={cn(
+            "group relative flex aspect-square h-[320px] w-full flex-col overflow-hidden rounded-md",
+          )}
+        >
           <div className="h-full w-full">
             {workflow.cover_image || latest_output?.images?.[0]?.url ? (
               <FileURLRender
@@ -538,7 +544,7 @@ function WorkflowCard({
         </Card>
         <div className="flex flex-col px-2 pt-2">
           <div className="flex w-full flex-row justify-between truncate font-semibold text-gray-700 text-md">
-            <div className="mr-2 truncate">{workflow.name}</div>
+            <div className="mr-2 truncate text-sm">{workflow.name}</div>
             {status && (
               <Badge
                 variant={status === "success" ? "success" : "secondary"}
@@ -549,17 +555,19 @@ function WorkflowCard({
             )}
           </div>
           <div className="flex flex-row justify-between">
-            <div className="flex items-center gap-2 truncate text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 truncate text-2xs text-muted-foreground">
               {workflow.user_id && (
                 <UserIcon user_id={workflow.user_id} className="h-4 w-4" />
               )}
               {workflow.user_name || "Unknown"}
             </div>
-            <div className="shrink-0 text-xs">
+            <div className="shrink-0 text-2xs">
               {lastest_run_at ? (
                 getRelativeTime(lastest_run_at)
+              ) : isLoadingLatestRun ? (
+                <Skeleton className="h-4 w-4" />
               ) : (
-                <Skeleton className="h-4 w-16" />
+                <></>
               )}
             </div>
           </div>

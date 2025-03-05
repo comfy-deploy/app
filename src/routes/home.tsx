@@ -1,9 +1,35 @@
-import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
-import { useMachine, useMachines } from "@/hooks/use-machine";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
+import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 import {
+  ComfyUIVersionSelectBox,
+  GPUSelectBox,
+} from "@/components/machine/machine-settings";
+import { UserIcon } from "@/components/run/SharePageComponent";
+import { Spotlight } from "@/components/spotlight-guide";
+import { SpotlightTooltip } from "@/components/spotlight-guide";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
+import { useLogStore } from "@/components/workspace/LogContext";
+import { GPU } from "@/constants/run-data-enum";
+import { useMachine, useMachines } from "@/hooks/use-machine";
+import { useSessionAPI } from "@/hooks/use-session-api";
+import { callServerPromise } from "@/lib/call-server-promise";
+import { getRelativeTime } from "@/lib/get-relative-time";
+import { comfyui_hash } from "@/utils/comfydeploy-hash";
+import { useAuth, useClerk } from "@clerk/clerk-react";
+import { useQuery } from "@tanstack/react-query";
+import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Check,
   ChevronRight,
   CornerRightUp,
   ExternalLink,
@@ -12,37 +38,12 @@ import {
   Settings,
   Share2,
   Trash,
-  Check,
 } from "lucide-react";
-import {
-  ComfyUIVersionSelectBox,
-  GPUSelectBox,
-} from "@/components/machine/machine-settings";
-import { useForm } from "react-hook-form";
-import { comfyui_hash } from "@/utils/comfydeploy-hash";
-import { useSessionAPI } from "@/hooks/use-session-api";
-import { useLogStore } from "@/components/workspace/LogContext";
-import { UserIcon } from "@/components/run/SharePageComponent";
-import { Badge } from "@/components/ui/badge";
-import { getRelativeTime } from "@/lib/get-relative-time";
-import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { z } from "zod";
-import { GPU } from "@/constants/run-data-enum";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Spotlight } from "@/components/spotlight-guide";
-import { SpotlightTooltip } from "@/components/spotlight-guide";
-import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useAuth, useClerk } from "@clerk/clerk-react";
-import { callServerPromise } from "@/lib/call-server-promise";
+import { z } from "zod";
+import { RecentWorkflows } from "@/components/recent-workflows";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -192,9 +193,10 @@ function SessionsList() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-2 py-10">
-      <div className="font-medium text-sm">Active ComfyUI</div>
-      <div className="flex flex-col divide-y divide-border overflow-hidden rounded-3xl border">
+    <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-2 pt-2 pb-20">
+      <RecentWorkflows />
+      <div className="font-medium text-sm mt-4">Active ComfyUI</div>
+      <div className="flex flex-col divide-y divide-border overflow-hidden rounded-3xl border bg-gray-50">
         {data?.map((session) => {
           return (
             <Link
@@ -377,8 +379,8 @@ function SessionsList() {
                   });
                 }}
               >
-                Start
-                <Play className="ml-2 h-3 w-3" />
+                New
+                <Plus className="ml-2 h-3 w-3" />
               </Button>
             </div>
           </div>

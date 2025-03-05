@@ -8,6 +8,7 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { queryClient } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 import { OrganizationSwitcher, useAuth, useClerk } from "@clerk/clerk-react";
 import {
@@ -49,7 +50,6 @@ import {
 } from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 import { useSidebar } from "./ui/sidebar";
-import { queryClient } from "@/lib/providers";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
@@ -115,11 +115,7 @@ export function NavBar() {
               {isRootLevel && (
                 <div className="flex w-full justify-between gap-1">
                   <div className="flex w-full items-center gap-1">
-                    <NavItem
-                      to="/workflows"
-                      label="Workflows"
-                      icon={Workflow}
-                    />
+                    <NavItem to="/home" label="Workspace" icon={Workflow} />
                     {/* <NavItem to="/home" label="Workspace" icon={Monitor} /> */}
                     <NavItem to="/machines" label="Machines" icon={Server} />
                     <NavItem
@@ -140,12 +136,12 @@ export function NavBar() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem asChild>
+                      {/* <DropdownMenuItem asChild>
                         <Link to="/home" className="flex items-center gap-2">
                           <Monitor className="h-4 w-4" /> Workspace{" "}
                           <Badge variant="fuchsia">Beta</Badge>
                         </Link>
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                       <DropdownMenuItem asChild>
                         <Link to="/explore" className="flex items-center gap-2">
                           <Sparkles className="h-4 w-4" /> Explore
