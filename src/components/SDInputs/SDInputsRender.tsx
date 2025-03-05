@@ -161,7 +161,7 @@ export function SDInputsRender({
         <SDTextarea
           key={inputNode.input_id}
           value={inputValue || ""}
-          textareaClasses="mt-1 bg-gray-50"
+          textareaClasses="mt-1 bg-gray-50 rounded-[8px]"
           rows={3}
           placeholder={inputNode.input_id}
           header={header(genericProps)}
@@ -175,7 +175,7 @@ export function SDInputsRender({
         <SDInput
           key={inputNode.input_id}
           value={inputValue || ""}
-          inputClasses="mt-1 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50 rounded-[8px]"
           header={header(genericProps)}
           {...genericProps}
           type="text"
@@ -190,7 +190,7 @@ export function SDInputsRender({
           value={
             inputValue !== undefined && inputValue !== null ? inputValue : ""
           }
-          inputClasses="mt-1 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50 rounded-[8px]"
           header={header(genericProps)}
           {...genericProps}
           type="number"
@@ -206,7 +206,7 @@ export function SDInputsRender({
           value={
             inputValue !== undefined && inputValue !== null ? inputValue : ""
           }
-          inputClasses="mt-1 bg-gray-50"
+          inputClasses="mt-1 bg-gray-50 rounded-[8px]"
           header={header(genericProps)}
           {...genericProps}
           type="number"
@@ -293,7 +293,7 @@ export function SDInputsRender({
           isDisplayAssetInput
           key={inputNode.input_id}
           file={inputValue}
-          inputClasses="mt-1 bg-gray-50"
+          inputClasses="mt-1"
           header={header(genericProps)}
           {...genericProps}
           onChange={(file: File | string | undefined | FileList) => {
@@ -310,7 +310,7 @@ export function SDInputsRender({
         <SDVideoInput
           key={inputNode.input_id}
           file={inputValue}
-          inputClasses="mt-1 bg-gray-50"
+          inputClasses="mt-1"
           header={header(genericProps)}
           {...genericProps}
           onChange={(file: File | string | undefined) => {
@@ -323,7 +323,7 @@ export function SDInputsRender({
         <SDImageInput
           key={inputNode.input_id}
           file={inputValue}
-          inputClasses="mt-1 bg-gray-50"
+          inputClasses="mt-1"
           header={header(genericProps)}
           accept=".exr"
           {...genericProps}

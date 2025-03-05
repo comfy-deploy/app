@@ -97,13 +97,14 @@ export function SDImageInput({
   return (
     <div className={className} ref={dropRef}>
       {header}
-      <div className={`${inputClasses} flex gap-2`}>
+      <div className={`${inputClasses} flex items-center gap-1`}>
         {!ImgView && (
           <>
             <Input
               placeholder="Type your URL or drop a file"
               value={String(file || "")}
               onChange={(e) => onChange(e.target.value)}
+              className="rounded-[8px]"
             />
 
             <Label
@@ -116,7 +117,7 @@ export function SDImageInput({
                     buttonVariants({
                       variant: "outline",
                       className:
-                        "cursor-pointer transition-colors hover:bg-gray-50",
+                        "cursor-pointer rounded-[8px] transition-colors hover:bg-gray-50",
                     }),
                   )}
                 >
