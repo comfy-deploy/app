@@ -1,4 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import {
+  type FeaturedWorkflow,
+  useFeaturedWorkflows,
+} from "@/hooks/use-workflow-list";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 
@@ -6,21 +9,8 @@ export const Route = createFileRoute("/explore")({
   component: RouteComponent,
 });
 
-export interface FeaturedWorkflow {
-  description: string;
-  share_slug: string; // this is the url
-  workflow: {
-    cover_image: string;
-    id: string;
-    name: string;
-    workflow: any; // this is a object json
-  };
-}
-
 function RouteComponent() {
-  const { data: allWorkflows, isLoading } = useQuery<FeaturedWorkflow[]>({
-    queryKey: ["deployments", "featured"],
-  });
+  const { data: allWorkflows, isLoading } = useFeaturedWorkflows();
 
   // Function to extract hashtags from description
   const extractHashtags = (description: string | null | undefined) => {

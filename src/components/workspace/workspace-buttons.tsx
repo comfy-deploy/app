@@ -49,8 +49,11 @@ import Cookies from "js-cookie";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { getOptimizedImage } from "@/lib/utils";
 import { diff } from "json-diff-ts";
-import type { FeaturedWorkflow } from "@/routes/explore";
 import { ScrollArea, ScrollBar } from "../ui/scroll-area";
+import {
+  useFeaturedWorkflows,
+  type FeaturedWorkflow,
+} from "@/hooks/use-workflow-list";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -804,9 +807,7 @@ function WorkflowTemplateDialog({
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }) {
-  const { data: allWorkflows, isLoading } = useQuery<FeaturedWorkflow[]>({
-    queryKey: ["deployments", "featured"],
-  });
+  const { data: allWorkflows } = useFeaturedWorkflows();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     "featured",
   );

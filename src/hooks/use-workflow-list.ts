@@ -39,3 +39,20 @@ export function useWorkflowsAll() {
     refetchInterval: 5000,
   });
 }
+
+export interface FeaturedWorkflow {
+  description: string;
+  share_slug: string; // this is the url
+  workflow: {
+    cover_image: string;
+    id: string;
+    name: string;
+    workflow: any; // this is a object json
+  };
+}
+
+export function useFeaturedWorkflows() {
+  return useQuery<FeaturedWorkflow[]>({
+    queryKey: ["deployments", "featured"],
+  });
+}

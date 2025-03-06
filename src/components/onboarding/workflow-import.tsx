@@ -33,11 +33,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { Circle, CircleCheckBig } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { FeaturedWorkflowMarquee } from "../recent-workflows";
 
 // Add these interfaces
 export interface StepValidation {
   workflowName?: string;
-  importOption?: "import" | "default";
+  importOption?: "import";
   importJson?: string;
   workflowJson?: string;
   workflowApi?: string;
@@ -104,7 +105,7 @@ function getStepNavigation(
   switch (currentStep) {
     case 0: // Create Workflow
       return {
-        next: validation.importOption === "default" ? 2 : 1,
+        next: 1,
         prev: null,
       };
 
@@ -116,29 +117,12 @@ function getStepNavigation(
 
     case 2: // Select Machine
       return {
-        // next: (() => {
-        //   // If using default template, skip to machine settings (4) or end (null) based on machine type
-        //   if (validation.importOption === "default") {
-        //     return validation.machineOption === "existing" &&
-        //       validation.existingMachine?.type === "classic"
-        //       ? null // Skip to end if classic machine
-        //       : 4; // Go to machine settings if not classic
-        //   }
-        //   // If importing, go to model checking
-        //   return 3;
-        // })(),
-        next: validation.importOption === "default" ? 4 : 3,
-        prev: validation.importOption === "default" ? 0 : 1,
+        next: 3,
+        prev: 1,
       };
 
     case 3: // Model Checking
       return {
-        // next:
-        //   validation.machineOption === "existing" &&
-        //   validation.existingMachine?.type === "classic"
-        //     ? null // Skip to end if classic machine
-        //     : 4, // Go to machine settings if not classic
-
         next: 4,
         prev: 2,
       };
@@ -146,7 +130,7 @@ function getStepNavigation(
     case 4: // Machine Settings
       return {
         next: null,
-        prev: validation.importOption === "default" ? 2 : 3,
+        prev: 3,
       };
 
     default:
@@ -161,9 +145,7 @@ export default function WorkflowImport() {
   const navigate = useNavigate();
   const [validation, setValidation] = useState<StepValidation>({
     workflowName: "Untitled Workflow",
-    importOption:
-      (localStorage.getItem("workflowImportOption") as "import" | "default") ||
-      "default",
+    importOption: "import",
     importJson: "",
     workflowJson: "",
     workflowApi: "",
@@ -508,6 +490,10 @@ function Import({
           <span className="text-red-500">*</span>
         </div>
 
+        <div className="mb-4">
+          <FeaturedWorkflowMarquee />
+        </div>
+
         <div>
           <Accordion
             type="single"
@@ -521,16 +507,12 @@ function Import({
 
               setValidation({
                 ...validation,
-                importOption: value as "import" | "default",
+                importOption: value as "import",
                 workflowJson: "",
                 workflowApi: undefined,
               });
             }}
           >
-            <DefaultOption
-              validation={validation}
-              setValidation={setValidation}
-            />
             <ImportOptions
               validation={validation}
               setValidation={setValidation}
@@ -582,93 +564,6 @@ export function AccordionOption({
       </AccordionTrigger>
       <AccordionContent>{content}</AccordionContent>
     </AccordionItem>
-  );
-}
-
-function DefaultOption({
-  validation,
-  setValidation,
-}: StepComponentProps<StepValidation>) {
-  // Initialize innerSelected from validation if it exists, otherwise use default
-  const [workflowSelected, setWorkflowSelected] = useState<string>(
-    validation.workflowJson
-      ? defaultWorkflowTemplates.find(
-          (t) => t.workflowJson === validation.workflowJson,
-        )?.workflowId || "sd1.5"
-      : "sd1.5",
-  );
-
-  // Only update validation when template changes, not on every mount
-  useEffect(() => {
-    const selectedTemplate = defaultWorkflowTemplates.find(
-      (template) => template.workflowId === workflowSelected,
-    );
-
-    if (selectedTemplate && validation.importOption === "default") {
-      setValidation({
-        ...validation,
-        workflowJson: selectedTemplate.workflowJson,
-        workflowApi: selectedTemplate.workflowApi,
-        importJson: "",
-      });
-    }
-  }, [workflowSelected, validation.importOption]);
-
-  return (
-    <AccordionOption
-      value="default"
-      // Make sure this matches exactly with validation.importOption
-      selected={validation.importOption}
-      label="Templates"
-      content={
-        <div>
-          <span className="text-muted-foreground">
-            Select a workflow as your starting point.{" "}
-          </span>
-
-          <div className="mt-4 grid grid-cols-3 gap-4">
-            {defaultWorkflowTemplates.map((template, index) => (
-              <button
-                key={template.workflowId}
-                type="button"
-                className={cn(
-                  "w-full rounded-lg border p-4 text-left transition-all",
-                  workflowSelected === template.workflowId
-                    ? "border-2 border-gray-500 ring-gray-500 ring-offset-2"
-                    : "border-gray-200 hover:border-gray-300",
-                )}
-                onClick={() => setWorkflowSelected(template.workflowId)}
-                aria-pressed={workflowSelected === template.workflowId}
-              >
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    {workflowSelected === template.workflowId ? (
-                      <CircleCheckBig className="h-4 w-4" />
-                    ) : (
-                      <Circle className="h-4 w-4" />
-                    )}
-                    <h3 className="font-medium">{template.workflowName}</h3>
-                  </div>
-
-                  <div className="relative aspect-video w-full overflow-hidden rounded-md">
-                    <div className="absolute inset-0 bg-gradient-to-r from-background to-15% to-transparent" />
-                    <img
-                      src={template.workflowImageUrl}
-                      className="h-full w-full object-cover"
-                      alt={"$template.workflowNameexample"}
-                    />
-                  </div>
-
-                  <p className="text-muted-foreground text-sm">
-                    {template.workflowDescription}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      }
-    />
   );
 }
 
