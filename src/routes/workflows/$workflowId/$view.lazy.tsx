@@ -404,7 +404,7 @@ interface DeploymentConfirmationState {
 
 interface SessionCreationState {
   isOpen: boolean;
-  version: string | null;
+  version: number | null;
   machineId: string | null;
   machineVersionId: string | null;
   modalImageId: string | null;
@@ -741,7 +741,7 @@ function RequestPage({
                     setSessionCreation((prev) => ({
                       ...prev,
                       isOpen: true,
-                      version: latestVersion?.version?.toString() || null,
+                      version: latestVersion?.version || null,
                       machineId:
                         latestVersion?.machine_id ||
                         currentWorkflow?.selected_machine_id,
@@ -812,7 +812,7 @@ function RequestPage({
 
               setSessionCreation({
                 isOpen: true,
-                version: item.version.toString(),
+                version: item.version,
                 machineId: item.machine_id,
                 machineVersionId: item.machine_version_id,
                 modalImageId: item.modal_image_id,
