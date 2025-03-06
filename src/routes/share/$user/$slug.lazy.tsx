@@ -273,6 +273,32 @@ function RouteComponent() {
     return urlList.slice(0, 4).map((url) => url.url);
   }, [runId, runResult?.outputs]);
 
+  // Function to extract the first link from description
+  const extractFirstLink = (description: string | null | undefined) => {
+    if (!description) return null;
+
+    // Markdown-style link pattern: [text](url)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/;
+    try {
+      const match = description.match(linkRegex);
+      if (match && match.length >= 3) {
+        return {
+          text: match[1],
+          url: match[2],
+        };
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  // Cache the extracted link to improve performance
+  const linkData = useMemo(
+    () => extractFirstLink(shareDeployment?.description),
+    [shareDeployment?.description],
+  );
+
   // Update the run status effect
   useEffect(() => {
     if (runId && runResult) {
@@ -379,9 +405,29 @@ function RouteComponent() {
           ) : (
             <span className="text-muted-foreground text-sm">{userParam}</span>
           )}
+
           <span className="max-w-3xl text-muted-foreground text-sm">
-            {shareDeployment.description}
+            {shareDeployment.description
+              ?.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "")
+              .trim()}
           </span>
+
+          {linkData && (
+            // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+            <div
+              className="flex-shrink-0 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(linkData.url);
+              }}
+            >
+              <img
+                src="https://app.comfydeploy.com/button"
+                alt="ComfyDeploy Button"
+              />
+            </div>
+          )}
         </div>
       </div>
 

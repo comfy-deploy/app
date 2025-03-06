@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/explore")({
   component: RouteComponent,
@@ -16,7 +17,7 @@ interface FeaturedWorkflow {
 }
 
 function RouteComponent() {
-  const { data: featuredWorkflows, isLoading } = useQuery<FeaturedWorkflow[]>({
+  const { data: allWorkflows, isLoading } = useQuery<FeaturedWorkflow[]>({
     queryKey: ["deployments", "featured"],
   });
 
@@ -46,15 +47,29 @@ function RouteComponent() {
   // Group workflows by their first hashtag
   const groupedWorkflows: Record<string, FeaturedWorkflow[]> = {};
   const noTagWorkflows: FeaturedWorkflow[] = [];
+  const featuredItems: FeaturedWorkflow[] = [];
 
-  for (const workflow of featuredWorkflows ?? []) {
+  for (const workflow of allWorkflows ?? []) {
     const hashtags = extractHashtags(workflow.description);
+
+    // Check if workflow has the "featured" tag
+    if (hashtags.includes("featured")) {
+      featuredItems.push(workflow);
+    }
+
     if (hashtags.length > 0) {
-      const firstTag = hashtags[0];
-      if (!groupedWorkflows[firstTag]) {
-        groupedWorkflows[firstTag] = [];
+      // Get the first non-"featured" tag for grouping
+      const firstNonFeaturedTag = hashtags.find((tag) => tag !== "featured");
+
+      if (firstNonFeaturedTag) {
+        if (!groupedWorkflows[firstNonFeaturedTag]) {
+          groupedWorkflows[firstNonFeaturedTag] = [];
+        }
+        groupedWorkflows[firstNonFeaturedTag].push(workflow);
+      } else {
+        // If only "featured" tag exists, put in noTagWorkflows
+        noTagWorkflows.push(workflow);
       }
-      groupedWorkflows[firstTag].push(workflow);
     } else {
       noTagWorkflows.push(workflow);
     }
@@ -70,6 +85,24 @@ function RouteComponent() {
 
   return (
     <div className="container mx-auto px-4 py-12">
+      {/* Featured workflows section - displayed first */}
+      {featuredItems.length > 0 && (
+        <div className="mb-12">
+          <div className="mb-6 flex items-center gap-4">
+            <h2 className="flex items-center gap-2 font-medium text-xl">
+              Featured <Sparkles className="h-5 w-5 " />
+            </h2>
+            <div className="h-px flex-grow rounded-full bg-gradient-to-r from-border/50 via-border to-border/50" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            {featuredItems.map((workflow) =>
+              renderWorkflowCard(workflow, true),
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Render each group */}
       {sortedGroups.map((groupName) => (
         <div key={groupName} className="mb-12">
@@ -105,10 +138,16 @@ function RouteComponent() {
   );
 
   // Helper function to render a workflow card
-  function renderWorkflowCard(workflow: FeaturedWorkflow) {
+  function renderWorkflowCard(workflow: FeaturedWorkflow, isFeatured = false) {
     const hashtags = extractHashtags(workflow.description);
+    // Filter out "featured" from displayed tags
+    const displayTags = hashtags.filter((tag) => tag !== "featured");
+
     const cleanDescription = workflow.description
-      ? workflow.description.replace(/#[\w-]+/g, "").trim()
+      ? workflow.description
+          .replace(/#[\w-]+/g, "") // Remove hashtags
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "") // Remove markdown links
+          .trim()
       : "";
     const shareLink = workflow.share_slug.replace(/_/g, "/");
 
@@ -119,13 +158,23 @@ function RouteComponent() {
         className="group hover:-translate-y-1 relative block overflow-hidden rounded-sm shadow-md transition-all duration-300 hover:shadow-lg"
       >
         <div className="relative aspect-square w-full">
+          {/* Featured indicator */}
+          {isFeatured && (
+            <div className="absolute top-3 left-3 z-20">
+              <div className="flex items-center gap-1 rounded-[4px] bg-yellow-400/80 px-2 py-0.5 text-2xs text-black backdrop-blur-sm">
+                <Sparkles className="h-3 w-3" />
+                <span>Featured</span>
+              </div>
+            </div>
+          )}
+
           {/* Gradient overlay - darker on hover */}
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-90" />
 
           {/* Hashtags in top right corner */}
-          {hashtags.length > 0 && (
+          {displayTags.length > 0 && (
             <div className="absolute top-3 right-3 z-20 flex flex-wrap justify-end gap-1">
-              {hashtags.map((tag, index) => (
+              {displayTags.map((tag, index) => (
                 <span
                   key={index}
                   className="rounded-[4px] bg-black/50 px-2 py-0.5 text-2xs text-white backdrop-blur-sm"
