@@ -20,7 +20,7 @@ export function RunInputs({
       {run.workflow_inputs && (
         <div className="flex flex-col gap-4">
           <Table className="table-fixed">
-            <TableHeader className="sticky top-0">
+            <TableHeader>
               <TableRow>
                 <TableHead className="w-[200px] px-1">Name</TableHead>
                 <TableHead className="px-1">Input</TableHead>

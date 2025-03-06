@@ -241,7 +241,9 @@ export function RunDetails(props: {
             </>
           </TabsList>
           <TabsContent value="inputs">
-            <RunInputs run={run as any} />
+            <ScrollArea className="h-[calc(100vh-470px)]">
+              <RunInputs run={run as any} />
+            </ScrollArea>
           </TabsContent>
           <TabsContent
             value="outputs"
