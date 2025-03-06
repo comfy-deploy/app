@@ -660,7 +660,7 @@ export function WorkflowButtons({
         {
           id: "save-new-workflow",
           icon: "pi-save",
-          label: "Create new workflow",
+          label: workflowLink ? "Clone Workflow" : "Create new workflow",
           tooltip: "New Workflow",
           event: "save_new_workflow",
           onClick: (_: string, __: unknown) => {
@@ -673,10 +673,7 @@ export function WorkflowButtons({
           },
           style: {
             backgroundColor: "oklch(.476 .114 61.907)",
-            // height: "28px",
-            // marginLeft: "7px",
-            // borderRadius: "4px",
-            display: workflowId || workflowLink ? "none" : "flex",
+            display: workflowId ? "none" : "flex",
           },
         },
       ],
