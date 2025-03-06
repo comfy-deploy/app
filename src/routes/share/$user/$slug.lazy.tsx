@@ -415,7 +415,7 @@ function RouteComponent() {
           {linkData && (
             // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
             <div
-              className="flex-shrink-0 cursor-pointer"
+              className="w-fit flex-shrink-0 cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
