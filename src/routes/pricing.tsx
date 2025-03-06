@@ -579,9 +579,9 @@ function GPUPricingTable() {
 
 function RouteComponent() {
   const { data: _sub, isLoading } = useCurrentPlanWithStatus();
-  const [isYearly, setIsYearly] = useState(true);
+  const [isYearly, setIsYearly] = useState(false);
 
-  console.log(_sub);
+  // console.log(_sub);
 
   const isCancelled = _sub?.sub?.cancel_at_period_end;
 
