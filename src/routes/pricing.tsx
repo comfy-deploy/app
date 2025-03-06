@@ -669,31 +669,31 @@ function RouteComponent() {
                 >
                   Yearly
                   <AnimatePresence mode="wait">
-                    {isYearly && (
-                      <motion.div
-                        className="inline-flex items-center overflow-hidden"
-                        initial={{ width: 0, marginLeft: 0 }}
-                        animate={{ width: "auto", marginLeft: "0.5rem" }}
-                        exit={{ width: 0, marginLeft: 0 }}
+                    {/* {isYearly && ( */}
+                    <motion.div
+                      className="inline-flex items-center overflow-hidden"
+                      initial={{ width: 0, marginLeft: 0 }}
+                      animate={{ width: "auto", marginLeft: "0.5rem" }}
+                      exit={{ width: 0, marginLeft: 0 }}
+                      transition={{
+                        duration: 0.2,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <motion.span
+                        className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-600 whitespace-nowrap"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         transition={{
-                          duration: 0.2,
+                          duration: 0.1,
                           ease: "easeInOut",
                         }}
                       >
-                        <motion.span
-                          className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-600 whitespace-nowrap"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{
-                            duration: 0.1,
-                            ease: "easeInOut",
-                          }}
-                        >
-                          2 months free
-                        </motion.span>
-                      </motion.div>
-                    )}
+                        2 months free
+                      </motion.span>
+                    </motion.div>
+                    {/* )} */}
                   </AnimatePresence>
                 </Button>
               </motion.div>
