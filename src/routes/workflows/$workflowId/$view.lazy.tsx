@@ -413,7 +413,7 @@ interface SessionCreationState {
 interface Version {
   id: string;
   comfyui_snapshot: string;
-  version: string;
+  version: number;
   machine_id: string;
   machine_version_id: string;
   modal_image_id: string;
@@ -741,7 +741,7 @@ function RequestPage({
                     setSessionCreation((prev) => ({
                       ...prev,
                       isOpen: true,
-                      version: latestVersion?.version || null,
+                      version: latestVersion?.version?.toString() || null,
                       machineId:
                         latestVersion?.machine_id ||
                         currentWorkflow?.selected_machine_id,
@@ -812,7 +812,7 @@ function RequestPage({
 
               setSessionCreation({
                 isOpen: true,
-                version: item.version,
+                version: item.version.toString(),
                 machineId: item.machine_id,
                 machineVersionId: item.machine_version_id,
                 modalImageId: item.modal_image_id,
@@ -825,7 +825,7 @@ function RequestPage({
                 className={cn(
                   "flex flex-row items-center justify-between gap-2 rounded-[6px] px-4 transition-colors hover:bg-gray-100",
                   isSelected && "bg-gray-200 hover:bg-gray-200",
-                  item.version === "1" && "rounded-b-sm",
+                  item.version === 1 && "rounded-b-sm",
                   item.version === versions?.[versions.length - 1]?.version &&
                     "rounded-t-sm",
                 )}
@@ -843,7 +843,7 @@ function RequestPage({
                         <div
                           className={cn(
                             "absolute w-[2px] bg-gray-300",
-                            item.version === "1"
+                            item.version === 1
                               ? "top-0 h-[50%]"
                               : item.version === versions?.[0]?.version
                                 ? "bottom-0 h-[50%]"
