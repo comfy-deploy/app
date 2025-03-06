@@ -130,6 +130,21 @@ export function SessionLoading({
   );
 }
 
+const NoSessionId = ({ workflowId }: { workflowId?: string }) => {
+  const { workflow } = useCurrentWorkflow(workflowId ?? null);
+
+  const { data: machine } = useMachine(workflow?.machine_id);
+
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      Machine builder version{" "}
+      <Badge className="mx-2">{machine?.machine_builder_version}</Badge> and{" "}
+      <Badge className="mx-2">{machine?.type}</Badge> is not supported for
+      workflow preview.
+    </div>
+  );
+};
+
 export function SessionCreator(props: {
   workflowId?: string;
   workflowLatestVersion?: any;
@@ -144,14 +159,6 @@ export function SessionCreator(props: {
     queryKey: ["session", sessionId],
     refetchInterval: 1000,
   });
-
-  const { workflow, isLoading: isLoadingWorkflow } = useCurrentWorkflow(
-    props.workflowId ?? null,
-  );
-
-  const { data: machine, isLoading } = useMachine(
-    workflow?.selected_machine_id,
-  );
 
   // const [workflowLink, setWorkflowLink] = useQueryState(
   //   "workflowLink",
@@ -181,7 +188,7 @@ export function SessionCreator(props: {
   //   sendWorkflow(workflowLinkJson);
   // }, [workflowLinkJson, cdSetup]);
 
-  const url = session?.tunnel_url || session?.url;
+  const url = session?.url || session?.tunnel_url;
 
   useEffect(() => {
     setCDSetup(false);
@@ -208,18 +215,10 @@ export function SessionCreator(props: {
       }
     },
     enabled: !!url,
-    refetchInterval: 2000,
+    refetchInterval: 1000,
   });
 
-  if (!sessionId)
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        Machine builder version{" "}
-        <Badge className="mx-2">{machine?.machine_builder_version}</Badge> and{" "}
-        <Badge className="mx-2">{machine?.type}</Badge> is not supported for
-        workflow preview.
-      </div>
-    );
+  if (!sessionId) return <NoSessionId workflowId={props.workflowId} />;
 
   if (!url || !isLive) {
     return (
