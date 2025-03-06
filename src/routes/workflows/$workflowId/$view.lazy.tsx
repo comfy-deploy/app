@@ -831,8 +831,6 @@ function RequestPage({
                 )}
                 onClick={() => {
                   setSelectedVersion(item);
-                }}
-                onDoubleClick={() => {
                   handleEditVersion();
                 }}
               >
