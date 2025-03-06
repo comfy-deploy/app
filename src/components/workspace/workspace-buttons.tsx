@@ -24,7 +24,14 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { api } from "@/lib/api";
-import { ExternalLink, History, Loader2, Plus, X } from "lucide-react";
+import {
+  ExternalLink,
+  History,
+  Loader2,
+  Plus,
+  X,
+  Sparkles,
+} from "lucide-react";
 import { MachineVersionListItem } from "../machine/machine-deployment";
 import {
   Select,
@@ -42,6 +49,8 @@ import Cookies from "js-cookie";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { getOptimizedImage } from "@/lib/utils";
 import { diff } from "json-diff-ts";
+import type { FeaturedWorkflow } from "@/routes/explore";
+import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 
 interface WorkspaceButtonProps {
   endpoint: string;
@@ -737,101 +746,264 @@ export function WorkflowButtons({
         </DialogContent>
       </Dialog>
 
-      <>
-        {/* New Workflow Dialog */}
-        <NewWorkflowDialog
-          open={isNewWorkflowOpen}
-          setOpen={setIsNewWorkflowOpen}
-        />
-        {/* popover clear current workflow */}
-        <Popover
-          open={isClearWorkflowDialogOpen}
-          onOpenChange={setIsClearWorkflowDialogOpen}
-        >
-          <PopoverTrigger asChild>
-            <div id="cd-button-workflow-workflow-template" />
-          </PopoverTrigger>
-          <PopoverContent sideOffset={50} className="w-80">
-            <div className="flex flex-col gap-2">
-              <div className="font-medium text-sm">Clear Workflow</div>
-              <div className="text-xs leading-5">
-                Are you sure you want to clear the current workflow?
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setIsClearWorkflowDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="xs"
-                  onClick={() => {
-                    setWorkflowId(null);
-                    setIsClearWorkflowDialogOpen(false);
-                    setIsTemplateOpen(true);
-                  }}
-                >
-                  Clear
-                </Button>
-              </div>
+      {/* New Workflow Dialog */}
+      <NewWorkflowDialog
+        open={isNewWorkflowOpen}
+        setOpen={setIsNewWorkflowOpen}
+      />
+      {/* popover clear current workflow */}
+      <Popover
+        open={isClearWorkflowDialogOpen}
+        onOpenChange={setIsClearWorkflowDialogOpen}
+      >
+        <PopoverTrigger asChild>
+          <div id="cd-button-workflow-workflow-template" />
+        </PopoverTrigger>
+        <PopoverContent sideOffset={50} className="w-80">
+          <div className="flex flex-col gap-2">
+            <div className="font-medium text-sm">Clear Workflow</div>
+            <div className="text-xs leading-5">
+              Are you sure you want to clear the current workflow?
             </div>
-          </PopoverContent>
-        </Popover>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => setIsClearWorkflowDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="xs"
+                onClick={() => {
+                  setWorkflowId(null);
+                  setIsClearWorkflowDialogOpen(false);
+                  setIsTemplateOpen(true);
+                }}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
 
-        {/* Template Dialog */}
-        <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
-          <DialogContent
-            hideOverlay
-            className="border-zinc-800 bg-zinc-900 text-white drop-shadow-md sm:max-w-[850px]"
-          >
-            <DialogHeader>
-              <DialogTitle>Welcome to ComfyDeploy!</DialogTitle>
-              <DialogDescription className="text-zinc-400">
-                Choose a workflow template to kickstart your creative journey.
-                Each template is designed to help you explore different
-                possibilities in AI image generation.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 gap-1 py-2 md:grid-cols-2 lg:grid-cols-3">
-              {defaultWorkflowTemplates.map((template) => (
-                // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-                <div
-                  key={template.workflowId}
-                  onClick={() => {
-                    sendWorkflow(JSON.parse(template.workflowJson));
-                  }}
-                  className="group relative cursor-pointer overflow-hidden rounded-md border border-zinc-800 bg-zinc-950 p-4 transition-all hover:border-zinc-700"
-                >
-                  <div className="mb-3 aspect-square overflow-hidden rounded-[10px]">
-                    <img
-                      src={template.workflowImageUrl}
-                      alt={template.workflowName}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="mb-1 font-semibold text-sm text-white">
-                      {template.workflowName}
-                    </h3>
-                    <p className="line-clamp-2 text-xs text-zinc-400 leading-snug">
-                      {template.workflowDescription}
-                    </p>
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 opacity-0 transition-opacity group-hover:opacity-100">
-                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
-                      Use Template
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </>
+      <WorkflowTemplateDialog
+        isOpen={isTemplateOpen}
+        setIsOpen={setIsTemplateOpen}
+      />
     </>
+  );
+}
+
+function WorkflowTemplateDialog({
+  isOpen,
+  setIsOpen,
+}: {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}) {
+  const { data: allWorkflows, isLoading } = useQuery<FeaturedWorkflow[]>({
+    queryKey: ["deployments", "featured"],
+  });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    "featured",
+  );
+
+  // Extract hashtags from description
+  const extractHashtags = (description: string | null | undefined) => {
+    if (!description) return [];
+    const hashtagRegex = /#([\w-]+)/g;
+    try {
+      const matches = [...description.matchAll(hashtagRegex)];
+      return matches.map((match) => match[1]);
+    } catch (error) {
+      return [];
+    }
+  };
+
+  // Group workflows by their hashtags
+  const groupedWorkflows: Record<string, FeaturedWorkflow[]> = {};
+  const noTagWorkflows: FeaturedWorkflow[] = [];
+  const featuredItems: FeaturedWorkflow[] = [];
+
+  for (const workflow of allWorkflows ?? []) {
+    const hashtags = extractHashtags(workflow.description);
+
+    // Check if workflow has the "featured" tag
+    if (hashtags.includes("featured")) {
+      featuredItems.push(workflow);
+    }
+
+    if (hashtags.length > 0) {
+      // Get the first non-"featured" tag for grouping
+      const firstNonFeaturedTag = hashtags.find((tag) => tag !== "featured");
+
+      if (firstNonFeaturedTag) {
+        if (!groupedWorkflows[firstNonFeaturedTag]) {
+          groupedWorkflows[firstNonFeaturedTag] = [];
+        }
+        groupedWorkflows[firstNonFeaturedTag].push(workflow);
+      } else {
+        // If only "featured" tag exists, put in noTagWorkflows
+        noTagWorkflows.push(workflow);
+      }
+    } else {
+      noTagWorkflows.push(workflow);
+    }
+  }
+
+  // Get sorted group names for consistent order
+  const sortedGroups = Object.keys(groupedWorkflows).sort();
+
+  // Helper function to capitalize first letter
+  const capitalizeFirstLetter = (string: string) => {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  };
+
+  // Determine which workflows to display based on selected category
+  const displayedWorkflows = useMemo(() => {
+    if (selectedCategory === "featured") return featuredItems;
+    if (selectedCategory === "others") return noTagWorkflows;
+    return groupedWorkflows[selectedCategory] || [];
+  }, [selectedCategory, featuredItems, noTagWorkflows, groupedWorkflows]);
+
+  // All available categories including featured and others
+  const allCategories = useMemo(() => {
+    return [
+      "featured",
+      ...sortedGroups,
+      ...(noTagWorkflows.length > 0 ? ["others"] : []),
+    ];
+  }, [sortedGroups, noTagWorkflows]);
+
+  return (
+    <>
+      {/* Template Dialog */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent
+          hideOverlay
+          className="overflow-hidden border-zinc-800 bg-zinc-900 text-white drop-shadow-md sm:max-w-[850px]"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Welcome to ComfyDeploy!
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Choose a workflow template to kickstart your creative journey.
+              Each template is designed to help you explore different
+              possibilities in AI image generation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex">
+            {/* Category sidebar */}
+            <div className="w-48 overflow-y-auto border-zinc-800 border-r pr-2">
+              <div className="py-2">
+                {allCategories.map((category) => (
+                  <button
+                    type="button"
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`w-full rounded-[10px] px-3 py-2 text-left text-sm transition-colors ${
+                      selectedCategory === category
+                        ? "bg-zinc-800 text-white"
+                        : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      {category === "featured" && (
+                        <Sparkles className="mr-2 h-3.5 w-3.5 text-yellow-400" />
+                      )}
+                      {capitalizeFirstLetter(category)}
+                      <span className="ml-auto text-xs text-zinc-500">
+                        {category === "featured"
+                          ? featuredItems.length
+                          : category === "others"
+                            ? noTagWorkflows.length
+                            : groupedWorkflows[category]?.length || 0}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Templates grid */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <h2 className="mb-3 flex items-center font-medium text-sm">
+                {selectedCategory === "featured" && (
+                  <Sparkles className="mr-1 h-3.5 w-3.5 text-yellow-400" />
+                )}
+                {capitalizeFirstLetter(selectedCategory || "")}
+              </h2>
+
+              <div className="grid grid-cols-1 gap-4">
+                {displayedWorkflows.length > 0 ? (
+                  <ScrollArea hideVertical>
+                    <div className="flex min-w-full snap-x gap-2">
+                      {displayedWorkflows.map((template: FeaturedWorkflow) => (
+                        <TemplateCard
+                          key={template.workflow.id}
+                          template={template}
+                        />
+                      ))}
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
+                ) : (
+                  <div className="py-8 text-center text-sm text-zinc-500">
+                    No templates available in this category
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// Separate component for template cards to keep the main component cleaner
+function TemplateCard({ template }: { template: FeaturedWorkflow }) {
+  const cleanDescription = template.description
+    ? template.description
+        .replace(/#[\w-]+/g, "") // Remove hashtags
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "") // Remove markdown links
+        .trim()
+    : "";
+
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+    <div
+      onClick={() => {
+        sendWorkflow(template.workflow.workflow);
+      }}
+      className="group relative w-[250px] flex-shrink-0 cursor-pointer snap-start overflow-hidden rounded-[10px] border border-zinc-800 bg-zinc-950 transition-all hover:border-zinc-700"
+    >
+      <div className="aspect-square overflow-hidden">
+        <img
+          src={getOptimizedImage(template.workflow.cover_image)}
+          alt={template.workflow.name}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+        />
+      </div>
+      <div className="p-3">
+        <h3 className="mb-1 line-clamp-1 font-semibold text-sm text-white">
+          {template.workflow.name}
+        </h3>
+        <p className="line-clamp-2 text-xs text-zinc-400 leading-snug">
+          {cleanDescription}
+        </p>
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs backdrop-blur-sm">
+          Use Template
+        </span>
+      </div>
+    </div>
   );
 }
 

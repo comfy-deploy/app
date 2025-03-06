@@ -6,13 +6,14 @@ export const Route = createFileRoute("/explore")({
   component: RouteComponent,
 });
 
-interface FeaturedWorkflow {
+export interface FeaturedWorkflow {
   description: string;
   share_slug: string; // this is the url
   workflow: {
     cover_image: string;
     id: string;
     name: string;
+    workflow: any; // this is a object json
   };
 }
 
