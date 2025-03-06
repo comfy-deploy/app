@@ -243,7 +243,7 @@ export default function Workspace({
     const timeout = setTimeout(() => {
       const timeElapsed = Date.now() - startTime;
 
-      if (!isWorkflowLoaded && timeElapsed < 30000) {
+      if (!isWorkflowLoaded && timeElapsed < 60000) {
         console.log(
           `Retrying workflow send, attempt ${workflowSendAttempts + 1} (delay: ${delay.toFixed(0)}ms, total time: ${timeElapsed.toFixed(0)}ms)`,
         );
