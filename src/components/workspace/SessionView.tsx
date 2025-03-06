@@ -238,6 +238,9 @@ export function SessionCreator(props: {
             sessionIdOverride={props.sessionIdOverride}
             nativeMode={true}
             endpoint={url}
+            gpu={session?.gpu}
+            machine_id={session?.machine_id}
+            machine_version_id={session?.machine_version_id}
           />
         </div>
       </>

@@ -90,10 +90,16 @@ export default function Workspace({
   endpoint: _endpoint,
   nativeMode = false,
   sessionIdOverride,
+  machine_id,
+  machine_version_id,
+  gpu,
 }: {
   endpoint: string;
   nativeMode?: boolean;
   sessionIdOverride?: string;
+  machine_id?: string;
+  machine_version_id?: string;
+  gpu?: string;
 }) {
   const { workflowId, workflowLink } = useSearch({
     from: "/sessions/$sessionId/",
@@ -408,7 +414,7 @@ export default function Workspace({
               ).toString(),
               cd_token: x,
               gpu_event_id: sessionIdOverride,
-              gpu: session.gpu,
+              gpu,
             };
             // console.log("sending workflow info", info);
             sendEventToCD("workflow_info", info);
@@ -475,11 +481,6 @@ export default function Workspace({
     };
   }, [iframeLoaded, cdSetup, endpoint]);
 
-  const { data: session } = useQuery<any>({
-    enabled: !!sessionIdOverride,
-    queryKey: ["session", sessionIdOverride],
-  });
-
   return (
     <>
       <AnimatePresence>
@@ -505,8 +506,8 @@ export default function Workspace({
 
       <WorkspaceControls
         endpoint={endpoint}
-        machine_id={session?.machine_id}
-        machine_version_id={session?.machine_version_id}
+        machine_id={machine_id}
+        machine_version_id={machine_version_id}
       />
 
       {hasSetupEventListener && (
