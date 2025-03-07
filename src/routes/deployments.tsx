@@ -109,14 +109,14 @@ function RouteComponent() {
   const { selectedDeployment, setSelectedDeployment } =
     useSelectedDeploymentStore();
 
-  const { data: deployments } = useQuery(
+  const { data: deployments, isLoading } = useQuery(
     getAllDeploymentsOptions(
       selectedEnvironment !== "all" ? selectedEnvironment : undefined,
       selectedTab === "fluid",
     ),
   );
 
-  const hasDeployments = deployments && deployments.length > 0;
+  const hasDeployments = !isLoading && deployments && deployments.length > 0;
 
   const filteredDeployments = deployments
     ? Object.entries(
@@ -214,7 +214,38 @@ function RouteComponent() {
         </div>
       </div>
 
-      {!hasDeployments ? (
+      {isLoading ? (
+        <div className="flex w-full flex-col gap-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={`loading-workflow-${i}`}
+              className="bg-white border flex flex-col rounded-lg w-full overflow-hidden"
+            >
+              <div className="flex items-center gap-2 border-b bg-gray-50 p-4">
+                <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+              </div>
+              <div className="flex w-full flex-col divide-y divide-gray-100 bg-white">
+                {Array.from({ length: 2 }).map((_, j) => (
+                  <div
+                    key={`loading-deployment-${i}-${j}`}
+                    className="flex items-center justify-between gap-2 p-4 w-full"
+                  >
+                    <div className="flex w-full items-center gap-2">
+                      <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                      <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                      <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                      <div className="h-6 w-6 animate-pulse rounded-full bg-gray-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : !hasDeployments ? (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-8 text-center">
           <div className="font-medium text-lg">No deployments found</div>
           <p className="text-muted-foreground text-sm">
