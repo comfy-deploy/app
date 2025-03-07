@@ -697,14 +697,14 @@ function RequestPage({
         <div className="mt-4 font-medium text-sm">Versions</div>
 
         <div
-          className={cn(
-            "relative rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 px-4 pt-2.5 pb-10",
-            sessions?.length ? "-mb-6" : "-mb-4",
-          )}
+          className="-mb-4 relative rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 px-4 pt-2.5 pb-10"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
           <motion.div
+            initial={{
+              marginBottom: "-24px",
+            }}
             animate={{
               marginBottom: isHovering && sessions?.length ? "-28px" : "-24px",
             }}
