@@ -74,9 +74,15 @@ function RouteComponent() {
   });
 
   return (
-    <div className="h-full w-full  bg-[#141414] z-[10]">
+    <motion.div
+      className="z-[10] h-full w-full bg-[#141414]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, ease: easeOut }}
+    >
       <motion.div
-        className="absolute inset-0 backdrop-blur-sm pointer-events-none"
+        className="pointer-events-none absolute inset-0 backdrop-blur-sm"
         style={{
           backgroundImage: `linear-gradient(#2c2c2c 1px, transparent 1px),
                            linear-gradient(90deg, #2c2c2c 1px, transparent 1px)`,
@@ -168,7 +174,7 @@ function RouteComponent() {
         workflowId={workflowId ?? undefined}
         sessionIdOverride={sessionId}
       />
-    </div>
+    </motion.div>
   );
 }
 
