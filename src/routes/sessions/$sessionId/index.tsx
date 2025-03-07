@@ -51,6 +51,7 @@ export const Route = createFileRoute("/sessions/$sessionId/")({
     workflowId: z.string().optional(),
     workflowLink: z.string().optional(),
     version: z.number().optional(),
+    isFirstTime: z.boolean().optional(),
   }),
 });
 

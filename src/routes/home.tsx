@@ -409,6 +409,7 @@ function SessionsList() {
                       ...(workflowLinkSearch && {
                         workflowLink: workflowLinkSearch,
                       }),
+                      isFirstTime: true,
                     },
                   });
                 }}
