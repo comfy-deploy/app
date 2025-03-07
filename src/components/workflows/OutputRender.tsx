@@ -20,7 +20,7 @@ import {
   CircleX,
   Expand,
 } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import {
   Carousel,
   CarouselContent,
@@ -31,7 +31,43 @@ import {
 import { ShineBorder } from "../magicui/shine-border";
 import { downloadImage } from "@/utils/download-image";
 import { ImageInputsTooltip } from "../image-inputs-tooltip";
-import { ModelRenderer } from "./3d-renderer";
+// import { ModelRenderer } from "./3d-renderer";
+
+// Create a lazy-loaded version of the component
+const LazyModelRenderer = lazy(() =>
+  import("./3d-renderer").then((module) => ({
+    default: module.ModelRendererComponent,
+  })),
+);
+
+// Fallback loading component for the entire 3D renderer
+function LoadingFallback({ mediaClasses }: { mediaClasses?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex h-[70vh] w-[70vh] items-center justify-center bg-gray-100/50",
+        mediaClasses,
+      )}
+    >
+      <div className="flex flex-col items-center gap-2 text-gray-500">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    </div>
+  );
+}
+
+// Export the wrapper component with Suspense
+export function ModelRenderer(props: {
+  url: string;
+  mediaClasses?: string;
+  isMainView?: boolean;
+}) {
+  return (
+    <Suspense fallback={<LoadingFallback mediaClasses={props.mediaClasses} />}>
+      <LazyModelRenderer {...props} />
+    </Suspense>
+  );
+}
 
 type fileURLRenderProps = {
   url: string;
