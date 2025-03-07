@@ -1,4 +1,3 @@
-import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 import {
   ComfyUIVersionSelectBox,
   GPUSelectBox,
@@ -16,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
 import { useLogStore } from "@/components/workspace/LogContext";
 import { GPU } from "@/constants/run-data-enum";
 import { useMachine, useMachines } from "@/hooks/use-machine";
@@ -30,10 +28,8 @@ import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
-  ChevronRight,
-  CornerRightUp,
+  CornerRightDown,
   ExternalLink,
-  Play,
   Plus,
   Settings,
   Share2,
@@ -274,31 +270,35 @@ function SessionsList() {
           );
         })}
         {(!data || data?.length === 0) && (
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
             <div className="text-sm">No active ComfyUI sessions</div>
+            <div className="flex flex-row items-center gap-1 text-2xs">
+              Try starting a new session by pressing the "New Session" button
+              below <CornerRightDown className="h-3 w-3" />
+            </div>
           </div>
         )}
       </div>
-      <div className="mt-5 font-medium text-sm">Workspaces</div>
-      <Spotlight
-        show={showGuide && !!workflowLinkSearch}
-        tooltipPosition={{
-          offsetX: 20, // Move 20px right from default position
-          offsetY: -100, // Space between target and tooltip
-          align: "end", // Align to start of target
-          side: "top", // Show below target
-        }}
-        delay={500}
-        maskMargin={10}
-        tooltip={
-          <SpotlightTooltip
-            title="Try this workflow!"
-            description="Press the Start button to launch ComfyUI with this workflow template."
-            onGotIt={() => setShowGuide(false)}
-          />
-        }
-      >
-        <div className="-mb-6 rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 p-4 pb-8">
+
+      <div className="fixed right-0 bottom-0 left-0 z-50 mx-auto max-w-screen-lg rounded-t-3xl border border-gray-200 bg-gradient-to-b from-gray-50 to-gray-100 p-4 shadow-xl">
+        <Spotlight
+          show={showGuide && !!workflowLinkSearch}
+          tooltipPosition={{
+            offsetX: 20,
+            offsetY: -100,
+            align: "end",
+            side: "top",
+          }}
+          delay={500}
+          maskMargin={30}
+          tooltip={
+            <SpotlightTooltip
+              title="Try this workflow!"
+              description="Press the Start button to launch ComfyUI with this workflow template."
+              onGotIt={() => setShowGuide(false)}
+            />
+          }
+        >
           <div className="flex flex-row items-center justify-between px-2">
             <div className="flex items-center gap-3">
               <div>ComfyUI</div>
@@ -413,7 +413,7 @@ function SessionsList() {
                   });
                 }}
               >
-                New
+                New Session
                 <Plus className="ml-2 h-3 w-3" />
               </Button>
             </div>
@@ -692,72 +692,8 @@ function SessionsList() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </Spotlight>
-
-      {!query.data || query.data?.pages.flat().length === 0 ? (
-        <div className="mx-auto h-[400px] w-full max-w-[1200px] rounded-3xl border bg-white drop-shadow-sm">
-          <div className="flex h-full flex-col items-center justify-center py-8 text-muted-foreground">
-            <div className="text-sm">No workspace found</div>
-            <div className="flex flex-row items-center gap-1 text-2xs">
-              Try starting a new session by pressing the "Start" button above{" "}
-              <CornerRightUp className="h-3 w-3" />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-          <VirtualizedInfiniteList
-            // autoFetch={true}
-            className="mx-auto w-full max-w-[1200px] rounded-3xl border bg-white drop-shadow-sm"
-            containerClassName="divide-y divide-border"
-            estimateSizeFn={(index) => {
-              const allItems = query.data?.pages.flat() ?? [];
-              return allItems[index]?.has_workflows ? 140 : 74;
-            }}
-            queryResult={query}
-            renderItem={(machine, index) => (
-              <MachineWorkspaceItem
-                machine={machine}
-                index={index}
-                isInWorkspace={false}
-              />
-            )}
-            renderLoading={() => {
-              return [...Array(4)].map((_, i) => (
-                <div
-                  key={i}
-                  className="mb-2 flex h-[80px] w-full animate-pulse items-center justify-between rounded-md border bg-white p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-row items-center gap-2">
-                        <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
-                        <div className="h-4 w-60 rounded bg-gray-200" />
-                      </div>
-                      <div className="h-3 w-32 rounded bg-gray-200" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-5 w-12 rounded-md bg-gray-200" />
-                    <div className="h-5 w-20 rounded-md bg-gray-200" />
-                    <div className="h-5 w-12 rounded-md bg-gray-200" />
-                  </div>
-                </div>
-              ));
-            }}
-          />
-        </>
-      )}
-      {/* <div className="flex w-full justify-end px-2 text-muted-foreground text-sm">
-        <Link
-          to="/machines"
-          className="flex items-center gap-1 hover:underline"
-        >
-          View all machines
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-      </div> */}
+        </Spotlight>
+      </div>
     </div>
   );
 }

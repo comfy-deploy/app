@@ -10,7 +10,7 @@ const ReactCompilerConfig = {
 };
 
 export default defineConfig({
-  mode: "production",
+  mode: process.env.VERCEL_ENV === "production" ? "production" : "development",
   plugins: [
     pluginReact(),
     // pluginBabel({
