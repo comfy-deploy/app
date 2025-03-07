@@ -145,9 +145,7 @@ const MachinesIndexRoute = MachinesIndexImport.update({
   id: '/machines/',
   path: '/machines/',
   getParentRoute: () => rootRoute,
-} as any).lazy(() =>
-  import('./routes/machines/index.lazy').then((d) => d.Route),
-)
+} as any)
 
 const AnalyticsIndexRoute = AnalyticsIndexImport.update({
   id: '/analytics/',
