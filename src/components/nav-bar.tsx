@@ -8,10 +8,12 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { useCurrentPlanWithStatus } from "@/hooks/use-current-plan";
 import { queryClient } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 import { OrganizationSwitcher, useAuth, useClerk } from "@clerk/clerk-react";
 import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { delay, motion } from "framer-motion";
 import {
   ArrowLeftIcon,
@@ -46,8 +48,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 import { useSidebar } from "./ui/sidebar";
-import { useCurrentPlanWithStatus } from "@/hooks/use-current-plan";
-import { Link } from "@tanstack/react-router";
+import { Skeleton } from "./ui/skeleton";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
@@ -231,11 +232,7 @@ export function NavBar() {
               const currentPlan = planStatus?.plans?.plans?.[0];
 
               if (isLoading) {
-                return (
-                  <Badge variant="secondary" className="rounded-sm">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </Badge>
-                );
+                return <Skeleton className="h-6 w-16 rounded-sm" />;
               }
 
               if (!currentPlan) {

@@ -52,12 +52,16 @@ export function useSessionAPI(machineId?: string | null) {
       mutationKey: ["session", "delete"],
       mutationFn: async (data: {
         sessionId: string;
+        waitForShutdown?: boolean;
       }) => {
         console.log(data);
         return await api({
           url: `session/${data.sessionId}`,
           init: {
             method: "DELETE",
+            body: JSON.stringify({
+              wait_for_shutdown: data.waitForShutdown,
+            }),
           },
         });
       },

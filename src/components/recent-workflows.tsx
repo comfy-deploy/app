@@ -1,14 +1,16 @@
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { WorkflowCard } from "./workflow-list";
-import {
-  useWorkflowList,
-  useFeaturedWorkflows,
-  type FeaturedWorkflow,
-} from "@/hooks/use-workflow-list";
 import { Marquee } from "@/components/magicui/marquee";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  type FeaturedWorkflow,
+  useFeaturedWorkflows,
+  useWorkflowList,
+} from "@/hooks/use-workflow-list";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
+import { WorkflowCard } from "./workflow-list";
+import { Card } from "./ui/card";
 
 const FeaturedWorkflowCard = ({ workflow }: { workflow: FeaturedWorkflow }) => {
   const shareLink = workflow.share_slug.replace(/_/g, "/");
@@ -70,7 +72,7 @@ export function FeaturedWorkflowMarquee() {
 }
 
 export function RecentWorkflows() {
-  const { data: workflowsData, refetch } = useWorkflowList("", 4);
+  const { data: workflowsData, isLoading, refetch } = useWorkflowList("", 4);
   const recentWorkflows = workflowsData?.pages[0] ?? [];
   const { data: featuredWorkflows } = useFeaturedWorkflows();
 
@@ -82,7 +84,13 @@ export function RecentWorkflows() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="font-medium text-sm">
-          {hasRecentWorkflows ? "Recent Workflows" : "Featured Workflows"}
+          {isLoading ? (
+            <Skeleton className="h-5 w-32" />
+          ) : hasRecentWorkflows ? (
+            "Recent Workflows"
+          ) : (
+            "Featured Workflows"
+          )}
         </div>
         <Button
           variant="link"
@@ -97,7 +105,13 @@ export function RecentWorkflows() {
         </Button>
       </div>
 
-      {hasRecentWorkflows ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <WorkflowCardSkeleton key={`workflow-skeleton-${i}`} />
+          ))}
+        </div>
+      ) : hasRecentWorkflows ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {recentWorkflows.map((workflow) => (
             <WorkflowCard
@@ -111,6 +125,33 @@ export function RecentWorkflows() {
       ) : (
         hasFeaturedWorkflows && <FeaturedWorkflowMarquee />
       )}
+    </div>
+  );
+}
+
+function WorkflowCardSkeleton() {
+  return (
+    <div className="flex w-full flex-col md:max-w-[320px]">
+      <Card className="group relative flex aspect-square h-fit w-full flex-col overflow-hidden rounded-md">
+        <div className="h-full w-full">
+          <div className="flex h-full flex-col items-center justify-center">
+            <Skeleton className="mb-2 h-10 w-10 rounded-full" />
+          </div>
+        </div>
+        <div className="absolute top-2 right-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+      </Card>
+      <div className="flex flex-col px-2 pt-2">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-5 w-16" />
+        </div>
+        <div className="mt-1 flex justify-between">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-4 w-1/4" />
+        </div>
+      </div>
     </div>
   );
 }
