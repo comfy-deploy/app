@@ -1,7 +1,9 @@
+import { LoadingIcon } from "@/components/loading-icon";
 import {
   ComfyUIVersionSelectBox,
   GPUSelectBox,
 } from "@/components/machine/machine-settings";
+import { RecentWorkflows } from "@/components/recent-workflows";
 import { UserIcon } from "@/components/run/SharePageComponent";
 import { Spotlight } from "@/components/spotlight-guide";
 import { SpotlightTooltip } from "@/components/spotlight-guide";
@@ -39,8 +41,6 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { RecentWorkflows } from "@/components/recent-workflows";
-import { LoadingIcon } from "@/components/loading-icon";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -93,7 +93,7 @@ function SessionsList() {
   });
   const {
     gpu: gpuSearch = "A10G",
-    comfyui_version: comfyuiVersionSearch = comfyui_hash,
+    comfyui_version: comfyuiVersionSearch = undefined,
     timeout: timeoutSearch = 15,
     nodes: nodesSearch = "",
     workflowLink: workflowLinkSearch = "",
@@ -119,9 +119,9 @@ function SessionsList() {
 
   useEffect(() => {
     if (workflowLinkSearch && !showSettings) {
-      setTimeout(() => {
-        setShowSettings(true);
-      }, 500);
+      // setTimeout(() => {
+      //   setShowSettings(true);
+      // }, 500);
       setTimeout(() => {
         setShowGuide(true);
       }, 1000);
@@ -312,35 +312,23 @@ function SessionsList() {
         >
           <div className="flex flex-row items-center justify-between px-2">
             <div className="flex items-center gap-3">
-              <div>ComfyUI</div>
-              {workflowLinkSearch && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="h-1 w-1 rounded-full bg-blue-500" />
-                  <div className="flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5">
-                    <div className="h-[7px] w-[7px] animate-pulse rounded-full bg-blue-400" />
-                    <span className="font-medium text-2xs text-blue-700">
-                      Workflow detected
-                    </span>
-                    <Link
-                      to={workflowLinkSearch}
-                      target="_blank"
-                      className="flex items-center gap-1 text-2xs text-blue-500 hover:text-blue-700 hover:underline"
-                    >
-                      view source
-                      <ExternalLink className="h-[11px] w-[11px]" />
-                    </Link>
-                  </div>
-                </motion.div>
-              )}
+              <div className="flex items-center gap-2">
+                <div>ComfyUI</div>
+              </div>
+
               {/* Quick settings when collapsed */}
               {!showSettings && (
                 <div className="flex flex-row items-center gap-2">
+                  <ComfyUIVersionSelectBox
+                    className="w-[120px]"
+                    isAnnoymous={!isSignedIn}
+                    value={comfyui_version}
+                    onChange={(value) =>
+                      form.setValue("comfyui_version", value)
+                    }
+                  />
                   <GPUSelectBox
-                    className="mt-0 w-[100px]"
+                    className="w-[100px]"
                     value={gpu}
                     onChange={(value) => form.setValue("gpu", value)}
                   />
@@ -364,17 +352,45 @@ function SessionsList() {
                   </Select>
                 </div>
               )}
+              {workflowLinkSearch?.startsWith("https://") ||
+              /^[^/]+\/[^/]+$/.test(workflowLinkSearch || "") ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-2"
+                >
+                  <div className="h-1 w-1 rounded-full bg-blue-500" />
+                  <div className="flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5">
+                    <div className="h-[7px] w-[7px] animate-pulse rounded-full bg-blue-400" />
+                    <span className="font-medium text-2xs text-blue-700">
+                      Workflow detected
+                    </span>
+                    <Link
+                      to={
+                        /^[^/]+\/[^/]+$/.test(workflowLinkSearch || "")
+                          ? `/share/${workflowLinkSearch}`
+                          : workflowLinkSearch
+                      }
+                      target="_blank"
+                      className="flex items-center gap-1 text-2xs text-blue-500 hover:text-blue-700 hover:underline"
+                    >
+                      view source
+                      <ExternalLink className="h-[11px] w-[11px]" />
+                    </Link>
+                  </div>
+                </motion.div>
+              ) : null}
             </div>
 
             <div className="flex flex-row items-center gap-2">
-              <Button
+              {/* <Button
                 variant="ghost"
                 className="rounded-[9px]"
                 onClick={() => setShowSettings(!showSettings)}
               >
                 Custom
                 <Settings className="ml-2 h-3 w-3" />
-              </Button>
+              </Button> */}
               <Button
                 variant="shine"
                 className="rounded-[9px]"

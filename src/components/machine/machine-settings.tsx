@@ -13,16 +13,27 @@ import {
   useCurrentPlan,
   useCurrentPlanWithStatus,
 } from "@/hooks/use-current-plan";
-import { useGithubBranchInfo } from "@/hooks/use-github-branch-info";
+import {
+  useGithubBranchInfo,
+  useGithubReleases,
+} from "@/hooks/use-github-branch-info";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, easeOut, motion, useAnimation } from "framer-motion";
 import { isEqual } from "lodash";
-import { ExternalLinkIcon, Info, Loader2, Lock, Save } from "lucide-react";
+import {
+  ExternalLinkIcon,
+  Info,
+  Loader2,
+  Lock,
+  PencilIcon,
+  Save,
+} from "lucide-react";
 import { useQueryState } from "nuqs";
 import {
   type ReactNode,
@@ -35,6 +46,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { CustomNodeSetup } from "../onboarding/custom-node-setup";
+import type { StepValidation } from "../onboarding/workflow-import";
 import {
   Accordion,
   AccordionContent,
@@ -50,16 +62,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Skeleton } from "../ui/skeleton";
 import { Slider } from "../ui/slider";
 import { Switch } from "../ui/switch";
-import { ExtraDockerCommands } from "./extra-docker-commands";
-import type { StepValidation } from "../onboarding/workflow-import";
 import {
   UnsavedChangesWarning,
   useUnsavedChangesWarning,
 } from "../unsaved-changes-warning";
-import { callServerPromise } from "@/lib/call-server-promise";
-import { Skeleton } from "../ui/skeleton";
+import { ExtraDockerCommands } from "./extra-docker-commands";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function MachineSettingsWrapper({
   machine,
@@ -277,7 +296,7 @@ function ServerlessSettings({
     mode: "onChange",
     defaultValues: {
       // env
-      comfyui_version: machine.comfyui_version || comfyui_hash,
+      comfyui_version: machine.comfyui_version,
       docker_command_steps: machine.docker_command_steps || {
         steps: [],
       },
@@ -651,67 +670,91 @@ export function ComfyUIVersionSelectBox({
   value,
   onChange,
   className,
-  isAnnoymous = false, // for disable latest option for anonymous users
+  isAnnoymous = false,
 }: {
   value?: string;
   onChange: (value: string) => void;
   className?: string;
   isAnnoymous?: boolean;
 }) {
-  const { data: latestComfyUI, isLoading } = useGithubBranchInfo(
-    "https://github.com/comfyanonymous/ComfyUI",
-    !isAnnoymous,
-  );
-  useEffect(() => {
-    setCustomValue(value || "");
-  }, [value]);
+  const { data: versions, isLoading } = useQuery({
+    queryKey: ["comfyui-versions"],
+    enabled: !isAnnoymous,
+  });
 
   const [customValue, setCustomValue] = useState(value || "");
+  const [showCustomDialog, setShowCustomDialog] = useState(false);
 
   const options = [
-    { label: "Recommended", value: comfyui_hash },
-    { label: "Latest", value: latestComfyUI?.commit.sha || "latest" },
-    { label: "Custom", value: "custom" },
+    ...(versions?.releases || []),
+    // versions?.latest || { label: "Latest", value: "latest", sha: "" },
+    // { label: "Custom Version", value: "custom", sha: "" },
   ];
 
-  // Only check for custom if we have loaded the latest hash
-  const isCustom =
-    !isLoading &&
-    value &&
-    !options.slice(0, 2).some((opt) => opt.value === value);
+  // Find if the current value matches any known version
+  const matchingVersion = options.find(
+    (opt) =>
+      opt.sha === value ||
+      opt.value === value ||
+      (opt.value === "latest" && value === "latest"),
+  );
 
-  // Don't change selection while loading
-  const selectedValue =
-    isLoading && value === latestComfyUI?.commit.sha
-      ? "latest"
-      : isCustom || value === ""
+  // Determine the selected value based on matches
+  const selectedValue = isLoading
+    ? "loading"
+    : matchingVersion
+      ? matchingVersion.value
+      : value
         ? "custom"
-        : value || comfyui_hash;
+        : "latest"; // Default to latest if no value
+
+  // Set default value when options are loaded and no value is selected
+  useEffect(() => {
+    if (!isLoading && options.length > 0 && !value) {
+      const latestOption = options.find((opt) => opt.value === "latest");
+      if (latestOption) {
+        onChange("latest");
+        setCustomValue("latest");
+      }
+    }
+  }, [isLoading, options, value, onChange]);
 
   return (
-    <div className={cn("mt-2 space-y-2", className)}>
+    <div className={cn("flex flex-row gap-1", className)}>
       <Select
         value={selectedValue}
         onValueChange={(newValue) => {
-          if (newValue === "custom") {
-            setCustomValue("");
-            onChange("");
-          } else if (newValue === "latest" && latestComfyUI?.commit.sha) {
-            const latestHash = latestComfyUI.commit.sha;
-            onChange(latestHash);
-            setCustomValue(latestHash);
+          if (
+            newValue === "custom" ||
+            (newValue === selectedValue && newValue === "custom")
+          ) {
+            setShowCustomDialog(true);
           } else {
-            onChange(newValue);
-            setCustomValue(newValue);
+            const selectedOption = options.find(
+              (opt) => opt.value === newValue,
+            );
+            if (selectedOption) {
+              // Special handling for "latest" version
+              const newValue =
+                selectedOption.value === "latest"
+                  ? "latest"
+                  : selectedOption.sha || selectedOption.value;
+              onChange(newValue);
+              setCustomValue(newValue);
+            }
           }
         }}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select version">
-            {isLoading && selectedValue === "latest" ? (
+            {isLoading ? (
               <div className="flex items-center gap-2">
-                <span>Latest</span>
-                <span className="text-muted-foreground">(loading...)</span>
+                <Skeleton className="h-4 w-[120px]" />
+              </div>
+            ) : selectedValue === "custom" ? (
+              <div className="flex items-center gap-2">
+                {/* <span>Custom: </span> */}
+                <span className="font-mono text-xs">{value?.slice(0, 7)}</span>
               </div>
             ) : (
               options.find((opt) => opt.value === selectedValue)?.label
@@ -719,38 +762,104 @@ export function ComfyUIVersionSelectBox({
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {options.map((option) => (
-            <SelectItem
-              key={option.label}
-              value={option.value}
-              disabled={isAnnoymous && option.label === "Latest"}
-            >
-              <div className="flex w-full items-center justify-between">
-                <span>{option.label}</span>
-                {option.value !== "custom" && (
-                  <span className="ml-2 font-mono text-muted-foreground text-xs">
-                    {isLoading && option.label === "Latest"
-                      ? "(loading...)"
-                      : `(${option.value.slice(0, 7)})`}
-                  </span>
-                )}
-              </div>
-            </SelectItem>
-          ))}
+          {isLoading ? (
+            <>
+              {Array(3)
+                .fill(0)
+                .map((_, index) => (
+                  <SelectItem
+                    key={`loading-${index}`}
+                    value={`loading-${index}`}
+                  >
+                    <div className="flex w-full items-center justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="ml-2 h-3 w-16" />
+                    </div>
+                  </SelectItem>
+                ))}
+            </>
+          ) : (
+            options.map((option) => (
+              <SelectItem
+                key={option.value}
+                value={option.value}
+                disabled={isAnnoymous && option.label === "Latest"}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <div className="flex flex-col">
+                    <span>{option.label}</span>
+                  </div>
+                  {option.sha && (
+                    <span className="ml-2 font-mono text-muted-foreground text-xs">
+                      {`(${option.sha.slice(0, 7)})`}
+                    </span>
+                  )}
+                </div>
+              </SelectItem>
+            ))
+          )}
+          <SelectItem value="custom" onClick={() => setShowCustomDialog(true)}>
+            Custom
+          </SelectItem>
         </SelectContent>
       </Select>
 
       {selectedValue === "custom" && (
-        <Input
-          className="font-mono text-xs bg-gray-100"
-          placeholder="Enter ComfyUI hash..."
-          value={customValue}
-          onChange={(e) => {
-            setCustomValue(e.target.value);
-            onChange(e.target.value);
-          }}
-        />
+        <Button
+          variant="outline"
+          className="mt-0"
+          onClick={() => setShowCustomDialog(true)}
+        >
+          <PencilIcon className="h-4 w-4" />
+        </Button>
       )}
+      <Dialog
+        open={showCustomDialog}
+        onOpenChange={(open) => {
+          setShowCustomDialog(open);
+          if (!open && value) {
+            setCustomValue(value);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Custom ComfyUI Version</DialogTitle>
+            <DialogDescription>
+              Please enter the ComfyUI commit hash or version number
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              className="font-mono"
+              placeholder="Enter ComfyUI hash..."
+              value={customValue}
+              onChange={(e) => setCustomValue(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCustomDialog(false);
+                if (value) {
+                  setCustomValue(value);
+                }
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                onChange(customValue);
+                setShowCustomDialog(false);
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -822,7 +931,7 @@ export function GPUSelectBox({
   );
 
   return (
-    <div className={cn("mt-2", className)}>
+    <div className={cn("", className)}>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select GPU">
