@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WorkflowCard } from "./workflow-list";
+import { WorkflowCard, WorkflowCardSkeleton } from "./workflow-list";
 import {
   useWorkflowList,
   useFeaturedWorkflows,
@@ -9,6 +9,7 @@ import {
 import { Marquee } from "@/components/magicui/marquee";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const FeaturedWorkflowCard = ({ workflow }: { workflow: FeaturedWorkflow }) => {
   const shareLink = workflow.share_slug.replace(/_/g, "/");
@@ -70,7 +71,7 @@ export function FeaturedWorkflowMarquee() {
 }
 
 export function RecentWorkflows() {
-  const { data: workflowsData, refetch } = useWorkflowList("", 4);
+  const { data: workflowsData, isLoading, refetch } = useWorkflowList("", 4);
   const recentWorkflows = workflowsData?.pages[0] ?? [];
   const { data: featuredWorkflows } = useFeaturedWorkflows();
 
@@ -82,7 +83,13 @@ export function RecentWorkflows() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="font-medium text-sm">
-          {hasRecentWorkflows ? "Recent Workflows" : "Featured Workflows"}
+          {isLoading ? (
+            <Skeleton className="h-5 w-32" />
+          ) : hasRecentWorkflows ? (
+            "Recent Workflows"
+          ) : (
+            "Featured Workflows"
+          )}
         </div>
         <Button
           variant="link"
@@ -97,7 +104,13 @@ export function RecentWorkflows() {
         </Button>
       </div>
 
-      {hasRecentWorkflows ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <WorkflowCardSkeleton key={`workflow-skeleton-${i}`} />
+          ))}
+        </div>
+      ) : hasRecentWorkflows ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {recentWorkflows.map((workflow) => (
             <WorkflowCard
