@@ -9,7 +9,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { WorkflowCard, WorkflowCardSkeleton } from "./workflow-list";
+import { WorkflowCard } from "./workflow-list";
+import { Card } from "./ui/card";
 
 const FeaturedWorkflowCard = ({ workflow }: { workflow: FeaturedWorkflow }) => {
   const shareLink = workflow.share_slug.replace(/_/g, "/");
@@ -124,6 +125,33 @@ export function RecentWorkflows() {
       ) : (
         hasFeaturedWorkflows && <FeaturedWorkflowMarquee />
       )}
+    </div>
+  );
+}
+
+function WorkflowCardSkeleton() {
+  return (
+    <div className="flex w-full flex-col md:max-w-[320px]">
+      <Card className="group relative flex aspect-square h-fit w-full flex-col overflow-hidden rounded-md">
+        <div className="h-full w-full">
+          <div className="flex h-full flex-col items-center justify-center">
+            <Skeleton className="mb-2 h-10 w-10 rounded-full" />
+          </div>
+        </div>
+        <div className="absolute top-2 right-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+      </Card>
+      <div className="flex flex-col px-2 pt-2">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-5 w-16" />
+        </div>
+        <div className="mt-1 flex justify-between">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-4 w-1/4" />
+        </div>
+      </div>
     </div>
   );
 }

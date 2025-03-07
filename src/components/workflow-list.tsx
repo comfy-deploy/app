@@ -235,14 +235,12 @@ export function WorkflowList() {
   );
 }
 
-export function WorkflowCardSkeleton() {
+function WorkflowCardSkeleton() {
   return (
     <div className="flex w-full flex-col md:max-w-[320px]">
-      <Card className="group relative flex aspect-square h-fit w-full flex-col overflow-hidden rounded-md">
-        <div className="h-full w-full">
-          <div className="flex h-full flex-col items-center justify-center">
-            <Skeleton className="mb-2 h-10 w-10 rounded-full" />
-          </div>
+      <Card className="group relative flex aspect-square h-[320px] w-full flex-col overflow-hidden rounded-md">
+        <div className="flex h-full w-full flex-col items-center justify-center">
+          <Skeleton className="mb-2 h-10 w-10 rounded-full" />
         </div>
         <div className="absolute top-2 right-2">
           <Skeleton className="h-8 w-8 rounded-full" />
