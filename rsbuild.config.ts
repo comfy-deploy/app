@@ -10,6 +10,7 @@ const ReactCompilerConfig = {
 };
 
 export default defineConfig({
+  mode: "production",
   plugins: [
     pluginReact(),
     // pluginBabel({
