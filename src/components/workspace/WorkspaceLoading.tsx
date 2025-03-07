@@ -20,15 +20,25 @@ export function WorkspaceLoading({
   progress = 0,
 }: WorkspaceLoadingProps) {
   return (
-    <div className="relative flex h-full w-full items-center justify-center bg-background">
+    <motion.div
+      className="relative flex h-full w-full items-center justify-center bg-black/20 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3, ease: easeOut }}
+    >
       {/* Grid background */}
-      <div
-        className="absolute inset-0 opacity-5"
+      <motion.div
+        className="absolute inset-0 backdrop-blur-sm"
         style={{
           backgroundImage: `linear-gradient(#2c2c2c 1px, transparent 1px),
                            linear-gradient(90deg, #2c2c2c 1px, transparent 1px)`,
           backgroundSize: "20px 20px",
         }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5, ease: easeOut }}
       />
 
       <div className="relative z-10 flex flex-col items-center">
@@ -46,7 +56,7 @@ export function WorkspaceLoading({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3, ease: easeOut }}
+                  transition={{ duration: 0.5, ease: easeOut }}
                 >
                   <TextShimmer className="[--base-color:theme(colors.gray.600)] [--base-gradient-color:theme(colors.gray.200)] dark:[--base-color:theme(colors.gray.700)] dark:[--base-gradient-color:theme(colors.gray.400)]">
                     {message}
@@ -56,55 +66,12 @@ export function WorkspaceLoading({
           </AnimatePresence>
         </div>
         <div className="mb-8 w-40">
-          <Progress value={progress} className="h-1" />
+          <Progress value={progress} className="dark h-1" />
         </div>
 
-        {/* Node representation */}
-        <div className="relative flex items-start space-x-20 hidden">
-          {/* Left node */}
-          <div className="flex h-24 w-40 flex-col justify-between rounded-md bg-[#3c3c3c] p-2 shadow-lg">
-            <div className="flex justify-start">
-              <div className="h-3 w-3 rounded-full bg-[#00ff00]" />
-            </div>
-            <div className="h-3 w-full rounded bg-[#2c2c2c]" />
-            <div className="h-3 w-3/4 rounded bg-[#2c2c2c]" />
-          </div>
-
-          {/* Right node - positioned lower */}
-          <div className="mt-16 flex h-24 w-40 flex-col justify-between rounded-md bg-[#3c3c3c] p-2 shadow-lg">
-            <div className="flex justify-start">
-              <div className="h-3 w-3 rounded-full bg-[#00ff00]" />
-            </div>
-            <div className="h-3 w-full rounded bg-[#2c2c2c]" />
-            <div className="h-3 w-3/4 rounded bg-[#2c2c2c]" />
-          </div>
-
-          {/* Curved connection line */}
-          <svg
-            className="absolute top-0 left-[80px] h-48 w-20"
-            viewBox="0 0 224 192"
-          >
-            <path
-              d="M0 12 C112 12, 112 180, 224 180"
-              stroke="#3c3c3c"
-              strokeWidth="10"
-              fill="none"
-            />
-            <path
-              d="M0 12 C112 12, 112 180, 224 180"
-              stroke="#00ff00"
-              strokeWidth="10"
-              fill="none"
-              strokeDasharray="300"
-              strokeDashoffset={300 - (progress ?? 0) * 3}
-              className="transition-all duration-300 ease-in-out"
-            />
-          </svg>
-        </div>
-
-        <LogDisplay />
+        <LogDisplay newInterface={true} />
       </div>
-    </div>
+    </motion.div>
   );
 }
 

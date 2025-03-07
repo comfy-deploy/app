@@ -510,7 +510,6 @@ export default function Workspace({
         {!cdSetup && (
           <motion.div
             initial={{ opacity: 1 }}
-            // animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-[20]"
           >
@@ -620,11 +619,7 @@ export default function Workspace({
           style={{
             userSelect: "none",
           }}
-          className={cn(
-            "inset-0 h-full w-full border-none transition-opacity ",
-            !cdSetup && "opacity-0",
-            cdSetup && "animate-blur-in",
-          )}
+          className="inset-0 h-full w-full border-none"
           title="iframeContent"
           allow="autoplay; encrypted-media; fullscreen; display-capture; camera; microphone"
           onLoad={() => {
