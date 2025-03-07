@@ -1259,7 +1259,7 @@ function SnapshotDetails({ selectedVersion }: { selectedVersion: Version }) {
         <Badge variant="secondary">v{selectedVersion.version}</Badge>
       </div>
 
-      <Accordion type="multiple" defaultValue={["comfyui"]} className="w-full">
+      <Accordion type="multiple" className="w-full">
         {/* Main Configuration Section */}
         <AccordionItem value="comfyui">
           <AccordionTrigger>Configuration Details</AccordionTrigger>
