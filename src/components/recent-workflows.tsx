@@ -1,15 +1,15 @@
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { WorkflowCard, WorkflowCardSkeleton } from "./workflow-list";
-import {
-  useWorkflowList,
-  useFeaturedWorkflows,
-  type FeaturedWorkflow,
-} from "@/hooks/use-workflow-list";
 import { Marquee } from "@/components/magicui/marquee";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  type FeaturedWorkflow,
+  useFeaturedWorkflows,
+  useWorkflowList,
+} from "@/hooks/use-workflow-list";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowRight } from "lucide-react";
+import { WorkflowCard, WorkflowCardSkeleton } from "./workflow-list";
 
 const FeaturedWorkflowCard = ({ workflow }: { workflow: FeaturedWorkflow }) => {
   const shareLink = workflow.share_slug.replace(/_/g, "/");
