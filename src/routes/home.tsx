@@ -1,4 +1,3 @@
-import { MachineWorkspaceItem } from "@/components/machine-workspace-item";
 import {
   ComfyUIVersionSelectBox,
   GPUSelectBox,
@@ -16,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
 import { useLogStore } from "@/components/workspace/LogContext";
 import { GPU } from "@/constants/run-data-enum";
 import { useMachine, useMachines } from "@/hooks/use-machine";
@@ -30,10 +28,8 @@ import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
-  ChevronRight,
-  CornerRightUp,
+  CornerRightDown,
   ExternalLink,
-  Play,
   Plus,
   Settings,
   Share2,
@@ -274,8 +270,12 @@ function SessionsList() {
           );
         })}
         {(!data || data?.length === 0) && (
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
             <div className="text-sm">No active ComfyUI sessions</div>
+            <div className="flex flex-row items-center gap-1 text-2xs">
+              Try starting a new session by pressing the "New Session" button
+              below <CornerRightDown className="h-3 w-3" />
+            </div>
           </div>
         )}
       </div>
