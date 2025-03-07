@@ -242,6 +242,7 @@ export function MachineList() {
               index={index}
               machine={machine}
               refetchQuery={query.refetch}
+              selectedTab={selectedTab}
             />
           )}
           renderLoading={() => {

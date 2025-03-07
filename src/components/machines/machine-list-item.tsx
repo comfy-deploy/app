@@ -1,6 +1,4 @@
 import { MachineVersionBadge } from "@/components/machine/machine-version-badge";
-import { CustomNodeList } from "@/components/machines/custom-node-list";
-import { MachineStatus } from "@/components/machines/machine-status";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,12 +9,9 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { LoadingIcon } from "@/components/ui/custom/loading-icon";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useMachineEvents } from "@/hooks/use-machine";
-import { getRelativeTime } from "@/lib/get-relative-time";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import {
   addHours,
   differenceInHours,
@@ -27,18 +22,14 @@ import {
 } from "date-fns";
 import {
   AlertCircleIcon,
-  ChevronDown,
   Clock,
   EllipsisVertical,
-  ExternalLink,
-  HardDrive,
   Info,
-  MemoryStick,
   Pause,
-  Zap,
   Copy,
   RefreshCcw,
   Trash2,
+  Play,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -66,6 +57,14 @@ import {
 } from "../ui/dropdown-menu";
 import { useCurrentPlanQuery } from "@/hooks/use-current-plan";
 import { DeleteMachineDialog, RebuildMachineDialog } from "./machine-list";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
+import { useLogStore } from "../workspace/LogContext";
+import { useSessionAPI } from "@/hooks/use-session-api";
 
 // -------------------------constants-------------------------
 
@@ -155,6 +154,7 @@ export function MachineListItem({
   isExpanded,
   refetchQuery,
   index,
+  selectedTab,
   className,
   showMigrateDialog = true,
   children,
@@ -163,6 +163,7 @@ export function MachineListItem({
   isExpanded?: boolean;
   refetchQuery: any;
   index: number;
+  selectedTab?: string;
   className?: string;
   showMigrateDialog?: boolean;
   children?: React.ReactNode;
@@ -175,6 +176,8 @@ export function MachineListItem({
   const { refetch: refetchPlan } = useCurrentPlanQuery();
   const [machineActionDropdownOpen, setMachineActionDropdownOpen] =
     useState(false);
+  const router = useRouter();
+  const [isStartingSession, setIsStartingSession] = useState(false);
 
   // Check if Docker command steps are null (for disabling buttons)
   const isDockerCommandStepsNull =
@@ -193,6 +196,29 @@ export function MachineListItem({
   }, [machine.status, machine.updated_at]);
 
   const isDeprecated = isMachineDeprecated(machine);
+
+  const { createDynamicSession } = useSessionAPI();
+
+  const handleStartSession = async () => {
+    setIsStartingSession(true);
+    const response = await createDynamicSession.mutateAsync({
+      machine_id: machine.id,
+      gpu: machine.gpu,
+      timeout: 15,
+    });
+    useLogStore.getState().clearLogs();
+
+    router.navigate({
+      to: "/sessions/$sessionId",
+      params: {
+        sessionId: response.session_id,
+      },
+      search: {
+        machineId: machine.id,
+      },
+    });
+    setIsStartingSession(false);
+  };
 
   const content = (
     <div
@@ -313,6 +339,31 @@ export function MachineListItem({
               )}
               {hasActiveEvents ? "Running" : "Idle"}
             </Badge>
+            {selectedTab === "workspace" && (
+              <TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0"
+                      disabled={isStartingSession}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        await handleStartSession();
+                      }}
+                    >
+                      {isStartingSession ? (
+                        <LoadingIcon className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Start session</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <DropdownMenu
               open={machineActionDropdownOpen}
               onOpenChange={setMachineActionDropdownOpen}
@@ -373,7 +424,6 @@ export function MachineListItem({
           </div>
         </div>
       </div>
-      {children}
     </div>
   );
 
