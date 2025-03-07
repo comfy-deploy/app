@@ -49,7 +49,7 @@ import { useDebounce } from "use-debounce";
 
 interface SessionCreationDialogProps {
   workflowId: string;
-  version: string;
+  version: number;
   machineId?: string;
   machineName?: string;
   machineGpu?: string;
@@ -203,6 +203,7 @@ export function SessionCreationDialog({
         search: {
           workflowId,
           version,
+          isFirstTime: true,
         },
       });
 

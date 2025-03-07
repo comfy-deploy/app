@@ -25,6 +25,7 @@ import {
   Folder,
   KeyRound,
   LineChart,
+  Loader2,
   type LucideIcon,
   MenuIcon,
   Monitor,
@@ -236,11 +237,9 @@ export function NavBar() {
 
               if (!currentPlan) {
                 return (
-                  <>
-                    <Badge variant="cyan" className="rounded-sm">
-                      Free
-                    </Badge>
-                  </>
+                  <Badge variant="cyan" className="rounded-sm">
+                    Free
+                  </Badge>
                 );
               }
 
@@ -251,11 +250,9 @@ export function NavBar() {
                 planDisplayName.slice(1);
 
               return (
-                <>
-                  <Badge variant="blue" className="rounded-sm">
-                    {capitalizedPlan}
-                  </Badge>
-                </>
+                <Badge variant="blue" className="rounded-sm">
+                  {capitalizedPlan}
+                </Badge>
               );
             })()}
           </Link>

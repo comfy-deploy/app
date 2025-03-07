@@ -1,11 +1,9 @@
-"use client";
-
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import { diff } from "json-diff-ts";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WorkspaceLoading } from "./WorkspaceLoading";
 import {
@@ -14,6 +12,15 @@ import {
   sendInetrnalEventToCD,
   sendWorkflow,
 } from "./sendEventToCD";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Link, Download, Import, Workflow } from "lucide-react";
 
 export const useCDStore = create<{
   cdSetup: boolean;
@@ -54,15 +61,13 @@ import { useMachine } from "@/hooks/use-machine";
 import { useAuthStore } from "@/lib/auth-store";
 import { useQuery } from "@tanstack/react-query";
 // import { usePathname, useRouter } from "next/navigation";
-import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
+import { parseAsBoolean, parseAsInteger, useQueryState } from "nuqs";
 import { create } from "zustand";
 import { AssetsBrowserPopup } from "./assets-browser-drawer";
-import {
-  SessionIncrementDialog,
-  useSessionIncrementStore,
-} from "./increase-session";
 import { WorkspaceControls } from "./workspace-control";
-import { useParams, useSearch } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
 interface WorkflowState {
   workflow: any;
@@ -101,9 +106,14 @@ export default function Workspace({
   machine_version_id?: string;
   gpu?: string;
 }) {
-  const { workflowId, workflowLink } = useSearch({
+  const { workflowId, workflowLink, version } = useSearch({
     from: "/sessions/$sessionId/",
   });
+  const [isFirstTime, setIsFirstTime] = useQueryState(
+    "isFirstTime",
+    parseAsBoolean,
+  );
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const { workflow } = useCurrentWorkflow(workflowId ?? null);
   const { value: versionData, isLoading: isLoadingVersion } =
@@ -267,6 +277,18 @@ export default function Workspace({
 
   useEffect(() => {
     if (!cdSetup) return;
+    if (isFirstTime) {
+      setIsFirstTime(null);
+      if (!workflowId && !workflowLink) {
+        console.log("no workflow, setting empty");
+        setComfyUIWorkflow({
+          nodes: [],
+        });
+      } else {
+        setIsImportDialogOpen(true);
+      }
+      return;
+    }
 
     if (!workflowId && !workflowLink) {
       console.log("no workflow, setting empty");
@@ -286,6 +308,7 @@ export default function Workspace({
     cdSetup,
     isLoadingVersion,
     isLoadingWorkflowLink,
+    isFirstTime,
   ]);
 
   const { fetchToken } = useAuthStore();
@@ -487,7 +510,6 @@ export default function Workspace({
         {!cdSetup && (
           <motion.div
             initial={{ opacity: 1 }}
-            // animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-[20]"
           >
@@ -510,6 +532,81 @@ export default function Workspace({
         machine_version_id={machine_version_id}
       />
 
+      <Dialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        modal={false}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Import className="h-5 w-5" />
+              Import Workflow
+            </DialogTitle>
+            <DialogDescription>
+              You're about to import a workflow into your workspace.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col space-y-4 py-4">
+            <div className="rounded-lg border bg-muted/50 p-4">
+              <h4 className="mb-2 font-medium text-sm">Source</h4>
+              {workflowLink ? (
+                <div className="flex w-full flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Link className="h-4 w-4 flex-shrink-0 text-blue-500" />
+                    <span className="font-medium text-sm">
+                      External Workflow
+                    </span>
+                  </div>
+                  <div className="max-h-20 overflow-y-auto rounded bg-muted/80 p-2">
+                    <a
+                      href={workflowLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="break-all text-blue-500 text-xs hover:underline"
+                    >
+                      {workflowLink}
+                    </a>
+                  </div>
+                </div>
+              ) : workflowId ? (
+                <div className="flex items-center gap-2">
+                  <Workflow className="h-4 w-4 flex-shrink-0" />
+                  <span className="font-medium text-sm">{workflow?.name}</span>
+                  <Badge variant="secondary" className="ml-1">
+                    v{version}
+                  </Badge>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setIsImportDialogOpen(false);
+                if (workflowId && !isLoadingVersion && versionData?.workflow) {
+                  console.log("using workflowId", versionData.workflow);
+                  setComfyUIWorkflow(versionData.workflow);
+                } else if (
+                  workflowLink &&
+                  !isLoadingWorkflowLink &&
+                  workflowLinkJson
+                ) {
+                  console.log("using workflowLink", workflowLinkJson);
+                  setComfyUIWorkflow(workflowLinkJson);
+                }
+              }}
+              className="gap-1"
+            >
+              <Download className="h-4 w-4" />
+              Import Workflow
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {hasSetupEventListener && (
         <iframe
           key={endpoint}
@@ -522,11 +619,7 @@ export default function Workspace({
           style={{
             userSelect: "none",
           }}
-          className={cn(
-            "inset-0 h-full w-full border-none transition-opacity ",
-            !cdSetup && "opacity-0",
-            cdSetup && "animate-blur-in",
-          )}
+          className="inset-0 h-full w-full border-none"
           title="iframeContent"
           allow="autoplay; encrypted-media; fullscreen; display-capture; camera; microphone"
           onLoad={() => {

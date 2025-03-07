@@ -29,21 +29,19 @@ import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
-import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
-  ChevronDown,
   Cloud,
   CloudCog,
   Copy,
+  EllipsisVertical,
   Plus,
   RefreshCcw,
   Server,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import semver from "semver";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
 
@@ -62,9 +60,6 @@ export function MachineList() {
   const [openCustomDialog, setOpenCustomDialog] = useState(false);
   const [openServerlessDialog, setOpenServerlessDialog] = useState(false);
   const [debouncedSearchValue] = useDebounce(searchValue, 250);
-  const [expandedMachineId, setExpandedMachineId] = useState<string | null>(
-    null,
-  );
   const navigate = useNavigate({ from: "/machines" });
 
   type TabType = "docker" | "workspace" | "self-hosted";
@@ -161,11 +156,11 @@ export function MachineList() {
       </div>
 
       {query.isLoading ? (
-        <div className="mx-auto w-full max-w-[1200px] space-y-2">
+        <div className="mx-auto w-full max-w-[1200px] overflow-clip rounded-xl border">
           {[...Array(8)].map((_, i) => (
             <div
               key={`loading-${i}`}
-              className="flex h-[80px] w-full animate-pulse items-center justify-between rounded-md border bg-white p-4"
+              className="flex h-[68px] w-full animate-pulse items-center justify-between border-b bg-white p-4"
             >
               <div className="flex items-center gap-4">
                 <div className="flex flex-col gap-2">
@@ -181,7 +176,7 @@ export function MachineList() {
                 <div className="h-5 w-20 rounded-md bg-gray-200" />
                 <div className="h-5 w-12 rounded-md bg-gray-200" />
                 <Button variant="ghost" size="icon">
-                  <ChevronDown className={"h-4 w-4"} />
+                  <EllipsisVertical className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -246,27 +241,9 @@ export function MachineList() {
               key={machine.id}
               index={index}
               machine={machine}
-              isExpanded={expandedMachineId === machine.id}
-              setIsExpanded={(expanded) =>
-                setExpandedMachineId(expanded ? machine.id : null)
-              }
-              className={cn(expandedMachineId === machine.id && "border-b")}
-              machineActionItemList={
-                <MachineItemActionList
-                  machine={machine}
-                  refetch={async () => {
-                    await query.refetch();
-                  }}
-                />
-              }
+              refetchQuery={query.refetch}
             />
           )}
-          renderItemClassName={(machine: Machine | null) =>
-            cn(
-              "z-0 transition-all duration-200",
-              machine && expandedMachineId === machine.id && "z-[1]",
-            )
-          }
           renderLoading={() => {
             return [...Array(4)].map((_, i) => (
               <div
@@ -287,13 +264,13 @@ export function MachineList() {
                   <div className="h-5 w-20 rounded-md bg-gray-200" />
                   <div className="h-5 w-12 rounded-md bg-gray-200" />
                   <Button variant="ghost" size="icon">
-                    <ChevronDown className={"h-4 w-4"} />
+                    <EllipsisVertical className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             ));
           }}
-          estimateSize={72}
+          estimateSize={68}
         />
       )}
 
@@ -442,98 +419,6 @@ export function MachineList() {
   );
 }
 
-export function MachineItemActionList({
-  machine,
-  refetch,
-}: {
-  machine: any;
-  refetch: () => void;
-}) {
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [rebuildModalOpen, setRebuildModalOpen] = useState(false);
-  const navigate = useNavigate({ from: "/machines" });
-
-  const { refetch: refetchPlan } = useCurrentPlanQuery();
-  const isDockerCommandStepsNull =
-    machine.docker_command_steps === null &&
-    machine.type === "comfy-deploy-serverless";
-
-  const IconOnlyButton = () => {
-    return (
-      <>
-        {machine.type === "comfy-deploy-serverless" && (
-          <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={isDockerCommandStepsNull}
-                  onClick={() => setRebuildModalOpen(true)}
-                >
-                  <RefreshCcw className="h-[14px] w-[14px]" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Rebuild</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={isDockerCommandStepsNull}
-                  onClick={() => {
-                    navigate({
-                      to: "/machines",
-                      search: { view: "create", machineId: machine.id },
-                    });
-                  }}
-                >
-                  <Copy className="h-[14px] w-[14px]" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Clone</TooltipContent>
-            </Tooltip>
-          </>
-        )}
-        <Tooltip>
-          <TooltipTrigger>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-red-500"
-              onClick={() => setDeleteModalOpen(true)}
-            >
-              <Trash2 className="h-[14px] w-[14px]" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Delete</TooltipContent>
-        </Tooltip>
-      </>
-    );
-  };
-
-  return (
-    <div className="flex flex-row">
-      <IconOnlyButton />
-
-      <DeleteMachineDialog
-        machine={machine}
-        refetch={refetch}
-        planRefetch={refetchPlan}
-        dialogOpen={deleteModalOpen}
-        setDialogOpen={setDeleteModalOpen}
-      />
-      <RebuildMachineDialog
-        machine={machine}
-        refetch={refetch}
-        dialogOpen={rebuildModalOpen}
-        setDialogOpen={setRebuildModalOpen}
-      />
-    </div>
-  );
-}
-
 interface MachineDialogProps {
   machine: any;
   refetch?: () => void;
@@ -541,7 +426,7 @@ interface MachineDialogProps {
   setDialogOpen: (dialogOpen: boolean) => void;
 }
 
-function DeleteMachineDialog({
+export function DeleteMachineDialog({
   machine,
   refetch,
   planRefetch,
@@ -749,21 +634,4 @@ export function RebuildMachineDialog({
       </DialogContent>
     </Dialog>
   );
-}
-
-// Helper function to check for duplicate URLs in docker_command_steps for custom-node types
-function hasDuplicateCustomNodeURLs(
-  steps: Array<{ type: string; data: { url: string; name: string } }>,
-): string | null {
-  const urlMap = new Map<string, string>(); // Map to store url -> node name
-  for (const step of steps) {
-    if (step.type === "custom-node") {
-      const url = step.data.url.toLowerCase();
-      if (urlMap.has(url)) {
-        return step.data.name;
-      }
-      urlMap.set(url, step.data.name);
-    }
-  }
-  return null; // No duplicates
 }

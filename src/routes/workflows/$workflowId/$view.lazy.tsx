@@ -491,6 +491,8 @@ function RequestPage({
 
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
 
+  const [runId, setRunId] = useQueryState("run-id");
+
   useEffect(() => {
     if (latestVersion) {
       setSelectedVersion(latestVersion);
@@ -695,14 +697,14 @@ function RequestPage({
         <div className="mt-4 font-medium text-sm">Versions</div>
 
         <div
-          className={cn(
-            "relative rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 px-4 pt-2.5 pb-10",
-            sessions?.length ? "-mb-6" : "-mb-4",
-          )}
+          className="-mb-4 relative rounded-t-3xl border-gray-100 border-x border-t border-b-0 bg-gray-50 px-4 pt-2.5 pb-10"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
           <motion.div
+            initial={{
+              marginBottom: "-24px",
+            }}
             animate={{
               marginBottom: isHovering && sessions?.length ? "-28px" : "-24px",
             }}
@@ -736,6 +738,10 @@ function RequestPage({
                         },
                       });
                       return;
+                    }
+
+                    if (runId) {
+                      setRunId(null);
                     }
 
                     setSessionCreation((prev) => ({
@@ -808,6 +814,10 @@ function RequestPage({
             const handleEditVersion = () => {
               if (selectedMachine?.type === "comfy-classic") {
                 return; // Disabled condition
+              }
+
+              if (runId) {
+                setRunId(null);
               }
 
               setSessionCreation({
@@ -1259,7 +1269,7 @@ function SnapshotDetails({ selectedVersion }: { selectedVersion: Version }) {
         <Badge variant="secondary">v{selectedVersion.version}</Badge>
       </div>
 
-      <Accordion type="multiple" defaultValue={["comfyui"]} className="w-full">
+      <Accordion type="multiple" className="w-full">
         {/* Main Configuration Section */}
         <AccordionItem value="comfyui">
           <AccordionTrigger>Configuration Details</AccordionTrigger>
