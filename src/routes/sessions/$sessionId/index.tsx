@@ -50,6 +50,7 @@ export const Route = createFileRoute("/sessions/$sessionId/")({
     machineId: z.string().optional(),
     workflowId: z.string().optional(),
     workflowLink: z.string().optional(),
+    version: z.number().optional(),
   }),
 });
 

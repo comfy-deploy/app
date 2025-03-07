@@ -491,6 +491,8 @@ function RequestPage({
 
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
 
+  const [runId, setRunId] = useQueryState("run-id");
+
   useEffect(() => {
     if (latestVersion) {
       setSelectedVersion(latestVersion);
@@ -738,6 +740,10 @@ function RequestPage({
                       return;
                     }
 
+                    if (runId) {
+                      setRunId(null);
+                    }
+
                     setSessionCreation((prev) => ({
                       ...prev,
                       isOpen: true,
@@ -808,6 +814,10 @@ function RequestPage({
             const handleEditVersion = () => {
               if (selectedMachine?.type === "comfy-classic") {
                 return; // Disabled condition
+              }
+
+              if (runId) {
+                setRunId(null);
               }
 
               setSessionCreation({
