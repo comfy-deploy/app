@@ -40,6 +40,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { RecentWorkflows } from "@/components/recent-workflows";
+import { LoadingIcon } from "@/components/loading-icon";
 
 export const Route = createFileRoute("/home")({
   component: RouteComponent,
@@ -252,20 +253,30 @@ function SessionsList() {
               <div className="ml-auto text-muted-foreground text-sm">
                 {getRelativeTime(session.start_time)}
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  e.nativeEvent.preventDefault();
-                  await deleteSession.mutateAsync({
-                    sessionId: session.session_id,
-                  });
-                }}
-              >
-                <Trash className="h-4 w-4 fill-red-200 stroke-red-500" />
-              </Button>
+              {!session.start_time ? (
+                <span className="flex items-center gap-2 text-muted-foreground text-sm mr-2">
+                  Queuing <LoadingIcon className="h-4 w-4" />
+                </span>
+              ) : (
+                <Button
+                  variant="ghost"
+                  iconPlacement="right"
+                  size="icon"
+                  className="text-red-500"
+                  Icon={Trash}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    e.nativeEvent.preventDefault();
+                    await deleteSession.mutateAsync({
+                      sessionId: session.session_id,
+                      wait_for_shutdown: true,
+                    });
+                  }}
+                >
+                  {/* <Trash className="h-4 w-4 fill-red-200 stroke-red-500" /> */}
+                </Button>
+              )}
             </Link>
           );
         })}

@@ -228,7 +228,10 @@ const Button = forwardRef<
           <div
             className={cn(
               "w-0 translate-x-[100%] pl-0 opacity-0 transition-all duration-200",
-              isLoading && "w-5 translate-x-0 pl-2 opacity-100",
+              isLoading &&
+                cn("w-5 translate-x-0 opacity-100", {
+                  "pl-2": children !== undefined && children !== null,
+                }),
             )}
           >
             <LoaderCircle size={16} className="animate-spin" />
