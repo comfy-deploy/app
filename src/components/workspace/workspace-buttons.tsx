@@ -613,6 +613,9 @@ export function WorkflowButtons({
           label: `v${version}`,
           tooltip: "Select version",
           event: "change_version",
+          style: {
+            display: !workflow ? "none" : "flex",
+          },
           onClick: (_: string, __: unknown) => setIsVersionDialogOpen(true),
         },
 
