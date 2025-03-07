@@ -619,7 +619,7 @@ export default function Workspace({
           style={{
             userSelect: "none",
           }}
-          className="inset-0 h-full w-full border-none"
+          className="inset-0 h-full w-full border-none z-[20]"
           title="iframeContent"
           allow="autoplay; encrypted-media; fullscreen; display-capture; camera; microphone"
           onLoad={() => {

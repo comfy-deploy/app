@@ -23,16 +23,16 @@ export function WorkspaceLoading({
   return (
     <motion.div
       className={cn(
-        "relative flex h-full w-full items-center justify-center backdrop-blur-sm transition-all duration-300",
-        progress > 70 ? "bg-black/20" : "bg-gray-950",
+        "relative flex h-full w-full items-center justify-center transition-all duration-300",
+        // progress > 70 ? "bg-transparent" : "bg-black/90",
       )}
-      initial={{ opacity: 0 }}
+      initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: easeOut }}
     >
       {/* Grid background */}
-      <motion.div
+      {/* <motion.div
         className="absolute inset-0 backdrop-blur-sm"
         style={{
           backgroundImage: `linear-gradient(#2c2c2c 1px, transparent 1px),
@@ -43,7 +43,7 @@ export function WorkspaceLoading({
         animate={{ opacity: 0.1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5, ease: easeOut }}
-      />
+      /> */}
 
       <div className="relative z-10 flex flex-col items-center">
         <div className="mb-2 text-sm">

@@ -105,7 +105,7 @@ const LogEntryView = memo(
           initial={{ opacity: shouldAnimate ? 0 : 1 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="group mb-0.5 flex items-start justify-start space-x-2 bg-gray-950 px-2 py-1 leading-normal"
+          className="group mb-0.5 flex items-start justify-start space-x-2 bg-black px-2 py-1 leading-normal"
           style={getColor(log.type)}
         >
           {log.timestamp && (
@@ -147,7 +147,7 @@ const LogEntryView = memo(
         ref={(el) => {
           logRefs!.current![log.id] = el;
         }}
-        className="hover:!bg-gray-800 group mb-0.5 flex items-start justify-start space-x-4 bg-gray-950 leading-normal transition-all duration-300"
+        className="hover:!bg-gray-800 group mb-0.5 flex items-start justify-start space-x-4 bg-black leading-normal transition-all duration-300"
         style={getColor(log.type)}
       >
         {log.timestamp && (
@@ -378,7 +378,7 @@ export function LogDisplay(props: {
         className={
           props.newInterface
             ? "relative h-[200px] rounded-md bg-black/90 p-2 font-mono text-gray-400 text-xs transition-all duration-300"
-            : "h-[440px] rounded-md bg-gray-950 p-4 font-mono text-gray-400 text-xs transition-all duration-300"
+            : "h-[440px] rounded-md bg-black p-4 font-mono text-gray-400 text-xs transition-all duration-300"
         }
       >
         <div>
@@ -409,8 +409,8 @@ export function LogDisplay(props: {
         {/* give me 2 gradient at top and bottom */}
         {props.newInterface && (
           <>
-            <div className="absolute top-0 right-0 left-0 h-10 bg-gradient-to-t from-transparent to-gray-950" />
-            <div className="absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-b from-transparent to-gray-950" />
+            <div className="absolute top-0 right-0 left-0 h-10 bg-gradient-to-t from-transparent to-black" />
+            <div className="absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-b from-transparent to-black" />
           </>
         )}
       </ScrollArea>

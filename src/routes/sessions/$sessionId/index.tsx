@@ -37,7 +37,7 @@ import {
 } from "@/components/version-select";
 import { WorkflowCommitVersion } from "@/components/workspace/WorkflowCommitVersion";
 import { WorkflowDiff } from "@/components/workspace/WorkflowDiff";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, easeOut, motion } from "framer-motion";
 import { sendWorkflow } from "@/components/workspace/sendEventToCD";
 import { toast } from "sonner";
 import { useWorkflowStore } from "@/components/workspace/Workspace";
@@ -74,7 +74,20 @@ function RouteComponent() {
   });
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full  bg-[#141414] z-[10]">
+      <motion.div
+        className="absolute inset-0 backdrop-blur-sm pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(#2c2c2c 1px, transparent 1px),
+                           linear-gradient(90deg, #2c2c2c 1px, transparent 1px)`,
+          backgroundSize: "20px 20px",
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.2 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5, ease: easeOut }}
+      />
+
       <Portal targetId="nav-bar-items">
         <div className="flex flex-row items-center justify-between gap-2">
           <div className="flex flex-row">

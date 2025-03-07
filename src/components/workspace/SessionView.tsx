@@ -77,9 +77,9 @@ export function SessionLoading({
 
   if (isLoadingSession) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center">
+      <div className="flex h-full w-full flex-col items-center justify-center dark">
         <div className="flex flex-col items-center gap-4 p-6">
-          <h2 className="flex items-center gap-2 font-semibold">
+          <h2 className="flex items-center gap-2 font-semibold text-gray-100">
             Loading Session{" "}
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           </h2>
@@ -92,8 +92,8 @@ export function SessionLoading({
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center">
-      <div className="flex flex-col items-center gap-4 p-6">
+    <div className="flex h-full w-full flex-col items-center justify-center dark">
+      <div className="text-gray-100 flex flex-col items-center gap-4 p-6">
         <h2 className="flex items-center gap-2 font-semibold">
           {status.message}{" "}
           {!status.isError && (
@@ -123,7 +123,7 @@ export function SessionLoading({
             <ChevronLeft className="mr-2 h-4 w-4" /> Back
           </Button>
         ) : (
-          <LogDisplay />
+          <LogDisplay newInterface={true} />
         )}
       </div>
     </div>
@@ -232,18 +232,16 @@ export function SessionCreator(props: {
 
   if (url && isLive) {
     return (
-      <>
-        <div className="flex h-full w-full flex-col">
-          <Workspace
-            sessionIdOverride={props.sessionIdOverride}
-            nativeMode={true}
-            endpoint={url}
-            gpu={session?.gpu}
-            machine_id={session?.machine_id}
-            machine_version_id={session?.machine_version_id}
-          />
-        </div>
-      </>
+      <div className="flex h-full w-full flex-col">
+        <Workspace
+          sessionIdOverride={props.sessionIdOverride}
+          nativeMode={true}
+          endpoint={url}
+          gpu={session?.gpu}
+          machine_id={session?.machine_id}
+          machine_version_id={session?.machine_version_id}
+        />
+      </div>
     );
   }
 }
