@@ -710,11 +710,13 @@ export function ComfyUIVersionSelectBox({
 
   // Set default value when options are loaded and no value is selected
   useEffect(() => {
+    // console.log("isLoading", isLoading);
+    // console.log("options", options);
+    // console.log("value", value);
     if (!isLoading && options.length > 0 && !value) {
-      const latestOption = options.find((opt) => opt.value === "latest");
+      const latestOption = options[0];
       if (latestOption) {
-        onChange("latest");
-        setCustomValue("latest");
+        onChange(latestOption.sha || latestOption.value);
       }
     }
   }, [isLoading, options, value, onChange]);
