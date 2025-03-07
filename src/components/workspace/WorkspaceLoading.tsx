@@ -4,6 +4,7 @@ import { getMachineBuildProgress } from "@/hooks/use-machine-build-progress";
 import { AnimatePresence, easeOut, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { LogDisplay } from "./LogDisplay";
+import { cn } from "@/lib/utils";
 
 interface MessageProgress {
   message: string;
@@ -21,7 +22,10 @@ export function WorkspaceLoading({
 }: WorkspaceLoadingProps) {
   return (
     <motion.div
-      className="relative flex h-full w-full items-center justify-center bg-black/20 backdrop-blur-sm"
+      className={cn(
+        "relative flex h-full w-full items-center justify-center backdrop-blur-sm transition-all duration-300",
+        progress > 70 ? "bg-black/20" : "bg-gray-950",
+      )}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
