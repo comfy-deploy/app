@@ -408,14 +408,16 @@ function ServerlessSettings({
           <div className="space-y-4 p-2 pt-4">
             <div className="flex flex-col gap-4 md:flex-row">
               <div className="w-full">
-                <Badge className="font-medium text-sm">ComfyUI Version</Badge>
+                <Badge className="mb-2 font-medium text-sm">
+                  ComfyUI Version
+                </Badge>
                 <ComfyUIVersionSelectBox
                   value={form.watch("comfyui_version")}
                   onChange={(value) => form.setValue("comfyui_version", value)}
                 />
               </div>
               <div className="w-full">
-                <Badge className="font-medium text-sm">GPU</Badge>
+                <Badge className="mb-2 font-medium text-sm">GPU</Badge>
                 <GPUSelectBox
                   value={form.watch("gpu")}
                   onChange={(value) => form.setValue("gpu", value)}
@@ -808,6 +810,7 @@ export function ComfyUIVersionSelectBox({
 
       {selectedValue === "custom" && (
         <Button
+          type="button"
           variant="outline"
           className="mt-0"
           onClick={() => setShowCustomDialog(true)}
