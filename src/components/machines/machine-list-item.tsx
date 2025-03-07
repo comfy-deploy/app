@@ -29,14 +29,18 @@ import {
   AlertCircleIcon,
   ChevronDown,
   Clock,
+  EllipsisVertical,
   ExternalLink,
   HardDrive,
   Info,
   MemoryStick,
   Pause,
   Zap,
+  Copy,
+  RefreshCcw,
+  Trash2,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { UserIcon } from "../run/SharePageComponent";
 import {
@@ -53,6 +57,15 @@ import {
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { useCurrentPlanQuery } from "@/hooks/use-current-plan";
+import { DeleteMachineDialog, RebuildMachineDialog } from "./machine-list";
 
 // -------------------------constants-------------------------
 
@@ -140,26 +153,33 @@ export const isMachineDeprecated = (machine: any) =>
 export function MachineListItem({
   machine,
   isExpanded,
-  setIsExpanded,
-  machineActionItemList,
+  refetchQuery,
   index,
   className,
-  overrideRightSide,
   showMigrateDialog = true,
   children,
 }: {
   machine: any;
   isExpanded?: boolean;
-  setIsExpanded?: (isExpanded: boolean) => void;
-  machineActionItemList?: React.ReactNode;
+  refetchQuery: any;
   index: number;
   className?: string;
-  overrideRightSide?: React.ReactNode;
   showMigrateDialog?: boolean;
   children?: React.ReactNode;
 }) {
   const { data: events, isLoading } = useMachineEvents(machine.id);
   const { hasActiveEvents } = useHasActiveEvents(machine.id);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [rebuildModalOpen, setRebuildModalOpen] = useState(false);
+  const navigate = useNavigate({ from: "/machines" });
+  const { refetch: refetchPlan } = useCurrentPlanQuery();
+  const [machineActionDropdownOpen, setMachineActionDropdownOpen] =
+    useState(false);
+
+  // Check if Docker command steps are null (for disabling buttons)
+  const isDockerCommandStepsNull =
+    machine.docker_command_steps === null &&
+    machine.type === "comfy-deploy-serverless";
 
   const isStale = useMemo(() => {
     if (machine.status === "building") {
@@ -269,206 +289,112 @@ export function MachineListItem({
         </div>
         <Link
           to={"/machines/$machineId"}
-          className="absolute inset-0 z-[2] h-full w-full hover:bg-gray-20"
+          className="absolute inset-0 h-full w-full hover:bg-gray-20"
           params={{ machineId: machine.id }}
           search={{ view: undefined }}
         />
         <div className="flex w-full flex-row items-center justify-end gap-2">
-          <div className="flex flex-row items-center gap-2 z-10">
-            {overrideRightSide ?? (
-              <>
-                {!isExpanded && (
-                  <div className="hidden xl:block min-w-40 xl:w-full xl:max-w-[250px]">
-                    <MachineListItemEvents
-                      isExpanded={false}
-                      events={{ data: events, isLoading }}
-                      machine={machine}
-                    />
-                  </div>
-                )}
-                <Badge
-                  variant={hasActiveEvents ? "green" : "secondary"}
-                  className="!text-2xs !font-semibold flex items-center gap-1"
-                >
-                  {hasActiveEvents ? (
-                    <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
-                  ) : (
-                    <Pause className="h-3 w-3 text-muted-foreground" />
-                  )}
-                  {hasActiveEvents ? "Running" : "Idle"}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="min-w-12 h-12"
-                  onClick={() => setIsExpanded?.(!isExpanded)}
-                >
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                      isExpanded ? "rotate-180" : ""
-                    }`}
-                  />
+          <div className="z-10 flex flex-row items-center gap-2">
+            <div className="hidden min-w-40 lg:block lg:w-full lg:max-w-[250px]">
+              <MachineListItemEvents
+                isExpanded={false}
+                events={{ data: events, isLoading }}
+                machine={machine}
+              />
+            </div>
+            <Badge
+              variant={hasActiveEvents ? "green" : "secondary"}
+              className="!text-2xs !font-semibold flex items-center gap-1"
+            >
+              {hasActiveEvents ? (
+                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+              ) : (
+                <Pause className="h-3 w-3 text-muted-foreground" />
+              )}
+              {hasActiveEvents ? "Running" : "Idle"}
+            </Badge>
+            <DropdownMenu
+              open={machineActionDropdownOpen}
+              onOpenChange={setMachineActionDropdownOpen}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="shrink-0">
+                  <EllipsisVertical className="h-4 w-4" />
                 </Button>
-              </>
-            )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-40">
+                <DropdownMenuItem
+                  className="flex items-center justify-between"
+                  disabled={
+                    isDockerCommandStepsNull ||
+                    machine.type !== "comfy-deploy-serverless"
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMachineActionDropdownOpen(false);
+                    navigate({
+                      to: "/machines",
+                      search: { view: "create", machineId: machine.id },
+                    });
+                  }}
+                >
+                  Clone
+                  <Copy className="h-4 w-4" />
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex items-center justify-between"
+                  disabled={
+                    isDockerCommandStepsNull ||
+                    machine.type !== "comfy-deploy-serverless"
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setRebuildModalOpen(true);
+                    setMachineActionDropdownOpen(false);
+                  }}
+                >
+                  Rebuild
+                  <RefreshCcw className="h-4 w-4" />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="flex items-center justify-between text-red-500 focus:text-red-500"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setDeleteModalOpen(true);
+                    setMachineActionDropdownOpen(false);
+                  }}
+                >
+                  Delete
+                  <Trash2 className="h-4 w-4" />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
-
-      <div
-        className={`z-[2] grid w-full transition-all duration-300 ${
-          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
-        <div
-          className={cn(
-            "overflow-hidden transition-opacity delay-150 duration-200",
-            isExpanded ? "opacity-100" : "opacity-0",
-          )}
-        >
-          {isExpanded && (
-            <>
-              {/* details */}
-              <div className="space-y-3 py-3">
-                <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
-                  <div className="space-y-2">
-                    <div className="mb-2 flex flex-row items-center gap-2">
-                      <Zap
-                        className={`h-4 w-4 ${
-                          hasActiveEvents
-                            ? "text-yellow-500"
-                            : "text-muted-foreground"
-                        }`}
-                      />
-                      <span
-                        className={`text-xs ${
-                          hasActiveEvents
-                            ? "font-medium text-yellow-500"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        Last active: {getLastActiveText(events)}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col justify-center">
-                        <h3 className="font-medium text-xs">Machine ID</h3>
-                        <span className="block w-full truncate font-mono text-2xs text-muted-foreground">
-                          {machine.id}
-                        </span>
-                      </div>
-                      <div className="flex flex-col justify-center">
-                        <h3 className="font-medium text-xs">Status</h3>
-                        <MachineStatus machine={machine} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-medium text-xs">Specifications</h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-row items-center gap-2 text-xs">
-                          <HardDrive className="h-4 w-4" />
-                          {machine.gpu}
-                        </div>
-                        <div className="flex flex-row items-center gap-2 text-xs">
-                          <MemoryStick className="h-4 w-4" />
-                          {machine.gpu ? CPU_MEMORY_MAP[machine.gpu] : ""}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-medium text-xs">Custom Nodes</h3>
-                      <CustomNodeList machine={machine} />
-                    </div>
-
-                    <div>
-                      <h3 className="font-medium text-xs">Workflows</h3>
-                      <MachineListItemWorkflows machine={machine} />
-                    </div>
-
-                    <div>
-                      <h3 className="font-medium text-xs">Deployments</h3>
-                      <MachineListItemDeployments machine={machine} />
-                    </div>
-
-                    {isDeprecated && (
-                      <div>
-                        <Alert
-                          variant="warning"
-                          className="mt-2 max-w-[500px] rounded-sm px-3 py-2"
-                        >
-                          <div className="flex flex-row items-center gap-2">
-                            <div className="flex items-center justify-center">
-                              <AlertCircleIcon className="h-3 w-3" />
-                            </div>
-                            <AlertTitle className="mb-0 text-xs">
-                              Deprecated Machine
-                            </AlertTitle>
-                          </div>
-                          <AlertDescription className="ml-5 text-2xs">
-                            This machine is running an{" "}
-                            <span className="font-semibold">
-                              outdated version
-                            </span>{" "}
-                            and{" "}
-                            <span className="font-semibold">
-                              no longer supported
-                            </span>
-                            .
-                            <br /> Please upgrade to the latest version to
-                            ensure compatibility and access new features.
-                          </AlertDescription>
-                        </Alert>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <MachineListItemEvents
-                      isExpanded={true}
-                      events={{ data: events, isLoading }}
-                      machine={machine}
-                    />
-                  </div>
-                </div>
-              </div>
-              {/* footer */}
-              <div className="flex flex-row items-center justify-between">
-                <div className="flex flex-col items-start gap-2 lg:flex-row lg:items-center">
-                  {machine.machine_version && (
-                    <Badge
-                      variant={"outline"}
-                      className="!text-[11px] !font-semibold !font-mono"
-                    >
-                      v{machine.machine_version}
-                    </Badge>
-                  )}
-                  {machine.type && (
-                    <Badge
-                      variant={"outline"}
-                      className="!text-2xs !font-semibold"
-                    >
-                      {machine.type}
-                    </Badge>
-                  )}
-                  <span className="text-muted-foreground text-xs">
-                    {getRelativeTime(machine.updated_at)}
-                  </span>
-                </div>
-
-                {machineActionItemList}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
       {children}
     </div>
   );
 
-  return content;
+  return (
+    <>
+      {content}
+      <DeleteMachineDialog
+        machine={machine}
+        refetch={refetchQuery}
+        planRefetch={refetchPlan}
+        dialogOpen={deleteModalOpen}
+        setDialogOpen={setDeleteModalOpen}
+      />
+      <RebuildMachineDialog
+        machine={machine}
+        refetch={refetchQuery}
+        dialogOpen={rebuildModalOpen}
+        setDialogOpen={setRebuildModalOpen}
+      />
+    </>
+  );
 }
 
 function MigrateOldMachineDialog({ machine }: { machine: any }) {
@@ -729,128 +655,5 @@ export function MachineListItemEvents({
         </span>
       )}
     </div>
-  );
-}
-
-function MachineListItemWorkflows({ machine }: { machine: any }) {
-  const { data: workflows, isLoading: isWorkflowsLoading } = useQuery({
-    queryKey: ["workflows", "all"],
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 5,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-  });
-
-  return (
-    <>
-      {isWorkflowsLoading ? (
-        <div className="flex items-center text-muted-foreground text-xs">
-          <Skeleton className="h-4 w-20" />
-        </div>
-      ) : (
-        <div className="flex flex-row flex-wrap gap-2">
-          {(
-            workflows as Array<{
-              id: string;
-              selected_machine_id: string;
-              name: string;
-            }>
-          )
-            ?.filter((w) => w.selected_machine_id === machine.id)
-            .map((workflow) => (
-              <Link
-                key={workflow.id}
-                to="/workflows/$workflowId/$view"
-                params={{
-                  workflowId: workflow.id,
-                  view: "workspace",
-                }}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-fit items-center gap-2 rounded-sm bg-gray-50 px-2 py-0.5 text-2xs"
-              >
-                <span className="truncate">{workflow.name}</span>
-                <ExternalLink className="h-3 w-3" />
-              </Link>
-            ))}
-        </div>
-      )}
-    </>
-  );
-}
-
-function MachineListItemDeployments({
-  machine,
-  isExpanded = true,
-}: {
-  machine: any;
-  isExpanded?: boolean;
-}) {
-  const { data: deployments, isLoading: isDeploymentsLoading } = useQuery({
-    queryKey: ["deployments"],
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 5,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-  });
-
-  return (
-    <>
-      {isDeploymentsLoading ? (
-        isExpanded ? (
-          <div className="flex items-center text-muted-foreground text-xs">
-            <Skeleton className="h-4 w-20" />
-          </div>
-        ) : (
-          <></>
-        )
-      ) : (
-        <div className="flex flex-row flex-wrap gap-2">
-          {(
-            deployments as Array<{
-              id: string;
-              machine_id: string;
-              workflow_id: string;
-              environment: string;
-              workflow: {
-                name: string;
-              };
-            }>
-          )
-            ?.filter((d) => d.machine_id === machine.id)
-            .slice(0, isExpanded ? undefined : 1)
-            .map((deployment) => (
-              <div
-                key={deployment.id}
-                className="flex w-fit items-center justify-between gap-2 rounded-sm bg-gray-50 px-2 py-0.5 text-2xs"
-              >
-                <Link
-                  to="/workflows/$workflowId/$view"
-                  params={{
-                    workflowId: deployment.workflow_id,
-                    view: "deployment",
-                  }}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
-                >
-                  <span className="truncate">{deployment.workflow.name}</span>
-                  <Badge
-                    variant={
-                      deployment.environment === "production"
-                        ? "blue"
-                        : "yellow"
-                    }
-                    className="!text-[10px] !leading-tight"
-                  >
-                    {deployment.environment}
-                  </Badge>
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
-            ))}
-        </div>
-      )}
-    </>
   );
 }
