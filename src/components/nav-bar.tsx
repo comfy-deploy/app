@@ -23,6 +23,7 @@ import {
   Folder,
   KeyRound,
   LineChart,
+  Loader2,
   type LucideIcon,
   MenuIcon,
   Monitor,
@@ -225,16 +226,23 @@ export function NavBar() {
             className="flex items-center gap-2 text-gray-600 text-sm hover:text-gray-900"
           >
             {(() => {
-              const { data: planStatus } = useCurrentPlanWithStatus();
+              const { data: planStatus, isLoading } =
+                useCurrentPlanWithStatus();
               const currentPlan = planStatus?.plans?.plans?.[0];
+
+              if (isLoading) {
+                return (
+                  <Badge variant="secondary" className="rounded-sm">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </Badge>
+                );
+              }
 
               if (!currentPlan) {
                 return (
-                  <>
-                    <Badge variant="cyan" className="rounded-sm">
-                      Free
-                    </Badge>
-                  </>
+                  <Badge variant="cyan" className="rounded-sm">
+                    Free
+                  </Badge>
                 );
               }
 
@@ -245,11 +253,9 @@ export function NavBar() {
                 planDisplayName.slice(1);
 
               return (
-                <>
-                  <Badge variant="blue" className="rounded-sm">
-                    {capitalizedPlan}
-                  </Badge>
-                </>
+                <Badge variant="blue" className="rounded-sm">
+                  {capitalizedPlan}
+                </Badge>
               );
             })()}
           </Link>
