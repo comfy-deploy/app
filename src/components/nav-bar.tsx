@@ -11,12 +11,7 @@ import {
 import { queryClient } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 import { OrganizationSwitcher, useAuth, useClerk } from "@clerk/clerk-react";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-  useRouter,
-} from "@tanstack/react-router";
+import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import { delay, motion } from "framer-motion";
 import {
   ArrowLeftIcon,
@@ -50,6 +45,8 @@ import {
 } from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 import { useSidebar } from "./ui/sidebar";
+import { useCurrentPlanWithStatus } from "@/hooks/use-current-plan";
+import { Link } from "@tanstack/react-router";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
@@ -219,10 +216,43 @@ export function NavBar() {
           "absolute top-0 left-2 z-50 mx-auto my-2 hidden h-[40px] w-fit rounded-lg border border-gray-200 bg-white lg:block",
         )}
       >
-        <div className="flex h-full w-full items-center gap-1">
+        <div className="flex h-full w-full items-center gap-1 pr-2">
           <UserMenu />
           /
           <OrganizationSwitcher />
+          <Link
+            to="/pricing"
+            className="flex items-center gap-2 text-gray-600 text-sm hover:text-gray-900"
+          >
+            {(() => {
+              const { data: planStatus } = useCurrentPlanWithStatus();
+              const currentPlan = planStatus?.plans?.plans?.[0];
+
+              if (!currentPlan) {
+                return (
+                  <>
+                    <Badge variant="cyan" className="rounded-sm">
+                      Free
+                    </Badge>
+                  </>
+                );
+              }
+
+              // Convert plan ID to display name
+              const planDisplayName = currentPlan.split("_")[0];
+              const capitalizedPlan =
+                planDisplayName.charAt(0).toUpperCase() +
+                planDisplayName.slice(1);
+
+              return (
+                <>
+                  <Badge variant="blue" className="rounded-sm">
+                    {capitalizedPlan}
+                  </Badge>
+                </>
+              );
+            })()}
+          </Link>
         </div>
       </div>
 
