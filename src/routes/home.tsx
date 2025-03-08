@@ -254,9 +254,37 @@ function SessionsList() {
                 {getRelativeTime(session.start_time)}
               </div>
               {!session.start_time ? (
-                <span className="flex items-center gap-2 text-muted-foreground text-sm mr-2">
-                  Queuing <LoadingIcon className="h-4 w-4" />
-                </span>
+                <>
+                  {new Date().getTime() -
+                    new Date(session.created_at).getTime() >
+                  15 * 60 * 1000 ? (
+                    <>
+                      <span className="flex items-center gap-2 mr-2 text-muted-foreground text-sm">
+                        Queuing for too long <LoadingIcon className="h-4 w-4" />
+                      </span>
+                      <Button
+                        variant="ghost"
+                        iconPlacement="right"
+                        size="icon"
+                        className="text-red-500"
+                        Icon={Trash}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          e.nativeEvent.preventDefault();
+                          await deleteSession.mutateAsync({
+                            sessionId: session.session_id,
+                            waitForShutdown: true,
+                          });
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <span className="flex items-center gap-2 mr-2 text-muted-foreground text-sm">
+                      Queuing <LoadingIcon className="h-4 w-4" />
+                    </span>
+                  )}
+                </>
               ) : (
                 <Button
                   variant="ghost"
@@ -270,7 +298,7 @@ function SessionsList() {
                     e.nativeEvent.preventDefault();
                     await deleteSession.mutateAsync({
                       sessionId: session.session_id,
-                      wait_for_shutdown: true,
+                      waitForShutdown: true,
                     });
                   }}
                 >
