@@ -389,7 +389,7 @@ function organizeFilesByCategory(
         if (folders.includes(folderPath)) {
           const existingPaths = categoryMap.get(category) || [];
           existingPaths.push({
-            name: filePath,
+            name: filePath.split("/").slice(1).join("/"), // Remove the top-level directory
             volumeType: isPrivate ? "private" : "public",
           });
           categoryMap.set(category, existingPaths);
@@ -814,19 +814,6 @@ export function ModelSelectComboBox({
   }, [numInputs]);
 
   // Function to get display name (remove only the first level of the path)
-  const getDisplayName = (path: string) => {
-    if (!path) return "";
-
-    // Split the path by '/'
-    const parts = path.split("/");
-
-    // If there's only one part or no parts, return the original path
-    if (parts.length <= 1) return path;
-
-    // Remove the first part (category) and join the rest
-    return parts.slice(1).join("/");
-  };
-
   const renderComboBox = (index: number) => {
     const currentValue = selectedNode.widgets_values[index] || "";
     const isValid = categoryFiles?.filePaths.some(
@@ -857,9 +844,7 @@ export function ModelSelectComboBox({
               )}
             >
               <span className="truncate">
-                {currentValue
-                  ? getDisplayName(currentValue)
-                  : "Select model..."}
+                {currentValue ? currentValue : "Select model..."}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -912,7 +897,7 @@ export function ModelSelectComboBox({
                               : "opacity-0",
                           )}
                         />
-                        <span>{getDisplayName(file.name)}</span>
+                        <span>{file.name}</span>
                       </div>
                     </CommandItem>
                   ))}
@@ -928,7 +913,7 @@ export function ModelSelectComboBox({
   // If no category files are available, show a message
   if (!categoryFiles || categoryFiles.filePaths.length === 0) {
     return (
-      <div className="text-sm text-muted-foreground">
+      <div className="text-muted-foreground text-sm">
         No models available for this node type.
       </div>
     );
