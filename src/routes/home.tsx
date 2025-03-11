@@ -410,15 +410,22 @@ function SessionsList() {
               ) : null}
             </div>
 
-            <div className="flex flex-row items-center gap-2">
-              {/* <Button
+            <div className="flex flex-row items-center">
+              <Button
                 variant="ghost"
                 className="rounded-[9px]"
-                onClick={() => setShowSettings(!showSettings)}
+                onClick={() => {
+                  router.navigate({
+                    to: "/workflows",
+                    search: {
+                      view: "import",
+                    },
+                  });
+                }}
               >
-                Custom
-                <Settings className="ml-2 h-3 w-3" />
-              </Button> */}
+                Create Workflow
+                <Plus className="ml-2 h-3 w-3" />
+              </Button>
               <Button
                 variant="shine"
                 className="rounded-[9px]"
