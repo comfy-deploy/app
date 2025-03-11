@@ -853,13 +853,32 @@ function RequestPage({
                 setRunId(null);
               }
 
-              setSessionCreation({
-                isOpen: true,
-                version: item.version,
-                machineId: item.machine_id,
-                machineVersionId: item.machine_version_id,
-                modalImageId: item.modal_image_id,
-              });
+              if (isFluidVersion) {
+                // setSessionCreation((prev) => ({
+                //   ...prev,
+                //   isOpen: true,
+                //   version: latestVersion?.version || null,
+                //   machineId: latestVersion?.machine_id,
+                //   machineVersionId: latestVersion?.machine_version_id,
+                //   modalImageId: latestVersion?.modal_image_id,
+                // }));
+                setSessionCreation({
+                  isOpen: true,
+                  version: item.version,
+                  machineId: item.machine_id,
+                  machineVersionId: item.machine_version_id,
+                  modalImageId: item.modal_image_id,
+                });
+              } else {
+                setSessionCreation((prev) => ({
+                  ...prev,
+                  isOpen: true,
+                  version: item.version,
+                  machineId: currentWorkflow?.selected_machine_id,
+                  machineVersionId: null,
+                  modalImageId: null,
+                }));
+              }
             };
 
             return (
