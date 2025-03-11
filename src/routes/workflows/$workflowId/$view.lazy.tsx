@@ -66,7 +66,7 @@ import {
 } from "@/components/workspace/SessionCreationDialog";
 import { WorkspaceStatusBar } from "@/components/workspace/WorkspaceStatusBar";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
-import { useMachine } from "@/hooks/use-machine";
+import { useMachine, useMachineVersion } from "@/hooks/use-machine";
 import { useSessionAPI } from "@/hooks/use-session-api";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
@@ -467,6 +467,21 @@ function RequestPage({
     machineVersionId: null,
     modalImageId: null,
   });
+
+  useEffect(() => {
+    console.log(
+      "currentWorkflow.selected_machine_id",
+      currentWorkflow?.selected_machine_id,
+    );
+
+    if (currentWorkflow?.selected_machine_id) {
+      setSessionCreation((prev) => ({
+        ...prev,
+        machineId: currentWorkflow.selected_machine_id,
+      }));
+    }
+  }, [currentWorkflow?.selected_machine_id]);
+
   const router = useRouter();
 
   const { isSignedIn } = useAuth();
@@ -484,7 +499,23 @@ function RequestPage({
 
   const latestVersion = versions && versions.length > 0 ? versions?.[0] : null;
 
-  const { listSession } = useSessionAPI(latestVersion?.machine_id);
+  let selectedMachineId = currentWorkflow?.selected_machine_id;
+
+  const { data: latestVersionMachineVersion } = useMachineVersion(
+    latestVersion?.machine_id || "",
+    latestVersion?.machine_version_id || "",
+  );
+
+  // console.log("latestVersionData", latestVersionData);
+
+  const isFluidVersion = !!latestVersionMachineVersion?.modal_image_id;
+
+  // This will be fluid machine
+  if (latestVersionMachineVersion?.modal_image_id) {
+    selectedMachineId = latestVersion?.machine_id;
+  }
+
+  const { listSession } = useSessionAPI(selectedMachineId);
   const { data: sessions } = listSession;
 
   const [isHovering, setIsHovering] = useState(false);
@@ -574,10 +605,7 @@ function RequestPage({
               workflowId={workflowId}
               workflowVersionId={deploymentConfirmation.workflowVersionId}
               environment={deploymentConfirmation.environment}
-              machineId={
-                deploymentConfirmation.machineId ||
-                currentWorkflow?.selected_machine_id
-              }
+              machineId={deploymentConfirmation.machineId || selectedMachineId}
               machineVersionId={
                 deploymentConfirmation.machineVersionId ?? undefined
               }
@@ -612,10 +640,7 @@ function RequestPage({
               <SessionCreationDialog
                 workflowId={workflowId}
                 version={sessionCreation.version}
-                machineId={
-                  sessionCreation.machineId ||
-                  currentWorkflow?.selected_machine_id
-                }
+                machineId={sessionCreation.machineId}
                 modalImageId={sessionCreation.modalImageId ?? undefined}
                 machineVersionId={sessionCreation.machineVersionId ?? undefined}
                 onClose={() =>
@@ -718,9 +743,9 @@ function RequestPage({
               </div>
 
               <div className="flex flex-row items-center gap-4">
-                {latestVersion?.machine_id && (
+                {selectedMachineId && (
                   <div className="flex items-center gap-2">
-                    <SessionCount machineId={latestVersion.machine_id} />
+                    <SessionCount machineId={selectedMachineId} />
                   </div>
                 )}
                 <Button
@@ -744,17 +769,25 @@ function RequestPage({
                       setRunId(null);
                     }
 
-                    setSessionCreation((prev) => ({
-                      ...prev,
-                      isOpen: true,
-                      version: latestVersion?.version || null,
-                      machineId:
-                        latestVersion?.machine_id ||
-                        currentWorkflow?.selected_machine_id,
-                      machineVersionId:
-                        latestVersion?.machine_version_id || null,
-                      modalImageId: latestVersion?.modal_image_id || null,
-                    }));
+                    if (isFluidVersion) {
+                      setSessionCreation((prev) => ({
+                        ...prev,
+                        isOpen: true,
+                        version: latestVersion?.version || null,
+                        machineId: latestVersion?.machine_id,
+                        machineVersionId: latestVersion?.machine_version_id,
+                        modalImageId: latestVersion?.modal_image_id,
+                      }));
+                    } else {
+                      setSessionCreation((prev) => ({
+                        ...prev,
+                        isOpen: true,
+                        version: latestVersion?.version || null,
+                        machineId: currentWorkflow?.selected_machine_id,
+                        machineVersionId: null,
+                        modalImageId: null,
+                      }));
+                    }
                   }}
                 >
                   Edit
@@ -767,7 +800,7 @@ function RequestPage({
               </div>
             </div>
 
-            {latestVersion?.machine_id && sessions && sessions?.length > 0 && (
+            {selectedMachineId && sessions && sessions?.length > 0 && (
               <motion.div
                 className="mt-2 overflow-hidden"
                 initial={{ height: 0, opacity: 0 }}
@@ -778,7 +811,7 @@ function RequestPage({
                 transition={{ duration: 0.2, ease: "easeInOut" }}
               >
                 <div className="rounded-t-lg border border-gray-200 bg-zinc-100 p-1 shadow-inner">
-                  <MachineSessionsList machineId={latestVersion?.machine_id} />
+                  <MachineSessionsList machineId={selectedMachineId} />
                 </div>
               </motion.div>
             )}

@@ -1441,6 +1441,7 @@ export function DeploymentDrawer() {
   const { selectedDeployment, setSelectedDeployment } =
     useSelectedDeploymentStore();
   const { data: deployment, isLoading } = useQuery<any>({
+    enabled: !!selectedDeployment,
     queryKey: ["deployment", selectedDeployment],
   });
 

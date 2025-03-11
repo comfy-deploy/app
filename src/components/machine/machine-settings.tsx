@@ -422,6 +422,7 @@ function ServerlessSettings({
                 <GPUSelectBox
                   value={form.watch("gpu")}
                   onChange={(value) => form.setValue("gpu", value)}
+                  disabled={false}
                 />
               </div>
             </div>
@@ -922,14 +923,15 @@ export function GPUSelectBox({
   value,
   onChange,
   className,
+  disabled,
 }: {
   value?: (typeof machineGPUOptions)[number];
   onChange: (value: (typeof machineGPUOptions)[number]) => void;
   className?: string;
+  disabled?: boolean;
 }) {
   const { gpuConfig } = useGPUConfig();
   const sub = useCurrentPlan() as SubscriptionPlan;
-  // console.log(sub);
   const isBusiness = sub?.plans?.plans?.some(
     (plan) =>
       plan.includes("business") ||
@@ -939,7 +941,7 @@ export function GPUSelectBox({
 
   return (
     <div className={cn("", className)}>
-      <Select value={value} onValueChange={onChange}>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select GPU">
             {value && (
