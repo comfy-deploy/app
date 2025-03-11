@@ -106,13 +106,10 @@ export default function Workspace({
   machine_version_id?: string;
   gpu?: string;
 }) {
-  const { workflowId, workflowLink, version } = useSearch({
+  const { workflowId, workflowLink, version, isFirstTime } = useSearch({
     from: "/sessions/$sessionId/",
   });
-  const [isFirstTime, setIsFirstTime] = useQueryState(
-    "isFirstTime",
-    parseAsBoolean,
-  );
+  const [_, setIsFirstTime] = useQueryState("isFirstTime", parseAsBoolean);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const { workflow } = useCurrentWorkflow(workflowId ?? null);
@@ -187,10 +184,6 @@ export default function Workspace({
     setHasChanged(isDraftDifferent);
     // return isDraftDifferent;
   }, [selectedVersion?.version, currentWorkflow]);
-
-  // useEffect(() => {
-
-  // }, [isDraftDifferent]);
 
   const endpoint = _endpoint;
 
