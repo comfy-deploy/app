@@ -79,6 +79,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useCachedQuery } from "@/lib/use-cached-query";
 
 export function MachineSettingsWrapper({
   machine,
@@ -679,9 +680,10 @@ export function ComfyUIVersionSelectBox({
   className?: string;
   isAnnoymous?: boolean;
 }) {
-  const { data: versions, isLoading } = useQuery({
+  const { data: versions, isLoading } = useCachedQuery({
     queryKey: ["comfyui-versions"],
     enabled: !isAnnoymous,
+    cacheTime: 1000 * 60 * 30,
   });
 
   const [customValue, setCustomValue] = useState(value || "");

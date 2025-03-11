@@ -1,8 +1,5 @@
-"use client";
-
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -12,17 +9,17 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api } from "@/lib/api";
 import { getDuration } from "@/lib/get-relative-time";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { LoadingIcon } from "../loading-icon";
+import { useCachedQuery } from "@/lib/use-cached-query";
 
 export function useGPUPricing() {
-  const a = useQuery<any>({
+  return useCachedQuery({
     queryKey: ["platform", "gpu-pricing"],
+    enabled: true,
+    cacheTime: 1000 * 60 * 30,
   });
-  return a;
 }
 
 export function GPUPriceSimulator() {
