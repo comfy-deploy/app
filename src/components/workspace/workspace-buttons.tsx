@@ -72,8 +72,6 @@ export function RightMenuButtons({ endpoint }: WorkspaceButtonProps) {
 
   const { data: machine } = useMachine(session?.machine_id);
 
-  const router = useRouter();
-
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
   const data = useMemo(() => {
     return {
@@ -211,44 +209,6 @@ export function CreateWorkspaceDialog({
             </div>
           </div>
         )}
-
-        {/* {machine && (
-          <div className="flex flex-col gap-2">
-            <Link
-              target="_blank"
-              to="/machines/$machineId"
-              className="flex items-center gap-2 hover:underline"
-              params={{ machineId: machine.id }}
-            >
-              {machine.name}
-              <ExternalLink className="w-4 h-4" />
-            </Link>
-            {versions?.map((version) => (
-              <MachineVersionListItem
-                key={version.id}
-                machineVersion={version}
-                machine={machine}
-                target={"_blank"}
-              />
-            ))}
-            <div className="flex justify-end">
-              <Button
-                onClick={async () => {
-                  await callServerPromise(
-                    api({
-                      url: `session/${match?.params.sessionId}/snapshot`,
-                      init: {
-                        method: "POST",
-                      },
-                    }),
-                  );
-                }}
-              >
-                Create new Snapshot
-              </Button>
-            </div>
-          </div>
-        )} */}
       </DialogContent>
     </Dialog>
   );
@@ -259,6 +219,17 @@ export function LeftMenuButtons({ endpoint }: WorkspaceButtonProps) {
   const { workflowId } = useSearch({
     from: "/sessions/$sessionId/",
   });
+  const match = useMatch({
+    from: "/sessions/$sessionId/",
+    shouldThrow: false,
+  });
+
+  const { data: session } = useQuery<any>({
+    queryKey: ["session", match?.params.sessionId],
+    enabled: !!match?.params.sessionId,
+  });
+
+  const { data: machine } = useMachine(session?.machine_id);
 
   const data = useMemo(() => {
     console.log("=====", " re calculating left menu buttons");
@@ -289,7 +260,7 @@ export function LeftMenuButtons({ endpoint }: WorkspaceButtonProps) {
       buttonIdPrefix: "cd-button-left-",
       containerStyle: { order: "-1" },
     };
-  }, [workflowId]);
+  }, [workflowId, machine?.id]);
 
   useWorkspaceButtons(data, endpoint);
 
