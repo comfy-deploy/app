@@ -70,6 +70,16 @@ import {
   DrawerTrigger,
 } from "../ui/drawer";
 import { useCurrentPlan } from "@/hooks/use-current-plan";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { Label } from "../ui/label";
 
 export type DefaultCustomNodeData = {
   title: string;
@@ -270,6 +280,10 @@ function SearchNodeList({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [parentRef, setParentRef] = useState<HTMLDivElement | null>(null);
+  const [customGitUrl, setCustomGitUrl] = useState("");
+  const [customGitUrlDialogOpen, setCustomGitUrlDialogOpen] = useState(false);
+  const plan = useCurrentPlan();
+  console.log("🚀 ~ plan:", plan);
 
   const handleAddNode = async (node: DefaultCustomNodeData) => {
     const nodeRefLower = node.reference.toLowerCase();
@@ -368,25 +382,104 @@ function SearchNodeList({
 
   return (
     <div className="flex w-full flex-col gap-4 rounded-sm border border-gray-200 bg-white px-4 pb-4 shadow-sm">
-      <div className="mt-1 flex flex-row items-center border-gray-300 border-b px-2">
-        <Search size={18} className="text-gray-500" />
-        <div className="relative flex-1">
-          <Input
-            placeholder="Search by author, title, or GitHub url..."
-            value={searchTerm}
-            className="border-none focus-visible:outline-none focus-visible:ring-0"
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={() => setSearchTerm("")}
-              className="-translate-y-1/2 absolute top-1/2 right-2 text-gray-500 hover:text-gray-700"
-            >
-              <X size={16} />
-            </button>
-          )}
+      <div className="flex flex-row items-center gap-2">
+        <div className="mt-1 flex w-full flex-row items-center border-gray-300 border-b px-2">
+          <Search size={18} className="text-gray-500" />
+          <div className="relative flex-1">
+            <Input
+              placeholder="Search by author, title, or GitHub url..."
+              value={searchTerm}
+              className="border-none pr-8 focus-visible:outline-none focus-visible:ring-0"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="-translate-y-1/2 absolute top-1/2 right-1 text-gray-500 hover:text-gray-700"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
         </div>
+        <Dialog
+          open={customGitUrlDialogOpen}
+          onOpenChange={setCustomGitUrlDialogOpen}
+        >
+          <DialogTrigger asChild>
+            {plan && plan?.plans?.plans.length !== 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-1"
+                type="button"
+              >
+                Git Url <Plus className="ml-1 h-3 w-3" />
+              </Button>
+            )}
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Import via Git Url</DialogTitle>
+              <DialogDescription>
+                Enter the Git Url of the custom node you want to import.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Git Url
+                </Label>
+                <Input
+                  id="name"
+                  placeholder="https://github.com/Bennykok/comfyui-deploy"
+                  className="col-span-3"
+                  value={customGitUrl}
+                  onChange={(e) => setCustomGitUrl(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                disabled={!customGitUrl || customGitUrl.trim() === ""}
+                onClick={async () => {
+                  // Extract repository name and owner from the Git URL
+                  let repo = "";
+                  let owner = "";
+                  try {
+                    const url = new URL(customGitUrl);
+                    if (url.hostname === "github.com") {
+                      const pathParts = url.pathname.split("/").filter(Boolean);
+                      if (pathParts.length >= 2) {
+                        owner = pathParts[0];
+                        repo = pathParts[1];
+                      }
+                    }
+                  } catch (error) {
+                    toast.error("Invalid Git URL");
+                    return;
+                  }
+
+                  await handleAddNode({
+                    title: repo,
+                    author: owner,
+                    reference: customGitUrl,
+                    files: [customGitUrl],
+                    pip: [],
+                    install_type: "git-clone",
+                    description: "",
+                  });
+
+                  setCustomGitUrlDialogOpen(false);
+                }}
+              >
+                Import
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       {isLoading ? (
         <div className="flex max-h-[400px] flex-col gap-1 overflow-y-auto">
@@ -662,7 +755,7 @@ function SelectedNodeList({
         <h2 className="font-medium text-md">
           Selected Nodes ({validation.docker_command_steps.steps.length})
         </h2>
-        {sub?.plans?.plans && (
+        {sub && sub?.plans?.plans.length !== 0 && (
           <div className="flex flex-col items-end gap-2 md:flex-row">
             {!scriptMode && (
               <Button
