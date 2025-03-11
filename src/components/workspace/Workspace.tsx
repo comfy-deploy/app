@@ -106,13 +106,10 @@ export default function Workspace({
   machine_version_id?: string;
   gpu?: string;
 }) {
-  const { workflowId, workflowLink, version } = useSearch({
+  const { workflowId, workflowLink, version, isFirstTime } = useSearch({
     from: "/sessions/$sessionId/",
   });
-  const [isFirstTime, setIsFirstTime] = useQueryState(
-    "isFirstTime",
-    parseAsBoolean,
-  );
+  const [_, setIsFirstTime] = useQueryState("isFirstTime", parseAsBoolean);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const { workflow } = useCurrentWorkflow(workflowId ?? null);
@@ -187,10 +184,6 @@ export default function Workspace({
     setHasChanged(isDraftDifferent);
     // return isDraftDifferent;
   }, [selectedVersion?.version, currentWorkflow]);
-
-  // useEffect(() => {
-
-  // }, [isDraftDifferent]);
 
   const endpoint = _endpoint;
 
@@ -288,19 +281,6 @@ export default function Workspace({
         setIsImportDialogOpen(true);
       }
       return;
-    }
-
-    if (!workflowId && !workflowLink) {
-      console.log("no workflow, setting empty");
-      setComfyUIWorkflow({
-        nodes: [],
-      });
-    } else if (workflowId && !isLoadingVersion && versionData?.workflow) {
-      console.log("using workflowId", versionData.workflow);
-      setComfyUIWorkflow(versionData.workflow);
-    } else if (workflowLink && !isLoadingWorkflowLink && workflowLinkJson) {
-      console.log("using workflowLink", workflowLinkJson);
-      setComfyUIWorkflow(workflowLinkJson);
     }
   }, [
     workflowId,
@@ -532,11 +512,7 @@ export default function Workspace({
         machine_version_id={machine_version_id}
       />
 
-      <Dialog
-        open={isImportDialogOpen}
-        onOpenChange={setIsImportDialogOpen}
-        modal={false}
-      >
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -545,6 +521,8 @@ export default function Workspace({
             </DialogTitle>
             <DialogDescription>
               You're about to import a workflow into your workspace.
+              <br />
+              Note: Please wait for the ComfyUI ready before importing.
             </DialogDescription>
           </DialogHeader>
 
@@ -574,9 +552,11 @@ export default function Workspace({
                 <div className="flex items-center gap-2">
                   <Workflow className="h-4 w-4 flex-shrink-0" />
                   <span className="font-medium text-sm">{workflow?.name}</span>
-                  <Badge variant="secondary" className="ml-1">
-                    v{version}
-                  </Badge>
+                  {version && (
+                    <Badge variant="secondary" className="ml-1">
+                      v{version}
+                    </Badge>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -586,22 +566,21 @@ export default function Workspace({
             <Button
               onClick={() => {
                 setIsImportDialogOpen(false);
-                if (workflowId && !isLoadingVersion && versionData?.workflow) {
+                if (workflowId) {
                   console.log("using workflowId", versionData.workflow);
                   setComfyUIWorkflow(versionData.workflow);
-                } else if (
-                  workflowLink &&
-                  !isLoadingWorkflowLink &&
-                  workflowLinkJson
-                ) {
+                } else if (workflowLink) {
                   console.log("using workflowLink", workflowLinkJson);
                   setComfyUIWorkflow(workflowLinkJson);
                 }
               }}
+              disabled={isLoadingVersion || isLoadingWorkflowLink}
               className="gap-1"
             >
               <Download className="h-4 w-4" />
-              Import Workflow
+              {isLoadingVersion || isLoadingWorkflowLink
+                ? "Importing..."
+                : "Load into Workspace"}
             </Button>
           </DialogFooter>
         </DialogContent>

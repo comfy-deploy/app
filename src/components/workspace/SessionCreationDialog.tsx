@@ -32,7 +32,7 @@ import {
   useMachineVersion,
 } from "@/hooks/use-machine";
 import { useSessionAPI } from "@/hooks/use-session-api";
-import { useRouter } from "@tanstack/react-router";
+import { useParams, useRouter } from "@tanstack/react-router";
 import {
   Droplets,
   Loader2,
@@ -42,10 +42,11 @@ import {
   ArrowRightToLine,
   RotateCw,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
+import { api } from "@/lib/api";
 
 interface SessionCreationDialogProps {
   workflowId: string;
@@ -65,7 +66,7 @@ interface SessionCreationDialogProps {
 
 interface SessionForm {
   machineId: string;
-  gpu: string;
+  gpu: "A10G" | "CPU" | "T4" | "L4" | "L40S" | "A100" | "A100-80GB" | "H100";
   timeout: number;
 }
 
@@ -73,6 +74,7 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
   const { listSession, deleteSession } = useSessionAPI(machineId);
   const { data: sessions } = listSession;
   const router = useRouter();
+  const params = useParams({ from: "/workflows/$workflowId/$view" });
 
   if (!sessions || sessions.length === 0) {
     return (
@@ -89,6 +91,7 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
           key={session.session_id}
           className="group flex items-center justify-between rounded-lg border bg-background p-2 hover:bg-blue-50/50"
         >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
           <div
             className="flex flex-1 cursor-pointer items-center gap-2 pl-2"
             onClick={(e) => {
@@ -100,7 +103,10 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
                   sessionId: session.session_id,
                 },
                 search: {
-                  machineId: session.machine_id,
+                  ...(params.workflowId
+                    ? { workflowId: params.workflowId }
+                    : { machineId: session.machine_id }),
+                  isFirstTime: true,
                 },
               });
             }}
@@ -153,11 +159,11 @@ export function SessionCreationDialog({
   workflowId,
   version,
   machineId: defaultMachineId,
-  machineName,
-  machineGpu,
+  // machineName,
+  // machineGpu,
   machineVersionId: defaultMachineVersionId,
-  modalImageId,
-  machineVersions = [],
+  // modalImageId,
+  // machineVersions = [],
   onClose,
 }: SessionCreationDialogProps) {
   const router = useRouter();
@@ -167,14 +173,7 @@ export function SessionCreationDialog({
   const { data: machinesData } = useMachines(debouncedSearchValue);
   const machines = machinesData?.pages.flat() ?? [];
 
-  console.log("modalImageId", modalImageId);
-
-  const { data: machineVersionData } = useMachineVersion(
-    defaultMachineId || "",
-    defaultMachineVersionId || "",
-  );
-
-  const isFluidVersion = !!machineVersionData?.modal_image_id;
+  // console.log("modalImageId", modalImageId);
 
   const form = useForm<SessionForm>({
     defaultValues: {
@@ -184,6 +183,18 @@ export function SessionCreationDialog({
     },
   });
 
+  const selectedMachineId = form.watch("machineId");
+  // console.log("selectedMachineId", selectedMachineId);
+
+  const { data: selectedMachine } = useMachine(selectedMachineId);
+
+  const { data: machineVersionData } = useMachineVersion(
+    defaultMachineId || "",
+    defaultMachineVersionId || "",
+  );
+
+  const isFluidVersion = !!machineVersionData?.modal_image_id;
+
   const onSubmit = async (data: SessionForm) => {
     try {
       const response = await createDynamicSession.mutateAsync({
@@ -192,6 +203,24 @@ export function SessionCreationDialog({
         machine_id: data.machineId,
         machine_version_id: defaultMachineVersionId,
       });
+
+      // Update workflow's machine if not a fluid version and machine has changed
+      if (!isFluidVersion && data.machineId !== defaultMachineId) {
+        try {
+          await api({
+            url: `workflow/${workflowId}`,
+            init: {
+              method: "PATCH",
+              body: JSON.stringify({
+                selected_machine_id: data.machineId,
+              }),
+            },
+          });
+        } catch (error) {
+          console.error("Failed to update workflow machine:", error);
+          // Don't block session creation if this fails
+        }
+      }
 
       useLogStore.getState().clearLogs();
 
@@ -213,7 +242,20 @@ export function SessionCreationDialog({
     }
   };
 
-  const { data: selectedMachine } = useMachine(form.watch("machineId"));
+  // Update GPU when machine changes
+  useEffect(() => {
+    if (selectedMachine?.gpu) {
+      form.setValue("gpu", selectedMachine.gpu);
+    }
+  }, [selectedMachine, form]);
+
+  // useEffect(() => {
+  //   if (defaultMachineId) {
+  //     console.log("defaultMachineId", defaultMachineId);
+
+  //     form.setValue("machineId", defaultMachineId);
+  //   }
+  // }, [defaultMachineId, form]);
 
   return (
     <ScrollArea className="h-full px-1">
@@ -266,7 +308,16 @@ export function SessionCreationDialog({
                         />
                       </div>
                       <Select
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          console.log("value", value);
+                          field.onChange(value);
+                          const selectedMachine = machines.find(
+                            (m) => m.id === value,
+                          );
+                          if (selectedMachine?.gpu) {
+                            form.setValue("gpu", selectedMachine.gpu);
+                          }
+                        }}
                         value={field.value}
                       >
                         <FormControl>
@@ -306,6 +357,7 @@ export function SessionCreationDialog({
                           ))}
                         </SelectContent>
                       </Select>
+                      {/* <span>{field.value}</span> */}
                       {field.value && (
                         <MachineSessionsList machineId={field.value} />
                       )}
@@ -332,7 +384,7 @@ export function SessionCreationDialog({
                       className="w-full"
                       value={field.value}
                       onChange={field.onChange}
-                      disabled={isFluidVersion}
+                      // disabled={isFluidVersion}
                     />
                   </FormControl>
                   <FormDescription>

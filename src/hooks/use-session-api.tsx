@@ -68,6 +68,9 @@ export function useSessionAPI(machineId?: string | null) {
     }),
     listSession: useQuery<any[]>({
       queryKey: ["sessions"],
+      queryKeyHashFn: (queryKey) => {
+        return [...queryKey, machineId].join(",");
+      },
       refetchInterval: 2000,
       meta: {
         params: {

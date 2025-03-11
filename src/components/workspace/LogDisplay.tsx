@@ -288,7 +288,7 @@ export function LogDisplay(props: {
           ref={scrollAreaRef}
           className={
             props.newInterface
-              ? "relative h-[200px] bg-transparent p-4 font-mono text-gray-400 text-xs transition-all duration-300"
+              ? "group relative h-[200px] bg-transparent p-4 font-mono text-gray-400 text-xs transition-all duration-300 hover:h-[440px]"
               : "h-[440px] rounded-md bg-black p-4 font-mono text-gray-400 text-xs transition-all duration-300"
           }
         >
@@ -331,8 +331,8 @@ export function LogDisplay(props: {
           ) : (
             <p>No logs available.</p>
           )}
-          <div className="absolute top-0 right-0 left-0 h-28 bg-gradient-to-t from-transparent to-[#141414]" />
-          <div className="absolute right-0 bottom-0 left-0 h-28 bg-gradient-to-b from-transparent to-[#141414]" />
+          <div className="pointer-events-none absolute top-0 right-0 left-0 h-28 bg-gradient-to-t from-transparent to-[#141414] opacity-100 transition-opacity duration-300 group-hover:opacity-0" />
+          <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-28 bg-gradient-to-b from-transparent to-[#141414] opacity-100 transition-opacity duration-300 group-hover:opacity-0" />
         </ScrollArea>
       </AnimatePresence>
     </div>
