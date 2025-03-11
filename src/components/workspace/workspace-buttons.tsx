@@ -534,6 +534,7 @@ export function WorkflowButtons({
       },
       search: {
         workflowId: id,
+        isFirstTime: true,
       },
     });
     setIsWorkflowDialogOpen(false);
