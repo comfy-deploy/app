@@ -289,19 +289,6 @@ export default function Workspace({
       }
       return;
     }
-
-    if (!workflowId && !workflowLink) {
-      console.log("no workflow, setting empty");
-      setComfyUIWorkflow({
-        nodes: [],
-      });
-    } else if (workflowId && !isLoadingVersion && versionData?.workflow) {
-      console.log("using workflowId", versionData.workflow);
-      setComfyUIWorkflow(versionData.workflow);
-    } else if (workflowLink && !isLoadingWorkflowLink && workflowLinkJson) {
-      console.log("using workflowLink", workflowLinkJson);
-      setComfyUIWorkflow(workflowLinkJson);
-    }
   }, [
     workflowId,
     workflowLink,
@@ -532,11 +519,7 @@ export default function Workspace({
         machine_version_id={machine_version_id}
       />
 
-      <Dialog
-        open={isImportDialogOpen}
-        onOpenChange={setIsImportDialogOpen}
-        modal={false}
-      >
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -545,6 +528,8 @@ export default function Workspace({
             </DialogTitle>
             <DialogDescription>
               You're about to import a workflow into your workspace.
+              <br />
+              Note: Please wait for the ComfyUI ready before importing.
             </DialogDescription>
           </DialogHeader>
 
@@ -586,22 +571,21 @@ export default function Workspace({
             <Button
               onClick={() => {
                 setIsImportDialogOpen(false);
-                if (workflowId && !isLoadingVersion && versionData?.workflow) {
+                if (workflowId) {
                   console.log("using workflowId", versionData.workflow);
                   setComfyUIWorkflow(versionData.workflow);
-                } else if (
-                  workflowLink &&
-                  !isLoadingWorkflowLink &&
-                  workflowLinkJson
-                ) {
+                } else if (workflowLink) {
                   console.log("using workflowLink", workflowLinkJson);
                   setComfyUIWorkflow(workflowLinkJson);
                 }
               }}
+              disabled={isLoadingVersion || isLoadingWorkflowLink}
               className="gap-1"
             >
               <Download className="h-4 w-4" />
-              Import Workflow
+              {isLoadingVersion || isLoadingWorkflowLink
+                ? "Importing..."
+                : "Load into Workspace"}
             </Button>
           </DialogFooter>
         </DialogContent>

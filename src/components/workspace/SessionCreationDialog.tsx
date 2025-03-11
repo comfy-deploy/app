@@ -32,7 +32,7 @@ import {
   useMachineVersion,
 } from "@/hooks/use-machine";
 import { useSessionAPI } from "@/hooks/use-session-api";
-import { useRouter } from "@tanstack/react-router";
+import { useParams, useRouter } from "@tanstack/react-router";
 import {
   Droplets,
   Loader2,
@@ -73,6 +73,7 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
   const { listSession, deleteSession } = useSessionAPI(machineId);
   const { data: sessions } = listSession;
   const router = useRouter();
+  const params = useParams({ from: "/workflows/$workflowId/$view" });
 
   if (!sessions || sessions.length === 0) {
     return (
@@ -89,6 +90,7 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
           key={session.session_id}
           className="group flex items-center justify-between rounded-lg border bg-background p-2 hover:bg-blue-50/50"
         >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
           <div
             className="flex flex-1 cursor-pointer items-center gap-2 pl-2"
             onClick={(e) => {
@@ -100,7 +102,10 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
                   sessionId: session.session_id,
                 },
                 search: {
-                  machineId: session.machine_id,
+                  ...(params.workflowId
+                    ? { workflowId: params.workflowId }
+                    : { machineId: session.machine_id }),
+                  isFirstTime: true,
                 },
               });
             }}
