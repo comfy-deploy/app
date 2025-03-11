@@ -423,7 +423,7 @@ function SessionsList() {
                   });
                 }}
               >
-                Create Workflow
+                Import Workflow
                 <Plus className="ml-2 h-3 w-3" />
               </Button>
               <Button
