@@ -193,7 +193,7 @@ function FileURLRenderMulti({
   urls: {
     url: string;
     upload_duration?: number;
-    file_name?: string;
+    filename?: string;
     node_meta?: {
       node_class?: string;
       node_id?: string;
@@ -348,7 +348,7 @@ function FileURLRenderMulti({
                     e.stopPropagation();
                     await downloadImage({
                       url: urlImage.url,
-                      fileName: urlImage.file_name,
+                      fileName: urlImage.filename,
                     });
                   }}
                   variant="ghost"
@@ -417,7 +417,7 @@ function FileURLRenderMulti({
                     e.stopPropagation();
                     await downloadImage({
                       url: urlImage.url,
-                      fileName: urlImage.file_name,
+                      fileName: urlImage.filename,
                     });
                   }}
                   variant="ghost"
