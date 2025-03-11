@@ -23,6 +23,7 @@ import {
   CreditCard,
   Database,
   Folder,
+  GitBranch,
   KeyRound,
   LineChart,
   Loader2,
@@ -49,6 +50,7 @@ import {
 import { Separator } from "./ui/separator";
 import { useSidebar } from "./ui/sidebar";
 import { Skeleton } from "./ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 export function NavBar() {
   const { toggleSidebar } = useSidebar();
@@ -63,6 +65,18 @@ export function NavBar() {
 
   const { orgId } = useAuth();
   const isFirstRender = useRef(true);
+
+  // for local development only
+  const { data: currentGitBranch } = useQuery({
+    queryKey: ["currentGitBranch"],
+    queryFn: async () => {
+      const response = await fetch("/git-info.json");
+      const data = await response.json();
+      return data;
+    },
+    refetchInterval: 3000,
+    enabled: window.location.hostname === "localhost",
+  });
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -257,6 +271,19 @@ export function NavBar() {
             })()}
           </Link>
         </div>
+
+        {window.location.hostname === "localhost" && (
+          <div className="pointer-events-none z-[9999] mt-2 flex items-center gap-2 opacity-65">
+            <Badge className="bg-orange-300 text-orange-700 shadow-md">
+              Localhost
+            </Badge>
+
+            <Badge variant="emerald" className="shadow-md">
+              <GitBranch className="h-4 w-4" />
+              {currentGitBranch?.branch || `Please run "bun githooks"`}
+            </Badge>
+          </div>
+        )}
       </div>
 
       <div

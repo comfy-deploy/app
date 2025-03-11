@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Print a message to the console
+echo "Branch changed! Updating git-info.json..."
+
+# Get the current branch name
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Create public directory if it doesn't exist
+mkdir -p public
+
+# Create or update the git-info.json file
+cat > public/git-info.json << EOF
+{
+  "branch": "$BRANCH",
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+
+echo "Updated git-info.json with branch: $BRANCH"
+
+# Exit successfully
+exit 0
