@@ -552,9 +552,11 @@ export default function Workspace({
                 <div className="flex items-center gap-2">
                   <Workflow className="h-4 w-4 flex-shrink-0" />
                   <span className="font-medium text-sm">{workflow?.name}</span>
-                  <Badge variant="secondary" className="ml-1">
-                    v{version}
-                  </Badge>
+                  {version && (
+                    <Badge variant="secondary" className="ml-1">
+                      v{version}
+                    </Badge>
+                  )}
                 </div>
               ) : null}
             </div>
