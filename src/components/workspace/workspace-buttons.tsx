@@ -757,6 +757,15 @@ export function WorkflowButtons({
                 onClick={() => {
                   setWorkflowId(null);
                   setIsClearWorkflowDialogOpen(false);
+                  router.navigate({
+                    to: "/sessions/$sessionId",
+                    params: {
+                      sessionId: match?.params.sessionId || "",
+                    },
+                    search: {
+                      isFirstTime: true,
+                    },
+                  });
                   setIsTemplateOpen(true);
                 }}
               >
