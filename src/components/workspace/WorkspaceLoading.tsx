@@ -117,6 +117,7 @@ export function WorkspaceLoading({
           {(!session || isTimeout) && (
             <Button
               variant="outline"
+              className="bg-zinc-100"
               onClick={() => {
                 if (workflowId) {
                   navigate({
