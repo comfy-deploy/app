@@ -7,12 +7,14 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLogStore } from "./LogContext";
 import { LogDisplay } from "./LogDisplay";
-import Workspace from "./Workspace";
+import Workspace, { useWorspaceLoadingState } from "./Workspace";
 import { useCDStore } from "./Workspace";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "../ui/badge";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "../ui/button";
+import { AnimatePresence, motion } from "framer-motion";
+import { WorkspaceLoading } from "./WorkspaceLoading";
 
 export function getSessionStatus(session: any, isLive: boolean | undefined) {
   if (!session) {
@@ -160,35 +162,9 @@ export function SessionCreator(props: {
     refetchInterval: 1000,
   });
 
-  // const [workflowLink, setWorkflowLink] = useQueryState(
-  //   "workflowLink",
-  //   parseAsString,
-  // );
-
-  // const { data: workflowLinkJson, isFetching } = useQuery({
-  //   queryKey: ["workflow", "link", workflowLink],
-  //   enabled: !!workflowLink,
-  //   queryFn: async () => {
-  //     if (!workflowLink) return;
-  //     console.log("fetching workflowLink", workflowLink);
-  //     const response = await fetch(workflowLink);
-  //     if (!response.ok) throw new Error("Failed to fetch workflow");
-  //     return response.json();
-  //   },
-  //   staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-  //   refetchOnWindowFocus: false,
-  //   refetchOnReconnect: false,
-  // });
-
-  // useEffect(() => {
-  //   if (!cdSetup) return;
-  //   if (!workflowLinkJson) return;
-
-  //   console.log("sending workflow", workflowLinkJson);
-  //   sendWorkflow(workflowLinkJson);
-  // }, [workflowLinkJson, cdSetup]);
-
   const url = session?.url || session?.tunnel_url;
+
+  const { progress, setProgress } = useWorspaceLoadingState();
 
   useEffect(() => {
     setCDSetup(false);
@@ -218,21 +194,49 @@ export function SessionCreator(props: {
     refetchInterval: 1000,
   });
 
+  useEffect(() => {
+    // When session id changed
+    if (sessionId) {
+      setProgress(0);
+    }
+  }, [sessionId]);
+
   if (!sessionId) return <NoSessionId workflowId={props.workflowId} />;
 
-  if (!url || !isLive) {
-    return (
-      <SessionLoading
-        session={session}
-        isLive={isLive ?? false}
-        isLoadingSession={isLoadingSession}
-      />
-    );
-  }
+  // if (!url || !isLive) {
+  //   return (
+  //     <SessionLoading
+  //       session={session}
+  //       isLive={isLive ?? false}
+  //       isLoadingSession={isLoadingSession}
+  //     />
+  //   );
+  // }
 
-  if (url && isLive) {
-    return (
-      <div className="flex h-full w-full flex-col">
+  return (
+    <div className="flex h-full w-full flex-col">
+      <AnimatePresence>
+        {!cdSetup && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[20]"
+          >
+            <WorkspaceLoading
+              messages={[
+                { message: "Connecting to ComfyUI", startProgress: 0 },
+                { message: "Loading workspace", startProgress: 59 },
+              ]}
+              progress={progress}
+              session={session}
+              isLive={isLive ?? false}
+              isLoadingSession={isLoadingSession}
+              workflowId={props.workflowId}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {url && isLive && (
         <Workspace
           sessionIdOverride={props.sessionIdOverride}
           nativeMode={true}
@@ -241,9 +245,9 @@ export function SessionCreator(props: {
           machine_id={session?.machine_id}
           machine_version_id={session?.machine_version_id}
         />
-      </div>
-    );
-  }
+      )}
+    </div>
+  );
 }
 
 function useLogListener({ sessionId }: { sessionId?: string }) {

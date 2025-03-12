@@ -5,7 +5,6 @@ import { AnimatePresence } from "framer-motion";
 import { diff } from "json-diff-ts";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { WorkspaceLoading } from "./WorkspaceLoading";
 import {
   reloadIframe,
   sendEventToCD,
@@ -91,6 +90,20 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
   setDifferences: (differences) => set({ differences }),
 }));
 
+export const useWorspaceLoadingState = create<{
+  progress: number;
+  setProgress: (progress: number | ((prevProgress: number) => number)) => void;
+}>((set) => ({
+  progress: 0,
+  setProgress: (progressOrFn) =>
+    set((state) => ({
+      progress:
+        typeof progressOrFn === "function"
+          ? progressOrFn(state.progress)
+          : progressOrFn,
+    })),
+}));
+
 export default function Workspace({
   endpoint: _endpoint,
   nativeMode = false,
@@ -129,7 +142,7 @@ export default function Workspace({
   const volumeName = `models_${orgId || userId}`;
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const { cdSetup, setCDSetup } = useCDStore();
-  const [progress, setProgress] = useState(0);
+  const { progress, setProgress } = useWorspaceLoadingState();
   const [hasSetupEventListener, setHasSetupEventListener] = useState(false);
   const currentWorkflowRef = useRef(null);
   const {
@@ -486,24 +499,6 @@ export default function Workspace({
 
   return (
     <>
-      <AnimatePresence>
-        {!cdSetup && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[20]"
-          >
-            <WorkspaceLoading
-              messages={[
-                { message: "Connecting to ComfyUI", startProgress: 0 },
-                { message: "Loading workspace", startProgress: 59 },
-              ]}
-              progress={progress}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <AssetsBrowserPopup />
 
       <WorkspaceControls
@@ -598,7 +593,10 @@ export default function Workspace({
           style={{
             userSelect: "none",
           }}
-          className="inset-0 h-full w-full border-none z-[20]"
+          className={cn(
+            "inset-0 h-full w-full border-none z-[20]",
+            !cdSetup && "pointer-events-none",
+          )}
           title="iframeContent"
           allow="autoplay; encrypted-media; fullscreen; display-capture; camera; microphone"
           onLoad={() => {
