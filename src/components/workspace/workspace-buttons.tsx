@@ -191,8 +191,8 @@ export function CreateWorkspaceDialog({
                       await refetchMachine();
                     },
                     {
-                      loading: "Creating workspace...",
-                      error: "Failed to create workspace. Please try again.",
+                      loading: "Saving snapshot...",
+                      error: "Failed to save snapshot. Please try again.",
                     },
                   );
                   if (setFirstCreateDialogOpen) {

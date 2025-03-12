@@ -278,6 +278,9 @@ export function SessionCreationDialog({
           </p>
         </div>
 
+        <>Machine Id: {selectedMachineId}</>
+        <>Version Id: {defaultMachineVersionId}</>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

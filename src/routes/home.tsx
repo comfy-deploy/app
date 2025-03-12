@@ -254,6 +254,13 @@ function SessionsList() {
                 {getRelativeTime(session.start_time)}
               </div>
               {!session.start_time ? (
+                <div className="ml-auto text-muted-foreground text-sm">
+                  Starting...
+                </div>
+              ) : (
+                <></>
+              )}
+              {!session.modal_function_id ? (
                 <>
                   {new Date().getTime() -
                     new Date(session.created_at).getTime() >

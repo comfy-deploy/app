@@ -222,13 +222,39 @@ export function WorkflowCommitVersion({
           const prompt = await getPromptWithTimeout();
           // console.log("prompt", prompt);
 
+          let new_machine_vesion_id: string | undefined;
+          if (
+            snapshotAction === "CREATE_AND_COMMIT" &&
+            match?.params.sessionId
+          ) {
+            const snapshot_data = await callServerPromise(
+              api({
+                url: `session/${match.params.sessionId}/snapshot`,
+                init: {
+                  method: "POST",
+                },
+              }),
+              {
+                loadingText: "Saving snapshot...",
+              },
+            );
+            new_machine_vesion_id = snapshot_data.version_id;
+          }
+
+          if (is_fluid_machine && !new_machine_vesion_id) {
+            toast.error("Does't have a machine version id");
+            return;
+          }
+
           const result = await callServerPromise(
             createNewWorkflowVersion({
               user_id: userId,
               workflow_id: workflowId,
               comment: data.comment,
               machine_id: machine_id,
-              machine_version_id: is_fluid_machine ? machine_version_id : null,
+              machine_version_id: is_fluid_machine
+                ? new_machine_vesion_id
+                : null,
               comfyui_snapshot: is_fluid_machine ? comfyui_snapshot : null,
               workflow_data: {
                 workflow: prompt.workflow,
@@ -241,23 +267,6 @@ export function WorkflowCommitVersion({
           );
 
           await query.refetch();
-
-          if (
-            snapshotAction === "CREATE_AND_COMMIT" &&
-            match?.params.sessionId
-          ) {
-            await callServerPromise(
-              api({
-                url: `session/${match.params.sessionId}/snapshot`,
-                init: {
-                  method: "POST",
-                },
-              }),
-              {
-                loadingText: "Creating a new workspace",
-              },
-            );
-          }
 
           if (result?.version !== undefined) {
             setTimeout(() => {
