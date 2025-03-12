@@ -277,9 +277,9 @@ export function SessionCreationDialog({
             </Badge>
           </p>
         </div>
-
+        {/* 
         <>Machine Id: {selectedMachineId}</>
-        <>Version Id: {defaultMachineVersionId}</>
+        <>Version Id: {defaultMachineVersionId}</> */}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
