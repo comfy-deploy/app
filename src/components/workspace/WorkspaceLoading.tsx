@@ -176,14 +176,13 @@ export function WorkspaceLoading({
   // Main container with consistent LogDisplay placement
   return (
     <motion.div
-      className="relative flex h-full w-full flex-col items-center justify-center transition-all duration-300 dark"
+      className="dark relative flex h-full w-full flex-col items-center justify-center transition-all duration-300"
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: easeOut }}
     >
       <div className="relative flex flex-col items-center">
-        {/* Status content changes based on state, but position remains consistent */}
         <AnimatePresence mode="wait">
           <motion.div
             key={isSessionLoading ? "loading" : isLive ? "live" : "status"}
@@ -197,8 +196,7 @@ export function WorkspaceLoading({
           </motion.div>
         </AnimatePresence>
 
-        {/* LogDisplay remains in the same position regardless of state changes */}
-        <div className="mt-4 ">
+        <div>
           <LogDisplay newInterface={true} />
         </div>
       </div>
