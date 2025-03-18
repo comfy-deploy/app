@@ -87,6 +87,7 @@ export function MachineList() {
 
   const sub = useCurrentPlan();
   const hasActiveSub = !sub || !!sub?.sub;
+  const isCreator = sub?.plans.plans[0] === "creator";
 
   const query = useMachines(
     debouncedSearchValue,
@@ -222,13 +223,13 @@ export function MachineList() {
             ) : (
               <Button
                 onClick={() => {
-                  if (!sub?.features.machineLimited) {
+                  if (!sub?.features.machineLimited || !isCreator) {
                     navigate({
                       search: { view: "create" },
                     });
                   }
                 }}
-                disabled={sub?.features.machineLimited}
+                disabled={sub?.features.machineLimited || isCreator}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Machine
@@ -432,7 +433,9 @@ export function MachineList() {
               }
             },
             disabled: {
-              disabled: !(sub?.plans?.plans && sub?.plans?.plans.length > 0),
+              disabled:
+                !(sub?.plans?.plans && sub?.plans?.plans.length > 0) ||
+                isCreator,
               disabledText: "Upgrade to create custom machines.",
             },
           },
