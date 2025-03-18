@@ -42,8 +42,7 @@ import {
   Server,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
-import semver from "semver";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
 
@@ -61,6 +60,7 @@ export function MachineList() {
   const [searchValue, setSearchValue] = useState("");
   const [openCustomDialog, setOpenCustomDialog] = useState(false);
   const [openServerlessDialog, setOpenServerlessDialog] = useState(false);
+  const [isLimited, setIsLimited] = useState(false);
   const [debouncedSearchValue] = useDebounce(searchValue, 250);
   const [expandedMachineId, setExpandedMachineId] = useState<string | null>(
     null,
@@ -87,7 +87,7 @@ export function MachineList() {
 
   const sub = useCurrentPlan();
   const hasActiveSub = !sub || !!sub?.sub;
-  const isCreator = sub?.plans.plans[0] === "creator";
+  const isCreator = sub?.plans.plans.includes("creator");
 
   const query = useMachines(
     debouncedSearchValue,
@@ -98,6 +98,12 @@ export function MachineList() {
     selectedTab === "self-hosted",
     selectedTab === "docker",
   );
+
+  useEffect(() => {
+    setIsLimited(sub?.features.machineLimited);
+    if (selectedTab === "self-hosted" && sub)
+      setIsLimited(isCreator || sub?.features.machineLimited);
+  }, [sub, isCreator, selectedTab]);
 
   return (
     <div className="mx-auto h-[calc(100vh-120px)] max-h-full w-full max-w-[1200px] px-2 py-4 md:px-10">
@@ -223,13 +229,13 @@ export function MachineList() {
             ) : (
               <Button
                 onClick={() => {
-                  if (!sub?.features.machineLimited || !isCreator) {
+                  if (!isLimited) {
                     navigate({
                       search: { view: "create" },
                     });
                   }
                 }}
-                disabled={sub?.features.machineLimited || isCreator}
+                disabled={isLimited}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Machine
@@ -340,13 +346,13 @@ export function MachineList() {
         open={openServerlessDialog}
         mutateFn={query.refetch}
         setOpen={setOpenServerlessDialog}
-        disabled={sub?.features.machineLimited}
+        disabled={isLimited}
         dialogClassName="!max-w-[1200px] !max-h-[calc(90vh-10rem)]"
         containerClassName="flex-col"
         tooltip={
-          sub?.features.machineLimited
-            ? `Max ${sub?.features.machineLimit} ComfyUI machine for your account, upgrade to unlock more configuration.`
-            : `Max ${sub?.features.machineLimit} ComfyUI machine for your account`
+          isLimited
+            ? `Max ${isLimited} ComfyUI machine for your account, upgrade to unlock more configuration.`
+            : `Max ${isLimited} ComfyUI machine for your account`
         }
         title="Create New Machine"
         description="Create a new serverless ComfyUI machine based on the analyzed workflow."
@@ -403,7 +409,7 @@ export function MachineList() {
           icon: Plus,
         }}
         disabled={{
-          disabled: sub?.features.machineLimited,
+          disabled: isLimited,
           disabledText: "Max Machines Exceeded. ",
         }}
         subItems={[
@@ -413,14 +419,14 @@ export function MachineList() {
               : "Docker Machine",
             icon: Cloud,
             onClick: () => {
-              if (!sub?.features.machineLimited) {
+              if (!isLimited) {
                 navigate({
                   search: { view: "create" },
                 });
               }
             },
             disabled: {
-              disabled: sub?.features.machineLimited,
+              disabled: isLimited,
               disabledText: `Max ${sub?.features.machineLimit} Docker machines for your account. Upgrade to create more machines.`,
             },
           },
@@ -428,14 +434,12 @@ export function MachineList() {
             name: "Self Hosted Machine",
             icon: Server,
             onClick: () => {
-              if (!sub?.features.machineLimited) {
+              if (!isLimited) {
                 setOpenCustomDialog(true);
               }
             },
             disabled: {
-              disabled:
-                !(sub?.plans?.plans && sub?.plans?.plans.length > 0) ||
-                isCreator,
+              disabled: !(sub?.plans?.plans && sub?.plans?.plans.length > 0),
               disabledText: "Upgrade to create custom machines.",
             },
           },
