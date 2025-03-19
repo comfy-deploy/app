@@ -395,7 +395,7 @@ function MediaDisplay({
                 </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {/* <DropdownMenuItem
+              <DropdownMenuItem
                 onClick={async (event) => {
                   event.stopPropagation();
                   try {
@@ -417,7 +417,7 @@ function MediaDisplay({
                 <div className="flex w-full items-center justify-between">
                   Add to assets <FolderOpen className="h-3.5 w-3.5" />
                 </div>
-              </DropdownMenuItem> */}
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async (e) => {
                   e.stopPropagation();
