@@ -99,6 +99,7 @@ export function SDImageInput({
         {!ImgView && (
           <>
             <Input
+              className="rounded-[8px]"
               placeholder="Type your URL or drop a file"
               value={String(file || "")}
               onChange={(e) => onChange(e.target.value)}
@@ -113,7 +114,7 @@ export function SDImageInput({
                   buttonVariants({
                     variant: "outline",
                     className:
-                      "cursor-pointer transition-colors hover:bg-gray-50",
+                      "cursor-pointer rounded-[8px] transition-colors hover:bg-gray-50",
                   }),
                 )}
               >

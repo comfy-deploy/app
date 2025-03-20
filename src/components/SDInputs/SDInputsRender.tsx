@@ -290,7 +290,6 @@ export function SDInputsRender({
       }
       return (
         <SDImageInput
-          isDisplayAssetInput
           key={inputNode.input_id}
           file={inputValue}
           inputClasses="mt-1"
