@@ -57,6 +57,7 @@ import { LogsViewer } from "../log/logs-viewer";
 import { Progress } from "../ui/progress";
 import { Separator } from "../ui/separator";
 import { AlertDescription } from "../ui/alert";
+import { useSearch } from "@tanstack/react-router";
 
 type run = {
   status:
@@ -98,6 +99,9 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
   const workflow_id = useWorkflowIdInWorkflowPage();
   const [runId, setRunId] = useQueryState("run-id");
   const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
+  const { tweak: tweakQuery } = useSearch({
+    from: "/workflows/$workflowId/$view",
+  });
   const [showRunInputsMobileLayout, setShowRunInputsMobileLayout] =
     useState(false);
   const [logsCollapsed, setLogsCollapsed] = useState(true);
@@ -130,13 +134,13 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
   const lastRunIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (runId && isTweak && run && runId !== lastRunIdRef.current) {
+    if (runId && tweakQuery && run && runId !== lastRunIdRef.current) {
       setDefaultValues(getFormattedInputs(run));
       toast.success("Input values updated.");
       lastRunIdRef.current = runId;
       setIsTweak(null);
     }
-  }, [runId, run, isTweak]);
+  }, [runId, run, tweakQuery]);
 
   const runsQuery = useRuns({ workflow_id: workflow_id! });
   const virtualizerRef = useRef<HTMLDivElement>(null);
@@ -232,7 +236,7 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
   return (
     <>
       <div className="flex h-full w-full justify-between pt-4">
-        <div className="hidden h-full w-[400px] flex-col xl:flex">
+        <div className="hidden h-full w-[400px] flex-col 2xl:flex">
           <div
             className={cn(
               "flex flex-col transition-all",
@@ -404,7 +408,7 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
 
       <Fab
         refScrollingContainerKey="fab-playground"
-        className="z-50 xl:hidden"
+        className="z-50 2xl:hidden"
         mainItem={{
           onClick: () =>
             setShowRunInputsMobileLayout(!showRunInputsMobileLayout),
@@ -418,7 +422,7 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
           open={showRunInputsMobileLayout}
           backgroundInteractive={true}
           onClose={() => setShowRunInputsMobileLayout(false)}
-          desktopClassName="w-[500px] xl:hidden shadow-lg border border-gray-200"
+          desktopClassName="w-[500px] 2xl:hidden shadow-lg border border-gray-200"
         >
           <InputLayout
             deployment={deployment}

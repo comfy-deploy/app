@@ -30,16 +30,14 @@ import {
   Settings2Icon,
   Zap,
 } from "lucide-react";
-import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
+import { parseAsString, useQueryState } from "nuqs";
 import { type ReactNode, useMemo } from "react";
 import { useEffect, useState } from "react";
-import { useMediaQuery } from "usehooks-ts";
 
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Alert, AlertDescription } from "../ui/alert";
 import { MyDrawer } from "../drawer";
-import { publicRunStore } from "../run/VersionSelect";
 import {
   getEnvColor,
   useWorkflowDeployments,
@@ -85,6 +83,7 @@ export function RunDetails(props: {
 
   const [selectedTab, setSelectedTab] = useQueryState("tab", parseAsString);
   const [tweakRunId, setTweakRunId] = useQueryState("runID");
+  const navigate = useNavigate();
 
   const { data: run, isLoading } = useQuery<any>({
     queryKey: ["run", run_id],
@@ -107,6 +106,12 @@ export function RunDetails(props: {
       setSelectedTab("logs");
     }
   }, [run]);
+
+  useEffect(() => {
+    if (isPlayground) {
+      setSelectedTab("inputs");
+    }
+  }, [isPlayground]);
 
   if (isLoading) {
     return (
@@ -132,6 +137,18 @@ export function RunDetails(props: {
     if (!run) return;
     if (isShare) {
       // setInputValues(run.workflow_inputs);
+    } else if (isPlayground) {
+      navigate({
+        to: "/workflows/$workflowId/$view",
+        params: {
+          workflowId: run.workflow_id,
+          view: "playground",
+        },
+        search: (prev) => ({
+          ...prev,
+          tweak: true,
+        }),
+      });
     } else {
       setTweakRunId(run.id);
       onClose?.();
