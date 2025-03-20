@@ -74,29 +74,34 @@ export const serverlessFormSchema = z.object({
     .object({
       steps: z.array(dockerCommandStep),
     })
-    .refine((data): data is typeof data => {
-      const urlCounts = new Map<string, number>();
-      for (const step of data.steps) {
-        if (step.type === "custom-node") {
-          const url = step.data.url.toLowerCase();
-          try {
-            const urlObj = new URL(url);
-            if (urlObj.hostname === "github.com") {
-              const [, author, repo] = urlObj.pathname.split("/");
-              const repoKey = `${author}/${repo}`;
-              urlCounts.set(repoKey, (urlCounts.get(repoKey) || 0) + 1);
-            } else {
+    .refine(
+      (data): data is typeof data => {
+        const urlCounts = new Map<string, number>();
+        for (const step of data.steps) {
+          if (step.type === "custom-node") {
+            const url = step.data.url.toLowerCase();
+            try {
+              const urlObj = new URL(url);
+              if (urlObj.hostname === "github.com") {
+                const [, author, repo] = urlObj.pathname.split("/");
+                const repoKey = `${author}/${repo}`;
+                urlCounts.set(repoKey, (urlCounts.get(repoKey) || 0) + 1);
+              } else {
+                urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
+              }
+            } catch {
               urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
             }
-          } catch {
-            urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
           }
         }
-      }
 
-      // Return false if there are duplicates
-      return !Array.from(urlCounts.values()).some((count) => count > 1);
-    }),
+        // Return false if there are duplicates
+        return !Array.from(urlCounts.entries()).some(([, count]) => count > 1);
+      },
+      {
+        message: "Duplicate custom nodes detected. ",
+      },
+    ),
   concurrency_limit: z.number().default(2),
   install_custom_node_with_gpu: z
     .boolean()
