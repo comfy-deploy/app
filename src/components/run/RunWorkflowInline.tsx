@@ -1,5 +1,3 @@
-"use client";
-
 import { SDForm } from "@/components/SDInputs/SDForm";
 import {
   type RGBColor,
@@ -8,11 +6,9 @@ import {
 import { Button } from "@/components/ui/button";
 // import { getFileDownloadUrlV2 } from "@/db/getFileDownloadUrl";
 import { useAuthStore } from "@/lib/auth-store";
-import { callServerPromise } from "@/lib/call-server-promise";
-import {
-  type WorkflowInputsType,
-  type getInputsFromWorkflow,
-  getInputsFromWorkflowJSON,
+import type {
+  WorkflowInputsType,
+  getInputsFromWorkflow,
 } from "@/lib/getInputsFromWorkflow";
 import { plainInputsToZod } from "@/lib/workflowVersionInputsToZod";
 // import { HandleFileUpload } from "@/server/uploadFile";
@@ -21,7 +17,6 @@ import { Play } from "lucide-react";
 import {
   type FormEvent,
   type ReactNode,
-  use,
   useEffect,
   useMemo,
   useState,
@@ -31,6 +26,8 @@ import { toast } from "sonner";
 import type { z } from "zod";
 import { uploadFile } from "../files-api";
 import { publicRunStore } from "./VersionSelect";
+import { useQueryState } from "nuqs";
+import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE_BYTES = 250_000_000; // 250MB
 
@@ -210,27 +207,49 @@ export function WorkflowInputsForm({
   );
 }
 
+export function parseInputValues(valuesParsed: Record<string, any>) {
+  return Object.entries(valuesParsed)
+    .filter(([_, value]) => value != null)
+    .reduce(
+      (acc, [key, value]) => ({
+        ...acc,
+        [key]:
+          typeof value === "string"
+            ? // Try to parse JSON strings, fall back to original value if parsing fails
+              (() => {
+                try {
+                  return JSON.parse(value);
+                } catch {
+                  return value;
+                }
+              })()
+            : value,
+      }),
+      {},
+    );
+}
+
 // For share page
 export function RunWorkflowInline({
   inputs,
-  workflow_version_id,
-  machine_id,
+  deployment_id,
   default_values = {},
   hideRunButton = false,
   hideInputs = false,
   runOrigin = "public-share",
   blocking = true,
   model_id,
+  scrollAreaClassName,
 }: {
   inputs: z.infer<typeof WorkflowInputsType>;
-  workflow_version_id: string;
-  machine_id: string;
+  deployment_id: string;
   default_values?: Record<string, any>;
   hideRunButton?: boolean;
   hideInputs?: boolean;
   runOrigin?: any;
   blocking?: boolean;
   model_id?: string;
+  scrollAreaClassName?: string;
 }) {
   const [values, setValues] =
     useState<
@@ -240,6 +259,7 @@ export function RunWorkflowInline({
       >
     >(default_values);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentRunId, setCurrentRunId] = useQueryState("run-id");
 
   const user = useAuth();
   const clerk = useClerk();
@@ -269,25 +289,7 @@ export function RunWorkflowInline({
     setLoading2(true);
     setIsLoading(true);
     const valuesParsed = await parseFilesToImgURLs({ ...values });
-    const val = Object.entries(valuesParsed)
-      .filter(([_, value]) => value != null)
-      .reduce(
-        (acc, [key, value]) => ({
-          ...acc,
-          [key]:
-            typeof value === "string"
-              ? // Try to parse JSON strings, fall back to original value if parsing fails
-                (() => {
-                  try {
-                    return JSON.parse(value);
-                  } catch {
-                    return value;
-                  }
-                })()
-              : value,
-        }),
-        {},
-      );
+    const val = parseInputValues(valuesParsed);
     console.log(val);
     setStatus({ state: "preparing", live_status: "", progress: 0 });
     try {
@@ -297,8 +299,7 @@ export function RunWorkflowInline({
       const body = model_id
         ? { model_id: model_id, inputs: val }
         : {
-            workflow_version_id: workflow_version_id,
-            machine_id: machine_id,
+            deployment_id: deployment_id,
             inputs: val,
             origin: runOrigin,
             batch_number: 1,
@@ -321,6 +322,14 @@ export function RunWorkflowInline({
       );
       if (!response.ok) {
         throw new Error(await response.text());
+      }
+
+      const data = await response.json();
+
+      if (runOrigin === "public-share") {
+        setRunId(data.run_id);
+      } else {
+        setCurrentRunId(data.run_id);
       }
 
       if (model_id) {
@@ -417,7 +426,8 @@ export function RunWorkflowInline({
             </Button>
           )
         }
-        scrollAreaClassName="[&>[data-radix-scroll-area-viewport]]:max-h-[80vh]"
+        scrollAreaClassName={cn("h-full", scrollAreaClassName)}
+        // scrollAreaClassName="[&>[data-radix-scroll-area-viewport]]:max-h-[calc(60%-100px)]"
       >
         {!hideInputs &&
           inputs?.map((item) => {
@@ -434,7 +444,7 @@ export function RunWorkflowInline({
             );
           })}
       </SDForm>
-      {!inputs && !hideRunButton && (
+      {/* {!inputs && !hideRunButton && (
         <Button
           onClick={runWorkflow}
           isLoading={isLoading || loading}
@@ -442,7 +452,7 @@ export function RunWorkflowInline({
         >
           Confirm
         </Button>
-      )}
+      )} */}
     </>
   );
 }

@@ -58,7 +58,7 @@ type FinalFabProps = FabPropsWithSubItems | FabPropsWithoutSubItems;
  * @param disabled - (Optional) disabled state configuration
  * @param subItems - (Optional) array of secondary action buttons
  */
-export function Fab(props: FinalFabProps) {
+export function Fab(props: FinalFabProps & { className?: string }) {
   // Add runtime validation at the start of the component
   if (props.subItems && props.mainItem.onClick) {
     throw new Error(
@@ -73,25 +73,52 @@ export function Fab(props: FinalFabProps) {
   useEffect(() => {
     if (!props.refScrollingContainerKey) return;
 
-    // Find the Radix ScrollArea viewport
-    const scrollContainer = document.querySelector(
+    let scrollContainer: Element | null = null;
+    let observer: MutationObserver | null = null;
+
+    // Function to set up scroll listener
+    const setupScrollListener = (container: Element) => {
+      const handleScroll = () => {
+        const scrollPosition = container.scrollTop;
+        setIsScrolled(scrollPosition > 20);
+      };
+
+      handleScroll(); // Set initial state
+      container.addEventListener("scroll", handleScroll, { passive: true });
+      return () => container.removeEventListener("scroll", handleScroll);
+    };
+
+    // Initial attempt to find container
+    scrollContainer = document.querySelector(
       `.${props.refScrollingContainerKey}`,
     );
 
-    if (!scrollContainer) {
-      console.warn("Scrollable container viewport not found");
-      return;
+    if (scrollContainer) {
+      // If container exists immediately, set up scroll listener
+      return setupScrollListener(scrollContainer);
     }
+    // If container doesn't exist, observe DOM for changes
+    observer = new MutationObserver((_mutations, obs) => {
+      const container = document.querySelector(
+        `.${props.refScrollingContainerKey}`,
+      );
+      if (container) {
+        obs.disconnect(); // Stop observing once found
+        setupScrollListener(container);
+      }
+    });
 
-    const handleScroll = () => {
-      const scrollPosition = scrollContainer.scrollTop;
-      setIsScrolled(scrollPosition > 20);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Cleanup
+    return () => {
+      if (observer) {
+        observer.disconnect();
+      }
     };
-
-    handleScroll(); // Set initial state
-
-    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
-    return () => scrollContainer.removeEventListener("scroll", handleScroll);
   }, [props.refScrollingContainerKey]);
 
   return (
@@ -110,7 +137,12 @@ export function Fab(props: FinalFabProps) {
         )}
       </AnimatePresence>
 
-      <div className="fixed right-6 bottom-6 flex flex-col items-end gap-4">
+      <div
+        className={cn(
+          "fixed right-6 bottom-6 flex flex-col items-end gap-4",
+          props.className,
+        )}
+      >
         {/* Sub-items list */}
         <AnimatePresence>
           {isSubMenuOpen && props.subItems && (

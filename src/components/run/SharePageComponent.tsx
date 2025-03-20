@@ -1,164 +1,905 @@
-// import { DisplaySharePageSheet } from "@/components/DisplaySharePageSheet";
 import { RunWorkflowInline } from "@/components/run/RunWorkflowInline";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useSelectedVersion } from "@/components/version-select";
-import { LiveStatus } from "@/components/workflows/LiveStatus";
-import { OutputRenderRun } from "@/components/workflows/OutputRender";
-import { RunsTableVirtualized } from "@/components/workflows/RunsTable";
+import {
+  FileURLRender,
+  getTotalUrlCountAndUrls,
+  OutputRenderRun,
+  PlaygroundOutputRenderRun,
+} from "@/components/workflows/OutputRender";
+import { useRuns } from "@/components/workflows/RunsTable";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { customInputNodes } from "@/lib/customInputNodes";
-import { getRelativeTime } from "@/lib/get-relative-time";
+import { getDuration, getRelativeTime } from "@/lib/get-relative-time";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Forward, Pencil, User } from "lucide-react";
-import { useQueryState } from "nuqs";
+import {
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Loader2,
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+} from "lucide-react";
+import { parseAsBoolean, useQueryState } from "nuqs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-// import Markdown from "react-markdown";
-// import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
-import { AssetsBrowserPopup } from "../workspace/assets-browser-drawer";
+import {
+  getEnvColor,
+  useWorkflowDeployments,
+} from "../workspace/ContainersTable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Fab } from "../fab";
+import { MyDrawer } from "../drawer";
+import { motion } from "framer-motion";
+import { VirtualizedInfiniteList } from "../virtualized-infinite-list";
+import { LogsTab, RunDetails } from "../workflows/WorkflowComponent";
+import { LogsViewer } from "../log/logs-viewer";
+import { Progress } from "../ui/progress";
+import { Separator } from "../ui/separator";
+import { AlertDescription } from "../ui/alert";
 
-export function SharePageComponent(props: {
-  inputs: any[];
-  title?: ReactNode;
-  deployment?: any;
-  machine_id?: string;
-  workflow_version_id?: string;
-  runOrigin?: any;
-}) {
-  // const { v2RunApi } = useFeatureFlags();
+type run = {
+  status:
+    | "running"
+    | "uploading"
+    | "not-started"
+    | "queued"
+    | "success"
+    | "cancelled"
+    | "failed";
+  live_status?: string;
+  progress?: number;
+  outputs?: any[];
+  id: string;
+  created_at: string;
+  run_duration?: number;
+};
 
+export function useRun(runId?: string) {
+  const runQuery = useQuery<run>({
+    queryKey: ["run", runId],
+    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+    refetchInterval: (query) => {
+      if (
+        query.state.data?.status !== "success" &&
+        query.state.data?.status !== "failed"
+      ) {
+        return 2000;
+      }
+      return false;
+    },
+    enabled: !!runId,
+  });
+
+  return runQuery;
+}
+
+export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
   const workflow_id = useWorkflowIdInWorkflowPage();
+  const [runId, setRunId] = useQueryState("run-id");
+  const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
+  const [showRunInputsMobileLayout, setShowRunInputsMobileLayout] =
+    useState(false);
+  const [logsCollapsed, setLogsCollapsed] = useState(true);
+  const { data: run, isLoading: isRunLoading } = useQuery({
+    enabled: !!runId,
+    queryKey: ["run", runId],
+    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+  });
 
-  const sharedDeployment = props.deployment;
-  // const default_values = getDefaultValuesFromWorkflow(props.inputs);
-  const [default_values, setDefaultValues] = useState(
-    getDefaultValuesFromWorkflow(props.inputs),
+  const { data: deployments, isLoading: isDeploymentsLoading } =
+    useWorkflowDeployments(workflow_id);
+
+  const [selectedDeployment, setSelectedDeployment] = useQueryState(
+    "deployment",
+    { defaultValue: deployments?.[0]?.id },
   );
 
-  const [filterFavoritesPage, setFilterFavoritesPage] =
-    useQueryState("favorite");
+  const deployment = deployments?.find(
+    (deployment) => deployment.id === selectedDeployment,
+  );
+
+  const [default_values, setDefaultValues] = useState(
+    getDefaultValuesFromWorkflow(deployment?.input_types),
+  );
+
+  useEffect(() => {
+    setDefaultValues(getDefaultValuesFromWorkflow(deployment?.input_types));
+  }, [deployment?.id]);
+
+  const lastRunIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (runId && isTweak && run && runId !== lastRunIdRef.current) {
+      setDefaultValues(getFormattedInputs(run));
+      toast.success("Input values updated.");
+      lastRunIdRef.current = runId;
+      setIsTweak(null);
+    }
+  }, [runId, run, isTweak]);
+
+  const runsQuery = useRuns({ workflow_id: workflow_id! });
+  const virtualizerRef = useRef<HTMLDivElement>(null);
+  const lastKeyPressTime = useRef<number>(0);
+  const keyDebounceTime = 150; // milliseconds between allowed key presses
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      if (!runsQuery.data?.pages || runsQuery.data.pages.length === 0) return;
+
+      // Flatten all runs from all pages
+      const allRuns = runsQuery.data.pages.flat();
+      if (!allRuns.length) return;
+
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        // Debounce key presses to prevent rapid navigation
+        const now = Date.now();
+        if (now - lastKeyPressTime.current < keyDebounceTime) {
+          e.preventDefault();
+          return;
+        }
+        lastKeyPressTime.current = now;
+
+        e.preventDefault();
+
+        // Find current index
+        const currentIndex = runId
+          ? allRuns.findIndex((run) => run.id === runId)
+          : -1;
+
+        let newIndex = currentIndex;
+        if (e.key === "ArrowUp") {
+          // Only go up if not at the first item
+          if (currentIndex > 0) {
+            newIndex = currentIndex - 1;
+          } else if (currentIndex === -1) {
+            // If no selection, select the last item
+            newIndex = allRuns.length - 1;
+          }
+          // If already at first item (index 0), do nothing
+        } else {
+          // Only go down if not at the last item
+          if (currentIndex < allRuns.length - 1) {
+            newIndex = currentIndex + 1;
+          } else if (currentIndex === -1) {
+            // If no selection, select the first item
+            newIndex = 0;
+          }
+          // If already at last item, do nothing
+        }
+
+        // Only update if the index actually changed
+        if (newIndex !== currentIndex) {
+          const newRunId = allRuns[newIndex]?.id;
+          if (newRunId) {
+            setRunId(newRunId);
+
+            // Scroll the selected item into view
+            if (virtualizerRef.current) {
+              // Find the element with the matching run ID
+              const elements = virtualizerRef.current.querySelectorAll(
+                `[data-run-id="${newRunId}"]`,
+              );
+              if (elements.length > 0) {
+                // Find the parent element with a data-index attribute
+                const parent = elements[0].closest("[data-index]");
+                if (parent) {
+                  parent.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [runId, runsQuery.data, setRunId]);
 
   return (
-    <div className="grid h-full w-full grid-rows-[1fr,1fr] gap-4 pt-4 lg:grid-cols-[1fr,minmax(auto,500px)]">
-      <div className="flex flex-col gap-4">
-        {/* <Card className="w-full h-fit"> */}
-        <div className="pt-4 pl-4 text-gray-500 text-sm">
-          Run outputs
-          {/* TODO: bad practice. It is for the trigger of tweak it */}
-          {/* <RunWorkflowButton
-            className="pointer-events-none absolute top-0 left-0 opacity-0"
-            workflow_id={workflow_id}
-            filterWorkspace={false}
-          /> */}
-        </div>
-
-        <div className="rounded-sm ring-1 ring-gray-200">
-          {/* TODO: make a better UI favorite swapping */}
-          {/* <div className="absolute top-20 right-20">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="favorite-filter"
-                defaultChecked={!!filterFavoritesPage} // Convert to boolean
-                checked={!!filterFavoritesPage} // Convert to boolean
-                onCheckedChange={(checked) => setFilterFavoritesPage(checked ? "true" : null)}
-              />
-              <Label htmlFor="favorite-filter">Favorites</Label>
+    <>
+      <div className="flex h-full w-full justify-between pt-4">
+        <div className="hidden h-full w-[400px] flex-col xl:flex">
+          <div
+            className={cn(
+              "flex flex-col transition-all",
+              logsCollapsed ? "h-[calc(100%-60px)]" : "h-[calc(100%-370px)]",
+            )}
+          >
+            <div className="mb-1 flex items-center justify-between">
+              <span className="ml-2 font-semibold text-sm">Edit</span>
+              <div className="items-center gap-3 rounded-sm border border-gray-200 bg-white/90 backdrop-blur-sm">
+                <Select
+                  value={deployment?.id}
+                  onValueChange={(value) => {
+                    const selectedDeployment = deployments?.find(
+                      (d) => d.id === value,
+                    );
+                    if (selectedDeployment) {
+                      setSelectedDeployment(selectedDeployment.id);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[200px] border-none bg-transparent">
+                    <SelectValue placeholder="Select environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {deployments?.map((dep) => (
+                      <SelectItem key={dep.id} value={dep.id}>
+                        <div className="flex w-full items-center justify-between gap-2">
+                          <Badge
+                            variant="outline"
+                            className={cn(getEnvColor(dep.environment))}
+                          >
+                            {dep.environment}
+                          </Badge>
+                          <span className="text-gray-500 text-xs">
+                            {dep.gpu || "No GPU"}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div> */}
+            <div className="flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white p-3 shadow-sm">
+              {isDeploymentsLoading ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : deployment ? (
+                <RunWorkflowInline
+                  blocking={false}
+                  default_values={default_values}
+                  inputs={deployment?.input_types}
+                  runOrigin={props.runOrigin}
+                  deployment_id={deployment?.id}
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2">
+                  <p className="text-center font-medium text-muted-foreground text-sm">
+                    No deployments found for this workflow.
+                  </p>
+                  <p className="mx-4 text-center text-muted-foreground text-xs leading-5">
+                    Start a new workspace below to save a version, and promote
+                    it to a deployment for testing in the playground.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
-          <RunsTableVirtualized
-            className="h-[calc(100vh-7rem)]"
-            // defaultData={props.defaultData}
-            workflow_id={workflow_id}
-            itemHeight={400}
-            RunRowComponent={RunRow}
-            setInputValues={setDefaultValues}
-          />
+          <div
+            className={cn(
+              "my-2 flex flex-col transition-all",
+              logsCollapsed ? "h-[40px]" : "h-[350px]",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <span className="ml-2 font-semibold text-sm">Logs</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLogsCollapsed(!logsCollapsed)}
+                className="h-6 px-2"
+              >
+                {logsCollapsed ? (
+                  <ChevronUp size={16} />
+                ) : (
+                  <ChevronDown size={16} />
+                )}
+              </Button>
+            </div>
+            <div
+              className={cn(
+                "mt-2 overflow-auto rounded-sm border border-gray-200 p-2 shadow-sm",
+                logsCollapsed
+                  ? "h-0 opacity-0 transition-all"
+                  : "h-[calc(100%-30px)] opacity-100 transition-all",
+              )}
+            >
+              {runId && run?.modal_function_call_id ? (
+                <LogsTab runId={runId} />
+              ) : (
+                <div className="h-[300px] w-full">
+                  <LogsViewer
+                    logs={[
+                      {
+                        timestamp: 0,
+                        logs: "Listening for logs...",
+                      },
+                    ]}
+                    stickToBottom
+                    hideTimestamp
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* <CardContent className="p-2">
-          <PublicRunOutputs preview={sharedDeployment?.showcase_media} />
-        </CardContent> */}
-        {/* </Card> */}
+        <div className="w-full flex-1 lg:mx-4">
+          <div className="relative h-full">
+            {/* Useless Background */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1 }}
+              className="pointer-events-none absolute inset-0 z-0"
+            >
+              <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
+              <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
+              <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
+            </motion.div>
 
-        {/* <Card className="w-full h-fit">
-          <div className="text-sm text-gray-500 pl-4 pt-4">Run Logs</div>
+            <div className="relative z-10 h-full w-full">
+              <RunDisplay runId={runId ?? undefined} deployment={deployment} />
+              <ArrowIndicator
+                disableTop={true}
+                disableLeft={true}
+                disableDown={true}
+                disableRight={true}
+              />
+            </div>
+          </div>
+        </div>
 
-          <CardContent className="p-2">
-            <SharedRunLogs />
-          </CardContent>
-        </Card> */}
+        <div className="hidden h-full w-[120px] flex-col lg:flex">
+          <span className="mb-1 ml-2 font-semibold text-sm">Gallery</span>
+          <div className="relative mb-2 flex-1 overflow-hidden rounded-sm border border-gray-200 shadow-sm">
+            <VirtualizedInfiniteList
+              ref={virtualizerRef}
+              className="!h-full scrollbar-track-transparent scrollbar-thin scrollbar-none p-1.5"
+              queryResult={runsQuery}
+              renderItem={(run) => <RunGallery runId={run?.id} />}
+              estimateSize={107}
+              renderLoading={() => {
+                return [...Array(4)].map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="aspect-square w-[100px] rounded-[8px]"
+                  />
+                ));
+              }}
+            />
+            <div className="pointer-events-none absolute top-0 right-0 left-0 z-10 h-10 bg-gradient-to-b from-white to-transparent" />
+            <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-10 bg-gradient-to-t from-white to-transparent" />
+          </div>
+        </div>
       </div>
 
-      <Card className="h-fit w-full">
-        {props.title}
+      <Fab
+        refScrollingContainerKey="fab-playground"
+        className="z-50 xl:hidden"
+        mainItem={{
+          onClick: () =>
+            setShowRunInputsMobileLayout(!showRunInputsMobileLayout),
+          name: "Queue run",
+          icon: Play,
+        }}
+      />
 
-        <CardContent className="flex w-full flex-col gap-4 p-4">
-          {sharedDeployment?.description && (
-            <ScrollArea className="relative rounded-md bg-slate-100 p-2 [&>[data-radix-scroll-area-viewport]]:max-h-36">
-              {/* <DisplaySharePageSheet
-                mdString={sharedDeployment.description || ""}
-              /> */}
-              {/* <Markdown remarkPlugins={[remarkGfm]} className="prose "> */}
-              {sharedDeployment?.description}
-              {/* </Markdown> */}
-            </ScrollArea>
+      {showRunInputsMobileLayout && (
+        <MyDrawer
+          open={showRunInputsMobileLayout}
+          backgroundInteractive={true}
+          onClose={() => setShowRunInputsMobileLayout(false)}
+          desktopClassName="w-[500px] xl:hidden shadow-lg border border-gray-200"
+        >
+          <InputLayout
+            deployment={deployment}
+            setSelectedDeployment={setSelectedDeployment}
+            deployments={deployments}
+            default_values={default_values}
+            runOrigin={props.runOrigin}
+          />
+        </MyDrawer>
+      )}
+    </>
+  );
+}
+
+function RunDisplay({
+  runId,
+  deployment,
+}: { runId?: string; deployment?: any }) {
+  const { data: run, isLoading } = useRun(runId);
+  const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
+    run?.outputs || [],
+  );
+  const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(
+    null,
+  );
+  // Add ref for the thumbnails container
+  const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Reset viewingImageIndex when runId changes
+  useEffect(() => {
+    setViewingImageIndex(null);
+  }, [runId]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!urlList || urlList.length <= 1) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle arrow keys if we're not in an input field
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setViewingImageIndex((prev) => {
+          if (prev === null) return urlList.length - 1;
+          return prev === 0 ? urlList.length - 1 : prev - 1;
+        });
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setViewingImageIndex((prev) => {
+          if (prev === null) return 0;
+          return prev === urlList.length - 1 ? 0 : prev + 1;
+        });
+      } else if (
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
+        e.key === "Escape"
+      ) {
+        setViewingImageIndex(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [viewingImageIndex, urlList]);
+
+  // New effect to scroll selected thumbnail into view
+  useEffect(() => {
+    if (viewingImageIndex !== null && thumbnailsContainerRef.current) {
+      const thumbnails =
+        thumbnailsContainerRef.current.querySelectorAll("button");
+      if (thumbnails?.[viewingImageIndex]) {
+        thumbnails[viewingImageIndex].scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }
+    }
+  }, [viewingImageIndex]);
+
+  // Common container styles for status messages
+  const containerClass = "flex h-full w-full items-center justify-center";
+  const messageClass =
+    "animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm";
+
+  // Handle no deployment
+  if (!deployment && !run) {
+    return (
+      <div className={containerClass}>
+        <p className={messageClass}>Please select a deployment</p>
+      </div>
+    );
+  }
+  // Handle loading and empty states
+  if (isLoading || !run) {
+    return (
+      <div className={containerClass}>
+        <p className={messageClass}>
+          {isLoading ? "Please wait ..." : "Press Run to start the queue"}
+        </p>
+      </div>
+    );
+  }
+
+  // Handle different run statuses
+  switch (run.status) {
+    case "cancelled":
+      return (
+        <div className={containerClass}>
+          <p className={messageClass}>Run cancelled.</p>
+        </div>
+      );
+
+    case "failed":
+      return (
+        <div className={cn(containerClass, "flex-col gap-2")}>
+          <p className={cn(messageClass, "text-red-500")}>
+            Run failed. Check the logs for more details.
+          </p>
+          <div className="max-w-2xl">
+            {run.modal_function_call_id ? (
+              <LogsTab runId={run.id} />
+            ) : (
+              <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-900 p-4 text-gray-300">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="!text-gray-400 text-muted-foreground text-sm">
+                  We're unable to display logs for runs from the workspace.
+                </AlertDescription>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+
+    case "success":
+      return (
+        <div className="scrollbar-track-transparent scrollbar-thin scrollbar-none h-full overflow-x-hidden overflow-y-scroll">
+          <div className="sticky top-0 flex min-h-[calc(100%-20px)] w-full items-center justify-center">
+            <div className="relative px-8">
+              {viewingImageIndex !== null &&
+              urlList &&
+              urlList.length > 0 &&
+              urlList[viewingImageIndex] ? (
+                // Image viewer mode
+                <div className="flex flex-col items-center">
+                  <ScrollArea
+                    ref={thumbnailsContainerRef}
+                    className="max-w-2xl rounded-sm p-2"
+                    hideVertical
+                  >
+                    <div className="flex flex-row gap-2 p-1">
+                      {urlList.map((item, index) => (
+                        <button
+                          type="button"
+                          key={index}
+                          onClick={() => setViewingImageIndex(index)}
+                          className={cn(
+                            "relative flex-shrink-0 overflow-hidden rounded-md transition-all",
+                            viewingImageIndex === index
+                              ? "shadow-md outline outline-2 outline-purple-500 outline-offset-2"
+                              : "opacity-70 ring-transparent hover:opacity-100",
+                          )}
+                        >
+                          <FileURLRender
+                            url={item.url}
+                            imgClasses="h-16 w-16 rounded-[8px] object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
+
+                  <FileURLRender
+                    url={urlList[viewingImageIndex].url}
+                    imgClasses="max-h-[60vh] object-contain shadow-md max-w-full"
+                    lazyLoading={false}
+                    isMainView={true}
+                  />
+                </div>
+              ) : (
+                // Gallery mode
+                <div className="relative">
+                  <OutputRenderRun
+                    run={run}
+                    imgClasses={cn(
+                      "shadow-md max-w-full mx-auto",
+                      totalUrlCount > 1
+                        ? "max-h-[30vh]"
+                        : "max-h-[80vh] object-contain",
+                    )}
+                    lazyLoading={true}
+                    columns={totalUrlCount > 4 ? 3 : 2}
+                    displayCount={totalUrlCount > 9 ? 9 : totalUrlCount}
+                    isMainView={totalUrlCount === 1}
+                  />
+                </div>
+              )}
+
+              <div className="-bottom-12 absolute right-0 left-0 flex flex-col items-center justify-center">
+                <span className="whitespace-nowrap text-muted-foreground text-xs">
+                  Scroll for details
+                </span>
+                <ChevronDown className="h-4 w-4" />
+              </div>
+
+              {totalUrlCount > 1 && (
+                <>
+                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+                  <div
+                    className="-translate-y-1/2 absolute top-1/2 right-0 flex cursor-pointer flex-col items-center justify-center hover:opacity-80"
+                    onClick={() => {
+                      if (viewingImageIndex === null) {
+                        setViewingImageIndex(0);
+                      } else {
+                        setViewingImageIndex((prev) =>
+                          prev === urlList.length - 1 ? 0 : prev + 1,
+                        );
+                      }
+                    }}
+                  >
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+                  <div
+                    className="-translate-y-1/2 absolute top-1/2 left-0 flex cursor-pointer flex-col items-center justify-center hover:opacity-80"
+                    onClick={() => {
+                      if (viewingImageIndex === null) {
+                        setViewingImageIndex(urlList.length - 1);
+                      } else {
+                        setViewingImageIndex((prev) =>
+                          prev === 0 ? urlList.length - 1 : prev - 1,
+                        );
+                      }
+                    }}
+                  >
+                    <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          {runId && (
+            <div className="relative z-10 flex min-h-screen w-full justify-center rounded-t-sm border border-gray-200 bg-white/80 p-8 pb-16 drop-shadow-lg backdrop-blur-lg">
+              <div className="w-full max-w-5xl px-4">
+                <RunDetails run_id={runId} isPlayground={true} />
+              </div>
+            </div>
           )}
-          <Tabs defaultValue="regular">
-            {/* <TabsList className="">
-              <TabsTrigger value="regular">Inputs</TabsTrigger>
-              <TabsTrigger value="batch">Batch Request</TabsTrigger>
-            </TabsList> */}
-            <TabsContent value="regular">
-              <RunWorkflowInline
-                blocking={false}
-                default_values={default_values}
-                inputs={props.inputs}
-                machine_id={
-                  props.machine_id ?? sharedDeployment?.machine_id ?? ""
-                }
-                workflow_version_id={
-                  props.workflow_version_id ??
-                  sharedDeployment?.workflow_version_id ??
-                  ""
-                }
-                runOrigin={props.runOrigin}
-              />
-            </TabsContent>
-            {/* <TabsContent value="batch">
-              <BatchRequestForm
-                init_inputs={props.inputs}
-                default_values={default_values}
-                machine_id={
-                  props.machine_id ?? sharedDeployment?.machine_id ?? ""
-                }
-                workflow_version_id={
-                  props.workflow_version_id ??
-                  sharedDeployment?.workflow_version_id ??
-                  ""
-                }
-              />
-            </TabsContent> */}
-          </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      );
 
-      <AssetsBrowserPopup />
-    </div>
+    // Default case for running, uploading, not-started, queued
+    default:
+      return (
+        <div className="flex h-full w-full animate-[pulse_4s_ease-in-out_infinite] flex-col items-center justify-center gap-1">
+          <p className="text-muted-foreground text-xs">
+            {run.live_status || "Starting..."}
+          </p>
+          <Progress
+            value={(run.progress || 0) * 100}
+            className="w-64 opacity-60"
+          />
+        </div>
+      );
+  }
+}
+
+function RunGallery({ runId }: { runId: string }) {
+  const { data: run, isLoading } = useRun(runId);
+  const [currentRunId, setCurrentRunId] = useQueryState("run-id");
+
+  if (isLoading) {
+    return <Skeleton className="aspect-square w-[105px] rounded-[6px]" />;
+  }
+
+  if (!run) {
+    return null;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+          <div
+            data-run-id={runId}
+            className="cursor-pointer"
+            onClick={() => {
+              if (runId !== currentRunId) {
+                setCurrentRunId(runId);
+              } else {
+                setCurrentRunId(null);
+              }
+            }}
+          >
+            <PlaygroundOutputRenderRun
+              run={run as any}
+              isSelected={runId === currentRunId}
+              imgClasses="w-[105px] h-[105px] aspect-square object-cover rounded-[6px] shrink-0 overflow-hidden"
+            />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="w-[250px] p-3 py-2">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between">
+              {run.run_duration && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-[14px] w-[14px]" />
+                  <span className="text-xs">
+                    {getDuration(run.run_duration)}
+                  </span>
+                </div>
+              )}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "px-1.5 py-0 text-[10px]",
+                  run.status === "success"
+                    ? "border-green-200 bg-green-50 text-green-600"
+                    : run.status === "failed"
+                      ? "border-red-200 bg-red-50 text-red-600"
+                      : run.status === "running"
+                        ? "border-blue-200 bg-blue-50 text-blue-600"
+                        : "border-gray-200 bg-gray-50 text-gray-600",
+                )}
+              >
+                {run.status}
+              </Badge>
+            </div>
+          </div>
+
+          <Separator className="my-2" />
+
+          <div className="flex justify-between">
+            <span className="font-mono text-[11px] text-muted-foreground">
+              #{run.id.slice(0, 10)}
+            </span>
+            <span className="text-2xs text-muted-foreground">
+              {getRelativeTime(run.created_at)}
+            </span>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function ArrowIndicator({
+  disableTop,
+  disableLeft,
+  disableDown,
+  disableRight,
+}: {
+  disableTop: boolean;
+  disableLeft: boolean;
+  disableDown: boolean;
+  disableRight: boolean;
+}) {
+  return (
+    <>
+      <div className="absolute right-2 bottom-8 flex flex-col items-center gap-1">
+        {/* Instructions */}
+        <span className="hidden flex-col gap-0.5 text-2xs text-muted-foreground lg:flex">
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+              aria-label="Up"
+              disabled={disableTop}
+            >
+              <ChevronUp size={16} />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+              aria-label="Down"
+              disabled={disableDown}
+            >
+              <ChevronDown size={16} />
+            </Button>
+            <span>Navigate Gallery</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+              aria-label="Left"
+              disabled={disableLeft}
+            >
+              <ChevronLeft size={16} />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 rounded-[6px] bg-white/90 shadow-sm backdrop-blur-sm"
+              aria-label="Right"
+              disabled={disableRight}
+            >
+              <ChevronRight size={16} />
+            </Button>
+            <span>Navigate Images list</span>
+          </div>
+        </span>
+      </div>
+    </>
+  );
+}
+
+function InputLayout({
+  deployment,
+  setSelectedDeployment,
+  deployments,
+  default_values,
+  runOrigin,
+}: {
+  deployment: any;
+  setSelectedDeployment: (deployment: any) => void;
+  deployments: any;
+  default_values: any;
+  runOrigin: string;
+}) {
+  return (
+    <Tabs defaultValue="regular">
+      <TabsContent value="regular">
+        <Select
+          value={deployment?.id}
+          defaultValue={deployment?.id}
+          onValueChange={(value) => {
+            const deployment = deployments?.find((d) => d.id === value);
+            if (deployment) {
+              setSelectedDeployment(deployment.id);
+            }
+          }}
+        >
+          <SelectTrigger className="mb-4 w-[200px] capitalize">
+            <SelectValue placeholder="Select deployment" />
+          </SelectTrigger>
+          <SelectContent>
+            {deployments?.map((deployment) => (
+              <SelectItem
+                key={deployment.id}
+                value={deployment.id}
+                className="flex items-center justify-between capitalize"
+              >
+                {/* <span>{deployment.environment}</span> */}
+                <Badge
+                  variant="outline"
+                  className={cn(getEnvColor(deployment.environment))}
+                >
+                  {deployment.environment}
+                </Badge>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {deployment && (
+          <RunWorkflowInline
+            blocking={false}
+            default_values={default_values}
+            inputs={deployment?.input_types}
+            runOrigin={runOrigin}
+            deployment_id={deployment?.id}
+          />
+        )}
+        {!deployment && (
+          <div className="flex flex-col gap-2 text-center text-muted-foreground text-sm">
+            <p>No deployment selected</p>
+          </div>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
 
@@ -172,7 +913,12 @@ type UserIconData = {
 export function UserIcon({
   user_id,
   className,
-}: { user_id: string; className?: string }) {
+  displayName = false,
+}: {
+  user_id: string;
+  className?: string;
+  displayName?: boolean;
+}) {
   const { data: userData } = useQuery<UserIconData>({
     queryKey: ["user", user_id],
   });
@@ -181,12 +927,20 @@ export function UserIcon({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Avatar className={cn("h-8 w-8", className)}>
-            <AvatarImage src={userData?.image_url || ""} />
-            <AvatarFallback>
-              <Skeleton className="h-full w-full" />
-            </AvatarFallback>
-          </Avatar>
+          <div className="flex items-center gap-2">
+            <Avatar className={cn("h-8 w-8", className)}>
+              <AvatarImage src={userData?.image_url || ""} />
+              <AvatarFallback>
+                <Skeleton className="h-full w-full" />
+              </AvatarFallback>
+            </Avatar>
+            {displayName && (
+              <span className="text-muted-foreground text-xs">
+                {userData?.username ||
+                  `${userData?.first_name} ${userData?.last_name}`}
+              </span>
+            )}
+          </div>
         </TooltipTrigger>
         {/* At least firstName or LastName is required to display something */}
         {userData && (userData.last_name || userData.first_name) && (
@@ -203,378 +957,45 @@ export function UserIcon({
   );
 }
 
-function RunRow({
-  run: _run,
-  isSelected,
-  onSelect,
-  setInputValues,
-}: {
-  run: WorkflowRunType | null;
-  isSelected: boolean;
-  onSelect: () => void;
-  setInputValues: (values: any) => void;
-}) {
-  const {
-    data: run,
-    isLoading,
-    refetch,
-  } = useQuery<any>({
-    queryKey: ["run", _run?.id],
-    queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
-    refetchInterval: (query) => {
-      if (
-        query.state.data?.status === "running" ||
-        query.state.data?.status === "uploading" ||
-        query.state.data?.status === "not-started" ||
-        query.state.data?.status === "queued"
-      ) {
-        return 2000;
-      }
-      return false;
-    },
-  });
-
-  // const { data: userData } = useSWR(
-  //   `${run.user_id}/image`,
-  //   () => getClerkUserData(run.user_id || ""),
-  //   {
-  //     refreshInterval: 1000 * 60 * 5,
-  //   },
-  // );
-
-  // const { data: userData } = useQuery({
-  //   queryKey: ["user", run.user_id],
-  // });
-
-  const { setVersion, value: currentVersion } = useSelectedVersion(
-    run?.workflow_id || "",
-  );
-
-  // // TODO: on holded
-  // const { data: favoriteStatus, mutate: mutateFavoriteStatus } = useSWR(
-  //   `favorite-status-${run.id}`,
-  //   () => getWorkflowRunFavoriteStatus(run.id),
-  // );
-
-  function getFormattedInputs(run: any): Record<string, any> {
-    if (
-      run.workflow_inputs &&
-      typeof run.workflow_inputs === "object" &&
-      Object.keys(run.workflow_inputs).length > 0
-    ) {
-      return run.workflow_inputs;
-    } else if (run.workflow_api) {
-      return Object.entries(run.workflow_api).reduce(
-        (acc, [nodeId, node]) => {
-          if (
-            customInputNodes.hasOwnProperty(
-              node.class_type as keyof typeof customInputNodes,
-            )
-          ) {
-            if (node.class_type === "ComfyUIDeployExternalImage") {
-              // Handle external image case safely
-              const linkedNodeId =
-                Array.isArray(node.inputs.default_value) &&
-                node.inputs.default_value.length > 0
-                  ? node.inputs.default_value[0]
-                  : null;
-              const linkedNode = linkedNodeId
-                ? run.workflow_api?.[linkedNodeId]
+function getFormattedInputs(run: any): Record<string, any> {
+  if (
+    run.workflow_inputs &&
+    typeof run.workflow_inputs === "object" &&
+    Object.keys(run.workflow_inputs).length > 0
+  ) {
+    return run.workflow_inputs;
+  }
+  if (run.workflow_api) {
+    return Object.entries(run.workflow_api).reduce(
+      (acc, [nodeId, node]) => {
+        if (
+          customInputNodes.hasOwnProperty(
+            node.class_type as keyof typeof customInputNodes,
+          )
+        ) {
+          if (node.class_type === "ComfyUIDeployExternalImage") {
+            // Handle external image case safely
+            const linkedNodeId =
+              Array.isArray(node.inputs.default_value) &&
+              node.inputs.default_value.length > 0
+                ? node.inputs.default_value[0]
                 : null;
-              if (linkedNode && linkedNode.inputs && linkedNode.inputs.image) {
-                acc[node.inputs.input_id] = linkedNode.inputs.image;
-              } else {
-                acc[node.inputs.input_id] = node.inputs.default_value || null;
-              }
+            const linkedNode = linkedNodeId
+              ? run.workflow_api?.[linkedNodeId]
+              : null;
+            if (linkedNode?.inputs?.image) {
+              acc[node.inputs.input_id] = linkedNode.inputs.image;
             } else {
               acc[node.inputs.input_id] = node.inputs.default_value || null;
             }
+          } else {
+            acc[node.inputs.input_id] = node.inputs.default_value || null;
           }
-          return acc;
-        },
-        {} as Record<string, any>,
-      );
-    }
-    return {};
-  }
-
-  const DisplayInputs = ({
-    title,
-    input,
-  }: {
-    title: string;
-    input: string | number;
-  }) => {
-    return (
-      <div className="mb-1 flex flex-col">
-        <span className="font-semibold">{title}</span>
-        <span
-          className={`overflow-hidden ${
-            shouldBreakAll(String(input)) ? "break-all" : "break-words"
-          }`}
-        >
-          {String(input)}
-        </span>
-      </div>
-    );
-  };
-
-  const [isScrollable, setIsScrollable] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkScrollable = () => {
-      if (scrollRef.current) {
-        setIsScrollable(
-          scrollRef.current.scrollWidth > scrollRef.current.clientWidth,
-        );
-      }
-    };
-
-    checkScrollable();
-    window.addEventListener("resize", checkScrollable);
-    return () => window.removeEventListener("resize", checkScrollable);
-  }, []);
-
-  if (!run) {
-    return (
-      <div className="flex h-full flex-col overflow-hidden border-b p-2">
-        <div className="grid w-full grid-cols-12 items-center gap-2">
-          <Skeleton className="col-span-1 h-4 w-8" />
-          <Skeleton className="col-span-2 h-6 w-16" />
-          <Skeleton className="col-span-2 h-4 w-12" />
-          <Skeleton className="col-span-2 h-4 w-20" />
-          <div className="col-span-5 flex justify-end">
-            <Skeleton className="h-6 w-24" />
-          </div>
-        </div>
-        <div className="mt-2 flex gap-2">
-          <Skeleton className="h-[340px] w-[340px] flex-shrink-0" />
-          <Skeleton className="h-[340px] w-[340px] flex-shrink-0" />
-          <Skeleton className="h-[340px] w-[340px] flex-shrink-0" />
-          <Skeleton className="h-[340px] w-[340px] flex-shrink-0" />
-        </div>
-      </div>
+        }
+        return acc;
+      },
+      {} as Record<string, any>,
     );
   }
-
-  return (
-    <div>
-      <div
-        className={cn(
-          "flex gap-3 py-2",
-          run.origin === "manual" ? "flex-row-reverse" : "flex-row",
-        )}
-      >
-        <p className="text-gray-500 text-sm">#{run.number}</p>
-        <Badge className="w-fit rounded-[10px] text-xs">
-          {run.version?.version ? `v${run.version.version}` : "N/A"}
-        </Badge>
-        {run.gpu && (
-          <Badge className="w-fit rounded-[10px] text-2xs text-gray-500">
-            {run.gpu}
-          </Badge>
-        )}
-        <p className="flex items-center whitespace-nowrap text-gray-500 text-sm">
-          {getRelativeTime(run.created_at)}
-        </p>
-      </div>
-      <div
-        className={cn(
-          "group flex gap-2",
-          run.origin === "manual" ? "flex-row-reverse" : "flex-row",
-        )}
-      >
-        {run.origin === "manual" && run.user_id ? (
-          <UserIcon user_id={run.user_id} />
-        ) : (
-          <div className="flex flex-col gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-              <User className="h-5 w-5" />
-            </div>
-            <Badge className="w-fit rounded-[10px] text-xs">{run.origin}</Badge>
-          </div>
-        )}
-        <div
-          className={cn(
-            "flex h-full max-w-[1400px] flex-wrap rounded-[12px] border drop-shadow-md",
-            (() => {
-              switch (run.status) {
-                case "failed":
-                  return "border-red-300 bg-red-100";
-                case "timeout":
-                  return "border-gray-300 bg-gray-100 opacity-70";
-                default:
-                  return "border-gray-200 bg-white";
-              }
-            })(),
-          )}
-        >
-          <div className="w-full xl:w-64">
-            <div className="flex h-full flex-col items-start justify-center">
-              <div className="w-full px-4 pt-4">
-                <ScrollArea>
-                  <div className="max-h-[150px] text-2xs leading-normal">
-                    {Object.entries(getFormattedInputs(run)).map(
-                      ([key, value]) => (
-                        <DisplayInputs key={key} title={key} input={value} />
-                      ),
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-              <LiveStatus run={run} isForRunPage refetch={refetch} />
-            </div>
-            {run.status === "success" && (
-              <div className="absolute top-2 left-2 flex gap-1 opacity-0 transition-all group-hover:opacity-100">
-                {/* show run output */}
-                {/* <Popover>
-                  <PopoverTrigger>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="bg-gray-200 text-gray-700"
-                    >
-                      <ChevronDown size={16} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[600px]" align="start">
-                    <RunInputs run={run as any} />
-                  </PopoverContent>
-                </Popover> */}
-
-                {/* edit input */}
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="bg-gray-200/80 text-gray-700"
-                        onClick={() => {
-                          // console.log("run inputs", getFormattedInputs(run));
-                          setInputValues(getFormattedInputs(run));
-                          toast.success("Input values updated. ");
-                          console.log("run version", currentVersion.version);
-                          if (
-                            run.version?.version &&
-                            run.version?.version !== currentVersion.version
-                          ) {
-                            setVersion(run.version?.version);
-                            toast.warning(
-                              "Version updated to: v" + run.version?.version,
-                            );
-                          }
-                        }}
-                      >
-                        <Pencil size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Tweak this run</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                {/* favorite */}
-                {/* <Button
-                  hideLoading
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "bg-gray-200",
-                    favoriteStatus
-                      ? "text-yellow-500 hover:text-yellow-400"
-                      : "text-gray-700"
-                  )}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const newFavoriteStatus =
-                      await toggleWorkflowRunFavoriteStatus(run.id);
-                    toast.success(
-                      newFavoriteStatus
-                        ? "Added to favorites"
-                        : "Removed from favorites"
-                    );
-                    mutateFavoriteStatus();
-                  }}
-                >
-                  <Star size={16} />
-                </Button> */}
-              </div>
-            )}
-          </div>
-
-          <ScrollArea className="grid min-h-[238px] flex-[1_0_230px] px-1">
-            {run.status === "running" ? (
-              <div className="flex flex-row gap-1 py-1" ref={scrollRef}>
-                <Skeleton className="aspect-square h-[250px] rounded-[8px]" />
-              </div>
-            ) : (
-              <div
-                ref={scrollRef}
-                className={cn("flex max-h-[250px] flex-row gap-1 py-1")}
-              >
-                {/* {imageRender} */}
-                <OutputRenderRun
-                  run={run as any}
-                  imgClasses="max-w-[230px] w-full h-[230px] object-cover object-center rounded-[8px]"
-                  canExpandToView={true}
-                  lazyLoading={true}
-                  canDownload={true}
-                />
-              </div>
-            )}
-            {isScrollable && (
-              <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-12 rounded-r-[8px] bg-gradient-to-l from-10% from-white to-transparent" />
-            )}
-          </ScrollArea>
-        </div>
-
-        <div className="grid grid-rows-3 opacity-0 transition-opacity group-hover:opacity-100">
-          <div />
-          {/* share */}
-          <div
-            className={cn(
-              "flex items-center",
-              run.origin === "manual" && "justify-end",
-            )}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-transparent text-gray-700"
-              onClick={() => {
-                const url = new URL(window.location.href);
-                url.searchParams.set("view", "api");
-                url.searchParams.set("run-id", run.id);
-                navigator.clipboard.writeText(url.toString());
-                toast.success("Copied to clipboard!");
-              }}
-            >
-              <Forward size={16} />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function shouldBreakAll(str: string): boolean {
-  // Check if it's a URL
-  try {
-    new URL(str);
-    return true;
-  } catch {}
-
-  // Check if it's JSON
-  try {
-    JSON.parse(str);
-    return true;
-  } catch {}
-
-  // If it's neither a URL nor JSON, return false
-  return false;
+  return {};
 }

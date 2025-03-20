@@ -2,7 +2,7 @@ import { GalleryView } from "@/components/GalleryView";
 import { PaddingLayout } from "@/components/PaddingLayout";
 import { LoadingWrapper } from "@/components/loading-wrapper";
 import { useIsAdminAndMember } from "@/components/permissions";
-import { SharePageComponent } from "@/components/run/SharePageComponent";
+import { Playground } from "@/components/run/SharePageComponent";
 import { SessionItem } from "@/components/sessions/SessionItem";
 import {
   Breadcrumb,
@@ -138,12 +138,7 @@ function WorkflowPageComponent() {
           <div className={cn("h-full w-full")}>
             {workflow?.selected_machine_id && version?.id && (
               <RealtimeWorkflowProvider workflowId={workflowId}>
-                <SharePageComponent
-                  runOrigin={"manual"}
-                  machine_id={workflow?.selected_machine_id}
-                  workflow_version_id={version?.id}
-                  inputs={getInputsFromWorkflowAPI(version?.workflow_api)}
-                />
+                <Playground runOrigin={"manual"} />
               </RealtimeWorkflowProvider>
             )}
           </div>
