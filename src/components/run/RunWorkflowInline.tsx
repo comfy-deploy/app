@@ -233,6 +233,8 @@ export function parseInputValues(valuesParsed: Record<string, any>) {
 export function RunWorkflowInline({
   inputs,
   deployment_id,
+  workflow_version_id,
+  machine_id,
   default_values = {},
   hideRunButton = false,
   hideInputs = false,
@@ -242,7 +244,9 @@ export function RunWorkflowInline({
   scrollAreaClassName,
 }: {
   inputs: z.infer<typeof WorkflowInputsType>;
-  deployment_id: string;
+  deployment_id?: string;
+  workflow_version_id?: string;
+  machine_id?: string;
   default_values?: Record<string, any>;
   hideRunButton?: boolean;
   hideInputs?: boolean;
@@ -299,7 +303,9 @@ export function RunWorkflowInline({
       const body = model_id
         ? { model_id: model_id, inputs: val }
         : {
-            deployment_id: deployment_id,
+            // deployment_id: deployment_id,
+            workflow_version_id: workflow_version_id,
+            machine_id: machine_id,
             inputs: val,
             origin: runOrigin,
             batch_number: 1,

@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -21,7 +20,10 @@ import { useRuns } from "@/components/workflows/RunsTable";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { customInputNodes } from "@/lib/customInputNodes";
 import { getDuration, getRelativeTime } from "@/lib/get-relative-time";
-import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
+import {
+  getDefaultValuesFromWorkflow,
+  getInputsFromWorkflow,
+} from "@/lib/getInputsFromWorkflow";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -37,17 +39,6 @@ import {
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  getEnvColor,
-  useWorkflowDeployments,
-} from "../workspace/ContainersTable";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { Fab } from "../fab";
 import { MyDrawer } from "../drawer";
 import { motion } from "framer-motion";
@@ -58,6 +49,7 @@ import { Progress } from "../ui/progress";
 import { Separator } from "../ui/separator";
 import { AlertDescription } from "../ui/alert";
 import { useSearch } from "@tanstack/react-router";
+import { useSelectedVersion } from "../version-select";
 
 type run = {
   status:
@@ -95,7 +87,11 @@ export function useRun(runId?: string) {
   return runQuery;
 }
 
-export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
+export function Playground(props: {
+  title?: ReactNode;
+  runOrigin?: any;
+  workflow?: any;
+}) {
   const workflow_id = useWorkflowIdInWorkflowPage();
   const [runId, setRunId] = useQueryState("run-id");
   const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
@@ -111,25 +107,19 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
   });
 
-  const { data: deployments, isLoading: isDeploymentsLoading } =
-    useWorkflowDeployments(workflow_id);
-
-  const [selectedDeployment, setSelectedDeployment] = useQueryState(
-    "deployment",
-    { defaultValue: deployments?.[0]?.id },
-  );
-
-  const deployment = deployments?.find(
-    (deployment) => deployment.id === selectedDeployment,
+  const { value: version, isLoading: isVersionLoading } = useSelectedVersion(
+    workflow_id ?? "",
   );
 
   const [default_values, setDefaultValues] = useState(
-    getDefaultValuesFromWorkflow(deployment?.input_types),
+    getDefaultValuesFromWorkflow(getInputsFromWorkflow(version)),
   );
 
   useEffect(() => {
-    setDefaultValues(getDefaultValuesFromWorkflow(deployment?.input_types));
-  }, [deployment?.id]);
+    setDefaultValues(
+      getDefaultValuesFromWorkflow(getInputsFromWorkflow(version)),
+    );
+  }, [version?.version]);
 
   const lastRunIdRef = useRef<string | null>(null);
 
@@ -245,53 +235,20 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
           >
             <div className="mb-1 flex items-center justify-between">
               <span className="ml-2 font-semibold text-sm">Edit</span>
-              <div className="items-center gap-3 rounded-sm border border-gray-200 bg-white/90 backdrop-blur-sm">
-                <Select
-                  value={deployment?.id}
-                  onValueChange={(value) => {
-                    const selectedDeployment = deployments?.find(
-                      (d) => d.id === value,
-                    );
-                    if (selectedDeployment) {
-                      setSelectedDeployment(selectedDeployment.id);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-8 w-[200px] border-none bg-transparent">
-                    <SelectValue placeholder="Select environment" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {deployments?.map((dep) => (
-                      <SelectItem key={dep.id} value={dep.id}>
-                        <div className="flex w-full items-center justify-between gap-2">
-                          <Badge
-                            variant="outline"
-                            className={cn(getEnvColor(dep.environment))}
-                          >
-                            {dep.environment}
-                          </Badge>
-                          <span className="text-gray-500 text-xs">
-                            {dep.gpu || "No GPU"}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <div className="flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white p-3 shadow-sm">
-              {isDeploymentsLoading ? (
+              {isVersionLoading ? (
                 <div className="flex h-full items-center justify-center">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
-              ) : deployment ? (
+              ) : version ? (
                 <RunWorkflowInline
                   blocking={false}
                   default_values={default_values}
-                  inputs={deployment?.input_types}
+                  inputs={getInputsFromWorkflow(version)}
                   runOrigin={props.runOrigin}
-                  deployment_id={deployment?.id}
+                  workflow_version_id={version?.id}
+                  machine_id={props.workflow?.selected_machine_id}
                 />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-2">
@@ -371,7 +328,7 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
             </motion.div>
 
             <div className="relative z-10 h-full w-full">
-              <RunDisplay runId={runId ?? undefined} deployment={deployment} />
+              <RunDisplay runId={runId ?? undefined} />
               <ArrowIndicator
                 disableTop={true}
                 disableLeft={true}
@@ -424,12 +381,13 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
           onClose={() => setShowRunInputsMobileLayout(false)}
           desktopClassName="w-[500px] 2xl:hidden shadow-lg border border-gray-200"
         >
-          <InputLayout
-            deployment={deployment}
-            setSelectedDeployment={setSelectedDeployment}
-            deployments={deployments}
+          <RunWorkflowInline
+            blocking={false}
             default_values={default_values}
+            inputs={getInputsFromWorkflow(version)}
             runOrigin={props.runOrigin}
+            workflow_version_id={version?.id}
+            machine_id={props.workflow?.selected_machine_id}
           />
         </MyDrawer>
       )}
@@ -437,10 +395,7 @@ export function Playground(props: { title?: ReactNode; runOrigin?: any }) {
   );
 }
 
-function RunDisplay({
-  runId,
-  deployment,
-}: { runId?: string; deployment?: any }) {
+function RunDisplay({ runId }: { runId?: string }) {
   const { data: run, isLoading } = useRun(runId);
   const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
     run?.outputs || [],
@@ -514,14 +469,6 @@ function RunDisplay({
   const messageClass =
     "animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm";
 
-  // Handle no deployment
-  if (!deployment && !run) {
-    return (
-      <div className={containerClass}>
-        <p className={messageClass}>Please select a deployment</p>
-      </div>
-    );
-  }
   // Handle loading and empty states
   if (isLoading || !run) {
     return (
@@ -838,72 +785,6 @@ function ArrowIndicator({
         </span>
       </div>
     </>
-  );
-}
-
-function InputLayout({
-  deployment,
-  setSelectedDeployment,
-  deployments,
-  default_values,
-  runOrigin,
-}: {
-  deployment: any;
-  setSelectedDeployment: (deployment: any) => void;
-  deployments: any;
-  default_values: any;
-  runOrigin: string;
-}) {
-  return (
-    <Tabs defaultValue="regular">
-      <TabsContent value="regular">
-        <Select
-          value={deployment?.id}
-          defaultValue={deployment?.id}
-          onValueChange={(value) => {
-            const deployment = deployments?.find((d) => d.id === value);
-            if (deployment) {
-              setSelectedDeployment(deployment.id);
-            }
-          }}
-        >
-          <SelectTrigger className="mb-4 w-[200px] capitalize">
-            <SelectValue placeholder="Select deployment" />
-          </SelectTrigger>
-          <SelectContent>
-            {deployments?.map((deployment) => (
-              <SelectItem
-                key={deployment.id}
-                value={deployment.id}
-                className="flex items-center justify-between capitalize"
-              >
-                {/* <span>{deployment.environment}</span> */}
-                <Badge
-                  variant="outline"
-                  className={cn(getEnvColor(deployment.environment))}
-                >
-                  {deployment.environment}
-                </Badge>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {deployment && (
-          <RunWorkflowInline
-            blocking={false}
-            default_values={default_values}
-            inputs={deployment?.input_types}
-            runOrigin={runOrigin}
-            deployment_id={deployment?.id}
-          />
-        )}
-        {!deployment && (
-          <div className="flex flex-col gap-2 text-center text-muted-foreground text-sm">
-            <p>No deployment selected</p>
-          </div>
-        )}
-      </TabsContent>
-    </Tabs>
   );
 }
 

@@ -138,7 +138,7 @@ function WorkflowPageComponent() {
           <div className={cn("h-full w-full")}>
             {workflow?.selected_machine_id && version?.id && (
               <RealtimeWorkflowProvider workflowId={workflowId}>
-                <Playground runOrigin={"manual"} />
+                <Playground runOrigin={"manual"} workflow={workflow} />
               </RealtimeWorkflowProvider>
             )}
           </div>
