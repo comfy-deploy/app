@@ -93,6 +93,7 @@ import {
   SessionIncrementDialog,
   useSessionIncrementStore,
 } from "./workspace/increase-session";
+import { useDexieCurrentPlan } from "@/lib/dexis/dexis-current-plan";
 
 // Add Session type
 interface Session {
@@ -290,8 +291,6 @@ const links = [
 function SessionSidebar() {
   const router = useRouter();
   const workflowId = useWorkflowIdInSessionView();
-  const clerk = useClerk();
-  const personalOrg = clerk.user?.username ?? "personal";
 
   const [sessionId, setSessionId] = useQueryState("sessionId", parseAsString);
   const [displayCommit, setDisplayCommit] = useState(false);
@@ -795,24 +794,21 @@ export function AppSidebar() {
 }
 
 function PlanBadge() {
-  const { data: plan, isLoading } = useCurrentPlanWithStatus();
-  console.log(isLoading);
-
-  const planId = plan?.plans?.plans[0] || "";
+  const { plan, isLoading } = useDexieCurrentPlan();
 
   let displayPlan = "Free";
   let badgeColor = "secondary";
 
   // Logic to determine which plan to display
-  if (planId.includes("pro")) {
+  if (plan?.includes("pro")) {
     displayPlan = "Pro";
-  } else if (planId.includes("creator") || planId.includes("creator_")) {
+  } else if (plan?.includes("creator") || plan?.includes("creator_")) {
     displayPlan = "Creator";
     badgeColor = "yellow";
-  } else if (planId.includes("deployment")) {
+  } else if (plan?.includes("deployment")) {
     displayPlan = "Deployment";
     badgeColor = "blue";
-  } else if (planId.includes("business")) {
+  } else if (plan?.includes("business")) {
     displayPlan = "Business";
     badgeColor = "purple";
   }

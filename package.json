@@ -74,6 +74,8 @@
     "comfyui-json": "^0.1.31",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
+    "dexie": "^4.0.11",
+    "dexie-react-hooks": "^1.1.7",
     "embla-carousel-react": "^8.5.1",
     "event-source-polyfill": "^1.0.31",
     "fabric": "^6.5.3",
