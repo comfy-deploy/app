@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { dexisDB } from "./dexisdb";
+import { dexieDB } from "./dexiedb";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect } from "react";
 import { useLocation } from "@tanstack/react-router";
@@ -24,7 +24,7 @@ export function useDexieCurrentPlan() {
   const cachedPlan = useLiveQuery(
     async () => {
       if (!id) return null;
-      return await dexisDB.plans.get(id);
+      return await dexieDB.plans.get(id);
     },
     [id],
     null,
@@ -42,14 +42,14 @@ export function useDexieCurrentPlan() {
 
     // If no cached plan exists at all, create a new entry
     if (!cachedPlan) {
-      dexisDB.plans.put({
+      dexieDB.plans.put({
         id,
         plan: currentPlan,
       });
     }
     // If cached plan exists but plan data has changed
     else if (cachedPlan.plan !== currentPlan) {
-      dexisDB.plans.update(id, {
+      dexieDB.plans.update(id, {
         plan: currentPlan,
       });
     }

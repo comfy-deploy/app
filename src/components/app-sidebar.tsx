@@ -93,7 +93,7 @@ import {
   SessionIncrementDialog,
   useSessionIncrementStore,
 } from "./workspace/increase-session";
-import { useDexieCurrentPlan } from "@/lib/dexis/dexis-current-plan";
+import { useDexieCurrentPlan } from "@/lib/dexie/dexie-current-plan";
 
 // Add Session type
 interface Session {

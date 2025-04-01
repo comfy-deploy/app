@@ -1,40 +1,19 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useDexieWorkflowList } from "@/lib/dexie/dexie-workflow-list";
+import type { WorkflowData } from "@/lib/dexie/dexiedb";
 
-const BATCH_SIZE = 20;
+export const BATCH_SIZE = 20;
 
 export function useWorkflowList(
   debouncedSearchValue: string,
   limit: number = BATCH_SIZE,
 ) {
-  return useInfiniteQuery<any[]>({
-    queryKey: ["workflows"],
-    queryKeyHashFn: (queryKey) => {
-      return [...queryKey, debouncedSearchValue, limit].join(",");
-    },
-    meta: {
-      limit: limit,
-      offset: 0,
-      params: {
-        search: debouncedSearchValue ?? "",
-      },
-    },
-    getNextPageParam: (lastPage, allPages) => {
-      // Check if lastPage is defined and has a length property
-      if (
-        lastPage &&
-        Array.isArray(lastPage) &&
-        lastPage.length === BATCH_SIZE
-      ) {
-        return allPages.length * BATCH_SIZE;
-      }
-      return undefined;
-    },
-    initialPageParam: 0,
-  });
+  // Use the cached version instead of direct API call
+  return useDexieWorkflowList(debouncedSearchValue, limit);
 }
 
 export function useWorkflowsAll() {
-  return useQuery<any[]>({
+  return useQuery<WorkflowData[]>({
     queryKey: ["workflows", "all"],
     refetchInterval: 5000,
   });
@@ -47,7 +26,7 @@ export interface FeaturedWorkflow {
     cover_image: string;
     id: string;
     name: string;
-    workflow: any; // this is a object json
+    workflow: Record<string, unknown>; // this is a object json
   };
 }
 
