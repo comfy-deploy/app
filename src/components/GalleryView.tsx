@@ -385,7 +385,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
           ))}
         </div>
 
-        <div className="pointer-events-none fixed top-0 left-0 h-20 w-full bg-gradient-to-b from-white to-transparent" />
+        <div className="pointer-events-none fixed top-0 left-0 h-20 w-full bg-gradient-to-b from-white to-transparent dark:from-zinc-900" />
 
         <div className="flex items-center justify-center gap-2 pb-4">
           {query.hasNextPage ? (

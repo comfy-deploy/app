@@ -113,6 +113,8 @@ import {
   useSessionIncrementStore,
 } from "./workspace/increase-session";
 import { sendWorkflow } from "./workspace/sendEventToCD";
+import { useTheme } from "./theme-provider";
+import { dark } from "@clerk/themes";
 
 // Add Session type
 interface Session {
@@ -129,12 +131,14 @@ interface Session {
 function UserMenu() {
   const isAdminOnly = useIsAdminOnly();
   const isAdminAndMember = useIsAdminAndMember();
+  const { theme } = useTheme();
 
   return (
     <div className="flex h-full w-10 items-center justify-center">
       <UserButton
         userProfileProps={{}}
         appearance={{
+          baseTheme: theme === "dark" ? dark : undefined,
           elements: {
             userButtonPopoverRootBox: {
               pointerEvents: "initial",
@@ -752,6 +756,7 @@ export function AppSidebar() {
   const sessionId = useSessionIdInSessionView();
   const shareSlug = useShareSlug();
   const { setOpen } = useSidebar();
+  const { theme } = useTheme();
 
   const items = flatPages.map((page) => ({
     title: page.name,
@@ -835,9 +840,13 @@ export function AppSidebar() {
               <img
                 src="/icon-light.svg"
                 alt="comfydeploy"
-                className="ml-1 h-7 w-7"
+                className="ml-1 h-7 w-7 dark:hidden"
               />
-              {/* <IconWord /> */}
+              <img
+                src="/icon.svg"
+                alt="comfydeploy"
+                className="ml-1 hidden h-7 w-7 dark:block"
+              />
             </Link>
             <div className="flex items-center gap-1">
               <PlanBadge />
@@ -846,13 +855,14 @@ export function AppSidebar() {
           </div>
 
           {!(workflow_id && parentPath === "workflows") && (
-            <div className="flex items-center gap-0 justify-center mt-1 bg-gray-100 rounded-[8px]">
+            <div className="mt-1 flex items-center justify-center gap-0 rounded-[8px] bg-gray-100 dark:bg-gradient-to-r dark:from-zinc-800 dark:to-zinc-900">
               <OrganizationSwitcher
                 organizationProfileUrl="/organization-profile"
                 organizationProfileMode="navigation"
                 afterSelectOrganizationUrl="/org/:slug/workflows"
                 afterSelectPersonalUrl={`/user/${personalOrg}/workflows`}
                 appearance={{
+                  baseTheme: theme === "dark" ? dark : undefined,
                   elements: {
                     rootBox:
                       "items-center justify-center p-0 w-full max-w-[221px] md:max-w-[190px]",
@@ -869,7 +879,7 @@ export function AppSidebar() {
               />
               {orgId && (
                 <Link
-                  className="transition-colors bg-gray-200/40 hover:bg-gray-200 h-full flex items-center justify-center rounded-r-[8px] px-4"
+                  className="flex h-full items-center justify-center rounded-r-[8px] bg-gray-200/40 px-4 transition-colors hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
                   to="/organization-profile#/organization-members"
                 >
                   <Users className="h-4 w-4" />
@@ -932,10 +942,31 @@ export function AppSidebar() {
                             }}
                           />
                         )}
-                        <SidebarMenuButton asChild>
+                        <SidebarMenuButton
+                          asChild
+                          className={cn(
+                            "transition-colors dark:hover:bg-zinc-700/40",
+                            item.url === `/${parentPath}` &&
+                              "dark:bg-zinc-800/40",
+                          )}
+                        >
                           <Link href={item.url}>
-                            <item.icon />
-                            <span>{item.title}</span>
+                            <item.icon
+                              className={cn(
+                                "transition-colors dark:text-gray-400",
+                                item.url === `/${parentPath}` &&
+                                  "dark:text-white",
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "transition-colors dark:text-gray-400",
+                                item.url === `/${parentPath}` &&
+                                  "dark:text-white",
+                              )}
+                            >
+                              {item.title}
+                            </span>
                           </Link>
                         </SidebarMenuButton>
 
@@ -967,10 +998,31 @@ export function AppSidebar() {
                             }}
                           />
                         )}
-                        <SidebarMenuButton asChild>
+                        <SidebarMenuButton
+                          asChild
+                          className={cn(
+                            "transition-colors dark:hover:bg-zinc-700/40",
+                            item.url === `/${parentPath}` &&
+                              "dark:bg-zinc-800/40",
+                          )}
+                        >
                           <Link href={item.url}>
-                            <item.icon />
-                            <span>{item.title}</span>
+                            <item.icon
+                              className={cn(
+                                "transition-colors dark:text-gray-400",
+                                item.url === `/${parentPath}` &&
+                                  "dark:text-white",
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "transition-colors dark:text-gray-400",
+                                item.url === `/${parentPath}` &&
+                                  "dark:text-white",
+                              )}
+                            >
+                              {item.title}
+                            </span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
