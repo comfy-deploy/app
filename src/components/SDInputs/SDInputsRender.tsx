@@ -190,7 +190,7 @@ export function SDInputsRender({
           value={
             inputValue !== undefined && inputValue !== null ? inputValue : ""
           }
-          inputClasses="mt-1 bg-gray-50 rounded-[8px]"
+          inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-zinc-800"
           header={header(genericProps)}
           {...genericProps}
           type="number"

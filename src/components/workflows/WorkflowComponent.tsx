@@ -70,7 +70,7 @@ export default function WorkflowComponent() {
       {runId && (
         <MyDrawer
           backgroundInteractive={true}
-          desktopClassName="w-[600px] ring-1 ring-gray-200 shadow-xl"
+          desktopClassName="w-[600px] ring-1 ring-gray-200 shadow-xl dark:ring-zinc-700/80"
           open={!!runId}
           onClose={() => {
             handleCloseRun();
@@ -366,7 +366,9 @@ function RunVersionAndDeployment({ run }: { run: any }) {
               {matchingDeployment.environment}
             </Badge>
           )}
-          <Badge variant="outline">v{versionData.version}</Badge>
+          <Badge variant="outline" className="dark:border-gray-600">
+            v{versionData.version}
+          </Badge>
           {versionData.comment && (
             <span className="text-muted-foreground text-xs">
               {versionData.comment}
@@ -470,13 +472,13 @@ function RunTimeline({ run }: { run: any }) {
         <div className="mt-2 w-full pb-2">
           {/* Time Labels - with conditional rendering */}
           <div className="relative flex h-5 w-full">
-            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap font-medium text-[10px] text-gray-600">
+            <div className="-translate-x-0 absolute left-0 transform whitespace-nowrap font-medium text-[10px] text-gray-600 dark:text-gray-300">
               {formatTime(0)}
             </div>
 
             {hasCompleteTimingData && queueTime > 0 && (
               <div
-                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600"
+                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600 dark:text-gray-300"
                 style={{ left: `${visualQueuePos}%` }}
               >
                 {formatTime(queueEndTime)}
@@ -485,14 +487,14 @@ function RunTimeline({ run }: { run: any }) {
 
             {hasCompleteTimingData && showColdStart && (
               <div
-                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600"
+                className="-translate-x-1/2 absolute transform whitespace-nowrap font-medium text-[10px] text-gray-600 dark:text-gray-300"
                 style={{ left: `${visualExecStartPos}%` }}
               >
                 {formatTime(executionStartTime)}
               </div>
             )}
 
-            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap font-medium text-[10px] text-gray-600">
+            <div className="absolute right-0 translate-x-0 transform whitespace-nowrap font-medium text-[10px] text-gray-600 dark:text-gray-300">
               {formatTime(totalDuration)}
             </div>
           </div>
@@ -510,13 +512,13 @@ function RunTimeline({ run }: { run: any }) {
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
                         <div
-                          className="absolute h-5 cursor-pointer overflow-hidden rounded-[2px] bg-gray-200/80 shadow-sm backdrop-blur-sm"
+                          className="absolute h-5 cursor-pointer overflow-hidden rounded-[2px] bg-gray-200/80 shadow-sm backdrop-blur-sm dark:bg-zinc-500/70"
                           style={{
                             width: `${queueWidth}%`,
                             left: 0,
                           }}
                         >
-                          <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent,5px,rgba(0,0,0,0.05)_5px,rgba(0,0,0,0.05)_10px)] opacity-20" />
+                          <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent,5px,rgba(0,0,0,0.05)_5px,rgba(0,0,0,0.05)_10px)] opacity-20 dark:opacity-50" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top">
@@ -533,8 +535,8 @@ function RunTimeline({ run }: { run: any }) {
                         <div
                           className={`absolute h-5 cursor-pointer rounded-[2px] shadow-sm ${
                             isWarm
-                              ? "bg-amber-200/70 backdrop-blur-sm"
-                              : "bg-purple-200/70 backdrop-blur-sm"
+                              ? "bg-amber-200/70 backdrop-blur-sm dark:bg-amber-500/70"
+                              : "bg-purple-200/70 backdrop-blur-sm dark:bg-purple-500/70"
                           }`}
                           style={{
                             width: `${coldStartWidth}%`,
@@ -562,7 +564,7 @@ function RunTimeline({ run }: { run: any }) {
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
                       <div
-                        className="absolute h-5 cursor-pointer rounded-[2px] bg-blue-200/70 shadow-sm backdrop-blur-sm"
+                        className="absolute h-5 cursor-pointer rounded-[2px] bg-blue-200/70 shadow-sm backdrop-blur-sm dark:bg-blue-500/70"
                         style={{
                           width: `${runWidth}%`,
                           left: `${visualExecStartPos}%`,
@@ -583,7 +585,7 @@ function RunTimeline({ run }: { run: any }) {
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <div
-                      className="absolute h-5 cursor-pointer rounded-[2px] bg-blue-200/70 shadow-sm backdrop-blur-sm"
+                      className="absolute h-5 cursor-pointer rounded-[2px] bg-blue-200/70 shadow-sm backdrop-blur-sm dark:bg-blue-500/70"
                       style={{
                         width: "100%",
                         left: 0,
@@ -600,12 +602,12 @@ function RunTimeline({ run }: { run: any }) {
             )}
 
             {/* Timeline markers - always show start and end */}
-            <div className="absolute left-0 z-10 h-6 w-0.5 rounded-full bg-gray-700" />
+            <div className="absolute left-0 z-10 h-6 w-0.5 rounded-full bg-gray-700 dark:bg-gray-300" />
 
             {/* Only show intermediate markers if we have the data */}
             {hasCompleteTimingData && queueTime > 0 && (
               <div
-                className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
+                className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700 dark:bg-gray-300"
                 style={{ left: `${visualQueuePos}%` }}
               />
             )}
@@ -613,20 +615,20 @@ function RunTimeline({ run }: { run: any }) {
             {/* Only show cold start marker if there's a cold start duration */}
             {hasCompleteTimingData && showColdStart && (
               <div
-                className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
+                className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700 dark:bg-gray-300"
                 style={{ left: `${visualExecStartPos}%` }}
               />
             )}
 
             <div
-              className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700"
+              className="absolute z-10 h-6 w-0.5 rounded-full bg-gray-700 dark:bg-gray-300"
               style={{ right: 0 }}
             />
           </div>
 
           {/* Event Labels - with conditional rendering */}
           <div className="relative mt-1.5 h-8 w-full">
-            <div className="-translate-x-0 absolute left-0 transform whitespace-normal border-gray-400 border-l-2 pl-1 font-medium text-[10px] text-gray-700">
+            <div className="-translate-x-0 absolute left-0 transform whitespace-normal border-gray-400 border-l-2 pl-1 font-medium text-[10px] text-gray-700 dark:text-gray-300">
               Submitted
             </div>
 
@@ -1145,8 +1147,8 @@ function FinishedRunLogDisplay({
         return (
           <div className="space-y-2">
             {/* Simplified error message */}
-            <div className="rounded-md bg-red-50 p-2">
-              <div className="font-medium text-2xs text-destructive">
+            <div className="rounded-md bg-red-50 p-2 dark:bg-red-900/50">
+              <div className="font-medium text-2xs text-destructive dark:text-red-400">
                 {firstError.errors[0].message}
               </div>
             </div>
@@ -1168,8 +1170,8 @@ function FinishedRunLogDisplay({
       if (jsonData.exception_message && jsonData.traceback) {
         return (
           <div className="text-2xs">
-            <div className="rounded-md bg-red-50 p-2">
-              <div className="font-medium text-destructive">
+            <div className="rounded-md bg-red-50 p-2 dark:bg-red-900/50">
+              <div className="font-medium text-destructive dark:text-red-400">
                 {jsonData.exception_type}: {jsonData.exception_message}
               </div>
             </div>

@@ -250,7 +250,7 @@ export function WorkspaceClientWrapper({
             </Button>
             {versionData && (
               <motion.div
-                className="hidden md:flex h-full w-full items-center justify-center bg-gray-50 shadow-lg rounded-l-lg border border-1 my-2 overflow-hidden relative"
+                className="relative my-2 hidden h-full w-full items-center justify-center overflow-hidden rounded-l-lg border border-1 bg-gray-50 shadow-lg md:flex dark:bg-gradient-to-br dark:from-zinc-900 dark:to-zinc-950"
                 // layout={showPreview}
                 animate={{
                   opacity: showPreview ? 1 : 0,
@@ -273,7 +273,7 @@ export function WorkspaceClientWrapper({
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowPreview(false)}
-                    className="absolute left-2 top-2 z-10 bg-white/80 hover:bg-white shadow-sm"
+                    className="absolute top-2 left-2 z-10 bg-white/80 shadow-sm hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-800"
                   >
                     <ChevronRight size={20} />
                   </Button>

@@ -134,7 +134,7 @@ export function RunDuration({
 
   return (
     <Tooltip>
-      <TooltipTrigger className="rounded-md p-1 hover:bg-gray-100">
+      <TooltipTrigger className="rounded-md p-1 hover:bg-gray-100 dark:hover:bg-zinc-600/40">
         <div className="flex justify-between gap-2 truncate">
           <div className="flex items-center gap-2 text-2xs">
             {run.machine_type !== "comfy-deploy-serverless" ||

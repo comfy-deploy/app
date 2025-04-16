@@ -412,7 +412,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
       </div>
       {runId && (
         <MyDrawer
-          desktopClassName="w-[600px] ring-1 ring-gray-200"
+          desktopClassName="w-[600px] ring-1 ring-gray-200 dark:ring-gray-600/40"
           backgroundInteractive={true}
           open={isDrawerOpen}
           onClose={handleCloseRun}

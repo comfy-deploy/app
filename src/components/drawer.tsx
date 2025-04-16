@@ -54,7 +54,7 @@ export function MyDrawer({
             } as React.CSSProperties
           }
         >
-          <div className="pointer-events-auto flex h-full w-full grow select-text flex-col rounded-[16px] bg-zinc-50 px-5 pt-8 pb-5">
+          <div className="pointer-events-auto flex h-full w-full grow select-text flex-col rounded-[16px] bg-zinc-50 px-5 pt-8 pb-5 dark:bg-gradient-to-br dark:from-zinc-800 dark:to-zinc-900">
             <Drawer.Close className="absolute top-2 right-2 rounded-full p-2 hover:bg-zinc-200">
               <X size={14} />
             </Drawer.Close>

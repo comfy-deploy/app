@@ -232,12 +232,15 @@ export function SessionCreatorForm({
     return <div>Current machine does not support session</div>;
   }
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className="flex w-full flex-col gap-6">
       <div>
         <h2 className="font-semibold text-lg">ComfyUI</h2>
-        <p className="text-sm text-muted-foreground flex items-center gap-2">
+        <p className="flex items-center gap-2 text-muted-foreground text-sm">
           Start and edit your workflow{" "}
-          <Badge variant="outline" className="gap-2">
+          <Badge
+            variant="outline"
+            className="gap-2 dark:outline dark:outline-gray-600/40"
+          >
             {isFluidVersion && (
               <div className="rounded-full bg-blue-100 p-0.5">
                 <Droplets

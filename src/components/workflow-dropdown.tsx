@@ -116,7 +116,7 @@ export function WorkflowDropdown({
             type="button"
             aria-expanded={open}
             className={cn(
-              "flex w-full items-center justify-between rounded-sm px-2 py-1 text-sm hover:bg-gray-50 ",
+              "flex w-full items-center justify-between rounded-sm px-2 py-1 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-zinc-700/40",
               className,
             )}
             onDoubleClick={openRenameDialog}

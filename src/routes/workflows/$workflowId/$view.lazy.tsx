@@ -268,8 +268,10 @@ function WorkflowPageComponent() {
                         }}
                         className={cn(
                           "group/my-nav-item",
-                          currentView === tab && "bg-gray-200 text-gray-900",
-                          "transition-colors capitalize",
+                          currentView === tab
+                            ? "bg-gray-200 text-gray-900 dark:bg-zinc-800 dark:text-gray-100"
+                            : "text-gray-500 dark:text-gray-400",
+                          "capitalize transition-colors",
                         )}
                       >
                         {tab === "workspace"
@@ -303,7 +305,7 @@ function WorkflowPageComponent() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="hover:bg-gray-200 group-hover/my-nav-item:opacity-100 transition-opacity opacity-0"
+                                className="opacity-0 transition-all hover:bg-gray-200 group-hover/my-nav-item:opacity-100 dark:hover:bg-zinc-600/40"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -340,7 +342,9 @@ function WorkflowPageComponent() {
                             });
                           }}
                           className={cn(
-                            currentView === tab && "bg-gray-200 text-gray-900",
+                            currentView === tab
+                              ? "bg-gray-200 text-gray-900 dark:bg-zinc-800 dark:text-gray-100"
+                              : "text-gray-500 dark:text-gray-400",
                             "transition-colors",
                           )}
                           asChild

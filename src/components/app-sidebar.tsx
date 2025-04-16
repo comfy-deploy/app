@@ -891,8 +891,8 @@ export function AppSidebar() {
           {workflow_id && parentPath === "workflows" && (
             <>
               <WorkflowsBreadcrumb />
-              <div className="flex flex-col relative">
-                <div className="flex w-full flex-row gap-2 rounded-t-md rounded-b-none border bg-gray-100 p-2">
+              <div className="relative flex flex-col">
+                <div className="flex w-full flex-row gap-2 rounded-t-md rounded-b-none border bg-gray-100 p-2 dark:bg-gradient-to-br dark:from-zinc-800 dark:to-zinc-900">
                   <WorkflowDropdown
                     workflow_id={workflow_id}
                     className="min-w-0 flex-grow"
@@ -914,7 +914,7 @@ export function AppSidebar() {
                           params: { workflowId: workflow_id, view: "machine" },
                         });
                       }}
-                      className="rounded-b-md rounded-t-none border-b border-x bg-slate-100"
+                      className="rounded-t-none rounded-b-md border-x border-b bg-slate-100 dark:bg-gradient-to-tr dark:from-zinc-800 dark:to-zinc-900"
                     />
                   )}
               </div>

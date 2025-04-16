@@ -543,10 +543,10 @@ function RunRow({
     <div
       ref={rowRef}
       className={cn(
-        "flex h-[42px] cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm transition-all",
+        "flex h-[42px] cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm transition-all dark:rounded-[6px] dark:border-zinc-700/80 dark:bg-zinc-800/80",
         isSelected
-          ? "bg-gray-50 shadow-md"
-          : "hover:bg-gray-100 hover:shadow-sm",
+          ? "bg-gray-50 shadow-md dark:bg-gradient-to-r dark:from-zinc-900 dark:to-zinc-800"
+          : "hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gradient-to-r dark:hover:from-zinc-900 dark:hover:to-zinc-800",
       )}
       onClick={() => {
         onSelect();
@@ -570,7 +570,10 @@ function RunRow({
         {!isRunDetailOpenAndTooNarrow && (
           <span className="col-span-1">
             {run.gpu && (
-              <Badge className="!text-2xs w-fit" variant="outline">
+              <Badge
+                className="!text-2xs w-fit dark:border-zinc-700/80"
+                variant="outline"
+              >
                 {run.gpu}
               </Badge>
             )}
