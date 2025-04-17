@@ -114,6 +114,9 @@ import {
 } from "./workspace/increase-session";
 import { sendWorkflow } from "./workspace/sendEventToCD";
 import { Switch } from "./ui/switch";
+import { serverAction } from "@/lib/workflow-version-api";
+import { useGetWorkflowVersionData } from "@/hooks/use-get-workflow-version-data";
+import type { Timeout } from "node_modules/@tanstack/react-router/dist/esm/utils";
 
 // Add Session type
 interface Session {
@@ -487,7 +490,12 @@ function SessionSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="px-0 py-2">
-          {!isLegacyMode && <WorkspaceConfigPopover />}
+          {!isLegacyMode && (
+            <WorkspaceConfigPopover
+              setOpen={setDisplayCommit}
+              workflowId={workflowId}
+            />
+          )}
           {session?.gpu && (
             <TooltipProvider>
               <Tooltip delayDuration={0}>
@@ -575,7 +583,13 @@ function increaseSessionTimeout(
 }
 
 // Now modify the WorkspaceConfigPopover to include auto-extension functionality
-function WorkspaceConfigPopover() {
+function WorkspaceConfigPopover({
+  workflowId,
+  setOpen,
+}: {
+  workflowId?: string;
+  setOpen: (b: boolean) => void;
+}) {
   // Load settings from localStorage with defaults
   const [settings, setSettings] = useState(() => {
     const savedSettings = localStorage.getItem("workspaceConfig");
@@ -588,6 +602,9 @@ function WorkspaceConfigPopover() {
         };
   });
 
+  const { userId } = useAuth();
+  const { hasChanged } = useWorkflowStore((state) => state);
+
   const sessionId = useSessionIdInSessionView();
   const { data: session, refetch } = useQuery<Session>({
     queryKey: ["session", sessionId],
@@ -597,6 +614,24 @@ function WorkspaceConfigPopover() {
   const { countdown } = useSessionTimer(session);
   const autoExtendInProgressRef = useRef(false);
   const isLegacyMode = !session?.timeout_end;
+
+  const machine_id = session?.machine_id;
+  const machine_version_id = session?.machine_version_id;
+  const session_url = session?.url;
+  const endpoint = session?.url || session?.tunnel_url;
+
+  const {
+    query,
+    setVersion,
+    is_fluid_machine,
+    comfyui_snapshot,
+    comfyui_snapshot_loading,
+  } = useGetWorkflowVersionData({
+    machine_id,
+    machine_version_id,
+    session_url,
+    workflowId,
+  });
 
   // Update settings and save to localStorage
   const updateSettings = (key: string, value: any) => {
@@ -648,6 +683,40 @@ function WorkspaceConfigPopover() {
         ? "5 min"
         : "1 min";
   };
+
+  useEffect(() => {
+    let saveIntervalId: NodeJS.Timeout | undefined;
+
+    const { autoSave, autoSaveInterval } = settings;
+
+    if (hasChanged && autoSave) {
+      saveIntervalId = setInterval(async () => {
+        await serverAction({
+          comment: "Auto Save",
+          endpoint,
+          machine_id,
+          machine_version_id,
+          userId,
+          workflowId,
+          is_fluid_machine,
+          query,
+          setVersion,
+          setOpen,
+          snapshotAction: "COMMIT_ONLY",
+          comfyui_snapshot,
+          comfyui_snapshot_loading,
+          sessionId,
+        });
+      }, +autoSaveInterval * 1000);
+    }
+
+    return () => {
+      if (saveIntervalId) {
+        clearInterval(saveIntervalId);
+        saveIntervalId = undefined;
+      }
+    };
+  }, [settings, hasChanged]);
 
   return (
     <Popover>
