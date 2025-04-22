@@ -47,11 +47,13 @@ export function isCustomBucket(url: string) {
   return url.includes("X-Amz-Algorithm");
 }
 
+export function isGif(url: string) {
+  return url.toLowerCase().endsWith(".gif");
+}
+
 export const getOptimizedImage = (url: string) => {
-  // Skip if the url is from custom bucket
-  if (isCustomBucket(url)) {
-    return url;
-  }
+  // Skip if the url is from custom bucket or is a GIF file
+  if (isCustomBucket(url) || isGif(url)) return url;
 
   return `https://comfydeploy.com/cdn-cgi/image/quality=75/${url}`;
 };
