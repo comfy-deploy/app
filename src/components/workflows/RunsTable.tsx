@@ -382,6 +382,11 @@ export function RunsTableVirtualized(props: {
 	const setSelectedCell = useRunsTableStore((state) => state.setSelectedCell);
 	const selectedRunId = useRunsTableStore((state) => state.selectedRun?.id);
 
+	const cachedRun = React.useMemo(
+		() => runId ? flatData.find((r) => r.id === runId) : null,
+		[flatData, runId]
+	);
+	
 	const { data: run } = useQuery({
 		queryKey: ["run", runId],
 		meta: {
@@ -389,21 +394,14 @@ export function RunsTableVirtualized(props: {
 				queue_position: true,
 			},
 		},
-		enabled: !!runId,
-		queryFn: async ({ queryKey, pageParam, meta }) => {
-			if (!runId) return null;
-
-			const temporary = flatData.find((r) => r.id === runId);
-			if (!temporary) {
-				const response = await api({
-					url: queryKey.join("/"),
-				});
-
-				return response;
-			}
-			return temporary;
+		enabled: !!runId && !cachedRun,
+		queryFn: async ({ queryKey }) => {
+			const response = await api({
+				url: queryKey.join("/"),
+			});
+			return response;
 		},
-		initialData: flatData.find((r) => r.id === runId),
+		initialData: cachedRun,
 	});
 
 	useEffect(() => {
@@ -412,7 +410,7 @@ export function RunsTableVirtualized(props: {
 		}
 	}, [run]);
 
-	if (status === "pending" && !data) {
+	if ((status as string) === "pending" && !data) {
 		return <LoadingState />;
 	}
 
@@ -462,14 +460,21 @@ export function RunsTableVirtualized(props: {
 								}}
 							>
 								{run ? (
-									<RunRow
-										run={run}
-										isSelected={runId === run.id}
-										onSelect={() => {
-											setRunId(run.id);
-										}}
-										refetch={refetch}
-									/>
+								<RunRow
+									run={run}
+									isSelected={runId === run.id}
+									onSelect={() => {
+										if (runId !== run.id) {
+											// Update the local state immediately for responsive UI
+											useRunsTableStore.setState({ selectedCell: run });
+											// Update URL parameter with a small delay to batch updates
+											setTimeout(() => {
+												setRunId(run.id);
+											}, 50);
+										}
+									}}
+									refetch={refetch}
+								/>
 								) : hasNextPage ? (
 									<LoadingRow />
 								) : null}

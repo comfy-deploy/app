@@ -25,10 +25,11 @@ export function useRealtimeWorkflowUpdate2(
       queryClient.setQueryData(
         ["v2", "workflow", workflow_id, "runs"],
         (oldData: any) => {
-          // console.log("oldData", oldData);
           if (!oldData) return oldData;
+          
           let exist = false;
           let newRunNumber = 1;
+          
           if (oldData.pages.length > 0 && oldData.pages[0].length > 0) {
             const highestRunNumber = Math.max(
               ...oldData.pages[0].map((run: any) => run.number || 0),
@@ -36,37 +37,45 @@ export function useRealtimeWorkflowUpdate2(
             newRunNumber = highestRunNumber + 1;
           }
 
-          const updatedPages = oldData.pages.map((page: any[]) => {
-            const index = page.findIndex((run) => run.id === data.id);
+          // Create a shallow copy of pages to avoid mutating the original
+          const updatedPages = [...oldData.pages];
+          
+          for (let i = 0; i < updatedPages.length; i++) {
+            const page = updatedPages[i];
+            const index = page.findIndex((run: any) => run.id === data.id);
+            
             if (index !== -1) {
               exist = true;
-              // Update existing run
-              const updatedRuns = [...page];
+              // Create a shallow copy of the page
+              const updatedPage = [...page];
+              // Update only the specific run
               const updatedRun = { ...data, number: newRunNumber };
-              updatedRuns[index] = updatedRun;
-
+              updatedPage[index] = updatedRun;
+              updatedPages[i] = updatedPage;
+              
               // Update the selected cell if it's the current run
               if (useRunsTableStore.getState().selectedCell?.id === data.id) {
                 useRunsTableStore.setState({ selectedCell: updatedRun });
               }
-              return updatedRuns;
+              
+              return {
+                ...oldData,
+                pages: updatedPages,
+              };
             }
-            return page;
-          });
+          }
 
           // If the run doesn't exist, add it to the first page
-          if (!exist) {
+          if (!exist && updatedPages.length > 0) {
             const newRun = { ...data, number: newRunNumber };
-
+            // Create a new first page with the new run at the beginning
             updatedPages[0] = [newRun, ...updatedPages[0]];
           }
 
-          const _data = {
+          return {
             ...oldData,
             pages: updatedPages,
           };
-
-          return _data;
         },
       );
     },
