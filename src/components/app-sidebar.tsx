@@ -36,6 +36,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -1025,6 +1035,8 @@ export function AppSidebar() {
   
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false);
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | undefined>(undefined);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<string | null>(null);
   const visibleWorkspaces = useVisibleWorkspaces();
   const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId);
@@ -1283,10 +1295,13 @@ export function AppSidebar() {
                                           }}>
                                             Edit
                                           </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => {
-                                            useWorkspaceStore.getState().deleteWorkspace(workspace.id);
-                                            toast.success("Workspace deleted");
-                                          }}>
+                                          <DropdownMenuItem 
+                                            onClick={() => {
+                                              setDeleteWorkspaceId(workspace.id);
+                                              setDeleteDialogOpen(true);
+                                            }}
+                                            className="text-destructive"
+                                          >
                                             Delete
                                           </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -1385,6 +1400,34 @@ export function AppSidebar() {
         onOpenChange={setWorkspaceDialogOpen}
         workspace={editingWorkspace}
       />
+      
+      {/* Delete Workspace Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              workspace and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteWorkspaceId) {
+                  useWorkspaceStore.getState().deleteWorkspace(deleteWorkspaceId);
+                  toast.success("Workspace deleted");
+                  setDeleteWorkspaceId(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
