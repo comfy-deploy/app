@@ -4,10 +4,11 @@ const BATCH_SIZE = 20;
 
 export function useWorkflowList(
   debouncedSearchValue: string,
+  workspaceId?: string | null,
   limit: number = BATCH_SIZE,
 ) {
   return useInfiniteQuery<any[]>({
-    queryKey: ["workflows"],
+    queryKey: ["workflows", workspaceId],
     queryKeyHashFn: (queryKey) => {
       return [...queryKey, debouncedSearchValue, limit].join(",");
     },

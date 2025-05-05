@@ -63,6 +63,7 @@ import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { toast } from "sonner";
 import { useWorkflowList } from "../hooks/use-workflow-list";
 import { UserIcon } from "./run/SharePageComponent";
+import { useWorkspaceStore } from "./workspace/workspace-store";
 import { FileURLRender } from "./workflows/OutputRender";
 
 export function useWorkflowVersion(
@@ -107,6 +108,8 @@ export function WorkflowList() {
   const [searchValue, setSearchValue] = React.useState<string | null>(null);
   const [debouncedSearchValue] = useDebounce(searchValue, 250);
 
+  const { currentWorkspaceId } = useWorkspaceStore();
+  
   const {
     data: workflowsFromPythonApi,
     isLoading,
@@ -114,14 +117,20 @@ export function WorkflowList() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useWorkflowList(debouncedSearchValue ?? "");
+  } = useWorkflowList(debouncedSearchValue ?? "", currentWorkspaceId);
 
   const parentRef = React.useRef<HTMLDivElement>(null);
   useInfiniteScroll(parentRef, fetchNextPage, hasNextPage, isFetchingNextPage);
 
   const flatData = React.useMemo(
-    () => workflowsFromPythonApi?.pages.flat() ?? [],
-    [workflowsFromPythonApi],
+    () => {
+      const allWorkflows = workflowsFromPythonApi?.pages.flat() ?? [];
+      
+      if (!currentWorkspaceId) return allWorkflows;
+      
+      return allWorkflows;
+    },
+    [workflowsFromPythonApi, currentWorkspaceId],
   );
 
   React.useEffect(() => {

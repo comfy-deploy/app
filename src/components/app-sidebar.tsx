@@ -5,6 +5,7 @@ import {
   CircleGauge,
   CreditCard,
   Database,
+  EllipsisVertical,
   ExternalLink,
   Folder,
   GitBranch,
@@ -12,6 +13,7 @@ import {
   History,
   Key,
   LineChart,
+  Lock,
   LockKeyhole,
   MessageCircle,
   Plus,
@@ -25,7 +27,7 @@ import {
   Workflow,
 } from "lucide-react";
 
-import { useIsAdminAndMember, useIsAdminOnly } from "@/components/permissions";
+import { useIsAdminAndMember, useIsAdminOnly, AdminAndMember, AdminOnly } from "@/components/permissions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -50,8 +53,12 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { VersionList, useSelectedVersion } from "@/components/version-select";
@@ -108,6 +115,9 @@ import { VersionSelectV2 } from "./version-select";
 import { MachineSelect } from "./workspace/MachineSelect";
 import { WorkflowCommitVersion } from "./workspace/WorkflowCommitVersion";
 import { useWorkflowStore } from "./workspace/Workspace";
+import { useVisibleWorkspaces } from "./workspace/use-visible-workspaces";
+import { WorkspaceDialog } from "./workspace/workspace-dialog";
+import { useWorkspaceStore, type Workspace } from "./workspace/workspace-store";
 import {
   SessionIncrementDialog,
   useSessionIncrementStore,
@@ -1012,6 +1022,29 @@ export function AppSidebar() {
   const sessionId = useSessionIdInSessionView();
   const shareSlug = useShareSlug();
   const { setOpen } = useSidebar();
+  
+  const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false);
+  const [editingWorkspace, setEditingWorkspace] = useState<Workspace | undefined>(undefined);
+  const visibleWorkspaces = useVisibleWorkspaces();
+  const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+  const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId);
+  
+  // URL query parameter for workspace
+  const [workspaceQuery, setWorkspaceQuery] = useQueryState("workspace", parseAsString);
+  
+  useEffect(() => {
+    if (workspaceQuery) {
+      setCurrentWorkspaceId(workspaceQuery);
+    }
+  }, [workspaceQuery, setCurrentWorkspaceId]);
+  
+  useEffect(() => {
+    if (currentWorkspaceId) {
+      setWorkspaceQuery(currentWorkspaceId);
+    } else {
+      setWorkspaceQuery(null);
+    }
+  }, [currentWorkspaceId, setWorkspaceQuery]);
 
   const items = flatPages.map((page) => ({
     title: page.name,
@@ -1132,7 +1165,7 @@ export function AppSidebar() {
               {orgId && (
                 <Link
                   className="flex h-full items-center justify-center rounded-r-[8px] bg-gray-200/40 px-4 transition-colors hover:bg-gray-200"
-                  to="/organization-profile#/organization-members"
+                  href="/organization-profile/organization-members"
                 >
                   <Users className="h-4 w-4" />
                 </Link>
@@ -1200,6 +1233,69 @@ export function AppSidebar() {
                             <span>{item.title}</span>
                           </Link>
                         </SidebarMenuButton>
+                        
+                        {/* Add workspace action button for Workflows */}
+                        {item.title === "Workflows" && (
+                          <>
+                            <AdminAndMember>
+                              <SidebarMenuAction onClick={() => {
+                                setEditingWorkspace(undefined);
+                                setWorkspaceDialogOpen(true);
+                              }}>
+                                <Plus className="h-4 w-4" />
+                              </SidebarMenuAction>
+                            </AdminAndMember>
+                            
+                            {/* Workspace submenu items */}
+                            {visibleWorkspaces.length > 0 && (
+                              <SidebarMenuSub>
+                                {visibleWorkspaces.map(workspace => (
+                                  <SidebarMenuSubItem key={workspace.id}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={currentWorkspaceId === workspace.id}
+                                      onClick={() => setCurrentWorkspaceId(workspace.id)}
+                                    >
+                                      <Link 
+                                        href="/workflows" 
+                                        search={true}
+                                      >
+                                        <span>{workspace.name}</span>
+                                        {workspace.visibility === "specific" && (
+                                          <Lock className="h-3 w-3 ml-1" />
+                                        )}
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                    
+                                    <AdminOnly>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <EllipsisVertical className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => {
+                                            setEditingWorkspace(workspace);
+                                            setWorkspaceDialogOpen(true);
+                                          }}>
+                                            Edit
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => {
+                                            useWorkspaceStore.getState().deleteWorkspace(workspace.id);
+                                            toast.success("Workspace deleted");
+                                          }}>
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </AdminOnly>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            )}
+                          </>
+                        )}
 
                         {item.url === "/models" && (
                           <div id="sidebar-panel-models" />
@@ -1280,6 +1376,13 @@ export function AppSidebar() {
           </Badge>
         </div>
       )}
+      
+      {/* Workspace Dialog */}
+      <WorkspaceDialog
+        open={workspaceDialogOpen}
+        onOpenChange={setWorkspaceDialogOpen}
+        workspace={editingWorkspace}
+      />
     </>
   );
 }
