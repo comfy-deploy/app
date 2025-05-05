@@ -49,6 +49,7 @@ import {
 } from "@/components/workspace/ContainersTable";
 import { useWorkflowDeployments } from "@/components/workspace/ContainersTable";
 import { DeploymentDrawer } from "@/components/workspace/DeploymentDisplay";
+import { WorkflowThumbnailUpload } from "@/components/workflow-thumbnail-upload";
 import { useSelectedVersion } from "@/components/workspace/Workspace";
 import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
@@ -157,6 +158,10 @@ function WorkflowPageComponent() {
 
   const { value: version } = useSelectedVersion(workflowId);
   const isAdminAndMember = useIsAdminAndMember();
+  
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] });
+  }, [queryClient, workflowId]);
 
   switch (currentView) {
     case "requests":
@@ -393,6 +398,12 @@ function WorkflowPageComponent() {
                 </Tooltip>
               </TooltipProvider>
             )}
+            <div className="mt-2 flex justify-center">
+              <WorkflowThumbnailUpload 
+                workflowId={workflowId} 
+                onUploadSuccess={invalidate}
+              />
+            </div>
             {workflow.description && (
               <p className="line-clamp-3 text-2xs text-gray-600 leading-snug">
                 {workflow.description}
