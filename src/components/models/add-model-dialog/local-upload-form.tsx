@@ -18,6 +18,8 @@ interface LocalUploadFormProps {
   isSubmitting: boolean;
 }
 
+const MAX_FILE_SIZE = 1024 * 1024 * 1000; // 1
+
 export function LocalUploadForm({
   onSubmit,
   folderPath,
@@ -95,7 +97,8 @@ export function LocalUploadForm({
   };
 
   const handleSubmit = async () => {
-    if (!file || isSubmitting || !volumeName) return;
+    if (!file || isSubmitting || !volumeName || file.size > MAX_FILE_SIZE)
+      return;
 
     try {
       setError(null);
@@ -151,12 +154,13 @@ export function LocalUploadForm({
             </AlertDescription>
           </Alert>
 
-          {file && file.size > 1024 * 1024 * 500 && (
+          {file && file.size > MAX_FILE_SIZE && (
             <Alert className="border-blue-200 bg-blue-50">
-              <Info className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-700">
-                You're uploading a large file ({formatBytes(file.size)}). This
-                may take some time depending on your internet connection.
+              <Info className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-700">
+                This file ({formatBytes(file.size)}) exceeds the 1GB size limit.
+                For large model files, we recommend using Hugging Face or
+                Civitai for hosting.
               </AlertDescription>
             </Alert>
           )}
@@ -211,7 +215,13 @@ export function LocalUploadForm({
 
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !file || !filename.trim() || !volumeName}
+            disabled={
+              isSubmitting ||
+              !file ||
+              !filename.trim() ||
+              !volumeName ||
+              file.size > MAX_FILE_SIZE
+            }
           >
             {isSubmitting ? "Uploading..." : "Upload"}
           </Button>
