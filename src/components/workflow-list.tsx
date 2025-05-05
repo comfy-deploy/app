@@ -11,10 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -65,6 +69,21 @@ import { useWorkflowList } from "../hooks/use-workflow-list";
 import { UserIcon } from "./run/SharePageComponent";
 import { FileURLRender } from "./workflows/OutputRender";
 
+type WorkflowTag = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+const WORKFLOW_TAGS: WorkflowTag[] = [
+  { id: "ml", name: "Machine Learning", color: "blue" },
+  { id: "image", name: "Image Generation", color: "violet" },
+  { id: "text", name: "Text Processing", color: "green" },
+  { id: "audio", name: "Audio Processing", color: "amber" },
+  { id: "video", name: "Video Processing", color: "rose" },
+  { id: "experimental", name: "Experimental", color: "red" },
+];
+
 export function useWorkflowVersion(
   workflow_id?: string,
   debouncedSearchValue?: string,
@@ -101,6 +120,20 @@ export function WorkflowList() {
   const [modalType, setModalType] = React.useState<"json" | "new" | null>(null);
   const [view, setView] = React.useState<"list" | "grid">("grid");
 
+  const [workflowTags, setWorkflowTags] = React.useState<Record<string, string[]>>({});
+  const [filterTags, setFilterTags] = React.useState<string[]>([]);
+
+  const handleTagChange = (workflowId: string, tagId: string, checked: boolean) => {
+    setWorkflowTags(prev => {
+      const currentTags = prev[workflowId] || [];
+      if (checked) {
+        return { ...prev, [workflowId]: [...currentTags, tagId] };
+      } else {
+        return { ...prev, [workflowId]: currentTags.filter(id => id !== tagId) };
+      }
+    });
+  };
+
   const user = useUser();
   const sub = useCurrentPlan();
 
@@ -123,6 +156,14 @@ export function WorkflowList() {
     () => workflowsFromPythonApi?.pages.flat() ?? [],
     [workflowsFromPythonApi],
   );
+
+  const filteredData = React.useMemo(() => {
+    if (filterTags.length === 0) return flatData;
+    return flatData.filter((workflow) => {
+      const workflowTagIds = workflowTags[workflow.id] || [];
+      return filterTags.some((tagId) => workflowTagIds.includes(tagId));
+    });
+  }, [flatData, filterTags, workflowTags]);
 
   React.useEffect(() => {
     refetch();
@@ -150,6 +191,40 @@ export function WorkflowList() {
         </div>
         <AdminAndMember>
           <div className="ml-auto flex gap-2">
+            {/* Add tag filter dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1">
+                  Tags
+                  {filterTags.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {filterTags.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filter by Tags</DropdownMenuLabel>
+                {WORKFLOW_TAGS.map((tag) => (
+                  <DropdownMenuCheckboxItem
+                    key={tag.id}
+                    checked={filterTags.includes(tag.id)}
+                    onCheckedChange={(checked) => {
+                      setFilterTags(
+                        checked
+                          ? [...filterTags, tag.id]
+                          : filterTags.filter((t) => t !== tag.id)
+                      );
+                    }}
+                  >
+                    <Badge variant={tag.color as any} className="mr-2">
+                      {tag.name}
+                    </Badge>
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <Tooltip>
               <TooltipTrigger>
                 {sub && (
@@ -212,11 +287,13 @@ export function WorkflowList() {
           </div>
         ) : (
           <div className="mx-auto grid w-full max-w-screen-2xl grid-cols-1 justify-items-center gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {flatData &&
-              flatData.map((workflow) => (
+            {filteredData &&
+              filteredData.map((workflow) => (
                 <WorkflowCard
                   key={workflow.id}
                   workflow={workflow}
+                  workflowTags={workflowTags}
+                  onTagChange={handleTagChange}
                   mutate={refetch}
                 />
               ))}
@@ -261,9 +338,13 @@ function WorkflowCardSkeleton() {
 
 function WorkflowCard({
   workflow,
+  workflowTags,
+  onTagChange,
   mutate,
 }: {
   workflow: any;
+  workflowTags: Record<string, string[]>;
+  onTagChange: (workflowId: string, tagId: string, checked: boolean) => void;
   mutate: () => void;
 }) {
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
@@ -398,6 +479,18 @@ function WorkflowCard({
               </div>
             )}
           </div>
+          
+          {/* Add tag badges */}
+          <div className="absolute bottom-2 right-2 flex flex-wrap gap-1 justify-end max-w-[70%]">
+            {(workflowTags[workflow.id] || []).map((tagId) => {
+              const tag = WORKFLOW_TAGS.find((t) => t.id === tagId);
+              return tag ? (
+                <Badge key={tag.id} variant={tag.color as any}>
+                  {tag.name}
+                </Badge>
+              ) : null;
+            })}
+          </div>
           <div className="absolute top-2 right-2">
             <AdminAndMember>
               <DropdownMenu>
@@ -444,6 +537,26 @@ function WorkflowCard({
                   >
                     Delete
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {/* Add tag management dropdown */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>Manage Tags</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {WORKFLOW_TAGS.map((tag) => (
+                        <DropdownMenuCheckboxItem
+                          key={tag.id}
+                          checked={(workflowTags[workflow.id] || []).includes(tag.id)}
+                          onCheckedChange={(checked) => {
+                            onTagChange(workflow.id, tag.id, !!checked);
+                          }}
+                        >
+                          <Badge variant={tag.color as any} className="mr-2">
+                            {tag.name}
+                          </Badge>
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={async (e) => {
