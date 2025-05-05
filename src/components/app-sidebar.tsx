@@ -1260,8 +1260,7 @@ export function AppSidebar() {
                                       onClick={() => setCurrentWorkspaceId(workspace.id)}
                                     >
                                       <Link 
-                                        href="/workflows" 
-                                        search={`?workspace=${workspace.id}`}
+                                        href={`/workflows?workspace=${workspace.id}`}
                                       >
                                         <span>{workspace.name}</span>
                                         {workspace.visibility === "specific" && (
