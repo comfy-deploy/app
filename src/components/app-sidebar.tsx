@@ -1261,7 +1261,7 @@ export function AppSidebar() {
                                     >
                                       <Link 
                                         href="/workflows" 
-                                        search={{ workspace: workspace.id }}
+                                        search={`?workspace=${workspace.id}`}
                                       >
                                         <span>{workspace.name}</span>
                                         {workspace.visibility === "specific" && (

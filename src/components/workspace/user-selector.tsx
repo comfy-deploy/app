@@ -8,19 +8,26 @@ interface UserSelectorProps {
   onSelectionChange: (userIds: string[]) => void;
 }
 
+interface OrgUser {
+  id: string;
+  name: string;
+}
+
 export function UserSelector({
   selectedUsers,
   onSelectionChange,
 }: UserSelectorProps) {
   const { organization, isLoaded } = useOrganization();
   
-  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
+  const [users, setUsers] = useState<OrgUser[]>([]);
   
   useEffect(() => {
     if (!isLoaded || !organization) return;
     
-    organization.getMemberships().then((memberships) => {
-      const orgUsers = memberships.map((membership) => {
+    organization.getMemberships().then((response) => {
+      const memberships = response.data || [];
+      
+      const orgUsers: OrgUser[] = memberships.map((membership: any) => {
         const { userId, firstName, lastName, identifier } = membership.publicUserData;
         return {
           id: userId || "",
@@ -28,7 +35,7 @@ export function UserSelector({
             ? `${firstName} ${lastName}`
             : identifier || "",
         };
-      }).filter(user => user.id !== ""); // Filter out any users with empty IDs
+      }).filter((user: OrgUser) => user.id !== ""); // Filter out any users with empty IDs
       
       setUsers(orgUsers);
     }).catch((error) => {
