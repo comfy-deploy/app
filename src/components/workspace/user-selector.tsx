@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useOrganizationList } from "@clerk/clerk-react";
+import { useOrganization } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 
 interface UserSelectorProps {
@@ -12,26 +12,29 @@ export function UserSelector({
   selectedUsers,
   onSelectionChange,
 }: UserSelectorProps) {
-  const { userMemberships, isLoaded } = useOrganizationList({
-    userMemberships: true,
-  });
+  const { organization, isLoaded } = useOrganization();
   
   const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
   
   useEffect(() => {
-    if (!isLoaded || !userMemberships.data) return;
+    if (!isLoaded || !organization) return;
     
-    const orgUsers = userMemberships.data
-      .map((membership) => ({
-        id: membership.publicUserData.userId || "",
-        name: membership.publicUserData.firstName && membership.publicUserData.lastName
-          ? `${membership.publicUserData.firstName} ${membership.publicUserData.lastName}`
-          : membership.publicUserData.identifier || "",
-      }))
-      .filter(user => user.id !== ""); // Filter out any users with empty IDs
-    
-    setUsers(orgUsers);
-  }, [isLoaded, userMemberships.data]);
+    organization.getMemberships().then((memberships) => {
+      const orgUsers = memberships.map((membership) => {
+        const { userId, firstName, lastName, identifier } = membership.publicUserData;
+        return {
+          id: userId || "",
+          name: firstName && lastName
+            ? `${firstName} ${lastName}`
+            : identifier || "",
+        };
+      }).filter(user => user.id !== ""); // Filter out any users with empty IDs
+      
+      setUsers(orgUsers);
+    }).catch((error) => {
+      console.error("Error fetching organization members:", error);
+    });
+  }, [isLoaded, organization]);
   
   if (!isLoaded) return <div>Loading users...</div>;
   
@@ -58,6 +61,9 @@ export function UserSelector({
           </label>
         </div>
       ))}
+      {users.length === 0 && (
+        <div className="text-sm text-muted-foreground">No users found in this organization</div>
+      )}
     </div>
   );
 }

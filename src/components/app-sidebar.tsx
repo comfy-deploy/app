@@ -1238,10 +1238,13 @@ export function AppSidebar() {
                         {item.title === "Workflows" && (
                           <>
                             <AdminAndMember>
-                              <SidebarMenuAction onClick={() => {
-                                setEditingWorkspace(undefined);
-                                setWorkspaceDialogOpen(true);
-                              }}>
+                              <SidebarMenuAction 
+                                onClick={() => {
+                                  setEditingWorkspace(undefined);
+                                  setWorkspaceDialogOpen(true);
+                                }}
+                                className="top-2"
+                              >
                                 <Plus className="h-4 w-4" />
                               </SidebarMenuAction>
                             </AdminAndMember>
@@ -1258,7 +1261,7 @@ export function AppSidebar() {
                                     >
                                       <Link 
                                         href="/workflows" 
-                                        search={true}
+                                        search={{ workspace: workspace.id }}
                                       >
                                         <span>{workspace.name}</span>
                                         {workspace.visibility === "specific" && (
