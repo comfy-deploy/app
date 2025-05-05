@@ -554,10 +554,11 @@ function WorkflowCard({
                           checked={(workflowTags[workflow.id] || []).includes(tag.id)}
                           onCheckedChange={(checked) => {
                             onTagChange(workflow.id, tag.id, !!checked);
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
+                            const event = window.event;
+                            if (event) {
+                              event.stopPropagation();
+                              event.preventDefault();
+                            }
                           }}
                         >
                           <Badge variant={tag.color as any} className="mr-2">
