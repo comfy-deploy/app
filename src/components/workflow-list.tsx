@@ -540,14 +540,24 @@ function WorkflowCard({
                   <DropdownMenuSeparator />
                   {/* Add tag management dropdown */}
                   <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Manage Tags</DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
+                    <DropdownMenuSubTrigger onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}>Manage Tags</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}>
                       {WORKFLOW_TAGS.map((tag) => (
                         <DropdownMenuCheckboxItem
                           key={tag.id}
                           checked={(workflowTags[workflow.id] || []).includes(tag.id)}
                           onCheckedChange={(checked) => {
                             onTagChange(workflow.id, tag.id, !!checked);
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
                           }}
                         >
                           <Badge variant={tag.color as any} className="mr-2">
