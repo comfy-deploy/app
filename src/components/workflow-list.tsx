@@ -68,6 +68,7 @@ import { useWorkflowList } from "../hooks/use-workflow-list";
 import { UserIcon } from "./run/SharePageComponent";
 import { FileURLRender } from "./workflows/OutputRender";
 import { UserFilterSelect } from "./user-filter-select";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 export function useWorkflowVersion(
   workflow_id?: string,
@@ -103,7 +104,7 @@ export function useWorkflowVersion(
 
 export function WorkflowList() {
   const [modalType, setModalType] = React.useState<"json" | "new" | null>(null);
-  const [view, setView] = React.useState<"list" | "grid">("grid");
+  const [view, setView] = useLocalStorage<"list" | "grid">("workflow-view-mode", "grid");
 
   const user = useUser();
   const sub = useCurrentPlan();
