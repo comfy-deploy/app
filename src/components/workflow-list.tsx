@@ -155,6 +155,10 @@ export function WorkflowList() {
         </div>
         
         <div className="ml-auto flex gap-2">
+          {/* User filter component first */}
+          <UserFilterSelect onFilterChange={setSelectedUserIds} />
+          
+          {/* Grid/list toggle moved to the right */}
           <div className="flex rounded-md border bg-background shadow-sm">
             <Button
               variant={view === "grid" ? "secondary" : "ghost"}
@@ -171,9 +175,6 @@ export function WorkflowList() {
               <LayoutList className="h-4 w-4" />
             </Button>
           </div>
-          
-          {/* User filter component moved to the right */}
-          <UserFilterSelect onFilterChange={setSelectedUserIds} />
           
           <AdminAndMember>
             <Tooltip>
@@ -240,7 +241,7 @@ export function WorkflowList() {
           <div className={cn(
             view === "grid" 
               ? "mx-auto grid w-full max-w-screen-2xl grid-cols-1 justify-items-center gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-              : "mx-auto flex flex-col gap-2 px-4 pb-4"
+              : "mx-auto flex w-full max-w-screen-2xl flex-col gap-2 px-4 pb-4"
           )}>
             {flatData &&
               flatData.map((workflow) => (
@@ -291,7 +292,7 @@ function WorkflowCardSkeleton({ view = "grid" }: { view?: "list" | "grid" }) {
     );
   } else {
     return (
-      <div className="flex w-full items-center gap-4 border rounded-md p-3">
+      <div className="flex w-full items-center gap-4 border-b py-4 px-3">
         <Skeleton className="h-12 w-12 rounded-md" />
         <div className="flex-grow min-w-0">
           <div className="flex items-center justify-between">
@@ -436,7 +437,7 @@ function WorkflowCard({
         className={cn(
           view === "grid" 
             ? "flex w-full flex-col md:max-w-[320px]" 
-            : "flex w-full items-center gap-4 border rounded-md p-3 hover:bg-muted/50 transition-colors",
+            : "flex w-full items-center gap-4 border-b py-4 px-3 hover:bg-muted/50 transition-colors",
           className
         )}
       >
