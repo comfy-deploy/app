@@ -64,6 +64,7 @@ import { toast } from "sonner";
 import { useWorkflowList } from "../hooks/use-workflow-list";
 import { UserIcon } from "./run/SharePageComponent";
 import { FileURLRender } from "./workflows/OutputRender";
+import { UserFilterSelect } from "./user-filter-select";
 
 export function useWorkflowVersion(
   workflow_id?: string,
@@ -106,6 +107,7 @@ export function WorkflowList() {
 
   const [searchValue, setSearchValue] = React.useState<string | null>(null);
   const [debouncedSearchValue] = useDebounce(searchValue, 250);
+  const [selectedUserIds, setSelectedUserIds] = React.useState<string>("");
 
   const {
     data: workflowsFromPythonApi,
@@ -114,7 +116,7 @@ export function WorkflowList() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useWorkflowList(debouncedSearchValue ?? "");
+  } = useWorkflowList(debouncedSearchValue ?? "", selectedUserIds);
 
   const parentRef = React.useRef<HTMLDivElement>(null);
   useInfiniteScroll(parentRef, fetchNextPage, hasNextPage, isFetchingNextPage);
@@ -148,6 +150,10 @@ export function WorkflowList() {
             <span className="text-xs">⌘</span>K
           </kbd>
         </div>
+        
+        {/* User filter component */}
+        <UserFilterSelect onFilterChange={setSelectedUserIds} />
+        
         <AdminAndMember>
           <div className="ml-auto flex gap-2">
             <Tooltip>
