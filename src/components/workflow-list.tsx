@@ -69,6 +69,7 @@ import { UserIcon } from "./run/SharePageComponent";
 import { FileURLRender } from "./workflows/OutputRender";
 import { UserFilterSelect } from "./user-filter-select";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useWorkflowDeployments } from "../components/workspace/ContainersTable";
 
 export function useWorkflowVersion(
   workflow_id?: string,
@@ -360,6 +361,9 @@ function WorkflowCard({
     queryKeyHashFn: (queryKey) => [...queryKey, "latest"].toString(),
   });
 
+  const { data: deployments } = useWorkflowDeployments(workflow.id);
+  const hasDeployments = deployments && deployments.length > 0;
+
   const latest_output = latest_runs?.[0]?.outputs?.[0]?.data;
   const lastest_run_at = latest_runs?.[0]?.created_at;
   const status = latest_runs?.[0]?.status;
@@ -565,14 +569,27 @@ function WorkflowCard({
             <div className="flex flex-col px-2 pt-2">
               <div className="flex w-full flex-row justify-between truncate font-medium text-gray-700 text-md">
                 <div className="mr-2 truncate text-sm">{workflow.name}</div>
-                {status && (
-                  <Badge
-                    variant={status === "success" ? "success" : "secondary"}
-                    className="shrink-0"
-                  >
-                    {status}
-                  </Badge>
-                )}
+                <div className="flex gap-1">
+                  {hasDeployments && (
+                    <Link
+                      to={`/workflows/${workflow.id}/deployment`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hidden sm:block" // Hide on mobile
+                    >
+                      <Badge variant="outline" className="shrink-0 bg-blue-50 text-blue-700">
+                        Deployment
+                      </Badge>
+                    </Link>
+                  )}
+                  {status && (
+                    <Badge
+                      variant={status === "success" ? "success" : "secondary"}
+                      className="shrink-0"
+                    >
+                      {status}
+                    </Badge>
+                  )}
+                </div>
               </div>
               <div className="flex flex-row justify-between">
                 <div className="flex items-center gap-2 truncate text-muted-foreground text-xs">
@@ -621,6 +638,17 @@ function WorkflowCard({
                   </h3>
                   {workflow.pinned && (
                     <PinIcon className="h-3 w-3 rotate-45 text-muted-foreground shrink-0" />
+                  )}
+                  {hasDeployments && (
+                    <Link
+                      to={`/workflows/${workflow.id}/deployment`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hidden sm:block" // Hide on mobile
+                    >
+                      <Badge variant="outline" className="shrink-0 bg-blue-50 text-blue-700 text-[10px] h-5 px-1.5">
+                        Deployment
+                      </Badge>
+                    </Link>
                   )}
                   {status && (
                     <Badge
