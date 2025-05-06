@@ -45,6 +45,23 @@ export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
   const visibleBadges = selectedMembers.slice(0, maxVisibleBadges);
   const hiddenCount = selectedMembers.length - maxVisibleBadges;
 
+  React.useEffect(() => {
+    if (!organization) return;
+    
+    try {
+      const storageKey = `workflow-user-filter-${organization.id}`;
+      const savedSelection = localStorage.getItem(storageKey);
+      
+      if (savedSelection) {
+        const parsedSelection = JSON.parse(savedSelection);
+        setSelectedUsers(parsedSelection);
+        onFilterChange(parsedSelection.join(","));
+      }
+    } catch (error) {
+      console.error("Error loading user filter from localStorage:", error);
+    }
+  }, [organization, onFilterChange]);
+
   if (!isLoaded || !organization) return null;
 
   React.useEffect(() => {
@@ -80,6 +97,16 @@ export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
       
       // Call the callback with the updated selection
       onFilterChange(newSelection.join(","));
+      
+      if (organization) {
+        try {
+          const storageKey = `workflow-user-filter-${organization.id}`;
+          localStorage.setItem(storageKey, JSON.stringify(newSelection));
+        } catch (error) {
+          console.error("Error saving user filter to localStorage:", error);
+        }
+      }
+      
       return newSelection;
     });
   };
@@ -87,6 +114,15 @@ export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
   const clearSelection = () => {
     setSelectedUsers([]);
     onFilterChange("");
+    
+    if (organization) {
+      try {
+        const storageKey = `workflow-user-filter-${organization.id}`;
+        localStorage.removeItem(storageKey);
+      } catch (error) {
+        console.error("Error clearing user filter from localStorage:", error);
+      }
+    }
   };
 
   return (
