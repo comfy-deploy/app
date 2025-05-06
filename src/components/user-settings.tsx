@@ -16,7 +16,7 @@ export function UserSettings() {
   const enableStorage = userSettings?.enable_custom_output_bucket;
 
   return (
-    <div className={cn("mx-auto max-w-lg py-10")}>
+    <div className={cn("mx-auto w-full max-w-lg py-10")}>
       {!sub?.plans?.plans && (
         <div className="mb-4 border-yellow-400 border-l-4 bg-yellow-50 p-4">
           <div className="flex">
@@ -31,6 +31,7 @@ export function UserSettings() {
       )}
       <InlineAutoForm
         className={cn(
+          "w-full",
           !sub?.plans?.plans && "disabled pointer-events-none opacity-50",
         )}
         buttonTitle="Save"
@@ -60,10 +61,10 @@ export function UserSettings() {
             .describe("S3 Bucket Name")
             .nullable(),
           s3_region: z.string().optional().describe("S3 Region").nullable(),
-          spend_limit: z.coerce
-            .number()
-            .default(5.0)
-            .describe("Workspace budget (maximum usage per billing period)"),
+          // spend_limit: z.coerce
+          //   .number()
+          //   .default(5.0)
+          //   .describe("Workspace budget (maximum usage per billing period)"),
           hugging_face_token: z
             .string()
             .optional()
@@ -122,41 +123,41 @@ export function UserSettings() {
               );
             },
           },
-          spend_limit: {
-            fieldType: "number",
-            inputProps: {
-              min: 0,
-              step: 0.01,
-              max: userSettings?.max_spend_limit || DEFAULT_MAX_SPEND_LIMIT,
-              required: true,
-            },
-            description: (
-              <>
-                {`The budget of this workspace is limited to
-                  `}
-                <strong>{`$${
-                  userSettings?.max_spend_limit || DEFAULT_MAX_SPEND_LIMIT
-                }`}</strong>
-                {`. To raise this limit, please
-                  contact us via Email or `}
-                <a
-                  href="https://discord.gg/ygb6VZwaMt"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 underline hover:text-blue-600"
-                >
-                  Discord
-                </a>
-                {" DM. "}
-                <br />
-                <p className="text-gray-500 text-xs italic">
-                  {`
-                  Note: Only works for v2 API.
-                  `}
-                </p>
-              </>
-            ),
-          },
+          // spend_limit: {
+          //   fieldType: "number",
+          //   inputProps: {
+          //     min: 0,
+          //     step: 0.01,
+          //     max: userSettings?.max_spend_limit || DEFAULT_MAX_SPEND_LIMIT,
+          //     required: true,
+          //   },
+          //   description: (
+          //     <>
+          //       {`The budget of this workspace is limited to
+          //         `}
+          //       <strong>{`$${
+          //         userSettings?.max_spend_limit || DEFAULT_MAX_SPEND_LIMIT
+          //       }`}</strong>
+          //       {`. To raise this limit, please
+          //         contact us via Email or `}
+          //       <a
+          //         href="https://discord.gg/ygb6VZwaMt"
+          //         target="_blank"
+          //         rel="noopener noreferrer"
+          //         className="text-blue-500 underline hover:text-blue-600"
+          //       >
+          //         Discord
+          //       </a>
+          //       {" DM. "}
+          //       <br />
+          //       <p className="text-gray-500 text-xs italic">
+          //         {`
+          //         Note: Only works for v2 API.
+          //         `}
+          //       </p>
+          //     </>
+          //   ),
+          // },
           output_visibility: {
             group: "Storage Settings [Business]",
             renderParent: (props) => {

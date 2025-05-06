@@ -118,26 +118,95 @@ export function useAssetUpload() {
       parent_path?: string;
       onProgress?: (progress: number) => void;
     }) => {
-      const formData = new FormData();
-      formData.append("file", file);
+      if (file.size < 50 * 1024 * 1024) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      return await api({
-        url: "assets/upload",
-        skipDefaultHeaders: true,
-        init: {
-          method: "POST",
-          body: formData,
-        },
-        params: {
-          parent_path,
-        },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.lengthComputable && onProgress) {
-            const progress = (progressEvent.loaded / progressEvent.total) * 100;
-            onProgress(progress);
-          }
-        },
-      });
+        return await api({
+          url: "assets/upload",
+          skipDefaultHeaders: true,
+          init: {
+            method: "POST",
+            body: formData,
+          },
+          params: {
+            parent_path,
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.lengthComputable && onProgress) {
+              const progress = (progressEvent.loaded / progressEvent.total) * 100;
+              onProgress(progress);
+            }
+          },
+        });
+      } else {
+        onProgress?.(5); // Show initial progress
+        const presignedUrlResponse = await api({
+          url: "assets/presigned-url",
+          params: {
+            file_name: file.name,
+            parent_path,
+            size: file.size,
+            type: file.type,
+          },
+        });
+        
+        onProgress?.(10); // URL obtained
+        
+        const xhr = new XMLHttpRequest();
+        
+        const uploadPromise = new Promise((resolve, reject) => {
+          xhr.open('PUT', presignedUrlResponse.url, true);
+          xhr.setRequestHeader('Content-Type', file.type);
+          
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const progressPercentage = 10 + (e.loaded / e.total) * 80;
+              onProgress?.(progressPercentage);
+            }
+          };
+          
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(xhr.response);
+            } else {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          };
+          
+          xhr.onerror = () => {
+            reject(new Error('Network error during upload'));
+          };
+          
+          xhr.send(file);
+        });
+        
+        try {
+          await uploadPromise;
+        } catch (error: any) {
+          throw new Error('Failed to upload file to storage: ' + (error.message || String(error)));
+        }
+        
+        onProgress?.(90); // Almost done
+        
+        const registeredAsset = await api({
+          url: "assets/register",
+          init: {
+            method: "POST",
+            body: JSON.stringify({
+              file_id: presignedUrlResponse.file_id,
+              file_name: file.name,
+              file_size: file.size,
+              db_path: presignedUrlResponse.db_path,
+              url: presignedUrlResponse.download_url,
+              mime_type: file.type,
+            }),
+          },
+        });
+        
+        onProgress?.(100); // Complete
+        return registeredAsset;
+      }
     },
     onSuccess: (data, variables) => {
       // Update the asset list query data

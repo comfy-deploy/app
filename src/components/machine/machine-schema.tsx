@@ -156,10 +156,10 @@ export const serverlessFormSchema = z.object({
     .default(true)
     .optional()
     .describe("Disable metadata"),
-  cpu_request: z.number().describe("CPU request").optional(),
-  cpu_limit: z.number().describe("CPU limit").optional(),
-  memory_request: z.number().describe("Memory request").optional(),
-  memory_limit: z.number().describe("Memory limit").optional(),
+  cpu_request: z.number().describe("CPU request").nullable().optional(),
+  cpu_limit: z.number().describe("CPU limit").nullable().optional(),
+  memory_request: z.number().describe("Memory request").nullable().optional(),
+  memory_limit: z.number().describe("Memory limit").nullable().optional(),
 });
 
 interface GPUConfig {

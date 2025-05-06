@@ -1,5 +1,6 @@
 import { GalleryView } from "@/components/GalleryView";
 import { PaddingLayout } from "@/components/PaddingLayout";
+import type { AssetType } from "@/components/SDInputs/sd-asset-input";
 import {
   DeploymentDialog,
   DeploymentPage,
@@ -49,8 +50,12 @@ import {
 } from "@/components/workspace/ContainersTable";
 import { useWorkflowDeployments } from "@/components/workspace/ContainersTable";
 import { DeploymentDrawer } from "@/components/workspace/DeploymentDisplay";
-import { useSelectedVersion } from "@/components/workspace/Workspace";
+import {
+  useAssetsBrowserStore,
+  useSelectedVersion,
+} from "@/components/workspace/Workspace";
 import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
+import { AssetsBrowserPopup } from "@/components/workspace/assets-browser-drawer";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
 import { useSessionAPI } from "@/hooks/use-session-api";
@@ -64,6 +69,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ImageIcon, Share } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Version {
   id: string;
@@ -228,14 +234,35 @@ function WorkflowPageComponent() {
   const router = useRouter();
 
   const [sessionId, setSessionId] = useQueryState("sessionId");
-  // const sessionSelected = sessions?.find(
-  //   (session) => session.session_id === sessionId,
-  // );
+  const { open: isAssetsOpen, setOpen: setIsAssetsOpen } =
+    useAssetsBrowserStore();
 
   // Find public share deployment if it exists
   const publicShareDeployment = deployments?.find(
     (d: Deployment) => d.environment === "public-share",
   );
+
+  const handleAsset = async (asset: AssetType) => {
+    try {
+      await callServerPromise(
+        api({
+          url: `workflow/${workflowId}`,
+          init: {
+            method: "PATCH",
+            body: JSON.stringify({ cover_image: asset.url }),
+          },
+        }),
+      );
+      toast.success("Cover image updated!");
+      queryClient.invalidateQueries({
+        queryKey: ["workflow", workflowId],
+      });
+    } catch (error) {
+      toast.error("Failed to update cover image");
+    } finally {
+      setIsAssetsOpen(false);
+    }
+  };
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -356,47 +383,64 @@ function WorkflowPageComponent() {
       </Portal>
       <Portal targetId="sidebar-panel-footer">
         {workflow && (
-          <div className="border-gray-200 p-3">
-            {workflow.cover_image ? (
-              <div className="mx-auto mb-2 h-36 w-36 overflow-hidden rounded-md">
-                <FileURLRender
-                  url={workflow.cover_image}
-                  imgClasses="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <TooltipProvider>
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-                    <div
-                      className="mx-auto mb-2 flex h-36 w-36 cursor-pointer items-center justify-center rounded-md border-2 border-gray-300 border-dashed hover:border-gray-400"
-                      onClick={() => {
-                        router.navigate({
-                          to: "/workflows/$workflowId/$view",
-                          params: {
-                            workflowId,
-                            view: "gallery",
-                          },
-                          search: {
-                            action: true,
-                          },
-                        });
-                      }}
-                    >
-                      <ImageIcon className="h-6 w-6 text-gray-400" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Add Cover Image</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+          <div className="w-full p-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="mx-auto flex items-center justify-center">
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      {workflow.cover_image ? (
+                        <div className="mb-2 h-36 w-36 overflow-hidden rounded-md">
+                          <FileURLRender
+                            url={workflow.cover_image}
+                            imgClasses="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="mb-2 flex h-36 w-36 items-center justify-center rounded-md border-2 border-gray-300 border-dashed hover:border-gray-400">
+                          <ImageIcon className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add Cover Image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" className="w-40">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    router.navigate({
+                      to: "/workflows/$workflowId/$view",
+                      params: {
+                        workflowId,
+                        view: "gallery",
+                      },
+                      search: {
+                        action: true,
+                      },
+                    });
+                  }}
+                >
+                  From Gallery
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setIsAssetsOpen(true);
+                  }}
+                >
+                  From Assets
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {workflow.description && (
               <p className="line-clamp-3 text-2xs text-gray-600 leading-snug">
                 {workflow.description}
               </p>
+            )}
+            {isAssetsOpen && (
+              <AssetsBrowserPopup isPlayground handleAsset={handleAsset} />
             )}
           </div>
         )}

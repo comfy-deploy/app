@@ -184,14 +184,14 @@ function RouteComponent() {
   return (
     <div className="bg-white py-4 w-full">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
-        <Alert variant="warning" className="mb-6">
+        {/* <Alert variant="warning" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Under Maintenance</AlertTitle>
           <AlertDescription>
             The usage page is currently under maintenance. Some features may be
             temporarily unavailable. We apologize for any inconvenience.
           </AlertDescription>
-        </Alert>
+        </Alert> */}
         {/* <Suspense> */}
         <UnpaidInvoices />
         {/* </Suspense> */}

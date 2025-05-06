@@ -4,18 +4,20 @@ const BATCH_SIZE = 20;
 
 export function useWorkflowList(
   debouncedSearchValue: string,
+  user_ids: string = "", // format: "user_xxxxxx,user_yyyyyy"
   limit: number = BATCH_SIZE,
 ) {
   return useInfiniteQuery<any[]>({
     queryKey: ["workflows"],
     queryKeyHashFn: (queryKey) => {
-      return [...queryKey, debouncedSearchValue, limit].join(",");
+      return [...queryKey, debouncedSearchValue, limit, user_ids].join(",");
     },
     meta: {
       limit: limit,
       offset: 0,
       params: {
         search: debouncedSearchValue ?? "",
+        user_ids: user_ids,
       },
     },
     getNextPageParam: (lastPage, allPages) => {
