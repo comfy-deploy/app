@@ -27,7 +27,9 @@ import {
   AlertCircle,
   Code,
   Edit,
+  Grid2X2,
   Image,
+  LayoutList,
   MoreHorizontal,
   PinIcon,
   PinOff,
@@ -45,7 +47,6 @@ import {
 } from "@/components/workflow-api";
 
 import { DialogTemplate } from "@/components/dialog-template";
-// import { FileURLRender } from "@/components/output-render";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useUser } from "@clerk/clerk-react";
@@ -84,7 +85,6 @@ export function useWorkflowVersion(
       },
     },
     getNextPageParam: (lastPage, allPages) => {
-      // Check if lastPage is defined and has a length property
       if (
         lastPage &&
         Array.isArray(lastPage) &&
@@ -131,7 +131,7 @@ export function WorkflowList() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex w-full flex-row items-center gap-2 px-4 py-4 hidden">
+      <div className="flex w-full flex-row items-center justify-between gap-2 px-4 py-4">
         <div className="relative max-w-sm flex-1">
           <Input
             placeholder="Filter workflows..."
@@ -149,34 +149,54 @@ export function WorkflowList() {
             <span className="text-xs">⌘</span>K
           </kbd>
         </div>
-        <AdminAndMember>
-          <div className="ml-auto flex gap-2">
-            <Tooltip>
-              <TooltipTrigger>
-                {sub && (
-                  <Badge
-                    className={cn(
-                      sub?.features.workflowLimited
-                        ? "border-gray-400 text-gray-500"
-                        : "",
-                    )}
-                  >
-                    <div className="flex items-center gap-2 px-2 text-xs">
-                      {sub?.features.currentWorkflowCount}/
-                      {sub?.features.workflowLimit}
-                    </div>
-                  </Badge>
-                )}
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  Current workflows: {sub?.features.currentWorkflowCount} / Max:{" "}
-                  {sub?.features.workflowLimit}
-                </p>
-              </TooltipContent>
-            </Tooltip>
+        
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border bg-background shadow-sm">
+            <Button
+              variant={view === "grid" ? "secondary" : "ghost"}
+              size="icon"
+              onClick={() => setView("grid")}
+            >
+              <Grid2X2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={view === "list" ? "secondary" : "ghost"}
+              size="icon"
+              onClick={() => setView("list")}
+            >
+              <LayoutList className="h-4 w-4" />
+            </Button>
           </div>
-        </AdminAndMember>
+          
+          <AdminAndMember>
+            <div className="flex gap-2">
+              <Tooltip>
+                <TooltipTrigger>
+                  {sub && (
+                    <Badge
+                      className={cn(
+                        sub?.features.workflowLimited
+                          ? "border-gray-400 text-gray-500"
+                          : "",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 px-2 text-xs">
+                        {sub?.features.currentWorkflowCount}/
+                        {sub?.features.workflowLimit}
+                      </div>
+                    </Badge>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    Current workflows: {sub?.features.currentWorkflowCount} / Max:{" "}
+                    {sub?.features.workflowLimit}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </AdminAndMember>
+        </div>
       </div>
       <ScrollArea className="fab-workflow-list flex-grow" ref={parentRef}>
         {isLoading ? (
@@ -212,13 +232,18 @@ export function WorkflowList() {
             )}
           </div>
         ) : (
-          <div className="mx-auto grid grid-cols-1 gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className={cn(
+            view === "grid" 
+              ? "mx-auto grid grid-cols-1 gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
+              : "mx-auto flex flex-col gap-2 px-4 pb-4"
+          )}>
             {flatData &&
               flatData.map((workflow) => (
                 <WorkflowCard
                   key={workflow.id}
                   workflow={workflow}
                   mutate={refetch}
+                  view={view}
                 />
               ))}
             {isFetchingNextPage && (
@@ -289,7 +314,7 @@ export function WorkflowLatestOutput({
             className,
           )}
         >
-          <Workflow size={20} strokeWidth={1.5} className=" text-gray-400" />
+          <Workflow size={20} strokeWidth={1.5} className="text-gray-400" />
         </div>
       )}
     </>
@@ -300,10 +325,12 @@ export function WorkflowCard({
   workflow,
   mutate,
   className,
+  view = "grid",
 }: {
   workflow: any;
   mutate: () => void;
   className?: string;
+  view?: "list" | "grid";
 }) {
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState<string>();
@@ -418,160 +445,311 @@ export function WorkflowCard({
             ? `/workflows/${workflow.id}/requests`
             : `/workflows/${workflow.id}/playground`
         }
-        className={cn("flex w-full flex-col md:max-w-[320px]", className)}
+        className={cn(
+          view === "grid" 
+            ? "flex w-full flex-col md:max-w-[320px]" 
+            : "flex w-full items-center gap-4 border rounded-md p-3 hover:bg-muted/50 transition-colors",
+          className
+        )}
       >
-        <Card
-          className={cn(
-            "group relative flex aspect-square h-[320px] w-full flex-col overflow-hidden rounded-md",
-          )}
-        >
-          <div className="h-full w-full">
-            {workflow.cover_image || latest_output?.images?.[0]?.url ? (
-              <FileURLRender
-                url={workflow.cover_image || latest_output.images[0].url}
-                imgClasses="w-full h-full max-w-full max-h-full rounded-[8px] object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
-              />
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center ">
-                <Workflow
-                  size={40}
-                  strokeWidth={1.5}
-                  className="mb-2 text-gray-400"
+        {view === "grid" ? (
+          <>
+            <Card
+              className={cn(
+                "group relative flex aspect-square h-[320px] w-full flex-col overflow-hidden rounded-md",
+              )}
+            >
+              <div className="h-full w-full">
+                {workflow.cover_image || latest_output?.images?.[0]?.url ? (
+                  <FileURLRender
+                    url={workflow.cover_image || latest_output.images[0].url}
+                    imgClasses="w-full h-full max-w-full max-h-full rounded-[8px] object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center ">
+                    <Workflow
+                      size={40}
+                      strokeWidth={1.5}
+                      className="mb-2 text-gray-400"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="absolute top-2 right-2">
+                <AdminAndMember>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="h-8 w-8 bg-black/30 p-0 text-white"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-44"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                    >
+                      <DropdownMenuLabel>Workflow Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={(e) => openRenameDialog(e)}>
+                        Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          const newWorkflow = await callServerPromise(
+                            cloneWorkflow(workflow.id),
+                            {
+                              loadingText: "Cloning workflow",
+                              successMessage: `${workflow.name} cloned successfully`,
+                            },
+                          );
+                          mutate();
+                          toast.info(`Redirecting to ${newWorkflow.name}...`);
+                          navigate({
+                            to: `/workflows/${newWorkflow.id}/workspace`,
+                          });
+                        }}
+                      >
+                        Clone
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setDeleteModalOpen(true);
+                        }}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <Link
+                          to={`/workflows/${workflow.id}/gallery`}
+                          search={{ action: "set-cover-image" }}
+                          className="w-full"
+                        >
+                          Set Cover Image
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          const newPinnedState = !workflow.pinned;
+                          await callServerPromise(
+                            pinWorkflow(workflow.id, newPinnedState),
+                            {
+                              loadingText: newPinnedState
+                                ? "Pinning workflow"
+                                : "Unpinning workflow",
+                              successMessage: `${workflow.name} ${newPinnedState ? "pinned" : "unpinned"} successfully`,
+                            },
+                          );
+                          mutate();
+                        }}
+                      >
+                        <div className="flex w-full items-center justify-between">
+                          {workflow.pinned ? "Unpin" : "Pin"}
+                          {workflow.pinned ? (
+                            <PinOff className="h-4 w-4 rotate-45" />
+                          ) : (
+                            <PinIcon className="h-4 w-4 rotate-45" />
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </AdminAndMember>
+              </div>
+
+              {workflow.pinned && (
+                <div className="absolute top-4 left-4">
+                  <PinIcon className="rotate-45 text-white drop-shadow-md" />
+                </div>
+              )}
+            </Card>
+            <div className="flex flex-col px-2 pt-2">
+              <div className="flex w-full flex-row justify-between truncate font-semibold text-gray-700 text-md">
+                <div className="mr-2 truncate text-sm">{workflow.name}</div>
+                {status && (
+                  <Badge
+                    variant={status === "success" ? "success" : "secondary"}
+                    className="shrink-0"
+                  >
+                    {status}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-row justify-between">
+                <div className="flex items-center gap-2 truncate text-2xs text-muted-foreground">
+                  {workflow.user_id && (
+                    <UserIcon user_id={workflow.user_id} className="h-4 w-4" />
+                  )}
+                  {workflow.user_name || "Unknown"}
+                </div>
+                <div className="shrink-0 text-2xs">
+                  {lastest_run_at ? (
+                    getRelativeTime(lastest_run_at)
+                  ) : isLoadingLatestRun ? (
+                    <Skeleton className="h-4 w-4" />
+                  ) : (
+                    <></>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="w-12 h-12 shrink-0">
+              {workflow.cover_image || latest_output?.images?.[0]?.url ? (
+                <FileURLRender
+                  url={workflow.cover_image || latest_output.images[0].url}
+                  imgClasses="w-full h-full rounded-md object-cover"
                 />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center bg-muted rounded-md">
+                  <Workflow size={20} strokeWidth={1.5} className="text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="flex-grow min-w-0">
+              <div className="flex flex-row justify-between truncate font-semibold text-gray-700 text-md">
+                <div className="mr-2 truncate text-sm">{workflow.name}</div>
+                {status && (
+                  <Badge
+                    variant={status === "success" ? "success" : "secondary"}
+                    className="shrink-0"
+                  >
+                    {status}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-row justify-between">
+                <div className="flex items-center gap-2 truncate text-2xs text-muted-foreground">
+                  {workflow.user_id && (
+                    <UserIcon user_id={workflow.user_id} className="h-4 w-4" />
+                  )}
+                  {workflow.user_name || "Unknown"}
+                </div>
+                <div className="shrink-0 text-2xs">
+                  {lastest_run_at ? (
+                    getRelativeTime(lastest_run_at)
+                  ) : isLoadingLatestRun ? (
+                    <Skeleton className="h-4 w-4" />
+                  ) : (
+                    <></>
+                  )}
+                </div>
+              </div>
+            </div>
+            {workflow.pinned && (
+              <div className="mx-2">
+                <PinIcon className="h-4 w-4 rotate-45" />
               </div>
             )}
-          </div>
-          <div className="absolute top-2 right-2">
-            <AdminAndMember>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="h-8 w-8 bg-black/30 p-0 text-white"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-44"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                >
-                  <DropdownMenuLabel>Workflow Actions</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={(e) => openRenameDialog(e)}>
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      const newWorkflow = await callServerPromise(
-                        cloneWorkflow(workflow.id),
-                        {
-                          loadingText: "Cloning workflow",
-                          successMessage: `${workflow.name} cloned successfully`,
-                        },
-                      );
-                      mutate();
-                      toast.info(`Redirecting to ${newWorkflow.name}...`);
-                      navigate({
-                        to: `/workflows/${newWorkflow.id}/workspace`,
-                      });
-                    }}
-                  >
-                    Clone
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
+            <div className="shrink-0">
+              <AdminAndMember>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-44"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      setDeleteModalOpen(true);
                     }}
                   >
-                    Delete
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link
-                      to={`/workflows/${workflow.id}/gallery`}
-                      // @ts-expect-error
-                      search={{ action: "set-cover-image" }}
-                      className="w-full"
+                    <DropdownMenuLabel>Workflow Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={(e) => openRenameDialog(e)}>
+                      Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        const newWorkflow = await callServerPromise(
+                          cloneWorkflow(workflow.id),
+                          {
+                            loadingText: "Cloning workflow",
+                            successMessage: `${workflow.name} cloned successfully`,
+                          },
+                        );
+                        mutate();
+                        toast.info(`Redirecting to ${newWorkflow.name}...`);
+                        navigate({
+                          to: `/workflows/${newWorkflow.id}/workspace`,
+                        });
+                      }}
                     >
-                      Set Cover Image
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      const newPinnedState = !workflow.pinned;
-                      await callServerPromise(
-                        pinWorkflow(workflow.id, newPinnedState),
-                        {
-                          loadingText: newPinnedState
-                            ? "Pinning workflow"
-                            : "Unpinning workflow",
-                          successMessage: `${workflow.name} ${newPinnedState ? "pinned" : "unpinned"} successfully`,
-                        },
-                      );
-                      mutate();
-                    }}
-                  >
-                    <div className="flex w-full items-center justify-between">
-                      {workflow.pinned ? "Unpin" : "Pin"}
-                      {workflow.pinned ? (
-                        <PinOff className="h-4 w-4 rotate-45" />
-                      ) : (
-                        <PinIcon className="h-4 w-4 rotate-45" />
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </AdminAndMember>
-          </div>
-
-          {workflow.pinned && (
-            <div className="absolute top-4 left-4">
-              <PinIcon className="rotate-45 text-white drop-shadow-md" />
+                      Clone
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setDeleteModalOpen(true);
+                      }}
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <Link
+                        to={`/workflows/${workflow.id}/gallery`}
+                        search={{ action: "set-cover-image" }}
+                        className="w-full"
+                      >
+                        Set Cover Image
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        const newPinnedState = !workflow.pinned;
+                        await callServerPromise(
+                          pinWorkflow(workflow.id, newPinnedState),
+                          {
+                            loadingText: newPinnedState
+                              ? "Pinning workflow"
+                              : "Unpinning workflow",
+                            successMessage: `${workflow.name} ${newPinnedState ? "pinned" : "unpinned"} successfully`,
+                          },
+                        );
+                        mutate();
+                      }}
+                    >
+                      <div className="flex w-full items-center justify-between">
+                        {workflow.pinned ? "Unpin" : "Pin"}
+                        {workflow.pinned ? (
+                          <PinOff className="h-4 w-4 rotate-45" />
+                        ) : (
+                          <PinIcon className="h-4 w-4 rotate-45" />
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </AdminAndMember>
             </div>
-          )}
-        </Card>
-        <div className="flex flex-col px-2 pt-2">
-          <div className="flex w-full flex-row justify-between truncate font-semibold text-gray-700 text-md">
-            <div className="mr-2 truncate text-sm">{workflow.name}</div>
-            {status && (
-              <Badge
-                variant={status === "success" ? "success" : "secondary"}
-                className="shrink-0"
-              >
-                {status}
-              </Badge>
-            )}
-          </div>
-          <div className="flex flex-row justify-between">
-            <div className="flex items-center gap-2 truncate text-2xs text-muted-foreground">
-              {workflow.user_id && (
-                <UserIcon user_id={workflow.user_id} className="h-4 w-4" />
-              )}
-              {workflow.user_name || "Unknown"}
-            </div>
-            <div className="shrink-0 text-2xs">
-              {lastest_run_at ? (
-                getRelativeTime(lastest_run_at)
-              ) : isLoadingLatestRun ? (
-                <Skeleton className="h-4 w-4" />
-              ) : (
-                <></>
-              )}
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </Link>
     </>
   );
