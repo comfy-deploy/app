@@ -25,6 +25,7 @@ export async function uploadFileToVolume({
   subfolder,
   targetPath,
   apiEndpoint,
+  token,
   onProgress,
 }: {
   volumeName: string;
@@ -33,6 +34,7 @@ export async function uploadFileToVolume({
   subfolder?: string;
   targetPath?: string;
   apiEndpoint: string;
+  token: string;
   onProgress?: (
     progress: number,
     uploadedSize: number,
@@ -40,7 +42,7 @@ export async function uploadFileToVolume({
     estimatedTime: number,
   ) => void;
 }) {
-  const url = `${apiEndpoint}`;
+  const url = `${process.env.NEXT_PUBLIC_CD_API_URL}/api/volume/file/custom-upload`;
   const formData = new FormData();
   formData.append("file", file);
   formData.append("filename", filename || file.name);
@@ -57,6 +59,7 @@ export async function uploadFileToVolume({
   try {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url);
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {

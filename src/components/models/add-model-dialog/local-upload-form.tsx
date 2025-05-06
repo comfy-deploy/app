@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import type { AddModelRequest } from "@/types/models";
 import { formatBytes, formatTime } from "@/lib/utils";
 import { AlertCircle, Info } from "lucide-react";
+import { useAuthStore } from "@/lib/auth-store";
 
 interface LocalUploadFormProps {
   onSubmit: (request: AddModelRequest) => void;
@@ -18,7 +19,8 @@ interface LocalUploadFormProps {
   isSubmitting: boolean;
 }
 
-const MAX_FILE_SIZE = 1024 * 1024 * 1000; // 1
+const BUFFER = 1024 * 1024 * 50; // 50MB buffer for floating point precision
+const MAX_FILE_SIZE = 1024 * 1024 * 2000 + BUFFER; // 2GB
 
 export function LocalUploadForm({
   onSubmit,
@@ -37,6 +39,7 @@ export function LocalUploadForm({
     totalSize: number;
     estimatedTime: number;
   } | null>(null);
+  const { token } = useAuthStore();
 
   useEffect(() => {
     async function fetchVolumeName() {
@@ -97,7 +100,13 @@ export function LocalUploadForm({
   };
 
   const handleSubmit = async () => {
-    if (!file || isSubmitting || !volumeName || file.size > MAX_FILE_SIZE)
+    if (
+      !file ||
+      isSubmitting ||
+      !volumeName ||
+      file.size > MAX_FILE_SIZE ||
+      !token
+    )
       return;
 
     try {
@@ -112,6 +121,7 @@ export function LocalUploadForm({
         filename,
         targetPath: folderPath,
         apiEndpoint: process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL || "",
+        token,
         onProgress: (progress, uploadedSize, totalSize, estimatedTime) => {
           setUploadProgress(progress);
           setUploadStats({ uploadedSize, totalSize, estimatedTime });
@@ -158,7 +168,7 @@ export function LocalUploadForm({
             <Alert className="border-blue-200 bg-blue-50">
               <Info className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-red-700">
-                This file ({formatBytes(file.size)}) exceeds the 1GB size limit.
+                This file ({formatBytes(file.size)}) exceeds the 2GB size limit.
                 For large model files, we recommend using Hugging Face or
                 Civitai for hosting.
               </AlertDescription>
