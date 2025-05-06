@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useOrganizationList } from "@clerk/clerk-react";
+import { useOrganization } from "@clerk/clerk-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,23 +24,40 @@ interface UserFilterSelectProps {
 }
 
 export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
-  const { userMemberships, isLoaded } = useOrganizationList({
-    userMemberships: true,
+  const { organization, isLoaded } = useOrganization({
+    memberships: true,
   });
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!isLoaded || !userMemberships || userMemberships.count === 0) return null;
+  if (!isLoaded || !organization) return null;
 
-  const currentOrg = userMemberships.data[0]?.organization;
-  const currentOrgMembers = currentOrg?.memberships?.data || [];
+  const [members, setMembers] = React.useState<any[]>([]);
   
-  const members = currentOrgMembers.map((membership: any) => ({
-    id: membership.publicUserData?.userId || "",
-    name: membership.publicUserData?.firstName
-      ? `${membership.publicUserData.firstName} ${membership.publicUserData.lastName || ""}`
-      : membership.publicUserData?.identifier || "Unknown",
-  }));
+  React.useEffect(() => {
+    if (!organization) return;
+    
+    const fetchMembers = async () => {
+      try {
+        const response = await organization.getMemberships();
+        const membersList = response.data || [];
+        
+        const formattedMembers = membersList.map((membership: any) => ({
+          id: membership.publicUserData?.userId || "",
+          name: membership.publicUserData?.firstName
+            ? `${membership.publicUserData.firstName} ${membership.publicUserData.lastName || ""}`
+            : membership.publicUserData?.identifier || "Unknown",
+        }));
+        
+        setMembers(formattedMembers);
+      } catch (error) {
+        console.error("Error fetching organization members:", error);
+        setMembers([]);
+      }
+    };
+    
+    fetchMembers();
+  }, [organization]);
 
   const toggleUser = (userId: string) => {
     setSelectedUsers((prev) => {
@@ -88,8 +105,8 @@ export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
             <DropdownMenuItem
               key={member.id}
               className="flex items-center gap-2 px-2"
-              onSelect={(e: React.MouseEvent) => {
-                e.preventDefault();
+              onSelect={(event: Event) => {
+                event.preventDefault();
                 toggleUser(member.id);
               }}
             >
@@ -110,8 +127,8 @@ export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="flex items-center justify-center text-destructive"
-              onSelect={(e: React.MouseEvent) => {
-                e.preventDefault();
+              onSelect={(event: Event) => {
+                event.preventDefault();
                 clearSelection();
               }}
             >

@@ -151,11 +151,11 @@ export function WorkflowList() {
           </kbd>
         </div>
         
-        {/* User filter component */}
-        <UserFilterSelect onFilterChange={setSelectedUserIds} />
-        
-        <AdminAndMember>
-          <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex gap-2">
+          {/* User filter component moved to the right */}
+          <UserFilterSelect onFilterChange={setSelectedUserIds} />
+          
+          <AdminAndMember>
             <Tooltip>
               <TooltipTrigger>
                 {sub && (
@@ -180,8 +180,8 @@ export function WorkflowList() {
                 </p>
               </TooltipContent>
             </Tooltip>
-          </div>
-        </AdminAndMember>
+          </AdminAndMember>
+        </div>
       </div>
       <ScrollArea className="fab-workflow-list flex-grow" ref={parentRef}>
         {isLoading ? (

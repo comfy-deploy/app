@@ -4,7 +4,7 @@ const BATCH_SIZE = 20;
 
 export function useWorkflowList(
   debouncedSearchValue: string,
-  user_ids?: string, // format: "user_xxxxxx,user_yyyyyy"
+  user_ids: string = "", // format: "user_xxxxxx,user_yyyyyy"
   limit: number = BATCH_SIZE,
 ) {
   return useInfiniteQuery<any[]>({
