@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useOrganization } from "@clerk/clerk-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -19,6 +19,7 @@ import { UserIcon } from "./run/SharePageComponent";
 import { cn } from "@/lib/utils";
 import { Users, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 interface UserFilterSelectProps {
   onFilterChange: (userIds: string) => void;
@@ -33,9 +34,14 @@ export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
   const { organization, isLoaded } = useOrganization({
     memberships: true,
   });
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
+  
+  const storageKey = organization ? `workflow-user-filter-${organization.id}` : "";
+  const [selectedUsers, setSelectedUsers] = useLocalStorage<string[]>(
+    storageKey,
+    []
+  );
   
   const selectedMembers = useMemo(() => {
     return members.filter(member => selectedUsers.includes(member.id));
@@ -44,6 +50,14 @@ export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
   const maxVisibleBadges = 2;
   const visibleBadges = selectedMembers.slice(0, maxVisibleBadges);
   const hiddenCount = selectedMembers.length - maxVisibleBadges;
+
+  useEffect(() => {
+    if (selectedUsers.length > 0) {
+      onFilterChange(selectedUsers.join(","));
+    } else {
+      onFilterChange("");
+    }
+  }, [selectedUsers, onFilterChange]);
 
   if (!isLoaded || !organization) return null;
 
@@ -74,19 +88,14 @@ export function UserFilterSelect({ onFilterChange }: UserFilterSelectProps) {
 
   const toggleUser = (userId: string) => {
     setSelectedUsers((prev) => {
-      const newSelection = prev.includes(userId)
+      return prev.includes(userId)
         ? prev.filter((id) => id !== userId)
         : [...prev, userId];
-      
-      // Call the callback with the updated selection
-      onFilterChange(newSelection.join(","));
-      return newSelection;
     });
   };
 
   const clearSelection = () => {
     setSelectedUsers([]);
-    onFilterChange("");
   };
 
   return (
