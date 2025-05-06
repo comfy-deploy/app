@@ -104,7 +104,10 @@ export function useWorkflowVersion(
 
 export function WorkflowList() {
   const [modalType, setModalType] = React.useState<"json" | "new" | null>(null);
-  const [view, setView] = useLocalStorage<"list" | "grid">("workflow-view-mode", "grid");
+  const [view, setView] = useLocalStorage<"list" | "grid">(
+    "workflow-view-mode",
+    "grid",
+  );
 
   const user = useUser();
   const sub = useCurrentPlan();
@@ -154,11 +157,11 @@ export function WorkflowList() {
             <span className="text-xs">⌘</span>K
           </kbd>
         </div>
-        
+
         <div className="ml-auto flex gap-2">
           {/* User filter component first */}
           <UserFilterSelect onFilterChange={setSelectedUserIds} />
-          
+
           {/* Grid/list toggle moved to the right */}
           <div className="flex rounded-md border bg-background shadow-sm">
             <Button
@@ -176,7 +179,7 @@ export function WorkflowList() {
               <LayoutList className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <AdminAndMember>
             <Tooltip>
               <TooltipTrigger>
@@ -239,11 +242,13 @@ export function WorkflowList() {
             )}
           </div>
         ) : (
-          <div className={cn(
-            view === "grid" 
-              ? "mx-auto grid w-full max-w-screen-2xl grid-cols-1 justify-items-center gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-              : "mx-auto flex w-full max-w-screen-2xl flex-col gap-2 px-4 pb-4"
-          )}>
+          <div
+            className={cn(
+              view === "grid"
+                ? "mx-auto grid w-full max-w-screen-2xl grid-cols-1 justify-items-center gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                : "mx-auto flex w-full max-w-screen-2xl flex-col px-4 pb-4",
+            )}
+          >
             {flatData &&
               flatData.map((workflow) => (
                 <WorkflowCard
@@ -436,10 +441,10 @@ function WorkflowCard({
             : `/workflows/${workflow.id}/playground`
         }
         className={cn(
-          view === "grid" 
-            ? "flex w-full flex-col md:max-w-[320px]" 
+          view === "grid"
+            ? "flex w-full flex-col md:max-w-[320px]"
             : "flex w-full items-center gap-4 border-b py-4 px-3 hover:bg-muted/50 transition-colors",
-          className
+          className,
         )}
       >
         {view === "grid" ? (
@@ -584,7 +589,11 @@ function WorkflowCard({
                 />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center bg-muted rounded-md">
-                  <Workflow size={20} strokeWidth={1.5} className="text-gray-400" />
+                  <Workflow
+                    size={20}
+                    strokeWidth={1.5}
+                    className="text-gray-400"
+                  />
                 </div>
               )}
             </div>
@@ -625,10 +634,7 @@ function WorkflowCard({
               <AdminAndMember>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                    >
+                    <Button variant="ghost" className="h-8 w-8 p-0">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
