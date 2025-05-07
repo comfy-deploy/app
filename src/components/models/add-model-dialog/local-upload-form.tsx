@@ -120,8 +120,6 @@ export function LocalUploadForm({
         file,
         filename,
         targetPath: folderPath,
-        apiEndpoint: process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL || "",
-        token,
         onProgress: (progress, uploadedSize, totalSize, estimatedTime) => {
           setUploadProgress(progress);
           setUploadStats({ uploadedSize, totalSize, estimatedTime });

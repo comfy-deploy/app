@@ -1,5 +1,4 @@
 import { api } from "@/lib/api";
-import { useAuthStore } from "@/lib/auth-store";
 
 export async function uploadFile(file: File) {
   const formData = new FormData();
@@ -19,13 +18,10 @@ export async function uploadFile(file: File) {
 }
 
 export async function uploadFileToVolume({
-  volumeName,
   file,
   filename,
   subfolder,
   targetPath,
-  apiEndpoint,
-  token,
   onProgress,
 }: {
   volumeName: string;
@@ -33,8 +29,6 @@ export async function uploadFileToVolume({
   filename?: string;
   subfolder?: string;
   targetPath?: string;
-  apiEndpoint: string;
-  token: string;
   onProgress?: (
     progress: number,
     uploadedSize: number,
@@ -42,63 +36,104 @@ export async function uploadFileToVolume({
     estimatedTime: number,
   ) => void;
 }) {
-  const url = `${process.env.NEXT_PUBLIC_CD_API_URL}/api/volume/file/custom-upload`;
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("filename", filename || file.name);
-  formData.append("volume_name", volumeName);
-  if (targetPath) {
-    formData.append("target_path", targetPath);
-  }
-  if (subfolder) {
-    formData.append("subfolder", subfolder);
-  }
-
-  console.log(file.name, url);
-
   try {
+    const fileType = file.type || "application/octet-stream";
+    const fileNameToUse = filename || file.name;
+    const parentPath = subfolder
+      ? `${(targetPath || "/").replace(/\/$/, "")}/${subfolder.replace(/^\//, "")}`
+      : targetPath || "/";
+
+    onProgress?.(5, 0, file.size, 0);
+
+    const presignedUrlResponse = await api({
+      url: "assets/presigned-url",
+      params: {
+        file_name: file.name,
+        parent_path: parentPath,
+        size: file.size,
+        type: fileType,
+      },
+    });
+
+    onProgress?.(10, 0, file.size, 0);
+
+    const s3Url = presignedUrlResponse.url || presignedUrlResponse.data?.url;
+    if (!s3Url) {
+      throw new Error("No S3 URL found in presignedUrlResponse");
+    }
+
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", url);
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable && onProgress) {
-        const progress = (event.loaded / event.total) * 100;
-        const uploadedSize = event.loaded;
-        const totalSize = event.total;
-        const elapsedTime = (Date.now() - startTime) / 1000; // in seconds
-        const uploadSpeed = uploadedSize / elapsedTime; // bytes per second
-        const remainingSize = totalSize - uploadedSize;
-        const estimatedTime = remainingSize / uploadSpeed; // in seconds
-
-        onProgress(progress, uploadedSize, totalSize, estimatedTime);
-      }
-    };
-
     const startTime = Date.now();
+    const uploadPromise = new Promise<void>((resolve, reject) => {
+      xhr.open("PUT", s3Url, true);
+      xhr.setRequestHeader("Content-Type", fileType);
+      xhr.setRequestHeader("x-amz-acl", "public-read");
 
-    return new Promise((resolve, reject) => {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) {
+          const progressPercentage = 10 + (e.loaded / e.total) * 80;
+          const uploadedSize = e.loaded;
+          const totalSize = e.total;
+          const elapsedTime = (Date.now() - startTime) / 1000;
+          const uploadSpeed = uploadedSize / elapsedTime;
+          const remainingSize = totalSize - uploadedSize;
+          const estimatedTime = remainingSize / uploadSpeed;
+          onProgress(
+            progressPercentage,
+            uploadedSize,
+            totalSize,
+            estimatedTime,
+          );
+        }
+      };
+
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          const result = JSON.parse(xhr.responseText);
-          console.log("File uploaded successfully:", result);
-          resolve(result);
+          resolve();
         } else {
-          // Return the error from the server as plain text
-          const errorMessage =
-            xhr.responseText || `Server error: ${xhr.statusText}`;
-          reject(new Error(errorMessage));
+          reject(new Error(`Upload failed with status ${xhr.status}`));
         }
       };
 
       xhr.onerror = () => {
-        reject(new Error("Network error occurred during file upload"));
+        reject(new Error("Network error during upload"));
       };
 
-      xhr.send(formData);
+      xhr.send(file);
     });
-  } catch (error: any) {
-    console.error("Error uploading file:", error.message);
-    throw error;
+
+    try {
+      await uploadPromise;
+    } catch (error: any) {
+      throw new Error("Failed to upload file to storage");
+    }
+
+    onProgress?.(90, file.size, file.size, 0);
+
+    // 4. Register with volume/model endpoint
+    try {
+      await api({
+        url: "volume/model",
+        init: {
+          method: "POST",
+          body: JSON.stringify({
+            downloadLink: presignedUrlResponse.download_url,
+            source: "link",
+            filename: fileNameToUse,
+            folderPath: parentPath,
+            s3_upload: true,
+          }),
+        },
+      });
+    } catch (error) {
+      throw new Error("Error while uploading volume to modal");
+    }
+
+    onProgress?.(100, file.size, file.size, 0);
+  } catch (error) {
+    console.error("File upload error:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Unknown error during file upload");
   }
 }
