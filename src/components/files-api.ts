@@ -99,3 +99,106 @@ export async function uploadFileToVolume({
     throw error;
   }
 }
+
+export async function uploadModelDirectToS3({
+  file,
+  filename,
+  folderPath,
+  deleteAfterInstall = false,
+  onProgress,
+}: {
+  file: File;
+  filename: string;
+  folderPath: string;
+  deleteAfterInstall?: boolean;
+  onProgress?: (
+    progress: number,
+    uploadedSize: number,
+    totalSize: number,
+    estimatedTime: number,
+  ) => void;
+}) {
+  try {
+    const params = new URLSearchParams({
+      file_name: filename,
+      folder_path: folderPath,
+      delete_after_install: String(deleteAfterInstall),
+      size: String(file.size),
+      type: file.type || 'application/octet-stream',
+    });
+
+    const response = await api({
+      url: `volume/model/presigned-url?${params.toString()}`,
+      init: { method: "GET" },
+    });
+
+    if (!response || !response.upload_url) {
+      throw new Error("Failed to get upload URL");
+    }
+
+    const { model_id, upload_url, download_url, object_key } = response;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", upload_url);
+    
+    if (file.type) {
+      xhr.setRequestHeader("Content-Type", file.type);
+    }
+
+    const startTime = Date.now();
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        const progress = (event.loaded / event.total) * 100;
+        const uploadedSize = event.loaded;
+        const totalSize = event.total;
+        const elapsedTime = (Date.now() - startTime) / 1000; // in seconds
+        const uploadSpeed = uploadedSize / elapsedTime; // bytes per second
+        const remainingSize = totalSize - uploadedSize;
+        const estimatedTime = remainingSize / uploadSpeed; // in seconds
+
+        onProgress(progress, uploadedSize, totalSize, estimatedTime);
+      }
+    };
+
+    await new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(null);
+        } else {
+          reject(new Error(`Server error: ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error("Network error during file upload"));
+      };
+
+      xhr.send(file);
+    });
+
+    const registerResponse = await api({
+      url: "volume/model/register",
+      init: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model_id,
+          model_name: filename,
+          folder_path: folderPath,
+          object_key,
+          size: file.size,
+          download_url,
+          delete_after_install: deleteAfterInstall,
+        }),
+      },
+    });
+
+    return registerResponse;
+  } catch (error: any) {
+    console.error("Error uploading model directly to S3:", error.message);
+    throw error;
+  }
+}

@@ -5,11 +5,12 @@ import { FolderPathDisplay } from "./folder-path-display";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { uploadFileToVolume } from "@/components/files-api";
+import { uploadFileToVolume, uploadModelDirectToS3 } from "@/components/files-api";
 import { api } from "@/lib/api";
 import type { AddModelRequest } from "@/types/models";
 import { formatBytes, formatTime } from "@/lib/utils";
 import { AlertCircle, Info } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface LocalUploadFormProps {
   onSubmit: (request: AddModelRequest) => void;
@@ -30,6 +31,7 @@ export function LocalUploadForm({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [volumeName, setVolumeName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteAfterInstall, setDeleteAfterInstall] = useState(false);
   const [uploadStats, setUploadStats] = useState<{
     uploadedSize: number;
     totalSize: number;
@@ -102,13 +104,11 @@ export function LocalUploadForm({
       setUploadProgress(0);
       setUploadStats(null);
 
-      // Use the uploadFileToVolume function to upload the file
-      await uploadFileToVolume({
-        volumeName,
+      await uploadModelDirectToS3({
         file,
         filename,
-        targetPath: folderPath,
-        apiEndpoint: process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL || "",
+        folderPath,
+        deleteAfterInstall,
         onProgress: (progress, uploadedSize, totalSize, estimatedTime) => {
           setUploadProgress(progress);
           setUploadStats({ uploadedSize, totalSize, estimatedTime });
@@ -120,6 +120,7 @@ export function LocalUploadForm({
         source: "local",
         folderPath,
         filename,
+        deleteAfterInstall,
         local: {
           originalFilename: file.name,
         },
@@ -208,6 +209,20 @@ export function LocalUploadForm({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox 
+              id="delete-after-install"
+              checked={deleteAfterInstall}
+              onCheckedChange={(checked) => setDeleteAfterInstall(checked === true)}
+            />
+            <Label 
+              htmlFor="delete-after-install"
+              className="text-sm font-normal cursor-pointer"
+            >
+              Delete after installation
+            </Label>
+          </div>
 
           <Button
             onClick={handleSubmit}

@@ -28,6 +28,7 @@ export interface AddModelRequest {
     url: string;
   };
   downloadLink?: string;
+  deleteAfterInstall?: boolean;
   local?: {
     originalFilename: string;
   };
