@@ -5,7 +5,7 @@ import { FolderPathDisplay } from "./folder-path-display";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { uploadFileToVolume, uploadModelDirectToS3 } from "@/components/files-api";
+import { uploadFileToVolume } from "@/components/files-api";
 import { api } from "@/lib/api";
 import type { AddModelRequest } from "@/types/models";
 import { formatBytes, formatTime } from "@/lib/utils";
@@ -104,14 +104,32 @@ export function LocalUploadForm({
       setUploadProgress(0);
       setUploadStats(null);
 
-      await uploadModelDirectToS3({
+      await uploadFileToVolume({
+        volumeName,
         file,
         filename,
-        folderPath,
-        deleteAfterInstall,
-        onProgress: (progress, uploadedSize, totalSize, estimatedTime) => {
+        targetPath: folderPath,
+        apiEndpoint: process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL || "",
+        onProgress: (progress: number, uploadedSize: number, totalSize: number, estimatedTime: number) => {
           setUploadProgress(progress);
           setUploadStats({ uploadedSize, totalSize, estimatedTime });
+        },
+      });
+      
+      await api({
+        url: "volume/model",
+        init: {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            source: "link",
+            folderPath,
+            filename,
+            downloadLink: `${process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL}/api/volume/file?path=${encodeURIComponent(`${folderPath}/${filename}`)}`,
+            deleteAfterInstall
+          }),
         },
       });
 
