@@ -26,6 +26,7 @@ export async function uploadFileToVolume({
   targetPath,
   apiEndpoint,
   onProgress,
+  deleteAfterInstall = false,
 }: {
   volumeName: string;
   file: File;
@@ -39,12 +40,14 @@ export async function uploadFileToVolume({
     totalSize: number,
     estimatedTime: number,
   ) => void;
+  deleteAfterInstall?: boolean;
 }) {
   const url = `${apiEndpoint}`;
   const formData = new FormData();
   formData.append("file", file);
   formData.append("filename", filename || file.name);
   formData.append("volume_name", volumeName);
+  formData.append("delete_after_install", String(deleteAfterInstall));
   if (targetPath) {
     formData.append("target_path", targetPath);
   }
