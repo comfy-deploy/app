@@ -275,10 +275,6 @@ function ClassicSettings({
           onSubmit={async (data) => {
             try {
               setIsLoading(true);
-e              if (data.auth_token === "") {
-                toast.error("Auth token cannot be empty");
-                return;
-              }
               await api({
                 url: `machine/custom/${machine.id}`,
                 init: {

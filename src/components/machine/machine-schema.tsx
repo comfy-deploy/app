@@ -19,7 +19,7 @@ export const customFormSchema = z.object({
     ])
     .default("classic")
     .describe("Type"),
-  auth_token: z.string().min(1, "Auth token cannot be empty").default("").describe("Auth token").optional(),
+  auth_token: z.string().default("").describe("Auth token").optional(),
 });
 
 export const machineGPUOptions = [
