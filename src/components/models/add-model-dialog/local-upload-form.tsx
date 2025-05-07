@@ -10,7 +10,6 @@ import { api } from "@/lib/api";
 import type { AddModelRequest } from "@/types/models";
 import { formatBytes, formatTime } from "@/lib/utils";
 import { AlertCircle, Info } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
 
 interface LocalUploadFormProps {
   onSubmit: (request: AddModelRequest) => void;
@@ -31,7 +30,6 @@ export function LocalUploadForm({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [volumeName, setVolumeName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [deleteAfterInstall, setDeleteAfterInstall] = useState(false);
   const [uploadStats, setUploadStats] = useState<{
     uploadedSize: number;
     totalSize: number;
@@ -127,8 +125,7 @@ export function LocalUploadForm({
             source: "link",
             folderPath,
             filename,
-            downloadLink: `${process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL}/api/volume/file?path=${encodeURIComponent(`${folderPath}/${filename}`)}`,
-            deleteAfterInstall
+            downloadLink: `${process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL}/api/volume/file?path=${encodeURIComponent(`${folderPath}/${filename}`)}`
           }),
         },
       });
@@ -138,7 +135,6 @@ export function LocalUploadForm({
         source: "local",
         folderPath,
         filename,
-        deleteAfterInstall,
         local: {
           originalFilename: file.name,
         },
@@ -227,20 +223,6 @@ export function LocalUploadForm({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
-          <div className="flex items-center space-x-2 py-2">
-            <Checkbox 
-              id="delete-after-install"
-              checked={deleteAfterInstall}
-              onCheckedChange={(checked) => setDeleteAfterInstall(checked === true)}
-            />
-            <Label 
-              htmlFor="delete-after-install"
-              className="text-sm font-normal cursor-pointer"
-            >
-              Delete after installation
-            </Label>
-          </div>
 
           <Button
             onClick={handleSubmit}
