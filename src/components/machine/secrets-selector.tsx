@@ -104,6 +104,16 @@ export function SecretsSelector({ machine }: { machine: any }) {
   );
 
   const handleAddSecret = async () => {
+    if (newValueName.trim() === "") {
+      toast.error("Secret key cannot be empty");
+      return;
+    }
+    
+    if (newSecretValue.trim() === "") {
+      toast.error("Secret value cannot be empty");
+      return;
+    }
+    
     if (
       addingMode === "group" &&
       newGroupName &&
@@ -178,6 +188,16 @@ export function SecretsSelector({ machine }: { machine: any }) {
   };
 
   const handleEditSecret = async () => {
+    if (editValueName.trim() === "") {
+      toast.error("Secret key cannot be empty");
+      return;
+    }
+    
+    if (editSecretValue.trim() === "") {
+      toast.error("Secret value cannot be empty");
+      return;
+    }
+    
     if (
       editingValueIndex &&
       editValueName &&

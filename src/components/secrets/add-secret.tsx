@@ -59,8 +59,13 @@ export function AddSecret() {
     }
 
     for (const variable of nonEmptyVariables) {
-      if (variable.key.trim() !== "" && variable.value.trim() === "") {
-        toast.error(`Please add a value to ${variable.key}`);
+      if (variable.key.trim() === "") {
+        toast.error("Secret key cannot be empty");
+        return;
+      }
+      
+      if (variable.value.trim() === "") {
+        toast.error(`Secret value cannot be empty for key "${variable.key}"`);
         return;
       }
     }

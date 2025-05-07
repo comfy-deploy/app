@@ -53,8 +53,12 @@ export const SecretEnvs = ({
                 placeholder="KEY_NAME"
                 value={variable.key}
                 onChange={(e) => {
-                  if (handleChange && isAddSecret)
-                    handleChange(index, "key", e.target.value);
+                  if (handleChange && isAddSecret) {
+                    const value = e.target.value;
+                    if (value.trim() === "") {
+                    }
+                    handleChange(index, "key", value);
+                  }
                 }}
                 className="uppercase"
               />
@@ -73,8 +77,12 @@ export const SecretEnvs = ({
                 placeholder="value"
                 value={variable.value}
                 onChange={(e) => {
-                  if (handleChange && isAddSecret)
-                    handleChange(index, "value", e.target.value);
+                  if (handleChange && isAddSecret) {
+                    const value = e.target.value;
+                    if (value.trim() === "") {
+                    }
+                    handleChange(index, "value", value);
+                  }
                 }}
               />
             </div>
