@@ -280,7 +280,7 @@ export function UpgradeButton(props: PlanButtonProps) {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {label === "Upgrade"
-                ? "Are you sure you want to upgrade your plan? You'll be redirected to complete the payment process."
+                ? "Are you sure you want to upgrade your plan? You will be charged immediately."
                 : label === "Downgrade"
                   ? "Are you sure you want to downgrade your plan? This will take effect at the end of your current billing period."
                   : label === "Switch to yearly"
