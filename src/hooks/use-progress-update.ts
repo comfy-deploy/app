@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/lib/auth-store";
 import { EventSourcePolyfill } from "event-source-polyfill";
 import { convertDateFields } from "@/lib/api";
 import { toast } from "sonner";
+import { throttle } from "lodash";
 
 export interface ProgressUpdate {
   run_id: string;
@@ -47,6 +48,12 @@ export function useProgressUpdates({
   const [connectionStatus, setConnectionStatus] =
     useState<ConnectionStatus>("connecting");
   const fetchToken = useAuthStore((state) => state.fetchToken);
+  
+  const throttledSetProgressUpdates = useRef(
+    throttle((update: ProgressUpdate) => {
+      setProgressUpdates((prevUpdates) => [...prevUpdates, update]);
+    }, 500) // Throttle to update at most every 500ms
+  ).current;
 
   useEffect(() => {
     // Clear the timeline when runId changes
@@ -106,7 +113,7 @@ export function useProgressUpdates({
         if (onUpdate) {
           onUpdate(data);
         }
-        setProgressUpdates((prevUpdates) => [...prevUpdates, data]);
+        throttledSetProgressUpdates(data);
         setConnectionStatus("connected");
       };
 
@@ -145,6 +152,7 @@ export function useProgressUpdates({
       if (eventSource) {
         eventSource.close();
       }
+      throttledSetProgressUpdates.cancel(); // Cancel any pending throttled calls
       setConnectionStatus("disconnected");
     };
   }, [runId, workflowId, machineId, fetchToken]);

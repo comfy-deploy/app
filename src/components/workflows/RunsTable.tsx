@@ -242,8 +242,12 @@ export function RunsTableVirtualized(props: {
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? flatData?.length + 1 : flatData?.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => props.itemHeight || DEFAULT_ITEM_HEIGHT,
-    overscan: 5,
+    estimateSize: (index) => {
+      if (!flatData[index]) return props.itemHeight || DEFAULT_ITEM_HEIGHT;
+      const outputCount = flatData[index]?.outputs?.length || 0;
+      return outputCount > 0 ? Math.max(60, outputCount * 12 + 30) : (props.itemHeight || DEFAULT_ITEM_HEIGHT);
+    },
+    overscan: window.innerHeight > 1200 ? 10 : 5, // Adaptive overscan based on viewport height
   });
 
   // Add state for the current index, but don't initialize it
@@ -462,7 +466,7 @@ export function RunsTableVirtualized(props: {
                 }}
               >
                 {run ? (
-                  <RunRow
+                  <MemoizedRunRow
                     run={run}
                     isSelected={runId === run.id}
                     onSelect={() => {
@@ -567,6 +571,14 @@ function RunRow({
   );
 }
 
+const MemoizedRunRow = React.memo(RunRow, (prevProps, nextProps) => {
+  return (
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.run?.id === nextProps.run?.id &&
+    prevProps.run?.status === nextProps.run?.status
+  );
+});
+
 function OutputPreview(props: { runId: string }) {
   const { data: run, isLoading } = useQuery<any>({
     queryKey: ["run", props.runId],
@@ -593,7 +605,7 @@ function OutputPreview(props: { runId: string }) {
 
   const { urls: urlList } = getTotalUrlCountAndUrls(run?.outputs || []);
 
-  const MAX_DISPLAY = 2;
+  const MAX_DISPLAY = 3;
   const urlsToDisplay =
     urlList.length > 0 ? urlList.slice(0, MAX_DISPLAY) : urlList;
   const remainingCount = urlList.length - MAX_DISPLAY;

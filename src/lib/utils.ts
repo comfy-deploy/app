@@ -51,11 +51,13 @@ export function isGif(url: string) {
   return url.toLowerCase().endsWith(".gif");
 }
 
-export const getOptimizedImage = (url: string, isSmallView = false) => {
+export const getOptimizedImage = (url: string, isSmallView = false, options?: { width?: number; height?: number }) => {
   // Skip if the url is from custom bucket or is a GIF file
   if (isCustomBucket(url) || isGif(url)) return url;
 
-  return `https://comfydeploy.com/cdn-cgi/image/quality=${
-    isSmallView ? 30 : 75
-  }/${url}`;
+  const quality = isSmallView ? 30 : 75;
+  const width = options?.width ? `width=${options.width},` : '';
+  const height = options?.height ? `height=${options.height},` : '';
+
+  return `https://comfydeploy.com/cdn-cgi/image/${width}${height}quality=${quality}/${url}`;
 };

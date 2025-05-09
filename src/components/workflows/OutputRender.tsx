@@ -196,9 +196,12 @@ function _FileURLRender({
       <img
         onLoad={onLoad}
         className={cn("max-w-[200px]", mediaClasses)}
-        src={getOptimizedImage(url, isSmallView)}
+        src={getOptimizedImage(url, isSmallView, {
+          width: isSmallView ? 200 : undefined,
+          height: isSmallView ? 200 : undefined,
+        })}
         alt={filename}
-        loading={lazyLoading ? "lazy" : undefined}
+        loading="lazy" // Always use lazy loading
         onError={() => setImageError(true)}
       />
     );
