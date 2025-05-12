@@ -34,8 +34,10 @@ const allGuideSteps = [
     image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/swap_machine.png",
     description: [
       "Choose different machines to run your workflows",
-      "Configure machine settings and resources",
-      "Optimize performance based on your workload needs",
+      {
+        text: "Configure machine settings and resources",
+        icon: <Settings size={16} />,
+      },
     ],
   },
   {
@@ -243,10 +245,10 @@ export function GuideDialog({ guideType }: GuideDialogProps) {
                       key={`${currentStepData.title}-item-${i}`}
                       className="-ml-5 flex list-none items-center gap-2"
                     >
-                      {'icon' in item && item.icon && (
+                      {"icon" in item && item.icon && (
                         <span className="text-primary">{item.icon}</span>
                       )}
-                      {'link' in item ? (
+                      {"link" in item ? (
                         <a
                           href={item.link}
                           target="_blank"
