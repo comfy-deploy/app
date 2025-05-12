@@ -140,14 +140,16 @@ interface GuideDialogProps {
 
 export function GuideDialog({ guideType }: GuideDialogProps) {
   const storageKey = getGuideStorageKey(guideType);
+  
   const [hasSeenGuide, setHasSeenGuide] = useLocalStorage(storageKey, false);
-  const [isOpen, setIsOpen] = useState(false);
+  
+  const [isOpen, setIsOpen] = useState(!hasSeenGuide);
   const [currentStep, setCurrentStep] = useState(0);
 
   const guideSteps = getGuideSteps(guideType);
 
   useEffect(() => {
-    if (!hasSeenGuide && guideSteps.length > 0) {
+    if (hasSeenGuide === false && guideSteps.length > 0) {
       const imagePromises = guideSteps.map((step) => {
         return new Promise((resolve, reject) => {
           const img = new Image();
@@ -162,11 +164,11 @@ export function GuideDialog({ guideType }: GuideDialogProps) {
           setIsOpen(true);
         })
         .catch((error) => {
-          console.error("Failed to load guide images:", error);
+          console.error(`Failed to load ${guideType} guide images:`, error);
           setIsOpen(true);
         });
     }
-  }, [hasSeenGuide, guideSteps]);
+  }, [hasSeenGuide, guideSteps, guideType]);
 
   if (guideSteps.length === 0) {
     return null;
@@ -208,23 +210,23 @@ export function GuideDialog({ guideType }: GuideDialogProps) {
             <AlertDialogDescription>
               <ul className="list-disc space-y-1 pl-5 text-zinc-700">
                 {currentStepData.description.map((item, i) => {
-                  // Check if the item is a string or an object with icon
+                  // Check if the item is a string or an object with icon/link
                   if (typeof item === "string") {
                     return (
                       <li key={`${currentStepData.title}-item-${i}`}>{item}</li>
                     );
                   }
 
-                  // For items with icons
+                  // For items with icons or links
                   return (
                     <li
                       key={`${currentStepData.title}-item-${i}`}
                       className="-ml-5 flex list-none items-center gap-2"
                     >
-                      {item.icon && (
+                      {'icon' in item && item.icon && (
                         <span className="text-primary">{item.icon}</span>
                       )}
-                      {item.link ? (
+                      {'link' in item ? (
                         <a
                           href={item.link}
                           target="_blank"
