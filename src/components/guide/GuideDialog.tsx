@@ -42,6 +42,11 @@ const allGuideSteps = [
     description: "Setting button, have some feature for user to switch on, like auto save, auto extend session. Gpu Badge display, to show what gpu is currently using. Timer, to show how long the session will timeout. Can be extended there."
   },
   {
+    title: "External Input Nodes",
+    image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/external_input.png",
+    description: "You can expose inputs to API with our external input nodes. This allows you to parameterize your workflow for API calls. Learn more in our documentation at https://www.comfydeploy.com/docs/v2/deployments/inputs."
+  },
+  {
     title: "Deploy Workflow",
     image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/deploy_workflow.png",
     description: "User can press the deploy workflow here to get the api call. Can choose different environment, like staging, production or even public sharing. Can view the requests in request page."
@@ -55,9 +60,9 @@ const getGuideSteps = (guideType: GuideType) => {
     case "workspace":
       return allGuideSteps.slice(0, 3);
     case "session":
-      return allGuideSteps.slice(3, 5);
+      return allGuideSteps.slice(3, 6);
     case "deployment":
-      return allGuideSteps.slice(5, 6);
+      return allGuideSteps.slice(6, 7);
     default:
       return [];
   }
