@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useLocalStorage } from "@/hooks/use-local-storage";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -130,8 +129,30 @@ const getGuideSteps = (guideType: GuideType) => {
   }
 };
 
-const getGuideStorageKey = (guideType: GuideType) => {
-  return `has-seen-${guideType}-guide`;
+const GUIDE_STORAGE_KEY = 'comfy-deploy-guides';
+
+const getGuideState = () => {
+  if (typeof window === 'undefined') return {};
+  
+  try {
+    const storedValue = window.localStorage.getItem(GUIDE_STORAGE_KEY);
+    return storedValue ? JSON.parse(storedValue) : {};
+  } catch (error) {
+    console.error('Error reading guide state from localStorage:', error);
+    return {};
+  }
+};
+
+const setGuideState = (guideType: GuideType, seen: boolean) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const currentState = getGuideState();
+    const newState = { ...currentState, [guideType]: seen };
+    window.localStorage.setItem(GUIDE_STORAGE_KEY, JSON.stringify(newState));
+  } catch (error) {
+    console.error('Error saving guide state to localStorage:', error);
+  }
 };
 
 interface GuideDialogProps {
@@ -139,9 +160,8 @@ interface GuideDialogProps {
 }
 
 export function GuideDialog({ guideType }: GuideDialogProps) {
-  const storageKey = getGuideStorageKey(guideType);
-  
-  const [hasSeenGuide, setHasSeenGuide] = useLocalStorage(storageKey, false);
+  // Check if this guide has been seen
+  const hasSeenGuide = getGuideState()[guideType] === true;
   
   const [isOpen, setIsOpen] = useState(!hasSeenGuide);
   const [currentStep, setCurrentStep] = useState(0);
@@ -149,7 +169,7 @@ export function GuideDialog({ guideType }: GuideDialogProps) {
   const guideSteps = getGuideSteps(guideType);
 
   useEffect(() => {
-    if (hasSeenGuide === false && guideSteps.length > 0) {
+    if (!hasSeenGuide && guideSteps.length > 0) {
       const imagePromises = guideSteps.map((step) => {
         return new Promise((resolve, reject) => {
           const img = new Image();
@@ -176,7 +196,7 @@ export function GuideDialog({ guideType }: GuideDialogProps) {
 
   const handleClose = () => {
     setIsOpen(false);
-    setHasSeenGuide(true);
+    setGuideState(guideType, true);
   };
 
   const handleNext = () => {
