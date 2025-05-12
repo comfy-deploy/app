@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
-const guideSteps = [
+const allGuideSteps = [
   {
     title: "Switch Workflows and Versions",
     image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/swap_workflow_and_version.png",
@@ -48,10 +48,40 @@ const guideSteps = [
   }
 ];
 
-export function GuideDialog() {
-  const [hasSeenGuide, setHasSeenGuide] = useLocalStorage("has-seen-guide", false);
+export type GuideType = "workspace" | "session" | "deployment";
+
+const getGuideSteps = (guideType: GuideType) => {
+  switch (guideType) {
+    case "workspace":
+      return allGuideSteps.slice(0, 3);
+    case "session":
+      return allGuideSteps.slice(3, 5);
+    case "deployment":
+      return allGuideSteps.slice(5, 6);
+    default:
+      return [];
+  }
+};
+
+const getGuideStorageKey = (guideType: GuideType) => {
+  return `has-seen-${guideType}-guide`;
+};
+
+interface GuideDialogProps {
+  guideType: GuideType;
+}
+
+export function GuideDialog({ guideType }: GuideDialogProps) {
+  const storageKey = getGuideStorageKey(guideType);
+  const [hasSeenGuide, setHasSeenGuide] = useLocalStorage(storageKey, false);
   const [isOpen, setIsOpen] = useState(!hasSeenGuide);
   const [currentStep, setCurrentStep] = useState(0);
+  
+  const guideSteps = getGuideSteps(guideType);
+  
+  if (guideSteps.length === 0) {
+    return null;
+  }
   
   const handleClose = () => {
     setIsOpen(false);

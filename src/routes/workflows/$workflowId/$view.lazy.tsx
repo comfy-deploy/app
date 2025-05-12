@@ -183,6 +183,7 @@ function WorkflowPageComponent() {
     case "deployment":
       view = (
         <PaddingLayout>
+          <GuideDialog guideType="deployment" />
           <DeploymentPage />
         </PaddingLayout>
       );
@@ -453,7 +454,7 @@ function WorkflowPageComponent() {
             display: currentView === "workspace" ? "block" : "none",
           }}
         >
-          {currentView === "workspace" && <GuideDialog />}
+          {currentView === "workspace" && <GuideDialog guideType={sessionId ? "session" : "workspace"} />}
           <WorkspaceClientWrapper workflow_id={workflowId} />
         </div>
       ) : null}
