@@ -1,6 +1,7 @@
 import { GalleryView } from "@/components/GalleryView";
 import { PaddingLayout } from "@/components/PaddingLayout";
 import type { AssetType } from "@/components/SDInputs/sd-asset-input";
+import { GuideDialog } from "@/components/guide/GuideDialog";
 import {
   DeploymentDialog,
   DeploymentPage,
@@ -452,6 +453,7 @@ function WorkflowPageComponent() {
             display: currentView === "workspace" ? "block" : "none",
           }}
         >
+          {currentView === "workspace" && <GuideDialog />}
           <WorkspaceClientWrapper workflow_id={workflowId} />
         </div>
       ) : null}
