@@ -1,7 +1,4 @@
-"use client";
-
-import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import {
   AlertDialog,
@@ -10,47 +7,112 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Save,
+  ArrowLeft,
+  Settings,
+  GitBranch,
+  Box,
+  Timer,
+  Rocket,
+} from "lucide-react";
+import { Badge } from "../ui/badge";
 
 const allGuideSteps = [
   {
     title: "Switch Workflows and Versions",
-    image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/swap_workflow_and_version.png",
-    description: "You can switch different workflow and swap the version here, for you to test through different workflow json."
+    image:
+      "https://cd-misc.s3.us-east-2.amazonaws.com/guide/swap_workflow_and_version.png",
+    description: [
+      "Choose different workflows here",
+      "Switch between saved versions of workflows",
+    ],
   },
   {
     title: "Switch Machines",
     image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/swap_machine.png",
-    description: "You can switch different machines to run this workflow here, and also can edit the machine settings."
+    description: [
+      "Choose different machines to run your workflows",
+      "Configure machine settings and resources",
+      "Optimize performance based on your workload needs",
+    ],
   },
   {
     title: "Start a Session",
     image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/start_session.png",
-    description: "You can press start ComfyUI to start a comfyui session. You can choose the session time range, and the GPU that u want to run. It will also list out all the current running sessions, and can re-enter the session or terminate it."
+    description: [
+      "Launch a ComfyUI session with 'Start ComfyUI' button",
+      "Select session duration and GPU",
+      "You can re-enter or terminate existing sessions",
+    ],
   },
   {
     title: "Session Sidebar Top",
-    image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/session_sidebar_top.png",
-    description: "This is the image of the top bar of the side bar. Press back button to go back to the dashboard. Save button to save the current changes and commit a new version. This is important to prevent the workflow edit lost. Branch button, to swap to different branch, and copy the workflow json. Model Check button, to make sure all the assets and model are well imported."
+    image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/top_bar.png",
+    description: [
+      {
+        text: "Back: Return to the dashboard",
+        icon: <ArrowLeft size={16} />,
+      },
+      {
+        text: "Save: Commit changes as a new version",
+        icon: <Save size={16} />,
+      },
+      {
+        text: "Branch: Switch branches or copy workflow JSON",
+        icon: <GitBranch size={16} />,
+      },
+      {
+        text: "Model Check: Verify all assets and models are properly imported",
+        icon: <Box size={16} />,
+      },
+    ],
   },
   {
     title: "Session Sidebar Bottom",
-    image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/session_sidebar_bottom.png",
-    description: "Setting button, have some feature for user to switch on, like auto save, auto extend session. Gpu Badge display, to show what gpu is currently using. Timer, to show how long the session will timeout. Can be extended there."
+    image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/bottom_bar.png",
+    description: [
+      {
+        text: "Settings: Toggle features like auto-save and auto-extend",
+        icon: <Settings size={16} />,
+      },
+      {
+        text: "GPU: Shows your current GPU allocation",
+        icon: <Badge>A10G</Badge>,
+      },
+      {
+        text: "Timer: Displays remaining session time with option to extend",
+        icon: <Timer size={16} />,
+      },
+    ],
   },
   {
     title: "External Input Nodes",
-    image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/external_input.png",
-    description: "You can expose inputs to API with our external input nodes. This allows you to parameterize your workflow for API calls. Learn more in our documentation at https://www.comfydeploy.com/docs/v2/deployments/inputs."
+    image:
+      "https://cd-misc.s3.us-east-2.amazonaws.com/guide/external_input.png",
+    description: [
+      "You can use external input nodes to expose specific inputs for api control",
+      {
+        text: "Learn more in our documentation",
+        link: "https://www.comfydeploy.com/docs/v2/deployments/inputs",
+      },
+    ],
   },
   {
     title: "Deploy Workflow",
-    image: "https://cd-misc.s3.us-east-2.amazonaws.com/guide/deploy_workflow.png",
-    description: "User can press the deploy workflow here to get the api call. Can choose different environment, like staging, production or even public sharing. Can view the requests in request page."
-  }
+    image:
+      "https://cd-misc.s3.us-east-2.amazonaws.com/guide/deploy_workflow.png",
+    description: [
+      {
+        text: "Deploy workflows with a single click",
+        icon: <Rocket size={16} />,
+      },
+      "Choose deployment environment (staging / production / public share)",
+      "Monitor API requests in the requests page",
+    ],
+  },
 ];
 
 export type GuideType = "workspace" | "session" | "deployment";
@@ -79,20 +141,42 @@ interface GuideDialogProps {
 export function GuideDialog({ guideType }: GuideDialogProps) {
   const storageKey = getGuideStorageKey(guideType);
   const [hasSeenGuide, setHasSeenGuide] = useLocalStorage(storageKey, false);
-  const [isOpen, setIsOpen] = useState(!hasSeenGuide);
+  const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  
+
   const guideSteps = getGuideSteps(guideType);
-  
+
+  useEffect(() => {
+    if (!hasSeenGuide && guideSteps.length > 0) {
+      const imagePromises = guideSteps.map((step) => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = step.image;
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+      });
+
+      Promise.all(imagePromises)
+        .then(() => {
+          setIsOpen(true);
+        })
+        .catch((error) => {
+          console.error("Failed to load guide images:", error);
+          setIsOpen(true);
+        });
+    }
+  }, [hasSeenGuide, guideSteps]);
+
   if (guideSteps.length === 0) {
     return null;
   }
-  
+
   const handleClose = () => {
     setIsOpen(false);
     setHasSeenGuide(true);
   };
-  
+
   const handleNext = () => {
     if (currentStep < guideSteps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -100,43 +184,80 @@ export function GuideDialog({ guideType }: GuideDialogProps) {
       handleClose();
     }
   };
-  
+
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
-  
+
   const currentStepData = guideSteps[currentStep];
-  
+
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <AlertDialogContent className="max-w-3xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle>{currentStepData.title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {currentStepData.description}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        
-        <div className="my-4">
-          <img 
-            src={currentStepData.image} 
-            alt={currentStepData.title} 
-            className="w-full rounded-md"
-          />
-        </div>
-        
-        <AlertDialogFooter>
-          {currentStep > 0 && (
-            <Button variant="outline" onClick={handleBack}>
-              Back
+      <AlertDialogContent className="border-none bg-zinc-100 p-0">
+        <img
+          src={currentStepData.image}
+          alt={currentStepData.title}
+          className="w-full rounded-t-md"
+        />
+
+        <div className="p-5 pt-2">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{currentStepData.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              <ul className="list-disc space-y-1 pl-5 text-zinc-700">
+                {currentStepData.description.map((item, i) => {
+                  // Check if the item is a string or an object with icon
+                  if (typeof item === "string") {
+                    return (
+                      <li key={`${currentStepData.title}-item-${i}`}>{item}</li>
+                    );
+                  }
+
+                  // For items with icons
+                  return (
+                    <li
+                      key={`${currentStepData.title}-item-${i}`}
+                      className="-ml-5 flex list-none items-center gap-2"
+                    >
+                      {item.icon && (
+                        <span className="text-primary">{item.icon}</span>
+                      )}
+                      {item.link ? (
+                        <a
+                          href={item.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {item.text}
+                        </a>
+                      ) : (
+                        <span>{item.text}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter className="mt-4">
+            {currentStep > 0 && (
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:bg-zinc-200"
+                onClick={handleBack}
+              >
+                Back
+              </Button>
+            )}
+            <Button onClick={handleNext}>
+              {currentStep < guideSteps.length - 1 ? "Next" : "OK"}
             </Button>
-          )}
-          <Button onClick={handleNext}>
-            {currentStep < guideSteps.length - 1 ? "Next" : "Finish"}
-          </Button>
-        </AlertDialogFooter>
+          </AlertDialogFooter>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );
