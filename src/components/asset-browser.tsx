@@ -74,17 +74,17 @@ export function AssetBrowser({
   onItemClick,
   isPanel = false,
 }: AssetBrowserProps) {
-  const { 
-    currentPath, 
-    setCurrentPath, 
-    selectedAssets, 
-    toggleSelectAsset, 
-    selectAllAssets, 
+  const {
+    currentPath,
+    setCurrentPath,
+    selectedAssets,
+    toggleSelectAsset,
+    selectAllAssets,
     clearSelection,
     isRangeSelecting,
     setIsRangeSelecting,
     lastSelectedAsset,
-    setLastSelectedAsset
+    setLastSelectedAsset,
   } = useAssetBrowserStore();
   const { data: assets, isLoading } = useAssetList(currentPath);
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
@@ -104,94 +104,97 @@ export function AssetBrowser({
     console.log(path);
     setCurrentPath(path);
   };
-  
+
   // Handle keyboard events for selection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') {
+      if (e.key === "Shift") {
         setIsRangeSelecting(true);
-      } else if (e.key === 'Escape') {
+      } else if (e.key === "Escape") {
         clearSelection();
       }
     };
-    
+
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') {
+      if (e.key === "Shift") {
         setIsRangeSelecting(false);
       }
     };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
   }, [setIsRangeSelecting, clearSelection]);
-  
+
   // Handle mouse events for drag selection
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0 || e.target !== e.currentTarget) return; // Only left click on container
-    
+
     const container = containerRef.current;
     if (!container) return;
-    
+
     const rect = container.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     setIsDragging(true);
     setDragStart({ x, y });
     setDragCurrent({ x, y });
   }, []);
-  
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging) return;
-    
-    const container = containerRef.current;
-    if (!container) return;
-    
-    const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setDragCurrent({ x, y });
-  }, [isDragging]);
-  
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging) return;
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      setDragCurrent({ x, y });
+    },
+    [isDragging],
+  );
+
   const handleMouseUp = useCallback(() => {
     if (!isDragging) return;
-    
+
     const container = containerRef.current;
     if (!container) return;
-    
+
     const selectionBox = getSelectionBox();
-    
-    const assetElements = container.querySelectorAll('[data-asset-id]');
+
+    const assetElements = container.querySelectorAll("[data-asset-id]");
     const selectedIds: string[] = [];
-    
+
     assetElements.forEach((element) => {
       const rect = element.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
-      
+
       const elementLeft = rect.left - containerRect.left;
       const elementTop = rect.top - containerRect.top;
       const elementRight = elementLeft + rect.width;
       const elementBottom = elementTop + rect.height;
-      
+
       if (
         elementRight >= selectionBox.left &&
         elementLeft <= selectionBox.right &&
         elementBottom >= selectionBox.top &&
         elementTop <= selectionBox.bottom
       ) {
-        const assetId = element.getAttribute('data-asset-id');
+        const assetId = element.getAttribute("data-asset-id");
         if (assetId) {
           selectedIds.push(assetId);
         }
       }
     });
-    
+
     if (selectedIds.length > 0) {
       if (isRangeSelecting) {
         // Add to existing selection
@@ -202,37 +205,48 @@ export function AssetBrowser({
         selectAllAssets(selectedIds);
       }
     }
-    
+
     setIsDragging(false);
   }, [isDragging, isRangeSelecting, selectedAssets, selectAllAssets]);
-  
+
   const getSelectionBox = () => {
     const left = Math.min(dragStart.x, dragCurrent.x);
     const top = Math.min(dragStart.y, dragCurrent.y);
     const right = Math.max(dragStart.x, dragCurrent.x);
     const bottom = Math.max(dragStart.y, dragCurrent.y);
-    
-    return { left, top, right, bottom, width: right - left, height: bottom - top };
+
+    return {
+      left,
+      top,
+      right,
+      bottom,
+      width: right - left,
+      height: bottom - top,
+    };
   };
-  
+
   // Handle asset selection
-  const handleAssetSelect = (assetId: string, isFolder: boolean, e?: React.MouseEvent) => {
+  const handleAssetSelect = (
+    assetId: string,
+    isFolder: boolean,
+    e?: React.MouseEvent,
+  ) => {
     // Don't allow folder selection for batch operations
     if (isFolder) {
       return;
     }
-    
+
     if (e?.shiftKey && lastSelectedAsset && assets) {
       const filteredAssets = assets.filter((asset: Asset) => !asset.is_folder);
       const assetIds = filteredAssets.map((asset: Asset) => asset.id);
       const currentIndex = assetIds.indexOf(assetId);
       const lastIndex = assetIds.indexOf(lastSelectedAsset);
-      
+
       if (currentIndex !== -1 && lastIndex !== -1) {
         const start = Math.min(currentIndex, lastIndex);
         const end = Math.max(currentIndex, lastIndex);
         const rangeIds = assetIds.slice(start, end + 1);
-        
+
         // Add the range to the existing selection
         const newSelection = [...new Set([...selectedAssets, ...rangeIds])];
         selectAllAssets(newSelection);
@@ -240,28 +254,28 @@ export function AssetBrowser({
         return;
       }
     }
-    
+
     // Normal selection
     toggleSelectAsset(assetId);
   };
-  
+
   // Handle bulk delete
   const handleBulkDelete = async () => {
     setIsBulkDeleting(true);
     const totalItems = selectedAssets.length;
     let successCount = 0;
-    
+
     try {
       for (let i = 0; i < selectedAssets.length; i++) {
         try {
           await deleteAsset(selectedAssets[i]);
           successCount++;
-          toast.success(`Deleted ${i+1}/${totalItems}`);
+          toast.success(`Deleted ${i + 1}/${totalItems}`);
         } catch (e) {
-          toast.error(`Error deleting asset ${i+1}/${totalItems}`);
+          toast.error(`Error deleting asset ${i + 1}/${totalItems}`);
         }
       }
-      
+
       if (successCount === totalItems) {
         toast.success(`Successfully deleted ${totalItems} assets`);
       } else {
@@ -273,13 +287,13 @@ export function AssetBrowser({
       setDeleteDialogOpen(false);
     }
   };
-  
+
   // Handle bulk move
   const handleBulkMove = async (path: string) => {
     setIsBulkMoving(true);
     const totalItems = selectedAssets.length;
     let successCount = 0;
-    
+
     try {
       for (let i = 0; i < selectedAssets.length; i++) {
         try {
@@ -288,12 +302,12 @@ export function AssetBrowser({
             path,
           });
           successCount++;
-          toast.success(`Moved ${i+1}/${totalItems}`);
+          toast.success(`Moved ${i + 1}/${totalItems}`);
         } catch (e) {
-          toast.error(`Error moving asset ${i+1}/${totalItems}`);
+          toast.error(`Error moving asset ${i + 1}/${totalItems}`);
         }
       }
-      
+
       if (successCount === totalItems) {
         toast.success(`Successfully moved ${totalItems} assets`);
       } else {
@@ -305,16 +319,16 @@ export function AssetBrowser({
       setMoveDialogOpen(false);
     }
   };
-  
+
   // Handle single asset delete with confirmation
   const handleDeleteAsset = async (assetId: string) => {
     setAssetToDelete(assetId);
     setDeleteDialogOpen(true);
   };
-  
+
   const confirmDeleteAsset = async () => {
     if (!assetToDelete) return;
-    
+
     try {
       await deleteAsset(assetToDelete);
       toast.success("Asset deleted successfully");
@@ -399,11 +413,16 @@ export function AssetBrowser({
         <div className="flex items-center gap-2">
           {/* Selection actions */}
           {selectedAssets.length > 0 && (
-            <div className="flex items-center gap-2 mr-2">
-              <span className="text-sm" title="Tip: Use Shift+click to select a range of assets">{selectedAssets.length} selected</span>
-              <Button 
-                variant="outline" 
-                size="sm" 
+            <div className="mr-2 flex items-center gap-2">
+              <span
+                className="mr-1 text-muted-foreground text-xs"
+                title="Tip: Use Shift+click to select a range of assets"
+              >
+                {selectedAssets.length} selected
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
                 className="h-8 px-2"
                 onClick={() => setMoveDialogOpen(true)}
                 disabled={isBulkMoving}
@@ -411,9 +430,9 @@ export function AssetBrowser({
                 <MoveHorizontal className="h-4 w-4 mr-1" />
                 Move
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="h-8 px-2 text-red-600 hover:text-red-700"
                 onClick={() => setDeleteDialogOpen(true)}
                 disabled={isBulkDeleting}
@@ -465,20 +484,23 @@ export function AssetBrowser({
                 key={asset.id}
                 className={cn(
                   "group relative flex aspect-square w-full flex-col items-center gap-1.5",
-                  selectedAssets.includes(asset.id) && "ring-2 ring-blue-500 rounded-[8px]"
+                  selectedAssets.includes(asset.id) &&
+                    "ring-2 ring-blue-500 rounded-[8px]",
                 )}
                 data-asset-id={asset.id}
               >
                 {!asset.is_folder && (
                   <div className="absolute top-2 left-2 z-10">
-                    <Checkbox 
+                    <Checkbox
                       checked={selectedAssets.includes(asset.id)}
-                      onCheckedChange={() => handleAssetSelect(asset.id, asset.is_folder)}
-                      className="h-5 w-5 border-2 data-[state=checked]:bg-blue-500"
+                      onCheckedChange={() =>
+                        handleAssetSelect(asset.id, asset.is_folder)
+                      }
+                      className="h-4 w-4 border-gray-700 drop-shadow-md data-[state=checked]:bg-blue-500"
                     />
                   </div>
                 )}
-                
+
                 {asset.is_folder ? (
                   <button
                     type="button"
@@ -502,10 +524,9 @@ export function AssetBrowser({
                   <div
                     className="relative flex h-full w-full cursor-pointer items-center justify-center overflow-hidden rounded-[8px] border"
                     onClick={(e) => {
-                      if (e.shiftKey || e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                        handleAssetSelect(asset.id, asset.is_folder, e);
-                      } else if (isPanel && !selectedAssets.includes(asset.id)) {
+                      if (selectedAssets.length === 0) return;
+
+                      if (isPanel && !selectedAssets.includes(asset.id)) {
                         onItemClick?.(asset);
                       } else {
                         // If already selected, toggle selection
@@ -514,7 +535,7 @@ export function AssetBrowser({
                     }}
                   >
                     <FileURLRender
-                      canFullScreen={!isPanel}
+                      canFullScreen={!isPanel && selectedAssets.length === 0}
                       url={asset.url || ""}
                       imgClasses="max-w-[230px] w-full h-[230px] object-cover object-center rounded-[8px] transition-all duration-300 ease-in-out group-hover:scale-105"
                     />
@@ -569,7 +590,8 @@ export function AssetBrowser({
                 key={asset.id}
                 className={cn(
                   "group flex w-full items-center border-b px-3 py-2 hover:bg-gray-50",
-                  selectedAssets.includes(asset.id) && "bg-blue-50 hover:bg-blue-100"
+                  selectedAssets.includes(asset.id) &&
+                    "bg-blue-50 hover:bg-blue-100",
                 )}
                 data-asset-id={asset.id}
               >
@@ -577,14 +599,16 @@ export function AssetBrowser({
                   {/* Checkbox column */}
                   <div className="flex w-8 justify-center">
                     {!asset.is_folder && (
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedAssets.includes(asset.id)}
-                        onCheckedChange={() => handleAssetSelect(asset.id, asset.is_folder)}
-                        className="h-4 w-4 border-2 data-[state=checked]:bg-blue-500"
+                        onCheckedChange={() =>
+                          handleAssetSelect(asset.id, asset.is_folder)
+                        }
+                        className="h-4 w-4 border-gray-500 data-[state=checked]:bg-blue-500"
                       />
                     )}
                   </div>
-                  
+
                   {/* Icon column */}
                   <div className="flex w-8 justify-center">
                     {asset.is_folder ? (
@@ -631,7 +655,10 @@ export function AssetBrowser({
                           if (e.shiftKey || e.ctrlKey || e.metaKey) {
                             e.preventDefault();
                             handleAssetSelect(asset.id, asset.is_folder, e);
-                          } else if (isPanel && !selectedAssets.includes(asset.id)) {
+                          } else if (
+                            isPanel &&
+                            !selectedAssets.includes(asset.id)
+                          ) {
                             onItemClick?.(asset);
                           } else {
                             // If already selected, toggle selection
@@ -686,7 +713,7 @@ export function AssetBrowser({
           </div>
         )}
       </div>
-      
+
       {/* Drag selection box */}
       {isDragging && (
         <div
@@ -699,7 +726,7 @@ export function AssetBrowser({
           }}
         />
       )}
-      
+
       {/* Bulk delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -732,11 +759,20 @@ export function AssetBrowser({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {/* Bulk move dialog */}
       {selectedAssets.length > 0 && (
         <MoveAssetDialog
-          asset={{ id: selectedAssets[0], path: "", name: "", is_folder: false, file_size: 0, mime_type: "", created_at: "", user_id: "" }}
+          asset={{
+            id: selectedAssets[0],
+            path: "",
+            name: "",
+            is_folder: false,
+            file_size: 0,
+            mime_type: "",
+            created_at: "",
+            user_id: "",
+          }}
           open={moveDialogOpen}
           onOpenChange={setMoveDialogOpen}
           onConfirm={(path) => handleBulkMove(path)}
@@ -758,18 +794,22 @@ function AssetActions({ asset }: { asset: Asset }) {
   const { selectedAssets } = useAssetBrowserStore();
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  
+
   // Get the parent component's handlers
-  const assetBrowserComponent = document.querySelector('[data-asset-browser]');
-  const handleDeleteAsset = assetBrowserComponent?.getAttribute('data-delete-handler') 
-    ? new Function(assetBrowserComponent.getAttribute('data-delete-handler') || '')
+  const assetBrowserComponent = document.querySelector("[data-asset-browser]");
+  const handleDeleteAsset = assetBrowserComponent?.getAttribute(
+    "data-delete-handler",
+  )
+    ? new Function(
+        assetBrowserComponent.getAttribute("data-delete-handler") || "",
+      )
     : (assetId: string) => {
-        const event = new CustomEvent('delete-asset', { detail: { assetId } });
+        const event = new CustomEvent("delete-asset", { detail: { assetId } });
         document.dispatchEvent(event);
       };
-  
+
   const handleMoveAsset = async (assetId: string, path: string) => {
-    const event = new CustomEvent('move-asset', { detail: { assetId, path } });
+    const event = new CustomEvent("move-asset", { detail: { assetId, path } });
     document.dispatchEvent(event);
     setMoveDialogOpen(false);
   };
@@ -809,14 +849,15 @@ function AssetActions({ asset }: { asset: Asset }) {
         onOpenChange={setMoveDialogOpen}
         onConfirm={(path) => handleMoveAsset(asset.id, path)}
       />
-      
+
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete asset?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This asset will be permanently deleted.
+              This action cannot be undone. This asset will be permanently
+              deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1057,7 +1098,9 @@ function MoveAssetDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
-          <DialogTitle>{isBulk ? `Move ${itemCount} Assets` : "Move Asset"}</DialogTitle>
+          <DialogTitle>
+            {isBulk ? `Move ${itemCount} Assets` : "Move Asset"}
+          </DialogTitle>
           <DialogDescription>Select the destination folder</DialogDescription>
         </DialogHeader>
 
@@ -1078,7 +1121,9 @@ function MoveAssetDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!selectedPath || (!isBulk && selectedPath === assetParentPath)}
+            disabled={
+              !selectedPath || (!isBulk && selectedPath === assetParentPath)
+            }
           >
             {isBulk ? `Move ${itemCount} Items` : "Move Here"}
           </Button>
