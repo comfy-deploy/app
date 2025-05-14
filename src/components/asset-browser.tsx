@@ -735,6 +735,8 @@ interface FolderNode {
   isExpanded: boolean;
 }
 
+export { MoveAssetDialog } from "./move-asset-dialog";
+
 function MoveAssetDialogInternal({
   asset,
   open,
