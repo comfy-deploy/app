@@ -295,11 +295,13 @@ export function AssetBrowser({
     let successCount = 0;
 
     try {
+      const validPath = path === "" ? "/" : path;
+      
       for (let i = 0; i < selectedAssets.length; i++) {
         try {
           await updateAsset({
             assetId: selectedAssets[i],
-            path,
+            path: validPath,
           });
           successCount++;
           toast.success(`Moved ${i + 1}/${totalItems}`);
@@ -1034,7 +1036,7 @@ function MoveAssetDialog({
     }
 
     if (selectedPath === "/") {
-      onConfirm("");
+      onConfirm("/");
       return;
     }
 
@@ -1122,7 +1124,7 @@ function MoveAssetDialog({
           <Button
             onClick={handleConfirm}
             disabled={
-              !selectedPath || (!isBulk && selectedPath === assetParentPath)
+              !selectedPath || (selectedPath === assetParentPath)
             }
           >
             {isBulk ? `Move ${itemCount} Items` : "Move Here"}
