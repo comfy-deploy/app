@@ -216,9 +216,15 @@ export function AssetBrowser({
   };
   
   // Handle asset selection
-  const handleAssetSelect = (assetId: string, e?: React.MouseEvent) => {
+  const handleAssetSelect = (assetId: string, isFolder: boolean, e?: React.MouseEvent) => {
+    // Don't allow folder selection for batch operations
+    if (isFolder) {
+      return;
+    }
+    
     if (e?.shiftKey && lastSelectedAsset && assets) {
-      const assetIds = assets.map((asset: Asset) => asset.id);
+      const filteredAssets = assets.filter((asset: Asset) => !asset.is_folder);
+      const assetIds = filteredAssets.map((asset: Asset) => asset.id);
       const currentIndex = assetIds.indexOf(assetId);
       const lastIndex = assetIds.indexOf(lastSelectedAsset);
       
@@ -463,13 +469,15 @@ export function AssetBrowser({
                 )}
                 data-asset-id={asset.id}
               >
-                <div className="absolute top-2 left-2 z-10">
-                  <Checkbox 
-                    checked={selectedAssets.includes(asset.id)}
-                    onCheckedChange={() => handleAssetSelect(asset.id)}
-                    className="h-5 w-5 border-2 data-[state=checked]:bg-blue-500"
-                  />
-                </div>
+                {!asset.is_folder && (
+                  <div className="absolute top-2 left-2 z-10">
+                    <Checkbox 
+                      checked={selectedAssets.includes(asset.id)}
+                      onCheckedChange={() => handleAssetSelect(asset.id, asset.is_folder)}
+                      className="h-5 w-5 border-2 data-[state=checked]:bg-blue-500"
+                    />
+                  </div>
+                )}
                 
                 {asset.is_folder ? (
                   <button
@@ -477,12 +485,12 @@ export function AssetBrowser({
                     onClick={(e) => {
                       if (e.shiftKey || e.ctrlKey || e.metaKey) {
                         e.preventDefault();
-                        handleAssetSelect(asset.id, e);
+                        handleAssetSelect(asset.id, asset.is_folder, e);
                       } else if (!selectedAssets.includes(asset.id)) {
                         handleNavigate(asset.path);
                       } else {
                         // If already selected, toggle selection
-                        handleAssetSelect(asset.id);
+                        handleAssetSelect(asset.id, asset.is_folder);
                       }
                     }}
                     className="flex h-full w-full flex-col items-center justify-center rounded-[8px] border-2 border-dashed p-4 hover:bg-gray-50"
@@ -496,12 +504,12 @@ export function AssetBrowser({
                     onClick={(e) => {
                       if (e.shiftKey || e.ctrlKey || e.metaKey) {
                         e.preventDefault();
-                        handleAssetSelect(asset.id, e);
+                        handleAssetSelect(asset.id, asset.is_folder, e);
                       } else if (isPanel && !selectedAssets.includes(asset.id)) {
                         onItemClick?.(asset);
                       } else {
                         // If already selected, toggle selection
-                        handleAssetSelect(asset.id);
+                        handleAssetSelect(asset.id, asset.is_folder);
                       }
                     }}
                   >
@@ -568,11 +576,13 @@ export function AssetBrowser({
                 <div className="flex flex-1 items-center">
                   {/* Checkbox column */}
                   <div className="flex w-8 justify-center">
-                    <Checkbox 
-                      checked={selectedAssets.includes(asset.id)}
-                      onCheckedChange={() => handleAssetSelect(asset.id)}
-                      className="h-4 w-4 border-2 data-[state=checked]:bg-blue-500"
-                    />
+                    {!asset.is_folder && (
+                      <Checkbox 
+                        checked={selectedAssets.includes(asset.id)}
+                        onCheckedChange={() => handleAssetSelect(asset.id, asset.is_folder)}
+                        className="h-4 w-4 border-2 data-[state=checked]:bg-blue-500"
+                      />
+                    )}
                   </div>
                   
                   {/* Icon column */}
@@ -598,12 +608,12 @@ export function AssetBrowser({
                         onClick={(e) => {
                           if (e.shiftKey || e.ctrlKey || e.metaKey) {
                             e.preventDefault();
-                            handleAssetSelect(asset.id, e);
+                            handleAssetSelect(asset.id, asset.is_folder, e);
                           } else if (!selectedAssets.includes(asset.id)) {
                             handleNavigate(asset.path);
                           } else {
                             // If already selected, toggle selection
-                            handleAssetSelect(asset.id);
+                            handleAssetSelect(asset.id, asset.is_folder);
                           }
                         }}
                         className="block w-full truncate text-left text-sm hover:underline"
@@ -620,12 +630,12 @@ export function AssetBrowser({
                         onClick={(e) => {
                           if (e.shiftKey || e.ctrlKey || e.metaKey) {
                             e.preventDefault();
-                            handleAssetSelect(asset.id, e);
+                            handleAssetSelect(asset.id, asset.is_folder, e);
                           } else if (isPanel && !selectedAssets.includes(asset.id)) {
                             onItemClick?.(asset);
                           } else {
                             // If already selected, toggle selection
-                            handleAssetSelect(asset.id);
+                            handleAssetSelect(asset.id, asset.is_folder);
                           }
                         }}
                       >
