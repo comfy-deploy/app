@@ -18,7 +18,7 @@ import {
   MoveIcon,
   FolderUp,
   X,
-}from "lucide-react";
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
