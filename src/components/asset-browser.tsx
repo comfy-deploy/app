@@ -2,6 +2,7 @@ import { FileURLRender } from "@/components/workflows/OutputRender";
 import { useAssetList, useDeleteAsset, useUpdateAsset } from "@/hooks/hook";
 import { cn, formatFileSize } from "@/lib/utils";
 import { useAssetBrowserStore } from "@/stores/asset-browser-store";
+import { MoveAssetDialog } from "./move-asset-dialog";
 import {
   ChevronRight,
   Folder,
@@ -15,8 +16,9 @@ import {
   ChevronDown,
   FolderOpen,
   MoveIcon,
+  FolderUp,
   X,
-} from "lucide-react";
+}from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
@@ -87,6 +89,7 @@ export function AssetBrowser({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [bulkMoveDialogOpen, setBulkMoveDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const { assetToMove, setAssetToMove } = useAssetBrowserStore();
   const [bulkProgress, setBulkProgress] = useState<BulkOperationProgress>({
     total: 0,
     completed: 0,
@@ -263,6 +266,15 @@ export function AssetBrowser({
         "@container flex h-full w-full flex-col gap-2 overflow-hidden",
       )}
     >
+      {/* Move Asset Dialog */}
+      {assetToMove && (
+        <MoveAssetDialog
+          asset={assetToMove}
+          open={!!assetToMove}
+          onOpenChange={(open) => !open && setAssetToMove(null)}
+          onMoveDone={() => setAssetToMove(null)}
+        />
+      )}
       {/* Header with breadcrumb and actions - fixed */}
       <div className="flex shrink-0 items-center justify-between gap-4 p-4 pb-0">
         <div className="flex items-center gap-2 pl-1 text-gray-500 text-sm">
@@ -586,9 +598,10 @@ export function AssetBrowser({
           asset={selectedAssets[0]} // Pass first asset for path reference
           open={bulkMoveDialogOpen}
           onOpenChange={setBulkMoveDialogOpen}
-          onConfirm={handleBulkMove}
-          isBulkOperation={true}
-          selectedCount={selectedAssets.length}
+          onMoveDone={() => {
+            setBulkMoveDialogOpen(false);
+            setSelectedAssets([]);
+          }}
         />
       )}
 
@@ -635,9 +648,10 @@ function AssetActions({
   isSelectionMode,
 }: { asset: Asset; isSelectionMode: boolean }) {
   const { mutateAsync: deleteAsset } = useDeleteAsset();
-  const { mutateAsync: updateAsset } = useUpdateAsset();
-  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  // Get the setAssetToMove function from the store
+  const { setAssetToMove } = useAssetBrowserStore();
 
   const handleDeleteAsset = async (assetId: string) => {
     try {
@@ -651,19 +665,8 @@ function AssetActions({
     }
   };
 
-  const handleMoveAsset = async (assetId: string, path: string) => {
-    try {
-      await updateAsset({
-        assetId,
-        path,
-      });
-      toast.success("Asset moved successfully");
-      setMoveDialogOpen(false);
-    } catch (e) {
-      toast.error("Error moving asset", {
-        description: e instanceof Error ? e.message : "Unknown error",
-      });
-    }
+  const handleMoveAsset = (asset: Asset) => {
+    setAssetToMove(asset);
   };
 
   return (
@@ -684,8 +687,8 @@ function AssetActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent blocking={true} className="w-40">
           {!asset.is_folder && (
-            <DropdownMenuItem onClick={() => setMoveDialogOpen(true)}>
-              <FileInput className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => handleMoveAsset(asset)}>
+              <FolderUp className="mr-2 h-4 w-4" />
               Move
             </DropdownMenuItem>
           )}
@@ -699,12 +702,7 @@ function AssetActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <MoveAssetDialog
-        asset={asset}
-        open={moveDialogOpen}
-        onOpenChange={setMoveDialogOpen}
-        onConfirm={(path) => handleMoveAsset(asset.id, path)}
-      />
+      {/* Delete dialog is handled here, Move dialog is handled at the AssetBrowser level */}
 
       <DeleteAssetDialog
         asset={asset}
@@ -737,7 +735,7 @@ interface FolderNode {
   isExpanded: boolean;
 }
 
-export function MoveAssetDialog({
+function MoveAssetDialogInternal({
   asset,
   open,
   onOpenChange,

@@ -307,3 +307,28 @@ export function useAddAsset() {
     },
   });
 }
+
+export function useMoveAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      assetId, 
+      destinationPath 
+    }: { 
+      assetId: string;
+      destinationPath: string;
+    }) => {
+      return await api({
+        url: "assets/move",
+        init: {
+          method: "POST",
+          body: JSON.stringify({ asset_id: assetId, destination_path: destinationPath }),
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+    },
+  });
+}
