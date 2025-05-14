@@ -132,9 +132,6 @@ export function AssetBrowser({
 
   // Handle mouse events for drag selection
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Prevent browser's default text selection
-    e.preventDefault();
-    
     if (e.button !== 0 || e.target !== e.currentTarget) return; // Only left click on container
 
     const container = containerRef.current;
