@@ -41,7 +41,13 @@ interface MoveAssetDialogProps {
   asset: Asset;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onMoveDone: () => void;
+  onMoveDone?: () => void;
+  onConfirm?: (path: string) => void;
+  dialogTitle?: string;
+  dialogDescription?: string;
+  confirmText?: string;
+  isBulkOperation?: boolean;
+  selectedCount?: number;
 }
 
 interface FolderNode {
@@ -88,7 +94,13 @@ export function MoveAssetDialog({
   asset, 
   open, 
   onOpenChange, 
-  onMoveDone 
+  onMoveDone,
+  onConfirm,
+  dialogTitle = "Move Asset",
+  dialogDescription,
+  confirmText = "Move Here",
+  isBulkOperation = false,
+  selectedCount = 0
 }: MoveAssetDialogProps) {
   const [currentPath, setCurrentPath] = useState("/");
   const [selectedPath, setSelectedPath] = useState("");
@@ -260,7 +272,11 @@ export function MoveAssetDialog({
       });
       
       onOpenChange(false);
-      onMoveDone();
+      if (onMoveDone) {
+        onMoveDone();
+      } else if (onConfirm) {
+        onConfirm(selectedPath === "/" ? "" : selectedPath);
+      }
       toast.success("Asset moved successfully");
     } catch (e) {
       toast.error("Error moving asset", {
@@ -326,9 +342,11 @@ export function MoveAssetDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle>Move Asset</DialogTitle>
+            <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>
-              Select destination folder for "{asset.name}"
+              {dialogDescription || (isBulkOperation 
+                ? `Select destination folder for ${selectedCount} assets` 
+                : `Select destination folder for "${asset.name}"`)}
             </DialogDescription>
           </DialogHeader>
           
@@ -355,7 +373,7 @@ export function MoveAssetDialog({
               onClick={handleMove}
               disabled={!selectedPath || selectedPath === assetParentPath}
             >
-              Move Here
+              {confirmText}
             </Button>
           </div>
         </DialogContent>
