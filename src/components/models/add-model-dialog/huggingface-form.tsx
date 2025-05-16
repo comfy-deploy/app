@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { FolderPathDisplay } from "./folder-path-display";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface HuggingfaceFormProps {
   onSubmit: (request: AddModelRequest) => void;
@@ -30,6 +31,7 @@ export function HuggingfaceForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [modelPath, setModelPath] = useState(folderPath);
+  const [useRepoSubfolder, setUseRepoSubfolder] = useState(true);
 
   const debouncedRepoId = useDebounce(repoId, 500);
 
@@ -41,10 +43,14 @@ export function HuggingfaceForm({
     }
     validateRepo(debouncedRepoId);
 
-    // Update the model path when repo ID changes
-    const lastPart = debouncedRepoId.split("/").pop() || "";
-    setModelPath(`${folderPath}/${lastPart}`);
-  }, [debouncedRepoId, folderPath]);
+    // Update the model path based on subfolder setting
+    if (useRepoSubfolder) {
+      const lastPart = debouncedRepoId.split("/").pop() || "";
+      setModelPath(`${folderPath}/${lastPart}`);
+    } else {
+      setModelPath(folderPath);
+    }
+  }, [debouncedRepoId, folderPath, useRepoSubfolder]);
 
   const validateRepo = async (id: string) => {
     setIsValidating(true);
@@ -75,6 +81,7 @@ export function HuggingfaceForm({
       folderPath,
       huggingface: {
         repoId: repoId,
+        useRepoSubfolder: useRepoSubfolder,
       },
     });
   };
@@ -144,6 +151,20 @@ export function HuggingfaceForm({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      <div className="flex items-center space-x-2 mt-2">
+        <Checkbox 
+          id="use-repo-subfolder"
+          checked={useRepoSubfolder}
+          onCheckedChange={(checked) => setUseRepoSubfolder(checked === true)}
+        />
+        <Label 
+          htmlFor="use-repo-subfolder" 
+          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        >
+          Create subfolder with repository name
+        </Label>
+      </div>
 
       <Button
         type="submit"

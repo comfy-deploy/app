@@ -19,10 +19,11 @@ export interface CivitaiModel {
 export interface AddModelRequest {
   source: ModelSource;
   folderPath: string;
-  filename: string;
+  filename?: string;
   huggingface?: {
     repoId: string;
     file?: string;
+    useRepoSubfolder?: boolean;
   };
   civitai?: {
     url: string;
