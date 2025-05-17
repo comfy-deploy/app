@@ -31,7 +31,7 @@ export function HuggingfaceForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [modelPath, setModelPath] = useState(folderPath);
-  const [useRepoSubfolder, setUseRepoSubfolder] = useState(true);
+  const [destinationPath, setDestinationPath] = useState(folderPath);
 
   const debouncedRepoId = useDebounce(repoId, 500);
 
@@ -39,18 +39,23 @@ export function HuggingfaceForm({
     if (!debouncedRepoId) {
       setValidation(null);
       setModelPath(folderPath);
+      setDestinationPath(folderPath);
       return;
     }
     validateRepo(debouncedRepoId);
 
-    // Update the model path based on subfolder setting
-    if (useRepoSubfolder) {
+    // Update the model path when repo ID changes
+    const lastPart = debouncedRepoId.split("/").pop() || "";
+    setModelPath(`${folderPath}/${lastPart}`);
+  }, [debouncedRepoId, folderPath]);
+  
+  // Update destination path when validation succeeds
+  useEffect(() => {
+    if (validation?.exists && debouncedRepoId) {
       const lastPart = debouncedRepoId.split("/").pop() || "";
-      setModelPath(`${folderPath}/${lastPart}`);
-    } else {
-      setModelPath(folderPath);
+      setDestinationPath(`${folderPath}/${lastPart}`);
     }
-  }, [debouncedRepoId, folderPath, useRepoSubfolder]);
+  }, [validation, debouncedRepoId, folderPath]);
 
   const validateRepo = async (id: string) => {
     setIsValidating(true);
@@ -81,7 +86,7 @@ export function HuggingfaceForm({
       folderPath,
       huggingface: {
         repoId: repoId,
-        useRepoSubfolder: useRepoSubfolder,
+        destinationPath: destinationPath,
       },
     });
   };
@@ -152,18 +157,19 @@ export function HuggingfaceForm({
         </Alert>
       )}
 
-      <div className="flex items-center space-x-2 mt-2">
-        <Checkbox 
-          id="use-repo-subfolder"
-          checked={useRepoSubfolder}
-          onCheckedChange={(checked) => setUseRepoSubfolder(checked === true)}
-        />
-        <Label 
-          htmlFor="use-repo-subfolder" 
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          Create subfolder with repository name
+      <div className="space-y-2 mt-2">
+        <Label htmlFor="destination-path" className="text-sm font-medium">
+          Destination Path
         </Label>
+        <div className="relative">
+          <Input
+            id="destination-path"
+            value={destinationPath}
+            onChange={(e) => setDestinationPath(e.target.value)}
+            className="pr-10"
+            placeholder={folderPath}
+          />
+        </div>
       </div>
 
       <Button

@@ -23,7 +23,7 @@ export interface AddModelRequest {
   huggingface?: {
     repoId: string;
     file?: string;
-    useRepoSubfolder?: boolean;
+    destinationPath?: string;
   };
   civitai?: {
     url: string;
