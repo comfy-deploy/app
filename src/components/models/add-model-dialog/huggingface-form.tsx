@@ -31,7 +31,7 @@ export function HuggingfaceForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [modelPath, setModelPath] = useState(folderPath);
-  const [destinationPath, setDestinationPath] = useState(folderPath);
+  const [subfolder, setSubfolder] = useState("");
 
   const debouncedRepoId = useDebounce(repoId, 500);
 
@@ -39,7 +39,7 @@ export function HuggingfaceForm({
     if (!debouncedRepoId) {
       setValidation(null);
       setModelPath(folderPath);
-      setDestinationPath(folderPath);
+      setSubfolder("");
       return;
     }
     validateRepo(debouncedRepoId);
@@ -49,13 +49,13 @@ export function HuggingfaceForm({
     setModelPath(`${folderPath}/${lastPart}`);
   }, [debouncedRepoId, folderPath]);
   
-  // Update destination path when validation succeeds
+  // Update subfolder when validation succeeds
   useEffect(() => {
     if (validation?.exists && debouncedRepoId) {
       const lastPart = debouncedRepoId.split("/").pop() || "";
-      setDestinationPath(`${folderPath}/${lastPart}`);
+      setSubfolder(lastPart);
     }
-  }, [validation, debouncedRepoId, folderPath]);
+  }, [validation, debouncedRepoId]);
 
   const validateRepo = async (id: string) => {
     setIsValidating(true);
@@ -86,7 +86,7 @@ export function HuggingfaceForm({
       folderPath,
       huggingface: {
         repoId: repoId,
-        destinationPath: destinationPath,
+        subfolder: subfolder,
       },
     });
   };
@@ -158,16 +158,16 @@ export function HuggingfaceForm({
       )}
 
       <div className="space-y-2 mt-2">
-        <Label htmlFor="destination-path" className="text-sm font-medium">
+        <Label htmlFor="subfolder" className="text-sm font-medium">
           Destination Path
         </Label>
         <div className="relative">
           <Input
-            id="destination-path"
-            value={destinationPath}
-            onChange={(e) => setDestinationPath(e.target.value)}
+            id="subfolder"
+            value={subfolder}
+            onChange={(e) => setSubfolder(e.target.value)}
             className="pr-10"
-            placeholder={folderPath}
+            placeholder="Enter subfolder name (optional)"
           />
         </div>
       </div>
