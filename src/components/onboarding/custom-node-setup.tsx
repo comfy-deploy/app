@@ -42,6 +42,7 @@ import {
   CircleHelp,
   Download,
   ExternalLink,
+  Lightbulb,
   Minus,
   Pencil,
   Plus,
@@ -90,6 +91,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import { Badge } from "../ui/badge";
+import { CUSTOM_NODE_PRESETS } from "./custom-node-present";
 
 export type DefaultCustomNodeData = {
   title: string;
@@ -281,6 +284,8 @@ function SearchNodeList({
   setValidation,
   readonly = false,
 }: StepComponentProps<MachineStepValidation> & { readonly?: boolean }) {
+  const nodePresets = CUSTOM_NODE_PRESETS;
+
   const { data: defaultCustomNodeStats } = useQuery<DefaultCustomNodeStats>({
     queryKey: ["custom-node-stats"],
     queryFn: async () => {
@@ -345,10 +350,23 @@ function SearchNodeList({
         },
       };
 
+      const newSteps = [...validation.docker_command_steps.steps, newNode];
+
+      // Check if this node has presets
+      const matchingPreset = nodePresets.find(
+        (preset) => preset.url.toLowerCase() === nodeRefLower,
+      );
+
+      if (matchingPreset && matchingPreset.steps) {
+        // Add the preset steps to the validation
+        newSteps.push(...matchingPreset.steps);
+        toast.success("Added node with preset configuration");
+      }
+
       setValidation((prev) => ({
         ...prev,
         docker_command_steps: {
-          steps: [...prev.docker_command_steps.steps, newNode],
+          steps: newSteps,
         },
       }));
     } catch (error) {
@@ -623,7 +641,17 @@ function SearchNodeList({
                             </span> */}
                           </div>
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-row items-center gap-2">
+                          {nodePresets.some(
+                            (preset) =>
+                              preset.url.toLowerCase() ===
+                              node.repository.toLowerCase(),
+                          ) && (
+                            <Badge variant="yellow" className="h-fit">
+                              <Lightbulb size={12} />
+                              With Preset
+                            </Badge>
+                          )}
                           <Button
                             type="button"
                             variant="ghost"

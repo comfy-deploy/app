@@ -879,7 +879,12 @@ function ServerlessSettings({
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="grid grid-cols-2 gap-4 p-4">
+                    <div
+                      className={cn(
+                        "grid grid-cols-2 gap-4 p-4",
+                        readonly && "pointer-events-none opacity-50",
+                      )}
+                    >
                       {/* CPU Request */}
                       <FormField
                         control={form.control}
