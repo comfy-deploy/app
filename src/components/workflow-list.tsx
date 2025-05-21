@@ -180,32 +180,30 @@ export function WorkflowList() {
             </Button>
           </div>
 
-          <AdminAndMember>
-            <Tooltip>
-              <TooltipTrigger>
-                {sub && (
-                  <Badge
-                    className={cn(
-                      sub?.features.workflowLimited
-                        ? "border-gray-400 text-gray-500"
-                        : "",
-                    )}
-                  >
-                    <div className="flex items-center gap-2 px-2 text-xs">
-                      {sub?.features.currentWorkflowCount}/
-                      {sub?.features.workflowLimit}
-                    </div>
-                  </Badge>
-                )}
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  Current workflows: {sub?.features.currentWorkflowCount} / Max:{" "}
-                  {sub?.features.workflowLimit}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </AdminAndMember>
+          <Tooltip>
+            <TooltipTrigger>
+              {sub && (
+                <Badge
+                  className={cn(
+                    sub?.features.workflowLimited
+                      ? "border-gray-400 text-gray-500"
+                      : "",
+                  )}
+                >
+                  <div className="flex items-center gap-2 px-2 text-xs">
+                    {sub?.features.currentWorkflowCount}/
+                    {sub?.features.workflowLimit}
+                  </div>
+                </Badge>
+              )}
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                Current workflows: {sub?.features.currentWorkflowCount} / Max:{" "}
+                {sub?.features.workflowLimit}
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
       <ScrollArea className="fab-workflow-list flex-grow" ref={parentRef}>
