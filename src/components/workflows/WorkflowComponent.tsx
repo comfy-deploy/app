@@ -108,12 +108,6 @@ export function RunDetails(props: {
       },
     },
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
-    refetchOnMount: (query) => {
-      if (query.state.data?.status === "finished") {
-        return false;
-      }
-      return true;
-    },
     refetchInterval: (query) => {
       if (
         query.state.data?.status === "running" ||

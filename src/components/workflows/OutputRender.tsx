@@ -47,7 +47,6 @@ import { CodeBlock } from "../ui/code-blocks";
 import { useAddAsset } from "@/hooks/hook";
 import { toast } from "sonner";
 import { MoveAssetDialog } from "../move-asset-dialog";
-import { useAuthStore } from "@/lib/auth-store";
 
 // Create a lazy-loaded version of the component
 const LazyModelRenderer = lazy(() =>
@@ -104,24 +103,8 @@ function _FileURLRender({
   isMainView = false,
   isSmallView = false,
 }: fileURLRenderProps) {
-  const { token } = useAuthStore();
   const a = new URL(url);
   const filename = a.pathname.split("/").pop();
-  const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    if (token) {
-      // console.log("token", token);
-      setImageError(false);
-    }
-  }, [token]);
-
-  // useEffect(() => {
-  //   if (!imageError) {
-  //     onLoad?.();
-  //   }
-  // }, [imageError, onLoad]);
-
   if (!filename) {
     return <div className="bg-slate-300">Not possible to render</div>;
   }
@@ -182,6 +165,14 @@ function _FileURLRender({
     );
   }
 
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    if (imageError) {
+      onLoad?.();
+    }
+  }, [imageError, onLoad]);
+
   const imageExtensions = [
     ".png",
     ".gif",
@@ -198,12 +189,12 @@ function _FileURLRender({
       return (
         <div
           className={cn(
-            "@container flex aspect-square h-full w-full max-w-[200px] flex-col items-center justify-center gap-2 text-gray-600",
+            "flex aspect-square h-full w-full max-w-[200px] flex-col items-center justify-center gap-2 text-gray-600",
             mediaClasses,
           )}
         >
           <SearchX size={20} strokeWidth={1.5} />
-          <span className="@xs:inline hidden">Not found</span>
+          <span>Not found</span>
         </div>
       );
     }
@@ -212,7 +203,7 @@ function _FileURLRender({
       <img
         onLoad={onLoad}
         className={cn("max-w-[200px]", mediaClasses)}
-        src={getOptimizedImage(url, isSmallView, token)}
+        src={getOptimizedImage(url, isSmallView)}
         alt={filename}
         loading={lazyLoading ? "lazy" : undefined}
         onError={() => setImageError(true)}

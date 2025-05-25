@@ -135,10 +135,9 @@ export const queryClient = new QueryClient({
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const { getToken, sessionId } = useAuth();
+  const { getToken } = useAuth();
 
   useEffect(() => {
-    // console.log("sessionId", sessionId);
     useAuthStore.setState({
       fetchToken: getToken,
     });
@@ -148,7 +147,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         token: token,
       });
     });
-  }, [getToken, sessionId]);
+  }, [getToken]);
 
   return (
     <PostHogProvider client={posthog}>
