@@ -35,6 +35,14 @@ export default defineConfig(({ command, mode }) => {
         "@repo": path.resolve(__dirname, "./src/repo"),
       },
     },
+    server: {
+      proxy: {
+        "/api": {
+          target: "http://localhost:3011",
+          changeOrigin: true,
+        },
+      },
+    },
     define: processEnvDefinitions,
   };
 });

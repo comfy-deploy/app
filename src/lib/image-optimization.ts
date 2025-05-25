@@ -17,8 +17,8 @@ export const getOptimizedImageUrl = (
   imagePath: string,
   transformations = "auto",
 ): string => {
-  const baseUrl = process.env.NEXT_PUBLIC_CD_API_URL || "";
-  return `${baseUrl}/api/optimize/${transformations}/${imagePath}`;
+  // const baseUrl = process.env.NEXT_PUBLIC_CD_API_URL || "";
+  return `/api/optimize/${transformations}/${imagePath}`;
 };
 
 /**
