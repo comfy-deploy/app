@@ -16,6 +16,7 @@ export const WorkflowInputType = z.object({
   description: z.string().optional(),
   enum_values: z.array(z.string()).optional(),
   nodeId: z.string().optional(), // Add nodeId for reference when saving order
+  groupId: z.string().optional(), // Add groupId for reference to which group this input belongs to
 });
 
 export const WorkflowInputsType = z.array(WorkflowInputType);
@@ -61,6 +62,32 @@ export function getInputsFromWorkflowAPI(workflow_api?: any) {
     
     const orderA = workflow_api[nodeIdA]?._meta?.['comfydeploy-order'] ?? Number.MAX_SAFE_INTEGER;
     const orderB = workflow_api[nodeIdB]?._meta?.['comfydeploy-order'] ?? Number.MAX_SAFE_INTEGER;
+    
+    const groupIdA = workflow_api[nodeIdA]?._meta?.['comfydeploy-group-id'];
+    const groupIdB = workflow_api[nodeIdB]?._meta?.['comfydeploy-group-id'];
+    
+    if (groupIdA && groupIdB && groupIdA === groupIdB) {
+      const groupPositionA = workflow_api[nodeIdA]?._meta?.['comfydeploy-group-position'] ?? 0;
+      const groupPositionB = workflow_api[nodeIdB]?._meta?.['comfydeploy-group-position'] ?? 0;
+      return groupPositionA - groupPositionB;
+    }
+    
+    if (groupIdA && groupIdB && groupIdA !== groupIdB) {
+      const groupOrderA = workflow_api[nodeIdA]?._meta?.['comfydeploy-group-order'] ?? orderA;
+      const groupOrderB = workflow_api[nodeIdB]?._meta?.['comfydeploy-group-order'] ?? orderB;
+      return groupOrderA - groupOrderB;
+    }
+    
+    if (groupIdA && !groupIdB) {
+      const groupOrder = workflow_api[nodeIdA]?._meta?.['comfydeploy-group-order'] ?? orderA;
+      return groupOrder - orderB;
+    }
+    
+    if (!groupIdA && groupIdB) {
+      const groupOrder = workflow_api[nodeIdB]?._meta?.['comfydeploy-group-order'] ?? orderB;
+      return orderA - groupOrder;
+    }
+    
     return orderA - orderB;
   });
 }

@@ -34,7 +34,7 @@ export async function api({
   // Always include auth header, but only include Content-Type if not skipping defaults
   const defaultHeaders = {
     ...(skipDefaultHeaders ? {} : { "Content-Type": "application/json" }),
-    Authorization: `Bearer ${auth}`,
+    // Authorization: `Bearer ${auth}`,
   };
 
   const headers = {
@@ -84,6 +84,7 @@ export async function api({
   return await fetch(finalUrl, {
     ...init,
     headers,
+    credentials: "include",
   }).then(async (res) => {
     if (!res.ok) {
       const errorBody = await res.text();

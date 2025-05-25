@@ -64,7 +64,7 @@ export function UserSettings() {
           assumed_role_arn: z
             .string()
             .optional()
-            .describe("Assumed Role ARN")
+            .describe("AWS Role to Assume (ARN)")
             .nullable(),
           // spend_limit: z.coerce
           //   .number()

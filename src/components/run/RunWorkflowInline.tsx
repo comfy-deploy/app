@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { plainInputsToZod } from "@/lib/workflowVersionInputsToZod";
 // import { HandleFileUpload } from "@/server/uploadFile";
 import { useAuth, useClerk } from "@clerk/clerk-react";
-import { Edit, GripVertical, Play, Save, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Edit, GripVertical, Play, PlusCircle, Save, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import {
   type FormEvent,
@@ -33,6 +33,12 @@ import {
   SortableItem,
   SortableDragHandle,
 } from "@/components/custom/sortable";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import { UniqueIdentifier } from "@dnd-kit/core";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
@@ -285,14 +291,58 @@ export function RunWorkflowInline({
   const [isEditMode, setIsEditMode] = useState(false);
   const [reorderedInputs, setReorderedInputs] = useState<typeof inputs>([]);
 
+  type Group = {
+    id: string;
+    name: string;
+    isExpanded: boolean;
+    items: string[]; // Input IDs
+  };
+
+  const [groups, setGroups] = useState<Group[]>([]);
+  
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeData, setActiveData] = useState<{ type: 'input' | 'group', id: string } | null>(null);
+  const [overGroupId, setOverGroupId] = useState<string | null>(null);
+  
   const workflowId = useWorkflowIdInWorkflowPage();
   const { workflow } = useCurrentWorkflow(workflowId);
 
   useEffect(() => {
     if (isEditMode && inputs) {
       setReorderedInputs([...inputs]);
+      
+      if (workflow_api) {
+        const parsedWorkflowApi = typeof workflow_api === 'string' 
+          ? JSON.parse(workflow_api) 
+          : workflow_api;
+        
+        const groupMap = new Map<string, Group>();
+        
+        inputs.forEach(input => {
+          const nodeId = input.nodeId as string | undefined;
+          if (nodeId && parsedWorkflowApi[nodeId]) {
+            const groupId = parsedWorkflowApi[nodeId]?._meta?.['comfydeploy-group-id'];
+            if (groupId) {
+              if (!groupMap.has(groupId)) {
+                groupMap.set(groupId, {
+                  id: groupId,
+                  name: parsedWorkflowApi[nodeId]?._meta?.['comfydeploy-group-name'] || 'Group',
+                  isExpanded: parsedWorkflowApi[nodeId]?._meta?.['comfydeploy-group-expanded'] !== false,
+                  items: []
+                });
+              }
+              const group = groupMap.get(groupId)!;
+              group.items.push(input.input_id || '');
+            }
+          }
+        });
+        
+        setGroups(Array.from(groupMap.values()));
+      } else {
+        setGroups([]);
+      }
     }
-  }, [isEditMode, inputs]);
+  }, [isEditMode, inputs, workflow_api]);
 
   const user = useAuth();
   const clerk = useClerk();
@@ -425,6 +475,55 @@ export function RunWorkflowInline({
     setValues(default_values);
   }, [default_values]);
 
+  const createNewGroup = () => {
+    const newGroupId = `group-${Date.now()}`;
+    setGroups([
+      ...groups,
+      {
+        id: newGroupId,
+        name: 'New Group',
+        isExpanded: true,
+        items: []
+      }
+    ]);
+  };
+
+  const renameGroup = (groupId: string, newName: string) => {
+    setGroups(groups.map(group => 
+      group.id === groupId ? { ...group, name: newName } : group
+    ));
+  };
+
+  const toggleGroupExpansion = (groupId: string) => {
+    setGroups(groups.map(group => 
+      group.id === groupId ? { ...group, isExpanded: !group.isExpanded } : group
+    ));
+  };
+
+  const removeGroup = (groupId: string) => {
+    setGroups(groups.filter(group => group.id !== groupId));
+  };
+
+  const addInputToGroup = (inputId: string, groupId: string) => {
+    const updatedGroups = groups.map(group => ({
+      ...group,
+      items: group.items.filter(item => item !== inputId)
+    }));
+    
+    setGroups(updatedGroups.map(group => 
+      group.id === groupId 
+        ? { ...group, items: [...group.items, inputId] } 
+        : group
+    ));
+  };
+
+  const removeInputFromGroup = (inputId: string) => {
+    setGroups(groups.map(group => ({
+      ...group,
+      items: group.items.filter(item => item !== inputId)
+    })));
+  };
+
   const saveReordering = async () => {
     if (!workflow_version_id || !reorderedInputs) return;
 
@@ -435,15 +534,37 @@ export function RunWorkflowInline({
         return;
       }
 
-      const workflowApi = workflow_api;
+      const workflowApi = typeof workflow_api === 'string' 
+        ? JSON.parse(workflow_api) 
+        : workflow_api as Record<string, any>;
+
+      const nonEmptyGroups = groups.filter(group => group.items.length > 0);
 
       reorderedInputs.forEach((input, index) => {
         const nodeId = input.nodeId as string | undefined;
         if (nodeId && workflowApi[nodeId]) {
+          const group = nonEmptyGroups.find(group => 
+            group.items.includes(input.input_id || '')
+          );
+          
           workflowApi[nodeId]._meta = {
             ...(workflowApi[nodeId]._meta || {}),
             "comfydeploy-order": index,
           };
+          
+          if (group) {
+            workflowApi[nodeId]._meta["comfydeploy-group-id"] = group.id;
+            workflowApi[nodeId]._meta["comfydeploy-group-name"] = group.name;
+            workflowApi[nodeId]._meta["comfydeploy-group-expanded"] = group.isExpanded;
+            
+            const groupItemIndex = group.items.indexOf(input.input_id || '');
+            workflowApi[nodeId]._meta["comfydeploy-group-position"] = groupItemIndex;
+          } else {
+            delete workflowApi[nodeId]._meta["comfydeploy-group-id"];
+            delete workflowApi[nodeId]._meta["comfydeploy-group-name"];
+            delete workflowApi[nodeId]._meta["comfydeploy-group-expanded"];
+            delete workflowApi[nodeId]._meta["comfydeploy-group-position"];
+          }
         }
       });
 
@@ -455,16 +576,16 @@ export function RunWorkflowInline({
             body: JSON.stringify({
               workflow: workflow,
               workflow_api: workflowApi,
-              comment: "Reordered inputs",
+              comment: "Reordered and grouped inputs",
             }),
           },
         }),
         {
-          loadingText: "Saving input order...",
+          loadingText: "Saving input organization...",
         },
       );
 
-      toast.success("Input order saved successfully");
+      toast.success("Input organization saved successfully");
       queryClient.invalidateQueries({
         queryKey: ["workflow", workflowId, "versions"],
       });
@@ -473,7 +594,7 @@ export function RunWorkflowInline({
     } catch (error) {
       setIsLoading(false);
       toast.error(
-        `Failed to save input order: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Failed to save input organization: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   };
@@ -497,9 +618,20 @@ export function RunWorkflowInline({
                 variant="outline"
                 size="xs"
                 className="shadow-sm backdrop-blur-sm"
+                type="button"
               >
                 <X size={16} className="mr-1" />
                 Cancel
+              </Button>
+              <Button
+                onClick={createNewGroup}
+                variant="outline"
+                size="xs"
+                className="shadow-sm backdrop-blur-sm mr-2"
+                type="button"
+              >
+                <PlusCircle size={16} className="mr-1" />
+                Add Group
               </Button>
               <Button
                 onClick={saveReordering}
@@ -507,6 +639,7 @@ export function RunWorkflowInline({
                 size="xs"
                 className="shadow-sm backdrop-blur-sm"
                 isLoading={isLoading}
+                type="button"
               >
                 <Save size={16} className="mr-1" />
                 Save
@@ -518,6 +651,7 @@ export function RunWorkflowInline({
               variant="default"
               size="xs"
               className="shadow-sm backdrop-blur-sm"
+              type="button"
             >
               <Edit size={16} className="mr-1" />
               Reorder
@@ -547,14 +681,236 @@ export function RunWorkflowInline({
       >
         {inputs ? (
           isEditMode ? (
-            <div className="space-y-2">
+            <div className="space-y-4">
+
+              
+              {/* Groups */}
+              {groups.length > 0 && (
+                <div className="mb-4">
+                  <Sortable
+                    value={groups.map(group => ({ id: group.id, ...group }))}
+                    onValueChange={(items) => {
+                      setGroups(items);
+                    }}
+                    onDragStart={(event) => {
+                      setActiveId(event.active.id.toString());
+                      setActiveData({
+                        type: 'group',
+                        id: event.active.id.toString()
+                      });
+                    }}
+                    onDragEnd={() => {
+                      setActiveId(null);
+                      setActiveData(null);
+                      setOverGroupId(null);
+                    }}
+                    orientation="vertical"
+                  >
+                    {groups.map((group) => (
+                      <SortableItem
+                        key={group.id}
+                        value={group.id}
+                        className={cn(
+                          "mb-4 border rounded-md p-3 bg-card sortable-item-transition",
+                          overGroupId === group.id && "ring-2 ring-primary border-primary"
+                        )}
+                        id={`group-${group.id}`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <SortableDragHandle
+                              variant="ghost"
+                              className="p-1 hover:bg-muted rounded"
+                              size="sm"
+                              type="button"
+                            >
+                              <GripVertical size={16} />
+                            </SortableDragHandle>
+                            
+                            <Input
+                              value={group.name}
+                              onChange={(e) => renameGroup(group.id, e.target.value)}
+                              className="h-8 w-40 font-medium"
+                            />
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleGroupExpansion(group.id)}
+                              className="p-1 h-8 w-8"
+                              type="button"
+                            >
+                              {group.isExpanded ? (
+                                <ChevronDown size={16} />
+                              ) : (
+                                <ChevronRight size={16} />
+                              )}
+                            </Button>
+                          </div>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeGroup(group.id)}
+                            className="p-1 h-8 w-8 text-destructive hover:text-destructive"
+                            type="button"
+                          >
+                            <X size={16} />
+                          </Button>
+                        </div>
+                        
+                        {group.isExpanded && (
+                          <Collapsible open={true}>
+                            <CollapsibleContent className="pl-8">
+                              {group.items.length > 0 ? (
+                                <Sortable
+                                  value={group.items.map(itemId => {
+                                    const input = reorderedInputs.find(input => input.input_id === itemId);
+                                    return { id: itemId, input };
+                                  })}
+                                  onValueChange={(items) => {
+                                    setGroups(groups.map(g => 
+                                      g.id === group.id 
+                                        ? { ...g, items: items.map(item => item.id.toString()) } 
+                                        : g
+                                    ));
+                                  }}
+                                  onDragStart={(event) => {
+                                    setActiveId(event.active.id.toString());
+                                    setActiveData({
+                                      type: 'input',
+                                      id: event.active.id.toString()
+                                    });
+                                  }}
+                                  onDragEnd={(event) => {
+                                    const { active, over } = event;
+                                    
+                                    if (over && active.id !== over.id && activeData?.type === 'input') {
+                                      if (over.id.toString().includes('group-')) {
+                                        const targetGroupId = over.id.toString().replace('group-', '');
+                                        if (targetGroupId !== group.id) {
+                                          removeInputFromGroup(active.id.toString());
+                                          addInputToGroup(active.id.toString(), targetGroupId);
+                                        }
+                                      } 
+                                      else if (!over.id.toString().includes('group-')) {
+                                        removeInputFromGroup(active.id.toString());
+                                      }
+                                    }
+                                    
+                                    setActiveId(null);
+                                    setActiveData(null);
+                                    setOverGroupId(null);
+                                  }}
+                                  orientation="vertical"
+                                >
+                                  {group.items.map(itemId => {
+                                    const input = reorderedInputs.find(input => input.input_id === itemId);
+                                    if (!input) return null;
+                                    
+                                    return (
+                                      <SortableItem
+                                        key={itemId}
+                                        value={itemId}
+                                        className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
+                                      >
+                                        <div className="flex items-center w-full">
+                                          <SortableDragHandle
+                                            variant="ghost"
+                                            className="mr-2 p-1 hover:bg-muted rounded"
+                                            size="sm"
+                                            type="button"
+                                          >
+                                            <GripVertical size={16} />
+                                          </SortableDragHandle>
+                                          <div className="flex-1">
+                                            <SDInputsRender
+                                              key={input.input_id}
+                                              inputNode={input}
+                                              updateInput={() => {}}
+                                              inputValue={values[input.input_id || ""]}
+                                            />
+                                          </div>
+                                        </div>
+                                      </SortableItem>
+                                    );
+                                  })}
+                                </Sortable>
+                              ) : (
+                                <div className="py-2 text-center text-muted-foreground text-sm border border-dashed rounded-md">
+                                  Drag inputs here
+                                </div>
+                              )}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+                      </SortableItem>
+                    ))}
+                  </Sortable>
+                </div>
+              )}
+              
+              {/* Non-grouped inputs */}
               <Sortable
-                value={reorderedInputs.map((item, index) => ({
-                  id: item.input_id || `item-${index}`,
-                  ...item,
-                }))}
+                value={reorderedInputs
+                  .filter(input => !groups.some(group => 
+                    group.items.includes(input.input_id || '')
+                  ))
+                  .map((item, index) => ({
+                    id: item.input_id || `item-${index}`,
+                    ...item,
+                  }))}
                 onValueChange={(items) => {
-                  setReorderedInputs(items);
+                  const groupedInputIds = groups.flatMap(group => group.items);
+                  const groupedInputs = reorderedInputs.filter(input => 
+                    groupedInputIds.includes(input.input_id || '')
+                  );
+                  
+                  setReorderedInputs([
+                    ...items,
+                    ...groupedInputs
+                  ]);
+                }}
+                onDragStart={(event) => {
+                  setActiveId(event.active.id.toString());
+                  setActiveData({
+                    type: 'input',
+                    id: event.active.id.toString()
+                  });
+                }}
+                onDragOver={(event) => {
+                  if (event.over && activeData?.type === 'input') {
+                    const overId = event.over.id.toString();
+                    if (overId.startsWith('group-')) {
+                      const targetGroupId = overId.replace('group-', '');
+                      const group = groups.find(g => g.id === targetGroupId);
+                      if (group) {
+                        setOverGroupId(targetGroupId);
+                      } else {
+                        setOverGroupId(null);
+                      }
+                    } else {
+                      setOverGroupId(null);
+                    }
+                  }
+                }}
+                onDragEnd={(event) => {
+                  const { active, over } = event;
+                  
+                  if (over && active.id !== over.id && activeData?.type === 'input') {
+                    const overId = over.id.toString();
+                    if (overId.startsWith('group-')) {
+                      const targetGroupId = overId.replace('group-', '');
+                      const group = groups.find(g => g.id === targetGroupId);
+                      if (group) {
+                        addInputToGroup(active.id.toString(), targetGroupId);
+                      }
+                    }
+                  }
+                  
+                  setActiveId(null);
+                  setActiveData(null);
+                  setOverGroupId(null);
                 }}
                 orientation="vertical"
                 overlay={(active) => {
@@ -583,31 +939,36 @@ export function RunWorkflowInline({
                   );
                 }}
               >
-                {reorderedInputs.map((item) => (
-                  <SortableItem
-                    key={item.input_id || `item-${Math.random()}`}
-                    value={item.input_id || `item-${Math.random()}`}
-                    className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
-                  >
-                    <div className="flex items-center w-full">
-                      <SortableDragHandle
-                        variant="ghost"
-                        className="mr-2 p-1 hover:bg-muted rounded"
-                        size="sm"
-                      >
-                        <GripVertical size={16} />
-                      </SortableDragHandle>
-                      <div className="flex-1">
-                        <SDInputsRender
-                          key={item.input_id}
-                          inputNode={item}
-                          updateInput={isEditMode ? () => {} : updateInput}
-                          inputValue={values[item.input_id || ""]}
-                        />
+                {reorderedInputs
+                  .filter(input => !groups.some(group => 
+                    group.items.includes(input.input_id || '')
+                  ))
+                  .map((item) => (
+                    <SortableItem
+                      key={item.input_id || `item-${Math.random()}`}
+                      value={item.input_id || `item-${Math.random()}`}
+                      className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
+                    >
+                      <div className="flex items-center w-full">
+                        <SortableDragHandle
+                          variant="ghost"
+                          className="mr-2 p-1 hover:bg-muted rounded"
+                          size="sm"
+                          type="button"
+                        >
+                          <GripVertical size={16} />
+                        </SortableDragHandle>
+                        <div className="flex-1">
+                          <SDInputsRender
+                            key={item.input_id}
+                            inputNode={item}
+                            updateInput={() => {}}
+                            inputValue={values[item.input_id || ""]}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </SortableItem>
-                ))}
+                    </SortableItem>
+                  ))}
               </Sortable>
             </div>
           ) : (

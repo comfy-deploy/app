@@ -1,5 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { getOptimizedImageUrl, extractS3Key } from "./image-optimization";
+import { useAuthStore } from "./auth-store";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -51,11 +53,20 @@ export function isGif(url: string) {
   return url.toLowerCase().endsWith(".gif");
 }
 
-export const getOptimizedImage = (url: string, isSmallView = false) => {
+export const getOptimizedImage = (
+  url: string,
+  isSmallView = false,
+  authToken?: string | null,
+) => {
   // Skip if the url is from custom bucket or is a GIF file
-  if (isCustomBucket(url) || isGif(url)) return url;
+  if (isGif(url)) return url;
 
-  return `https://comfydeploy.com/cdn-cgi/image/quality=${
-    isSmallView ? 30 : 75
-  }/${url}`;
+  // Use new image optimization system
+  const s3Key = extractS3Key(url);
+  const quality = isSmallView ? 30 : 75;
+  const transformations = `q_${quality},f_webp`;
+  const optimizedUrl = getOptimizedImageUrl(s3Key, transformations);
+  const urlWithToken = `${optimizedUrl}`;
+  // console.log("urlWithToken", urlWithToken);
+  return urlWithToken;
 };
