@@ -128,7 +128,7 @@ export function WorkflowInputsForm({
   defaultValues,
   ...props
 }: {
-  workflow: z.infer<typeof workflowType>;
+  workflow: any; // TODO: Fix workflowType reference
   inputs: ReturnType<typeof getInputsFromWorkflow>;
   defaultValues: Record<string, any>;
   onSubmit: (
@@ -320,8 +320,8 @@ export function RunWorkflowInline({
     Object.keys(grouped).forEach(group => {
       if (grouped[group]?.length) {
         grouped[group].sort((a, b) => {
-          const orderA = a.nodeId && workflow_api?.[a.nodeId]?._meta?.cd_input_order;
-          const orderB = b.nodeId && workflow_api?.[b.nodeId]?._meta?.cd_input_order;
+          const orderA = a.nodeId && (workflow_api as unknown as Record<string, any>)?.[a.nodeId as string]?._meta?.cd_input_order;
+          const orderB = b.nodeId && (workflow_api as unknown as Record<string, any>)?.[b.nodeId as string]?._meta?.cd_input_order;
           return (orderA ?? Number.MAX_SAFE_INTEGER) - (orderB ?? Number.MAX_SAFE_INTEGER);
         });
       }
@@ -360,14 +360,14 @@ export function RunWorkflowInline({
     const inputToUpdate = inputs?.find(input => input.input_id === inputId);
     if (!inputToUpdate || !inputToUpdate.nodeId) return;
     
-    const workflowApiClone = { ...workflow_api };
+  const workflowApiClone = workflow_api ? { ...(workflow_api as unknown as Record<string, any>) } : {};
     
-    if (workflowApiClone[inputToUpdate.nodeId]) {
-      if (!workflowApiClone[inputToUpdate.nodeId]._meta) {
-        workflowApiClone[inputToUpdate.nodeId]._meta = {};
+    if (workflowApiClone[inputToUpdate.nodeId as string]) {
+      if (!workflowApiClone[inputToUpdate.nodeId as string]._meta) {
+        workflowApiClone[inputToUpdate.nodeId as string]._meta = {};
       }
       
-      workflowApiClone[inputToUpdate.nodeId]._meta.cd_group_name = groupName;
+      workflowApiClone[inputToUpdate.nodeId as string]._meta.cd_group_name = groupName;
       
       setIsLoading(true);
       callServerPromise(
@@ -417,8 +417,14 @@ export function RunWorkflowInline({
       }
     });
     
+    reorderedInputs?.forEach(input => {
+      if (input.input_id) {
+        types[input.input_id] = 'input';
+      }
+    });
+    
     return types;
-  }, [groups, inputs]);
+  }, [groups, inputs, reorderedInputs]);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -439,8 +445,43 @@ export function RunWorkflowInline({
     const activeType = itemTypes[activeId];
     const overType = itemTypes[overId];
     
+    if (isEditMode) {
+      const activeIndex = reorderedInputs.findIndex(item => item.input_id === activeId);
+      const overIndex = reorderedInputs.findIndex(item => item.input_id === overId);
+      
+      if (activeIndex !== -1 && overIndex !== -1) {
+        const newInputs = [...reorderedInputs];
+        const [movedItem] = newInputs.splice(activeIndex, 1);
+        newInputs.splice(overIndex, 0, movedItem);
+        setReorderedInputs(newInputs);
+      }
+      return;
+    }
+    
     if (activeType === 'input' && overType === 'group') {
       updateInputGroup(activeId, overId);
+      return;
+    }
+    
+    if (activeType === 'input' && overType === 'input') {
+      let groupName = 'root';
+      const activeInput = inputs?.find(input => input.input_id === activeId);
+      const overInput = inputs?.find(input => input.input_id === overId);
+      
+      if (activeInput?.cd_group_name === overInput?.cd_group_name) {
+        groupName = activeInput?.cd_group_name || 'root';
+        
+        if (groupedInputs[groupName]) {
+          const activeIndex = groupedInputs[groupName].findIndex(item => item.input_id === activeId);
+          const overIndex = groupedInputs[groupName].findIndex(item => item.input_id === overId);
+          
+          if (activeIndex !== -1 && overIndex !== -1) {
+            updateInputGroup(activeId, groupName);
+          }
+        }
+      } else {
+        updateInputGroup(activeId, overInput?.cd_group_name || 'root');
+      }
       return;
     }
     
@@ -590,7 +631,7 @@ export function RunWorkflowInline({
     setValues(default_values);
   }, [default_values]);
 
-  const saveReordering = async () => {
+  const saveChanges = async () => {
     if (!workflow_version_id || !reorderedInputs) return;
 
     try {
@@ -604,10 +645,11 @@ export function RunWorkflowInline({
 
       reorderedInputs.forEach((input, index) => {
         const nodeId = input.nodeId as string | undefined;
-        if (nodeId && workflowApi[nodeId]) {
-          workflowApi[nodeId]._meta = {
-            ...(workflowApi[nodeId]._meta || {}),
+        if (nodeId && (workflowApi as unknown as Record<string, any>)[nodeId]) {
+          (workflowApi as unknown as Record<string, any>)[nodeId]._meta = {
+            ...((workflowApi as unknown as Record<string, any>)[nodeId]._meta || {}),
             cd_input_order: index,
+            cd_group_name: input.cd_group_name || undefined,
           };
         }
       });
@@ -620,16 +662,16 @@ export function RunWorkflowInline({
             body: JSON.stringify({
               workflow: workflow.versions[0].workflow,
               workflow_api: workflowApi,
-              comment: "Reordered inputs",
+              comment: "Updated inputs order and groups",
             }),
           },
         }),
         {
-          loadingText: "Saving input order...",
+          loadingText: "Saving changes...",
         },
       );
 
-      toast.success("Input order saved successfully");
+      toast.success("Changes saved successfully");
       queryClient.invalidateQueries({
         queryKey: ["workflow", workflowId, "versions"],
       });
@@ -638,20 +680,22 @@ export function RunWorkflowInline({
     } catch (error) {
       setIsLoading(false);
       toast.error(
-        `Failed to save input order: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Failed to save changes: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   };
 
   return (
     <div className="relative h-full">
-      <style jsx>{`
-        :global(.sortable-item-transition) {
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .sortable-item-transition {
           transition-property: transform, opacity;
           transition-duration: 0.2s;
           transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
         }
-      `}</style>
+        `
+      }} />
       {/* Edit button */}
       {canEditOrder && (
         <div className="absolute top-0 right-1 z-10 flex gap-2">
@@ -667,7 +711,7 @@ export function RunWorkflowInline({
                 Cancel
               </Button>
               <Button
-                onClick={saveReordering}
+                onClick={saveChanges}
                 variant="default"
                 size="xs"
                 className="shadow-sm backdrop-blur-sm"
@@ -700,7 +744,6 @@ export function RunWorkflowInline({
                 type="button"
                 variant="outline"
                 onClick={addGroup}
-                disabled={isEditMode}
               >
                 Add Group
               </Button>
@@ -721,76 +764,45 @@ export function RunWorkflowInline({
         scrollAreaClassName={cn("h-full", scrollAreaClassName)}
       >
         {inputs ? (
-          isEditMode ? (
-            <div className="space-y-2">
-              <Sortable
-                value={reorderedInputs.map((item, index) => ({
-                  id: item.input_id || `item-${index}`,
-                  ...item,
-                }))}
-                onValueChange={(items) => {
-                  setReorderedInputs(items);
-                }}
-                orientation="vertical"
-                overlay={(active: any) => {
-                  const activeInput = reorderedInputs.find(
-                    (input) => input.input_id === active?.id,
-                  );
-
-                  return (
-                    <div className="border rounded-md p-2 bg-card/95 backdrop-blur-sm shadow-xl transform scale-105 translate-y-[-4px] sortable-item-transition">
-                      <div className="flex items-center w-full">
-                        <div className="p-1 mr-2">
-                          <GripVertical size={16} />
-                        </div>
-                        <div className="flex-1">
-                          {activeInput && (
-                            <SDInputsRender
-                              key={activeInput.input_id}
-                              inputNode={activeInput}
-                              updateInput={() => {}}
-                              inputValue={values[activeInput.input_id || ""]}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            {isEditMode ? (
+              <SortableContext 
+                items={reorderedInputs.map(item => item.input_id || `item-${Math.random()}`)}
+                strategy={verticalListSortingStrategy}
               >
-                {reorderedInputs.map((item) => (
-                  <SortableItem
-                    key={item.input_id || `item-${Math.random()}`}
-                    value={item.input_id || `item-${Math.random()}`}
-                    className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
-                  >
-                    <div className="flex items-center w-full">
-                      <SortableDragHandle
-                        variant="ghost"
-                        className="mr-2 p-1 hover:bg-muted rounded"
-                        size="sm"
-                      >
-                        <GripVertical size={16} />
-                      </SortableDragHandle>
-                      <div className="flex-1">
-                        <SDInputsRender
-                          key={item.input_id}
-                          inputNode={item}
-                          updateInput={isEditMode ? () => {} : updateInput}
-                          inputValue={values[item.input_id || ""]}
-                        />
+                <div className="space-y-2">
+                  {reorderedInputs.map((item) => (
+                    <SortableItem
+                      key={item.input_id || `item-${Math.random()}`}
+                      value={item.input_id || `item-${Math.random()}`}
+                      className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
+                    >
+                      <div className="flex items-center w-full">
+                        <SortableDragHandle
+                          variant="ghost"
+                          className="mr-2 p-1 hover:bg-muted rounded"
+                          size="sm"
+                        >
+                          <GripVertical size={16} />
+                        </SortableDragHandle>
+                        <div className="flex-1">
+                          <SDInputsRender
+                            key={item.input_id}
+                            inputNode={item}
+                            updateInput={() => {}}
+                            inputValue={values[item.input_id || ""]}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </SortableItem>
-                ))}
-              </Sortable>
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
+                    </SortableItem>
+                  ))}
+                </div>
+              </SortableContext>
+            ) : (
               <SortableContext 
                 items={groups.map(g => g)}
                 strategy={verticalListSortingStrategy}
@@ -812,13 +824,25 @@ export function RunWorkflowInline({
                         <SortableItem 
                           key={item.input_id} 
                           value={item.input_id || ''}
+                          className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
                         >
-                          <SDInputsRender
-                            key={item.input_id}
-                            inputNode={item}
-                            updateInput={updateInput}
-                            inputValue={values[item.input_id || ""]}
-                          />
+                          <div className="flex items-center w-full">
+                            <SortableDragHandle
+                              variant="ghost"
+                              className="mr-2 p-1 hover:bg-muted rounded"
+                              size="sm"
+                            >
+                              <GripVertical size={16} />
+                            </SortableDragHandle>
+                            <div className="flex-1">
+                              <SDInputsRender
+                                key={item.input_id}
+                                inputNode={item}
+                                updateInput={updateInput}
+                                inputValue={values[item.input_id || ""]}
+                              />
+                            </div>
+                          </div>
                         </SortableItem>
                       ))}
                     </GroupContainer>
@@ -830,18 +854,30 @@ export function RunWorkflowInline({
                   <SortableItem 
                     key={item.input_id} 
                     value={item.input_id || ''}
+                    className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
                   >
-                    <SDInputsRender
-                      key={item.input_id}
-                      inputNode={item}
-                      updateInput={updateInput}
-                      inputValue={values[item.input_id || ""]}
-                    />
+                    <div className="flex items-center w-full">
+                      <SortableDragHandle
+                        variant="ghost"
+                        className="mr-2 p-1 hover:bg-muted rounded"
+                        size="sm"
+                      >
+                        <GripVertical size={16} />
+                      </SortableDragHandle>
+                      <div className="flex-1">
+                        <SDInputsRender
+                          key={item.input_id}
+                          inputNode={item}
+                          updateInput={updateInput}
+                          inputValue={values[item.input_id || ""]}
+                        />
+                      </div>
+                    </div>
                   </SortableItem>
                 ))}
               </SortableContext>
-            </DndContext>
-          )
+            )}
+          </DndContext>
         ) : (
           <div className="py-2 text-center text-muted-foreground text-sm">
             Please save a new version in ComfyUI to run this workflow.
