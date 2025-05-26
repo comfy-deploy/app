@@ -748,7 +748,7 @@ export function RunWorkflowInline({
                 Add Group
               </Button>
               <Button
-                disabled={!inputs || isEditMode}
+                disabled={!inputs}
                 type="submit"
                 className="flex-1"
                 isLoading={isLoading || loading}
