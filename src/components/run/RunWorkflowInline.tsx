@@ -33,6 +33,17 @@ import {
   SortableItem,
   SortableDragHandle,
 } from "@/components/custom/sortable";
+import { 
+  DndContext, 
+  DragEndEvent, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors 
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { GroupContainer } from "@/components/SDInputs/GroupContainer";
 import { UniqueIdentifier } from "@dnd-kit/core";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
@@ -284,15 +295,169 @@ export function RunWorkflowInline({
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [reorderedInputs, setReorderedInputs] = useState<typeof inputs>([]);
+  const [groups, setGroups] = useState<string[]>([]);
+  const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>({});
 
   const workflowId = useWorkflowIdInWorkflowPage();
   const { workflow } = useCurrentWorkflow(workflowId);
+  
+  const groupedInputs = useMemo(() => {
+    const grouped: Record<string, typeof inputs> = { root: [] };
+    
+    inputs?.forEach(item => {
+      if (!item?.input_id) return;
+      
+      const groupName = item.cd_group_name || 'root';
+      if (!grouped[groupName]) {
+        grouped[groupName] = [];
+        if (groupName !== 'root' && !groups.includes(groupName)) {
+          setGroups(prev => [...prev, groupName]);
+        }
+      }
+      grouped[groupName].push(item);
+    });
+    
+    Object.keys(grouped).forEach(group => {
+      if (grouped[group]?.length) {
+        grouped[group].sort((a, b) => {
+          const orderA = a.nodeId && workflow_api?.[a.nodeId]?._meta?.cd_input_order;
+          const orderB = b.nodeId && workflow_api?.[b.nodeId]?._meta?.cd_input_order;
+          return (orderA ?? Number.MAX_SAFE_INTEGER) - (orderB ?? Number.MAX_SAFE_INTEGER);
+        });
+      }
+    });
+    
+    return grouped;
+  }, [inputs, groups, workflow_api]);
 
   useEffect(() => {
     if (isEditMode && inputs) {
       setReorderedInputs([...inputs]);
     }
   }, [isEditMode, inputs]);
+  
+  const addGroup = () => {
+    const groupName = `Group ${groups.length + 1}`;
+    setGroups(prev => [...prev, groupName]);
+    setGroupExpanded(prev => ({ ...prev, [groupName]: true }));
+  };
+  
+  const deleteGroup = (groupName: string) => {
+    setGroups(prev => prev.filter(g => g !== groupName));
+    
+    setGroupExpanded(prev => {
+      const { [groupName]: _, ...rest } = prev;
+      return rest;
+    });
+    
+    if (workflow_api && workflowId) {
+    }
+  };
+  
+  const updateInputGroup = (inputId: string, groupName: string) => {
+    if (!workflow_api || !workflowId) return;
+    
+    const inputToUpdate = inputs?.find(input => input.input_id === inputId);
+    if (!inputToUpdate || !inputToUpdate.nodeId) return;
+    
+    const workflowApiClone = { ...workflow_api };
+    
+    if (workflowApiClone[inputToUpdate.nodeId]) {
+      if (!workflowApiClone[inputToUpdate.nodeId]._meta) {
+        workflowApiClone[inputToUpdate.nodeId]._meta = {};
+      }
+      
+      workflowApiClone[inputToUpdate.nodeId]._meta.cd_group_name = groupName;
+      
+      setIsLoading(true);
+      callServerPromise(
+        api({
+          url: `workflow/${workflowId}/version`,
+          init: {
+            method: "POST",
+            body: JSON.stringify({
+              workflow: workflow?.versions[0].workflow,
+              workflow_api: workflowApiClone,
+              comment: `Updated input group: ${inputId} to ${groupName}`,
+            }),
+          },
+        }),
+        {
+          loadingText: "Updating input group...",
+        },
+      ).then(() => {
+        toast.success("Input group updated successfully");
+        queryClient.invalidateQueries({
+          queryKey: ["workflow", workflowId, "versions"],
+        });
+        setIsLoading(false);
+      }).catch((error) => {
+        setIsLoading(false);
+        toast.error(
+          `Failed to update input group: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+      });
+    }
+  };
+
+  const toggleGroupExpanded = (groupName: string, expanded: boolean) => {
+    setGroupExpanded(prev => ({ ...prev, [groupName]: expanded }));
+  };
+  
+  const itemTypes = useMemo(() => {
+    const types: Record<string, 'group' | 'input'> = {};
+    
+    groups.forEach(group => {
+      types[group] = 'group';
+    });
+    
+    inputs?.forEach(input => {
+      if (input.input_id) {
+        types[input.input_id] = 'input';
+      }
+    });
+    
+    return types;
+  }, [groups, inputs]);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+  
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    const activeType = itemTypes[activeId];
+    const overType = itemTypes[overId];
+    
+    if (activeType === 'input' && overType === 'group') {
+      updateInputGroup(activeId, overId);
+      return;
+    }
+    
+    if (activeType === 'group' && overType === 'group') {
+      setGroups(prev => {
+        const oldIndex = prev.indexOf(activeId);
+        const newIndex = prev.indexOf(overId);
+        
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        
+        const newGroups = [...prev];
+        newGroups.splice(oldIndex, 1);
+        newGroups.splice(newIndex, 0, activeId);
+        return newGroups;
+      });
+    }
+  };
 
   const user = useAuth();
   const clerk = useClerk();
@@ -530,17 +695,27 @@ export function RunWorkflowInline({
         onSubmit={onSubmit}
         actionArea={
           !hideRunButton && (
-            <Button
-              disabled={!inputs || isEditMode}
-              type="submit"
-              className="w-full"
-              isLoading={isLoading || loading}
-              variant="expandIcon"
-              iconPlacement="right"
-              Icon={Play}
-            >
-              Run
-            </Button>
+            <div className="flex gap-2 w-full">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addGroup}
+                disabled={isEditMode}
+              >
+                Add Group
+              </Button>
+              <Button
+                disabled={!inputs || isEditMode}
+                type="submit"
+                className="flex-1"
+                isLoading={isLoading || loading}
+                variant="expandIcon"
+                iconPlacement="right"
+                Icon={Play}
+              >
+                Run
+              </Button>
+            </div>
           )
         }
         scrollAreaClassName={cn("h-full", scrollAreaClassName)}
@@ -557,7 +732,7 @@ export function RunWorkflowInline({
                   setReorderedInputs(items);
                 }}
                 orientation="vertical"
-                overlay={(active) => {
+                overlay={(active: any) => {
                   const activeInput = reorderedInputs.find(
                     (input) => input.input_id === active?.id,
                   );
@@ -611,19 +786,61 @@ export function RunWorkflowInline({
               </Sortable>
             </div>
           ) : (
-            inputs.map((item) => {
-              if (!item?.input_id) {
-                return;
-              }
-              return (
-                <SDInputsRender
-                  key={item.input_id}
-                  inputNode={item}
-                  updateInput={updateInput}
-                  inputValue={values[item.input_id]}
-                />
-              );
-            })
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={groups.map(g => g)}
+                strategy={verticalListSortingStrategy}
+              >
+                {/* Render grouped inputs */}
+                {groups.map(groupName => (
+                  <SortableItem 
+                    key={groupName} 
+                    value={groupName}
+                    className="mb-4"
+                  >
+                    <GroupContainer
+                      groupName={groupName}
+                      onDelete={deleteGroup}
+                      isExpanded={groupExpanded[groupName] ?? true}
+                      onToggleExpanded={(expanded) => toggleGroupExpanded(groupName, expanded)}
+                    >
+                      {groupedInputs[groupName]?.map((item) => (
+                        <SortableItem 
+                          key={item.input_id} 
+                          value={item.input_id || ''}
+                        >
+                          <SDInputsRender
+                            key={item.input_id}
+                            inputNode={item}
+                            updateInput={updateInput}
+                            inputValue={values[item.input_id || ""]}
+                          />
+                        </SortableItem>
+                      ))}
+                    </GroupContainer>
+                  </SortableItem>
+                ))}
+                
+                {/* Render ungrouped inputs */}
+                {groupedInputs.root?.map((item) => (
+                  <SortableItem 
+                    key={item.input_id} 
+                    value={item.input_id || ''}
+                  >
+                    <SDInputsRender
+                      key={item.input_id}
+                      inputNode={item}
+                      updateInput={updateInput}
+                      inputValue={values[item.input_id || ""]}
+                    />
+                  </SortableItem>
+                ))}
+              </SortableContext>
+            </DndContext>
           )
         ) : (
           <div className="py-2 text-center text-muted-foreground text-sm">

@@ -16,6 +16,7 @@ export const WorkflowInputType = z.object({
   description: z.string().optional(),
   enum_values: z.array(z.string()).optional(),
   nodeId: z.string().optional(), // Add nodeId for reference when saving order
+  cd_group_name: z.string().optional(), // Add group name for grouping inputs
 });
 
 export const WorkflowInputsType = z.array(WorkflowInputType);
