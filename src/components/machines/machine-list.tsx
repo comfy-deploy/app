@@ -39,7 +39,13 @@ import { useCallback, useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Machine {
   id: string;
@@ -98,6 +104,13 @@ export function MachineList() {
     return query.data?.pages.flat() || [];
   }, [query.data]);
 
+  // Calculate checkbox state
+  const totalMachines = query.data?.pages[0]?.length || 0;
+  const isAllSelected =
+    totalMachines > 0 && selectedMachines.size === totalMachines;
+  const isPartiallySelected =
+    selectedMachines.size > 0 && selectedMachines.size < totalMachines;
+
   return (
     <div className="mx-auto h-[calc(100vh-100px)] max-h-full w-full p-4">
       <div className="mb-4 flex items-start justify-between gap-4">
@@ -114,34 +127,110 @@ export function MachineList() {
             </kbd>
           </div>
 
-          {query.data?.pages[0].length > 0 && (
+          {query.data?.pages[0] && query.data.pages[0].length > 0 && (
             <div className="flex items-center gap-2">
-              <Checkbox
-                id="select-all"
-                checked={
-                  query.data?.pages[0].length > 0 &&
-                  selectedMachines.size === query.data?.pages[0].length
-                }
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    const allMachineIds = new Set<string>();
-                    query.data?.pages.forEach((page) => {
-                      page.forEach((machine: Machine) => {
-                        allMachineIds.add(machine.id);
-                      });
-                    });
-                    setSelectedMachines(allMachineIds);
-                  } else {
-                    setSelectedMachines(new Set());
-                  }
-                }}
-              />
-              <label
-                htmlFor="select-all"
-                className="text-sm font-medium cursor-pointer select-none"
-              >
-                Select All
-              </label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.div
+                      layout
+                      className="group flex w-fit items-center gap-2 rounded-full border bg-white/80 px-4 py-2 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
+                      transition={{
+                        layout: {
+                          duration: 0.15,
+                          ease: "easeOut",
+                        },
+                      }}
+                    >
+                      <Checkbox
+                        id="select-all"
+                        checked={
+                          isAllSelected
+                            ? true
+                            : isPartiallySelected
+                              ? "indeterminate"
+                              : false
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            const allMachineIds = new Set<string>();
+                            for (const page of query.data?.pages || []) {
+                              for (const machine of page) {
+                                allMachineIds.add(machine.id);
+                              }
+                            }
+                            setSelectedMachines(allMachineIds);
+                          } else {
+                            setSelectedMachines(new Set());
+                          }
+                        }}
+                        className="data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary"
+                      />
+                      <label
+                        htmlFor="select-all"
+                        className="cursor-pointer select-none text-muted-foreground text-xs font-medium whitespace-nowrap group-hover:text-gray-900"
+                      >
+                        Select All
+                      </label>
+                      <AnimatePresence>
+                        {selectedMachines.size > 0 && (
+                          <>
+                            {/* <div className="mx-2 h-4 w-[1px] bg-gray-300" /> */}
+                            <motion.span
+                              initial={{ opacity: 0, width: 0 }}
+                              animate={{ opacity: 1, width: "auto" }}
+                              exit={{ opacity: 0, width: 0 }}
+                              className="text-gray-500 text-xs font-medium whitespace-nowrap"
+                              transition={{ duration: 0.15 }}
+                            >
+                              {selectedMachines.size} of {totalMachines}
+                            </motion.span>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {isAllSelected
+                        ? "Click to deselect all machines"
+                        : isPartiallySelected
+                          ? "Click to select all machines"
+                          : "Select all machines to perform bulk actions"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <AnimatePresence>
+                {selectedMachines.size > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2"
+                    transition={{ duration: 0.15 }}
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex h-auto items-center gap-1.5 rounded-full px-3 py-1.5"
+                      onClick={() => setBulkUpgradeDialogOpen(true)}
+                    >
+                      <RefreshCcw className="h-3.5 w-3.5" />
+                      <span className="text-xs">Bulk Update</span>
+                    </Button>
+                    {/* <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto rounded-full px-3 py-1.5 text-xs"
+                      onClick={() => setSelectedMachines(new Set())}
+                    >
+                      Clear
+                    </Button> */}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
@@ -236,8 +325,8 @@ export function MachineList() {
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-semibold">No machines found</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="font-semibold text-lg">No machines found</h3>
+                  <p className="text-muted-foreground text-sm">
                     Get started by creating your first machine
                   </p>
                 </>
@@ -423,34 +512,6 @@ export function MachineList() {
           python_version: "3.11",
         }}
       />
-
-      {/* Floating action bar for bulk operations */}
-      {selectedMachines.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform">
-          <div className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 shadow-lg">
-            <span className="text-primary-foreground">
-              {selectedMachines.size} machine
-              {selectedMachines.size > 1 ? "s" : ""} selected
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={() => setBulkUpgradeDialogOpen(true)}
-            >
-              <RefreshCcw className="h-4 w-4" />
-              Bulk Upgrade
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setSelectedMachines(new Set())}
-            >
-              Clear Selection
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Bulk update dialog */}
       <BulkUpdateDialog

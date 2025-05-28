@@ -259,7 +259,7 @@ export function BulkUpdateDialog({
     <AlertDialog open={open} onOpenChange={handleClose}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle>Bulk Update Custom Nodes</AlertDialogTitle>
+          <AlertDialogTitle>Bulk Update ComfyDeploy Plugin</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
             {isLoading ? (
               <div className="flex items-center justify-center py-4">
