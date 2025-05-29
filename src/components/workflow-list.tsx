@@ -67,6 +67,7 @@ import { toast } from "sonner";
 import { useWorkflowList } from "../hooks/use-workflow-list";
 import { UserIcon } from "./run/SharePageComponent";
 import { FileURLRender } from "./workflows/OutputRender";
+import { WorkflowLatestOutput } from "./workflows/WorkflowLatestOutput";
 import { UserFilterSelect } from "./user-filter-select";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 
@@ -454,9 +455,11 @@ function WorkflowCard({
           <>
             <Card className="group relative flex aspect-square w-full flex-col overflow-hidden rounded-md transition-all duration-300 ease-in-out hover:shadow-lg">
               <div className="h-full w-full">
-                {workflow.cover_image || latest_output?.images?.[0]?.url ? (
+                {workflow.cover_image || latest_output?.images?.[0]?.url || 
+                  (latest_output?.files && latest_output.files.some((f: any) => f.filename?.endsWith('.mp4') || f.filename?.endsWith('.webm'))) ? (
                   <FileURLRender
-                    url={workflow.cover_image ?? latest_output.images[0].url}
+                    url={workflow.cover_image ?? latest_output?.images?.[0]?.url ?? 
+                      latest_output.files.find((f: any) => f.filename?.endsWith('.mp4') || f.filename?.endsWith('.webm'))?.url}
                     imgClasses="w-full h-full max-w-full max-h-full rounded-[8px] object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
                   />
                 ) : (
@@ -588,9 +591,11 @@ function WorkflowCard({
             <div className="flex items-center gap-4 w-full">
               {/* Thumbnail with better sizing and shadows */}
               <div className="w-14 h-14 shrink-0 rounded-md overflow-hidden shadow-sm">
-                {workflow.cover_image || latest_output?.images?.[0]?.url ? (
+                {workflow.cover_image || latest_output?.images?.[0]?.url || 
+                  (latest_output?.files && latest_output.files.some((f: any) => f.filename?.endsWith('.mp4') || f.filename?.endsWith('.webm'))) ? (
                   <FileURLRender
-                    url={workflow.cover_image ?? latest_output.images[0].url}
+                    url={workflow.cover_image ?? latest_output?.images?.[0]?.url ?? 
+                      latest_output.files.find((f: any) => f.filename?.endsWith('.mp4') || f.filename?.endsWith('.webm'))?.url}
                     imgClasses="w-full h-full object-cover"
                   />
                 ) : (
