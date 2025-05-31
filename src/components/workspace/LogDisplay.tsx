@@ -33,6 +33,7 @@ import { useLog } from "./LogContext";
 import type { LogEntry, LogType } from "./LogContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { cn } from "@/lib/utils";
 
 function getColor(logType: LogType) {
   const styles = {
@@ -122,6 +123,8 @@ const LogEntryView = ({
 export function LogDisplay(props: {
   control?: boolean;
   newInterface?: boolean;
+  className?: string;
+  containerClassName?: string;
 }) {
   const state = useLog();
 
@@ -218,7 +221,7 @@ export function LogDisplay(props: {
   );
 
   return (
-    <div className="w-[540px]">
+    <div className={cn("w-[540px]", props.className)}>
       {props.control && (
         <div className="flex justify-between pb-2">
           <div className={"flex gap-2"}>
@@ -286,11 +289,12 @@ export function LogDisplay(props: {
       <AnimatePresence>
         <ScrollArea
           ref={scrollAreaRef}
-          className={
+          className={cn(
             props.newInterface
               ? "group relative h-[200px] bg-transparent p-4 font-mono text-gray-400 text-xs transition-all duration-300 hover:h-[440px]"
-              : "h-[440px] rounded-md bg-black p-4 font-mono text-gray-400 text-xs transition-all duration-300"
-          }
+              : "h-[440px] rounded-md bg-black p-4 font-mono text-gray-400 text-xs transition-all duration-300",
+            props.containerClassName,
+          )}
         >
           {filteredLogs.length > 0 ? (
             <div
@@ -331,8 +335,12 @@ export function LogDisplay(props: {
           ) : (
             <p>No logs available.</p>
           )}
-          <div className="pointer-events-none absolute top-0 right-0 left-0 h-28 bg-gradient-to-t from-transparent to-[#141414] opacity-100 transition-opacity duration-300 group-hover:opacity-0" />
-          <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-28 bg-gradient-to-b from-transparent to-[#141414] opacity-100 transition-opacity duration-300 group-hover:opacity-0" />
+          {props.newInterface && (
+            <>
+              <div className="pointer-events-none absolute top-0 right-0 left-0 h-28 bg-gradient-to-t from-transparent to-[#141414] opacity-100 transition-opacity duration-300 group-hover:opacity-0" />
+              <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-28 bg-gradient-to-b from-transparent to-[#141414] opacity-100 transition-opacity duration-300 group-hover:opacity-0" />
+            </>
+          )}
         </ScrollArea>
       </AnimatePresence>
     </div>

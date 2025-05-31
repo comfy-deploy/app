@@ -28,6 +28,8 @@ export interface AddModelRequest {
     url: string;
   };
   downloadLink?: string;
+  isTemporaryUpload?: boolean;
+  s3ObjectKey?: string;
   local?: {
     originalFilename: string;
   };

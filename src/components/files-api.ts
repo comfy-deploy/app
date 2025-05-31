@@ -18,6 +18,20 @@ export async function uploadFile(file: File) {
   return response;
 }
 
+export async function generateUploadUrl(filename: string, contentType: string, size: number) {
+  return await api({
+    url: "volume/file/generate-upload-url",
+    init: {
+      method: "POST",
+      body: JSON.stringify({
+        filename,
+        contentType,
+        size
+      }),
+    },
+  });
+}
+
 export async function uploadFileToVolume({
   volumeName,
   file,

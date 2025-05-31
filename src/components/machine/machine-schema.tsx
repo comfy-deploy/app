@@ -84,7 +84,10 @@ export const serverlessFormSchema = z.object({
               const urlObj = new URL(url);
               if (urlObj.hostname === "github.com") {
                 const [, author, repo] = urlObj.pathname.split("/");
-                const repoKey = `${author}/${repo}`;
+                const cleanRepo = repo.endsWith(".git")
+                  ? repo.slice(0, -4)
+                  : repo;
+                const repoKey = `${author}/${cleanRepo}`;
                 urlCounts.set(repoKey, (urlCounts.get(repoKey) || 0) + 1);
               } else {
                 urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
@@ -153,6 +156,10 @@ export const serverlessFormSchema = z.object({
     .default(true)
     .optional()
     .describe("Disable metadata"),
+  cpu_request: z.number().describe("CPU request").nullable().optional(),
+  cpu_limit: z.number().describe("CPU limit").nullable().optional(),
+  memory_request: z.number().describe("Memory request").nullable().optional(),
+  memory_limit: z.number().describe("Memory limit").nullable().optional(),
 });
 
 interface GPUConfig {

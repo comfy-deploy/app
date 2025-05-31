@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { ENTERPRISE_TIER } from "@/components/pricing/tiers";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ReactNode } from "react";
 import { useGPUPricing } from "@/components/pricing/GPUPriceSimulator";
@@ -67,7 +68,14 @@ const tiers: Tier[] = [
     id: "business",
     priceMonthly: "from $998",
     priceYearly: "from $9980",
-    description: "For enterprise scale",
+    description: "For growing businesses",
+  },
+  {
+    name: "Enterprise",
+    id: "large_enterprise",
+    priceMonthly: "Custom",
+    priceYearly: "Custom",
+    description: "SSO + custom integration",
   },
 ];
 
@@ -211,14 +219,40 @@ function PricingTier({
   plans,
   className,
   isYearly,
+  showCreatorTier = true,
+  showDeploymentTier = true,
 }: {
   tier: Tier;
   isLoading: boolean;
   plans: string[];
   className?: string;
   isYearly: boolean;
+  showCreatorTier?: boolean;
+  showDeploymentTier?: boolean;
 }) {
   const getAvailableFeatures = (tierName: string) => {
+    if (tierName === "Business" && (!showCreatorTier || !showDeploymentTier)) {
+      return sections[0].features.filter((feature) => {
+        const value = feature.tiers[tierName as keyof TierFeature];
+        if (
+          (typeof value === "boolean" && value) ||
+          (value !== undefined && value !== null)
+        ) {
+          return true;
+        }
+
+        if (!showCreatorTier && feature.tiers.Creator) {
+          return true;
+        }
+
+        if (!showDeploymentTier && feature.tiers.Deployment) {
+          return true;
+        }
+
+        return false;
+      });
+    }
+
     return sections[0].features.filter((feature) => {
       const value = feature.tiers[tierName as keyof TierFeature];
       if (typeof value === "boolean") return value;
@@ -229,13 +263,22 @@ function PricingTier({
   const renderIncludesMessage = () => {
     if (tier.name === "Free") return null;
     if (tier.name === "Creator") return "Includes everything in Free";
-    if (tier.name === "Deployment") return "Includes everything in Creator";
-    if (tier.name === "Business") return "Includes everything in Deployment";
+    if (tier.name === "Deployment") {
+      return showCreatorTier
+        ? "Includes everything in Creator"
+        : "Includes everything in Free";
+    }
+    if (tier.name === "Business") {
+      if (showDeploymentTier) return "Includes everything in Deployment";
+      if (showCreatorTier) return "Includes everything in Creator";
+      return "Includes everything in Free";
+    }
     return null;
   };
 
   const getMonthlyPrice = (price: string) => {
     if (price === "Free") return "Free";
+    if (price === "Custom") return "Custom"; // Handle Custom price for Enterprise tier
     if (price.includes("from")) {
       if (!isYearly) return price;
       const amount = Number.parseInt(price.replace(/\D/g, ""));
@@ -248,6 +291,7 @@ function PricingTier({
 
   const getYearlyTotal = (price: string) => {
     if (price === "Free") return "Free";
+    if (price === "Custom") return "Custom"; // Handle Custom price for Enterprise tier
     if (price.includes("from")) {
       const amount = Number.parseInt(price.replace(/\D/g, ""));
       return `from $${amount * 10}`;
@@ -260,7 +304,7 @@ function PricingTier({
   const { data: _sub } = useCurrentPlanWithStatus();
 
   // Check if this tier is the user's current plan
-  const isCurrentPlan = _sub?.plans?.plans?.some((plan) =>
+  const isCurrentPlan = _sub?.plans?.plans?.some((plan: string) =>
     plan.startsWith(tier.id),
   );
 
@@ -334,7 +378,7 @@ function PricingTier({
           <ul className="mt-4 space-y-1.5 text-xs">
             {/* Include message for higher tiers */}
             {renderIncludesMessage() && (
-              <li className="flex items-start">
+              <li className="flex items-center">
                 <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
                 <span className="ml-2 font-medium text-gray-900">
                   {renderIncludesMessage()}
@@ -344,7 +388,7 @@ function PricingTier({
 
             {/* Show only available features */}
             {tier.name === "Free" ? (
-              <li className="flex items-start">
+              <li className="flex items-center">
                 <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
                 <span className="ml-2 text-gray-600">
                   Run public workflow{" "}
@@ -364,10 +408,40 @@ function PricingTier({
                     tier.name === "Creator"
                       ? feature.tiers.Basic
                       : tier.name === "Deployment"
-                        ? feature.tiers.Creator
+                        ? showCreatorTier
+                          ? feature.tiers.Creator
+                          : feature.tiers.Basic
                         : tier.name === "Business"
-                          ? feature.tiers.Deployment
+                          ? showDeploymentTier
+                            ? feature.tiers.Deployment
+                            : showCreatorTier
+                              ? feature.tiers.Creator
+                              : feature.tiers.Basic
                           : null;
+
+                  if (tier.name === "Business") {
+                    if (
+                      !showDeploymentTier &&
+                      feature.tiers.Deployment &&
+                      JSON.stringify(feature.tiers.Deployment) !==
+                        JSON.stringify(value) &&
+                      JSON.stringify(feature.tiers.Deployment) !==
+                        JSON.stringify(prevTierValue)
+                    ) {
+                      return true;
+                    }
+
+                    if (
+                      !showCreatorTier &&
+                      feature.tiers.Creator &&
+                      JSON.stringify(feature.tiers.Creator) !==
+                        JSON.stringify(value) &&
+                      JSON.stringify(feature.tiers.Creator) !==
+                        JSON.stringify(prevTierValue)
+                    ) {
+                      return true;
+                    }
+                  }
 
                   return (
                     JSON.stringify(value) !== JSON.stringify(prevTierValue)
@@ -376,7 +450,7 @@ function PricingTier({
                 .map((feature) => {
                   const value = feature.tiers[tier.name as keyof TierFeature];
                   return (
-                    <li key={feature.name} className="flex items-start">
+                    <li key={feature.name} className="flex items-center">
                       <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
                       <span className="ml-2 text-gray-600">
                         {feature.name}
@@ -419,6 +493,19 @@ function PricingTier({
                 <Button
                   asChild
                   className="border-b-0 border-t border-x-0 hover:bg-purple-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
+                  variant="outline"
+                >
+                  <Link to="/onboarding-call" target="_blank">
+                    Call with us
+                    <ExternalLink className="h-4 ml-2 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            ) : tier.name === "Enterprise" ? (
+              <div className="grid grid-cols-1 gap-px">
+                <Button
+                  asChild
+                  className="border-b-0 border-t border-x-0 hover:bg-indigo-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
                   variant="outline"
                 >
                   <Link to="/onboarding-call" target="_blank">
@@ -565,16 +652,48 @@ function GPUPricingTable() {
 }
 
 function RouteComponent() {
+  return <PricingPage />;
+}
+
+export function PricingPage() {
   const { data: _sub, isLoading } = useCurrentPlanWithStatus();
   const [isYearly, setIsYearly] = useState(false);
 
-  // console.log(_sub);
+  // Determine user's current plan
+  const userPlans = _sub?.plans?.plans || [];
+  const isOnCreatorPlan = userPlans.some((plan: string) =>
+    plan.startsWith("creator"),
+  );
+  const isOnDeploymentPlan = userPlans.some((plan: string) =>
+    plan.startsWith("deployment"),
+  );
+  const isOnBusinessPlan = userPlans.some((plan: string) =>
+    plan.startsWith("business"),
+  );
+
+  const filteredTiers = tiers.filter((tier) => {
+    if (tier.id === "free") return true;
+
+    if (tier.id === "business") return true;
+
+    if (tier.id === "large_enterprise") return true;
+
+    if (tier.id === "creator" || tier.id === "deployment") {
+      if (isOnCreatorPlan || isOnDeploymentPlan) return true;
+
+      if (userPlans.length === 0 || isOnBusinessPlan) return false;
+
+      return true;
+    }
+
+    return true;
+  });
 
   const isCancelled = _sub?.sub?.cancel_at_period_end;
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto pb-20">
+      <div className="px-4 mx-auto pb-20">
         {/* Header */}
         <div className="mx-auto max-w-5xl py-12">
           <h1 className="font-bold sm:text-5xl text-4xl text-gray-900 tracking-tight">
@@ -692,42 +811,119 @@ function RouteComponent() {
             {/* Free Tier */}
             <div className="relative z-10">
               <div>
-                <PricingTier
-                  tier={tiers[0]}
-                  isLoading={isLoading}
-                  plans={_sub?.plans?.plans ?? []}
-                  className="rounded-t-sm border bg-gradient-to-bl from-gray-50/10 via-gray-50/80 to-gray-100"
-                  isYearly={isYearly}
-                />
+                {filteredTiers.find((tier) => tier.id === "free") && (
+                  <PricingTier
+                    tier={filteredTiers.find((tier) => tier.id === "free")!}
+                    isLoading={isLoading}
+                    plans={_sub?.plans?.plans ?? []}
+                    className="rounded-t-sm border bg-gradient-to-bl from-gray-50/10 via-gray-50/80 to-gray-100"
+                    isYearly={isYearly}
+                    showCreatorTier={filteredTiers.some(
+                      (tier) => tier.id === "creator",
+                    )}
+                    showDeploymentTier={filteredTiers.some(
+                      (tier) => tier.id === "deployment",
+                    )}
+                  />
+                )}
               </div>
 
               {/* Creator and Deployment Tiers */}
-              <div className="grid grid-cols-1 border border-gray-200 border-t-0 lg:grid-cols-2">
-                <PricingTier
-                  tier={tiers[1]}
-                  isLoading={isLoading}
-                  plans={_sub?.plans?.plans ?? []}
-                  className="bg-gradient-to-bl from-amber-50/10 via-amber-50/80 to-amber-100 lg:border-r"
-                  isYearly={isYearly}
-                />
-                <PricingTier
-                  tier={tiers[2]}
-                  isLoading={isLoading}
-                  plans={_sub?.plans?.plans ?? []}
-                  className="bg-gradient-to-bl from-blue-50/10 via-blue-50/80 to-blue-100"
-                  isYearly={isYearly}
-                />
-              </div>
+              {(filteredTiers.some((tier) => tier.id === "creator") ||
+                filteredTiers.some((tier) => tier.id === "deployment")) && (
+                <div
+                  className={cn(
+                    "grid border border-gray-200 border-t-0",
+                    filteredTiers.some((tier) => tier.id === "creator") &&
+                      filteredTiers.some((tier) => tier.id === "deployment")
+                      ? "grid-cols-1 lg:grid-cols-2"
+                      : "grid-cols-1",
+                  )}
+                >
+                  {filteredTiers.find((tier) => tier.id === "creator") && (
+                    <PricingTier
+                      tier={
+                        filteredTiers.find((tier) => tier.id === "creator")!
+                      }
+                      isLoading={isLoading}
+                      plans={_sub?.plans?.plans ?? []}
+                      className={cn(
+                        "bg-gradient-to-bl from-amber-50/10 via-amber-50/80 to-amber-100",
+                        filteredTiers.some((tier) => tier.id === "deployment")
+                          ? "lg:border-r"
+                          : "",
+                      )}
+                      isYearly={isYearly}
+                      showCreatorTier={filteredTiers.some(
+                        (tier) => tier.id === "creator",
+                      )}
+                      showDeploymentTier={filteredTiers.some(
+                        (tier) => tier.id === "deployment",
+                      )}
+                    />
+                  )}
+                  {filteredTiers.find((tier) => tier.id === "deployment") && (
+                    <PricingTier
+                      tier={
+                        filteredTiers.find((tier) => tier.id === "deployment")!
+                      }
+                      isLoading={isLoading}
+                      plans={_sub?.plans?.plans ?? []}
+                      className="bg-gradient-to-bl from-blue-50/10 via-blue-50/80 to-blue-100"
+                      isYearly={isYearly}
+                      showCreatorTier={filteredTiers.some(
+                        (tier) => tier.id === "creator",
+                      )}
+                      showDeploymentTier={filteredTiers.some(
+                        (tier) => tier.id === "deployment",
+                      )}
+                    />
+                  )}
+                </div>
+              )}
 
               {/* Business Tier */}
               <div>
-                <PricingTier
-                  tier={tiers[3]}
-                  isLoading={isLoading}
-                  plans={_sub?.plans?.plans ?? []}
-                  className="overflow-hidden rounded-b-sm border border-t-0 bg-gradient-to-bl from-purple-50/10 via-purple-50/80 to-purple-100"
-                  isYearly={isYearly}
-                />
+                {filteredTiers.find((tier) => tier.id === "business") && (
+                  <PricingTier
+                    tier={filteredTiers.find((tier) => tier.id === "business")!}
+                    isLoading={isLoading}
+                    plans={_sub?.plans?.plans ?? []}
+                    className="border border-t-0 bg-gradient-to-bl from-purple-50/10 via-purple-50/80 to-purple-100"
+                    isYearly={isYearly}
+                    showCreatorTier={filteredTiers.some(
+                      (tier) => tier.id === "creator",
+                    )}
+                    showDeploymentTier={filteredTiers.some(
+                      (tier) => tier.id === "deployment",
+                    )}
+                  />
+                )}
+              </div>
+
+              {/* Enterprise Tier */}
+              <div>
+                {filteredTiers.find(
+                  (tier) => tier.id === "large_enterprise",
+                ) && (
+                  <PricingTier
+                    tier={
+                      filteredTiers.find(
+                        (tier) => tier.id === "large_enterprise",
+                      )!
+                    }
+                    isLoading={isLoading}
+                    plans={_sub?.plans?.plans ?? []}
+                    className="overflow-hidden rounded-b-sm border border-t-0 bg-gradient-to-bl from-indigo-50/10 via-indigo-50/80 to-indigo-100"
+                    isYearly={isYearly}
+                    showCreatorTier={filteredTiers.some(
+                      (tier) => tier.id === "creator",
+                    )}
+                    showDeploymentTier={filteredTiers.some(
+                      (tier) => tier.id === "deployment",
+                    )}
+                  />
+                )}
               </div>
             </div>
 

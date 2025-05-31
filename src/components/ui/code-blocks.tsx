@@ -9,6 +9,7 @@ import { Skeleton } from "./skeleton";
 
 import type { HighlighterCore, StringLiteralUnion } from "shiki/core";
 import { useTheme } from "../theme-provider";
+import { cn } from "@/lib/utils";
 
 async function getHighlighter() {
   const [
@@ -96,6 +97,7 @@ export function CodeBlock(props: {
   lang: StringLiteralUnion<string>;
   className?: string;
   hideCopy?: boolean;
+  scrollAreaClassName?: string;
 }) {
   const [_highlighter, setHighlighter] = React.useState<
     HighlighterCore | undefined
@@ -138,7 +140,12 @@ export function CodeBlock(props: {
   const skeletonHeight = codeLines * 1.5 + 2; // Adjust the multiplier based on your design needs
 
   return (
-    <ScrollArea className="group relative w-full rounded-lg text-sm transition-height">
+    <ScrollArea
+      className={cn(
+        "group relative w-full rounded-lg text-sm transition-height",
+        props.scrollAreaClassName,
+      )}
+    >
       {!code && (
         <Skeleton
           className="w-full"

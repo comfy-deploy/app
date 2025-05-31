@@ -730,7 +730,7 @@ export function SecretsSelector({ machine }: { machine: any }) {
                 <Label htmlFor="value-name">Key</Label>
                 <Input
                   id="value-name"
-                  value={newValueName}
+                  value={editValueName}
                   onChange={(e) => {
                     const newValue = e.target.value;
                     if (newValue.includes(" ")) {
@@ -738,7 +738,7 @@ export function SecretsSelector({ machine }: { machine: any }) {
                         "Please don't use space while adding keys, add underscore instead.",
                       );
                     } else {
-                      setNewValueName(newValue);
+                      setEditValueName(newValue);
                     }
                   }}
                   placeholder="OPENAI_API_KEY"

@@ -1,4 +1,4 @@
-import { AssetBrowser } from "@/components/asset-browser";
+import { AssetBrowser, SearchAssetsInputBox } from "@/components/asset-browser";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,26 +30,35 @@ export function AssetsPage() {
   const { currentPath } = useAssetBrowserStore();
 
   const handleCreateFolder = async () => {
-    if (!newFolderName) return;
+    // Trim whitespace and validate
+    const trimmedFolderName = newFolderName.trim();
+    if (!trimmedFolderName) {
+      toast.error("Invalid folder name", {
+        description: "Folder name cannot be empty or contain only spaces",
+      });
+      return;
+    }
 
     try {
       await createFolder({
-        name: newFolderName,
+        name: trimmedFolderName,
         parent_path: currentPath,
       });
       setShowNewFolderDialog(false);
       setNewFolderName("");
       toast.success("Folder created successfully");
     } catch (e) {
-      toast.error("Error creating folder");
+      toast.error("Error creating folder", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   };
 
   return (
-    <UploadZone className="h-full w-full max-w-[1200px]">
+    <UploadZone className="h-full w-full">
       <div className="mx-auto flex h-full w-full flex-col pt-2">
         <div className="flex items-center justify-between px-4 py-2">
-          <h1 className="font-semibold text-lg">Assets</h1>
+          <SearchAssetsInputBox />
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -59,7 +68,7 @@ export function AssetsPage() {
               New Folder
             </Button>
             <UploadButton />
-            <UploadProgress className="absolute top-16 right-4" />
+            <UploadProgress className="absolute top-16 right-4 z-10" />
           </div>
         </div>
         <AssetBrowser showNewFolderButton={false} />

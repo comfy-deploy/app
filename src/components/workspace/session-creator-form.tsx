@@ -10,7 +10,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -28,11 +27,7 @@ import { useLogStore } from "@/components/workspace/LogContext";
 import { MachineSelect } from "@/components/workspace/MachineSelect";
 import { SessionTimer } from "@/components/workspace/SessionTimer";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
-import {
-  useMachine,
-  useMachineVersion,
-  useMachines,
-} from "@/hooks/use-machine";
+import { useMachine, useMachineVersion } from "@/hooks/use-machine";
 import { useSessionAPI } from "@/hooks/use-session-api";
 import { api } from "@/lib/api";
 import { useParams, useRouter } from "@tanstack/react-router";
@@ -42,15 +37,21 @@ import {
   Loader2,
   Rocket,
   RotateCw,
-  Search,
+  Save,
+  Sparkles,
   StopCircle,
 } from "lucide-react";
-import { useQueryState } from "nuqs";
+import { parseAsInteger, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useDebounce } from "use-debounce";
 import { UserIcon } from "../run/SharePageComponent";
+import { useAuthStore } from "@/lib/auth-store";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { queryClient } from "@/lib/providers";
+import { useMutation } from "@tanstack/react-query";
+import { z } from "zod";
+import { Textarea } from "../ui/textarea";
 
 interface SessionForm {
   machineId: string;
@@ -171,6 +172,10 @@ export function SessionCreatorForm({
   const { createSession: createDynamicSession } = useSessionAPI();
   const { workflow } = useCurrentWorkflow(workflowId);
   const { data: selectedMachine } = useMachine(workflow?.selected_machine_id);
+  const [currentSelectedVersion] = useQueryState("version", {
+    defaultValue: version,
+    ...parseAsInteger,
+  });
 
   const [_, setSessionId] = useQueryState("sessionId");
 
@@ -211,13 +216,14 @@ export function SessionCreatorForm({
         search: {
           isFirstTime: true,
           workflowId: workflowId,
+          version: currentSelectedVersion,
         },
       });
 
       setSessionId(response.session_id);
       onSuccess?.();
     } catch (error) {
-      toast.error("Failed to create session");
+      toast.error(`Failed to create session: ${error}`);
     }
   };
 
@@ -229,7 +235,11 @@ export function SessionCreatorForm({
   }, [selectedMachine, form]);
 
   if (selectedMachine?.type !== "comfy-deploy-serverless") {
-    return <div>Current machine does not support session</div>;
+    return (
+      <div className="flex w-full items-center justify-center text-muted-foreground text-sm">
+        <div>Current machine does not support session. </div>
+      </div>
+    );
   }
   return (
     <div className="flex w-full flex-col gap-6">
@@ -253,6 +263,13 @@ export function SessionCreatorForm({
           </Badge>
         </p>
       </div>
+
+      <DescriptionForm
+        workflowId={workflowId}
+        description={workflow?.description}
+        workflowJson={workflow?.versions[0].workflow}
+        workflowName={workflow?.name}
+      />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -354,5 +371,192 @@ export function SessionCreatorForm({
         </form>
       </Form>
     </div>
+  );
+}
+
+const descriptionSchema = z.object({
+  description: z
+    .string()
+    .refine((value) => !/^\s*$/.test(value), "Description is required"),
+});
+
+type DescriptionFormValues = z.infer<typeof descriptionSchema>;
+
+function DescriptionForm({
+  description,
+  workflowId,
+  workflowJson,
+  workflowName,
+}: {
+  description: string;
+  workflowId: string;
+  workflowJson: any;
+  workflowName: string;
+}) {
+  const [isDirty, setIsDirty] = useState(false);
+  const [initialValue, setInitialValue] = useState(description || "");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const fetchToken = useAuthStore((state) => state.fetchToken);
+
+  useEffect(() => {
+    // Set initial value when component mounts or description prop changes
+    setInitialValue(description || "");
+    descriptionForm.reset({ description: description || "" });
+  }, [description]);
+
+  const descriptionForm = useForm<DescriptionFormValues>({
+    resolver: zodResolver(descriptionSchema),
+    defaultValues: {
+      description: description || "",
+    },
+  });
+
+  const { mutate: saveDescription, isPending } = useMutation({
+    mutationFn: async (data: DescriptionFormValues) => {
+      return api({
+        url: `workflow/${workflowId}`,
+        init: {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        },
+      });
+    },
+    onSuccess: () => {
+      setIsDirty(false);
+      setInitialValue(descriptionForm.getValues().description);
+      queryClient.invalidateQueries({
+        queryKey: ["workflow", workflowId],
+      });
+      toast.success("Description saved successfully");
+    },
+    onError: () => {
+      toast.error("Failed to save description");
+    },
+  });
+
+  // Watch for changes in the description field
+  useEffect(() => {
+    const subscription = descriptionForm.watch((value) => {
+      // Show buttons if there are any changes, even if the new value is empty
+      setIsDirty(value.description !== initialValue);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [descriptionForm, initialValue]);
+
+  const onSubmit = (data: DescriptionFormValues) => {
+    saveDescription(data);
+  };
+
+  const handleDiscard = () => {
+    descriptionForm.reset({ description: initialValue });
+  };
+
+  return (
+    <Form {...descriptionForm}>
+      <form
+        onSubmit={descriptionForm.handleSubmit(onSubmit)}
+        className="flex flex-col gap-3"
+      >
+        <p className="font-medium text-sm">Description</p>
+        <FormField
+          control={descriptionForm.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <div className="group relative">
+                  <Textarea
+                    {...field}
+                    className="-m-2 h-28 border-none text-muted-foreground focus-visible:bg-zinc-100/40 focus-visible:text-black focus-visible:ring-transparent"
+                    placeholder="Describe your workflow"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      // This ensures the dirty state updates immediately on change
+                      setIsDirty(e.target.value !== initialValue);
+                    }}
+                  />
+                  <Button
+                    variant="gooeyRight"
+                    size="icon"
+                    hideLoading
+                    disabled={isGenerating}
+                    type="button"
+                    className="absolute right-4 bottom-2 opacity-0 transition-opacity group-hover:opacity-80"
+                    onClick={async () => {
+                      const token = await fetchToken();
+
+                      try {
+                        setIsGenerating(true);
+                        const apiUrl =
+                          "https://comfy-deploy--master-comfy-fastapi-app.modal.run/v1/workflow/description";
+                        const response = await fetch(apiUrl, {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({
+                            workflow: workflowJson,
+                            workflow_name: workflowName,
+                          }),
+                        });
+
+                        const data = await response.json();
+
+                        if (data?.message) {
+                          // Set value and trigger validation in one step
+                          descriptionForm.setValue(
+                            "description",
+                            data.message,
+                            {
+                              shouldValidate: true,
+                            },
+                          );
+                          setIsDirty(true);
+                        }
+                      } catch (error) {
+                        toast.error("Failed to generate description");
+                        console.error(error);
+                      } finally {
+                        setIsGenerating(false);
+                      }
+                    }}
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )}
+        />
+        {isDirty && (
+          <div className="mt-2 flex flex-row justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDiscard}
+              type="button"
+            >
+              Discard
+            </Button>
+            <Button
+              size="sm"
+              type="submit"
+              isLoading={isPending}
+              disabled={!descriptionForm.formState.isValid}
+            >
+              Save
+              <Save className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </form>
+    </Form>
   );
 }

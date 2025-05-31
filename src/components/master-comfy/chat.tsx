@@ -463,7 +463,7 @@ export function Chat() {
                     >
                       <Eye className="h-4 w-4" />
                       <TextShimmer
-                        className="[--base-color:theme(colors.gray.600)] [--base-gradient-color:theme(colors.gray.200)] dark:[--base-color:theme(colors.sgray.700)] dark:[--base-gradient-color:theme(colors.gray.400)]"
+                        className="[--base-color:theme(colors.gray.600)] [--base-gradient-color:theme(colors.gray.200)] dark:[--base-color:theme(colors.gray.700)] dark:[--base-gradient-color:theme(colors.gray.400)]"
                         duration={1}
                       >
                         {currentTool}

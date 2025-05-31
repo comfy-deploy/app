@@ -46,7 +46,7 @@ export function DialogTemplate(props: DialogTemplateProps) {
           }}
         >
           {props.children && <div className="pb-2">{props.children}</div>}
-          <div className="flex justify-end w-full gap-2">
+          <div className="flex w-full justify-end gap-2">
             <Button
               className="w-fit"
               variant={"outline"}

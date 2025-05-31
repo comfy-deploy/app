@@ -1,8 +1,8 @@
+import { SDAudioInput } from "@/components/SDInputs/SDAudioInput";
 import { SDImageInput } from "@/components/SDInputs/SDImageInput";
 import { SDInput } from "@/components/SDInputs/SDInput";
 import { SDTextarea } from "@/components/SDInputs/SDTextarea";
 import { SDVideoInput } from "@/components/SDInputs/SDVideoInput";
-import { SDAudioInput } from "@/components/SDInputs/SDAudioInput";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,9 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import type { customInputNodes } from "@/lib/customInputNodes";
-import { CircleAlert, Dice6, Plus, Trash, HelpCircle } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { CircleAlert, Dice6, HelpCircle, Plus, Trash } from "lucide-react";
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 export type RGBColor = {
   r: number;
@@ -40,6 +40,7 @@ type SDInputsRenderProps = {
         display_name?: string;
         description?: string;
         enum_values?: string[];
+        options?: string;
       }
     | undefined;
   updateInput: (
@@ -146,7 +147,9 @@ export function SDInputsRender({
               onMouseEnter={showDescription}
               onMouseLeave={hideDescription}
             >
-              <div className="p-2 leading-snug">{description}</div>
+              <div className="whitespace-pre-wrap p-2 leading-snug">
+                {description}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -477,13 +480,21 @@ export function SDInputsRender({
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {inputNode.enum_values?.map((x) => {
-                  return (
-                    <SelectItem key={x} value={x}>
-                      {x}
-                    </SelectItem>
-                  );
-                })}
+                {inputNode.options
+                  ? JSON.parse(inputNode.options).map((x: string) => {
+                      return (
+                        <SelectItem key={x} value={x}>
+                          {x}
+                        </SelectItem>
+                      );
+                    })
+                  : inputNode.enum_values?.map((x) => {
+                      return (
+                        <SelectItem key={x} value={x}>
+                          {x}
+                        </SelectItem>
+                      );
+                    })}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -517,17 +528,18 @@ export function SDInputsRender({
         </div>
       );
 
-    case "ComfyUIDeployExternalSeed":
+    case "ComfyUIDeployExternalSeed": {
       const minValue = inputNode.min_value || 0;
       const maxValue = inputNode.max_value || 2147483647;
 
       return (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <div className="flex-1">
             <SDInput
               key={inputNode.input_id}
               value={inputValue || ""}
-              inputClasses="mt-1 bg-gray-50"
+              inputClasses="mt-1 bg-gray-50 rounded-[8px]"
+              placeholder={`${minValue} - ${maxValue}`}
               header={header(genericProps)}
               {...genericProps}
               type="number"
@@ -541,6 +553,7 @@ export function SDInputsRender({
             <Button
               type="button"
               variant="outline"
+              className="rounded-[10px]"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -556,6 +569,7 @@ export function SDInputsRender({
           </div>
         </div>
       );
+    }
 
     default:
       return (

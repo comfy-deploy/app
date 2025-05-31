@@ -1,5 +1,5 @@
 import { ErrorBoundary } from "@/components/error-boundary";
-import { LogsViewer } from "@/components/log/logs-viewer"; // Add this import
+import { LogsViewer } from "@/components/log/logs-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import { StatusBadge } from "@/components/workflows/StatusBadge";
 import { useAuthStore } from "@/lib/auth-store";
 import {
   AlertCircle,
+  Archive,
   CheckCircle,
   ChevronDown,
   ExternalLink,
@@ -48,10 +49,14 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { CodeBlock } from "../ui/code-blocks";
 import { TooltipTrigger } from "../ui/tooltip";
 import { Tooltip, TooltipContent, TooltipProvider } from "../ui/tooltip";
+import { Copy } from "lucide-react";
+import { toast } from "sonner";
 import {
   getEnvColor,
   useWorkflowDeployments,
 } from "../workspace/ContainersTable";
+import { useMachine } from "@/hooks/use-machine";
+import { UserIcon } from "../run/SharePageComponent";
 
 export default function WorkflowComponent() {
   const [runId, setRunId] = useQueryState("run-id");
@@ -97,7 +102,18 @@ export function RunDetails(props: {
 
   const { data: run, isLoading } = useQuery<any>({
     queryKey: ["run", run_id],
+    meta: {
+      params: {
+        queue_position: true,
+      },
+    },
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
+    refetchOnMount: (query) => {
+      if (query.state.data?.status === "finished") {
+        return false;
+      }
+      return true;
+    },
     refetchInterval: (query) => {
       if (
         query.state.data?.status === "running" ||
@@ -172,7 +188,23 @@ export function RunDetails(props: {
       <div className="mb-4 flex flex-row items-center justify-between">
         <div>
           <h2 className="font-bold text-2xl">Run Details</h2>
-          <p className="text-muted-foreground">#{run.id.slice(0, 8)}</p>
+          <div className="flex items-center">
+            <p className="line-clamp-1 font-mono text-2xs text-muted-foreground">
+              #{run.id}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(run.id);
+                toast.success("Run ID copied to clipboard");
+              }}
+              title="Copy run ID"
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
+          </div>
+          <UserIcon user_id={run.user_id} className="h-5 w-5" displayName />
           {run.batch_id && (
             <Link
               href={`/batch/${run.batch_id}`}
@@ -206,15 +238,19 @@ export function RunDetails(props: {
         </div>
       </div>
       <div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <InfoItem
             label="Status"
             value={<StatusBadge status={run.status} />}
           />
+          <RunVersionAndDeployment run={run} />
+          {run.machine_id && <RunMachine machineId={run.machine_id} />}
           {!props.isShare && (
             <InfoItem label="GPU" value={<Badge>{run.gpu || "N/A"}</Badge>} />
           )}
-          <RunVersionAndDeployment run={run} />
+          {run.queue_position !== undefined && run.queue_position !== null && (
+            <InfoItem label="Queue Position" value={run.queue_position} />
+          )}
           <RunTimeline run={run} />
           {run.batch_id && (
             <InfoItem
@@ -239,16 +275,10 @@ export function RunDetails(props: {
         >
           <TabsList className="">
             <TabsTrigger value="inputs">Inputs</TabsTrigger>
-            {!isPlayground && (
-              <TabsTrigger value="outputs">Outputs</TabsTrigger>
-            )}
-            <>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-              {/* <TabsTrigger value="graph">Execution</TabsTrigger> */}
-              {run.webhook && (
-                <TabsTrigger value="webhook">Webhook</TabsTrigger>
-              )}
-            </>
+            <TabsTrigger value="outputs">Outputs</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
+            {/* <TabsTrigger value="graph">Execution</TabsTrigger> */}
+            {run.webhook && <TabsTrigger value="webhook">Webhook</TabsTrigger>}
           </TabsList>
           <TabsContent value="inputs">
             <ScrollArea className="h-[calc(100vh-470px)]">
@@ -259,12 +289,11 @@ export function RunDetails(props: {
             value="outputs"
             className="flex w-fit flex-col justify-start gap-2"
           >
-            <ScrollArea className="h-[calc(100vh-490px)]">
+            <ScrollArea className="h-[calc(100vh-515px)]">
               <OutputRenderRun
                 run={run as any}
                 imgClasses="max-w-[230px] w-full h-[230px] object-cover object-center rounded-[8px]"
                 canExpandToView={true}
-                canDownload={true}
                 columns={2}
               />
             </ScrollArea>
@@ -309,10 +338,14 @@ export function RunDetails(props: {
             <FilteredWorkflowExecutionGraph run={run as any} />
           </TabsContent>
           <TabsContent value="logs">
+            <span className="pl-2 text-2xs text-muted-foreground">
+              *Logs are only available for <b>30 days</b>.
+            </span>
             <ErrorBoundary fallback={() => <div>Error loading logs</div>}>
               <FinishedRunLogDisplay
                 runId={run.id}
                 modalFnCallId={run.modal_function_call_id}
+                runUpdatedAt={run.updated_at}
               />
             </ErrorBoundary>
           </TabsContent>
@@ -339,6 +372,17 @@ export function RunDetails(props: {
   );
 
   return <div className="relative h-fit w-full">{content}</div>;
+}
+
+function RunMachine({ machineId }: { machineId: string }) {
+  const { data: machine } = useMachine(machineId);
+
+  return (
+    <InfoItem
+      label="Machine"
+      value={<div className="line-clamp-1 text-xs">{machine?.name}</div>}
+    />
+  );
 }
 
 function RunVersionAndDeployment({ run }: { run: any }) {
@@ -370,7 +414,7 @@ function RunVersionAndDeployment({ run }: { run: any }) {
             v{versionData.version}
           </Badge>
           {versionData.comment && (
-            <span className="text-muted-foreground text-xs">
+            <span className="line-clamp-1 text-muted-foreground text-xs">
               {versionData.comment}
             </span>
           )}
@@ -564,7 +608,12 @@ function RunTimeline({ run }: { run: any }) {
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
                       <div
-                        className="absolute h-5 cursor-pointer rounded-[2px] bg-blue-200/70 shadow-sm backdrop-blur-sm dark:bg-blue-500/70"
+                        className={cn(
+                          "absolute h-5 cursor-pointer rounded-[2px] shadow-sm backdrop-blur-sm",
+                          run.status === "timeout"
+                            ? "bg-amber-200/70"
+                            : "bg-blue-200/70",
+                        )}
                         style={{
                           width: `${runWidth}%`,
                           left: `${visualExecStartPos}%`,
@@ -585,7 +634,12 @@ function RunTimeline({ run }: { run: any }) {
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <div
-                      className="absolute h-5 cursor-pointer rounded-[2px] bg-blue-200/70 shadow-sm backdrop-blur-sm dark:bg-blue-500/70"
+                      className={cn(
+                        "absolute h-5 cursor-pointer rounded-[2px] shadow-sm backdrop-blur-sm",
+                        run.status === "timeout"
+                          ? "bg-amber-200/70"
+                          : "bg-blue-200/70",
+                      )}
                       style={{
                         width: "100%",
                         left: 0,
@@ -681,14 +735,20 @@ function RunTimeline({ run }: { run: any }) {
               </div>
             )}
 
-            <div className="absolute right-0 flex translate-x-0 transform flex-col items-end whitespace-normal border-green-500 border-r-2 pr-1 font-medium text-[10px] text-green-700">
+            <div
+              className={`absolute right-0 flex translate-x-0 transform flex-col items-end whitespace-normal border-r-2 pr-1 font-medium text-[10px] ${
+                run.status === "timeout"
+                  ? "border-amber-500 text-amber-500"
+                  : "border-green-500 text-green-700"
+              }`}
+            >
               <span>Execution</span>
-              <span>Finished</span>
+              <span>{run.status === "timeout" ? "Timeout" : "Finished"}</span>
             </div>
           </div>
         </div>
       }
-      className="col-span-2"
+      className="col-span-3"
     />
   );
 }
@@ -724,7 +784,7 @@ function InfoItem({
 }) {
   return (
     <div className={cn(className)}>
-      <p className="text-muted-foreground text-sm">{label}</p>
+      <p className="text-muted-foreground text-xs">{label}</p>
       <p className="font-medium">{value}</p>
     </div>
   );
@@ -1096,7 +1156,8 @@ type RunLog = {
 function FinishedRunLogDisplay({
   runId,
   modalFnCallId,
-}: { runId: string; modalFnCallId: string }) {
+  runUpdatedAt,
+}: { runId: string; modalFnCallId: string; runUpdatedAt: string }) {
   const { data: runLogs, isLoading } = useQuery<RunLog[]>({
     queryKey: ["clickhouse-run-logs", runId],
     enabled: !!runId,
@@ -1104,10 +1165,37 @@ function FinishedRunLogDisplay({
 
   const [showRawLogs, setShowRawLogs] = useState(false);
 
+  // Add check for logs older than 30 days
+  const isLogsExpired = useMemo(() => {
+    if (!runUpdatedAt) return false;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return new Date(runUpdatedAt) < thirtyDaysAgo;
+  }, [runUpdatedAt]);
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
+
+  if (isLogsExpired) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="flex max-w-md flex-col items-center rounded-lg border border-muted bg-muted/30 px-6 py-8 text-center shadow-md">
+          <div className="mb-2 rounded-full bg-muted/50 p-3">
+            <Archive className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <h3 className="mb-1 font-medium text-sm">
+            Log Retention Limit Reached
+          </h3>
+          <p className="text-muted-foreground text-xs leading-5">
+            These logs are no longer available as they have exceeded our 30-day
+            retention period.
+          </p>
+        </div>
       </div>
     );
   }
@@ -1260,7 +1348,7 @@ function FinishedRunLogDisplay({
         </div>
       ) : (
         <ScrollArea>
-          <div className="h-[calc(100vh-500px)]">
+          <div className="h-[calc(100vh-550px)]">
             {runLogs.map((entry, index) => {
               return (
                 <div

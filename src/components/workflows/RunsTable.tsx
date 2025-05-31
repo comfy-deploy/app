@@ -384,6 +384,11 @@ export function RunsTableVirtualized(props: {
 
   const { data: run } = useQuery({
     queryKey: ["run", runId],
+    meta: {
+      params: {
+        queue_position: true,
+      },
+    },
     enabled: !!runId,
     queryFn: async ({ queryKey, pageParam, meta }) => {
       if (!runId) return null;
@@ -457,7 +462,7 @@ export function RunsTableVirtualized(props: {
                 }}
               >
                 {run ? (
-                  <RunRow
+                  <MemoizedRunRow
                     run={run}
                     isSelected={runId === run.id}
                     onSelect={() => {
@@ -481,6 +486,14 @@ export function RunsTableVirtualized(props: {
     </div>
   );
 }
+
+const MemoizedRunRow = React.memo(RunRow, (prevProps, nextProps) => {
+  return (
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.run?.id === nextProps.run?.id &&
+    prevProps.run?.status === nextProps.run?.status
+  );
+});
 
 function LoadingRow() {
   return (
@@ -509,41 +522,18 @@ function RunRow({
   onSelect: () => void;
   refetch: () => void;
 }) {
-  const rowRef = React.useRef<HTMLDivElement>(null);
-  const [rowWidth, setRowWidth] = React.useState<number | null>(null);
-
-  // Use ResizeObserver to track width changes
-  React.useEffect(() => {
-    if (!rowRef.current) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width;
-      if (width) {
-        setRowWidth(width);
-      }
-    });
-
-    resizeObserver.observe(rowRef.current);
-
-    // Clean up observer when component unmounts
-    return () => resizeObserver.disconnect();
-  }, []);
-
   if (!run) {
     return <LoadingRow />;
   }
 
-  const isRunDetailOpenAndTooNarrow = rowWidth && rowWidth < 650;
-
   // Truncate the UUID to first 8 characters
-  const truncatedId = run.id.substring(0, 6);
+  const truncatedId = run?.id?.substring(0, 6);
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
     <div
-      ref={rowRef}
       className={cn(
-        "flex h-[42px] cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm transition-all dark:rounded-[6px] dark:border-zinc-700/80 dark:bg-zinc-800/80",
+        "@container/run-row flex h-[42px] cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm transition-all",
         isSelected
           ? "bg-gray-50 shadow-md dark:bg-gradient-to-r dark:from-zinc-900 dark:to-zinc-800"
           : "hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gradient-to-r dark:hover:from-zinc-900 dark:hover:to-zinc-800",
@@ -552,12 +542,7 @@ function RunRow({
         onSelect();
       }}
     >
-      <div
-        className={cn(
-          "grid w-full items-center gap-2",
-          isRunDetailOpenAndTooNarrow ? "grid-cols-8" : "grid-cols-12",
-        )}
-      >
+      <div className="grid w-full @2xl/run-row:grid-cols-12 grid-cols-8 items-center gap-2">
         <span className="col-span-1 font-mono text-[10px] text-gray-500">
           #{truncatedId}
         </span>
@@ -567,26 +552,21 @@ function RunRow({
         <span className="col-span-1">
           <DisplayVersion versionId={run.workflow_version_id} />
         </span>
-        {!isRunDetailOpenAndTooNarrow && (
-          <span className="col-span-1">
-            {run.gpu && (
-              <Badge
-                className="!text-2xs w-fit dark:border-zinc-700/80"
-                variant="outline"
-              >
-                {run.gpu}
-              </Badge>
-            )}
-          </span>
-        )}
+        <span className="col-span-1 @2xl/run-row:block hidden">
+          {run.gpu && (
+            <Badge className="!text-2xs w-fit" variant="outline">
+              {run.gpu}
+            </Badge>
+          )}
+        </span>
+
         <span className="col-span-2 text-2xs text-gray-500">
           {getRelativeTime(run.created_at)}
         </span>
-        {!isRunDetailOpenAndTooNarrow && (
-          <div className="col-span-3">
-            <OutputPreview runId={run.id} />
-          </div>
-        )}
+
+        <div className="col-span-3 @2xl/run-row:block hidden">
+          <OutputPreview runId={run.id} />
+        </div>
         <div className="col-span-2 flex items-center justify-end gap-2">
           <LiveStatus run={run} refetch={refetch} />
         </div>
@@ -598,6 +578,11 @@ function RunRow({
 function OutputPreview(props: { runId: string }) {
   const { data: run, isLoading } = useQuery<any>({
     queryKey: ["run", props.runId],
+    meta: {
+      params: {
+        queue_position: true,
+      },
+    },
     queryKeyHashFn: (queryKey) => [...queryKey, "outputs"].toString(),
     refetchInterval: (query) => {
       if (
@@ -614,7 +599,7 @@ function OutputPreview(props: { runId: string }) {
 
   if (isLoading) return <Skeleton className="h-6 w-24" />;
 
-  const { urls: urlList } = getTotalUrlCountAndUrls(run.outputs || []);
+  const { urls: urlList } = getTotalUrlCountAndUrls(run?.outputs || []);
 
   const MAX_DISPLAY = 2;
   const urlsToDisplay =
@@ -631,6 +616,7 @@ function OutputPreview(props: { runId: string }) {
             url={url.url}
             imgClasses="h-8 w-8 rounded-[8px] object-cover"
             lazyLoading={true}
+            isSmallView={true}
           />
         </div>
       ))}

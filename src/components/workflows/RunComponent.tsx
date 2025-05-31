@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { ChevronDown, ChevronUp, Play } from "lucide-react";
+import { ChevronDown, ChevronUp, Play, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { MyDrawer } from "../drawer";
 import { useSearch } from "@tanstack/react-router";
@@ -22,6 +22,7 @@ import { LoadingIcon } from "../ui/custom/loading-icon";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getFormattedInputs } from "../run/SharePageComponent";
+import { Input } from "../ui/input";
 
 export default function RunComponent(props: {
   defaultData?: any;
@@ -47,6 +48,7 @@ export default function RunComponent(props: {
           <div className="flex items-center justify-between px-2 pb-4">
             <h2 className="font-bold text-2xl">Requests</h2>
             <div className="flex items-center gap-2">
+              <SearchRunIdInputBox />
               <FilterDropdown workflowId={workflow_id} />
               <InputComponent workflowId={workflow_id} />
             </div>
@@ -169,5 +171,78 @@ function InputComponent({ workflowId }: { workflowId: string }) {
         </MyDrawer>
       )}
     </>
+  );
+}
+
+function SearchRunIdInputBox() {
+  const [searchValue, setSearchValue] = useState("");
+  const [_, setRunId] = useQueryState("run-id");
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const isValidUuid = (value: string) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    );
+  };
+
+  const performSearch = () => {
+    if (searchValue.trim() && isValidUuid(searchValue)) {
+      setRunId(searchValue.trim());
+      inputRef.current?.blur();
+    }
+  };
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      performSearch();
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchValue("");
+    setRunId(null);
+  };
+
+  return (
+    <div
+      className={cn(
+        "relative hidden transition-all duration-200 ease-in-out lg:block",
+        isFocused ? "w-64" : "w-24 text-muted-foreground",
+      )}
+    >
+      <Search className="-translate-y-1/2 absolute top-1/2 left-0 h-3.5 w-3.5 text-muted-foreground" />
+      <Input
+        ref={inputRef}
+        placeholder="Search by run ID"
+        className="rounded-none border-0 border-b py-1 pr-6 pl-6 focus-visible:border-primary focus-visible:ring-0"
+        value={searchValue}
+        onChange={(e) => setSearchValue(e.target.value)}
+        onKeyDown={handleSearch}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+      />
+      {searchValue && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="-translate-y-1/2 absolute top-1/2 right-0 h-6 w-6 p-0"
+          onClick={clearSearch}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      )}
+      {isFocused && searchValue && (
+        <div className="absolute top-full z-50 mt-1 w-full rounded-md border bg-popover bg-white p-3 text-muted-foreground text-xs shadow-md hover:bg-gray-100">
+          {isValidUuid(searchValue) ? (
+            <p className="line-clamp-1">
+              Press Enter to search for "{searchValue}"
+            </p>
+          ) : (
+            <p>Please enter a valid Run ID ...</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

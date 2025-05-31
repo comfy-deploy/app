@@ -17,7 +17,7 @@ export default function Calendar(props: {
 
     Cal("inline", {
       elementOrSelector: "#my-cal-inline",
-      calLink: "team/comfy-deploy/request-demo",
+      calLink: "team/comfy-deploy/demo",
       layout: "month_view",
       config: {
         name:

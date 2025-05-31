@@ -911,13 +911,25 @@ print(data)`;
                       </TabsTrigger>
                     </TabsList>
                     <TabsContent value="typescript">
-                      <CodeBlock code={tsCode} lang="typescript" />
+                      <CodeBlock
+                        code={tsCode}
+                        lang="typescript"
+                        className="text-xs"
+                      />
                     </TabsContent>
                     <TabsContent value="python">
-                      <CodeBlock code={pythonCode} lang="python" />
+                      <CodeBlock
+                        code={pythonCode}
+                        lang="python"
+                        className="text-xs"
+                      />
                     </TabsContent>
                     <TabsContent value="curl">
-                      <CodeBlock code={curlCode} lang="bash" />
+                      <CodeBlock
+                        code={curlCode}
+                        lang="bash"
+                        className="text-xs"
+                      />
                     </TabsContent>
                   </Tabs>
                 </div>
@@ -938,7 +950,7 @@ print(data)`;
             </div>
             <div className="flex-1 p-3 overflow-auto">
               {response ? (
-                <CodeBlock code={response} lang="json" />
+                <CodeBlock code={response} lang="json" className="text-xs" />
               ) : (
                 <div className="text-gray-500 text-center mt-8">
                   <p className="text-xs">Send a request to see the response</p>

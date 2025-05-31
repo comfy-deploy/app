@@ -15,6 +15,7 @@ interface VirtualizedInfiniteListProps<T> {
   header?: React.ReactNode;
   className?: string;
   containerClassName?: string;
+  containerStyle?: React.CSSProperties;
 }
 
 export function VirtualizedInfiniteList<T>({
@@ -26,15 +27,13 @@ export function VirtualizedInfiniteList<T>({
   estimateSize = 50,
   className,
   containerClassName,
+  containerStyle,
 }: VirtualizedInfiniteListProps<T>) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = queryResult;
 
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const flatData = React.useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  );
+  const flatData = React.useMemo(() => data?.pages.flat() ?? [], [data]);
 
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? flatData.length + 1 : flatData.length,
@@ -69,7 +68,7 @@ export function VirtualizedInfiniteList<T>({
         className,
         "scrollbar scrollbar-thumb-gray-200 scrollbar-track-transparent",
       )}
-      style={{ height: "400px", overflow: "auto" }}
+      style={{ height: "400px", overflow: "auto", ...containerStyle }}
     >
       {header && <div className="sticky top-0 z-10">{header}</div>}
       <div

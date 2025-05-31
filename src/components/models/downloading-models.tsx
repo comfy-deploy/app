@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { DownloadingModel } from "@/types/models";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +13,7 @@ import {
   ImageIcon,
   Folder,
   Clock,
+  Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -62,7 +63,7 @@ export function DownloadingModels() {
     <Collapsible
       open={isExpanded}
       onOpenChange={setIsExpanded}
-      className="mb-4 rounded-md border bg-card"
+      className="rounded-md border bg-card"
     >
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center gap-2">
@@ -110,6 +111,7 @@ function DownloadingModelItem({
   model: DownloadingModel;
 }) {
   const [showDetails, setShowDetails] = useState(false);
+  const queryClient = useQueryClient();
 
   const getModelUrl = () => {
     if (model.civitai_url) return model.civitai_url;
@@ -144,6 +146,22 @@ function DownloadingModelItem({
   const modelUrl = getModelUrl();
   const sourceName = getSourceName();
   const timeAgo = getTimeAgo();
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      return api({
+        url: `file/${model.id}/cancel`,
+        init: { method: "DELETE" }
+      });
+    },
+    onSuccess: () => {
+      toast.success("Download cancelled successfully");
+      queryClient.invalidateQueries({ queryKey: ["volume", "downloading-models"] });
+    },
+    onError: (error) => {
+      toast.error("Failed to cancel download");
+    }
+  });
 
   const copyModelUrl = () => {
     if (modelUrl) {
@@ -207,6 +225,19 @@ function DownloadingModelItem({
           <div className="flex items-center gap-1">
             {model.status === "failed" && (
               <AlertCircle className="h-5 w-5 text-destructive" />
+            )}
+            {/* Only show cancel button if download has been in progress for more than 1 hour */}
+            {new Date().getTime() - new Date(model.created_at).getTime() > 60 * 60 * 1000 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => cancelMutation.mutate()}
+                disabled={cancelMutation.isPending}
+                title="Cancel download"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
             {modelUrl && (
               <Button

@@ -5,7 +5,7 @@ import { FolderPathDisplay } from "./folder-path-display";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { uploadFileToVolume } from "@/components/files-api";
+import { uploadFileToVolume, generateUploadUrl } from "@/components/files-api";
 import { api } from "@/lib/api";
 import type { AddModelRequest } from "@/types/models";
 import { formatBytes, formatTime } from "@/lib/utils";
@@ -102,27 +102,78 @@ export function LocalUploadForm({
       setUploadProgress(0);
       setUploadStats(null);
 
-      // Use the uploadFileToVolume function to upload the file
-      await uploadFileToVolume({
-        volumeName,
-        file,
-        filename,
-        targetPath: folderPath,
-        apiEndpoint: process.env.COMFY_DEPLOY_SHARED_MACHINE_API_URL || "",
-        onProgress: (progress, uploadedSize, totalSize, estimatedTime) => {
-          setUploadProgress(progress);
-          setUploadStats({ uploadedSize, totalSize, estimatedTime });
-        },
+      const { uploadUrl, objectKey } = await generateUploadUrl(
+        file.name,
+        file.type || 'application/octet-stream',
+        file.size
+      );
+
+      const xhr = new XMLHttpRequest();
+      let uploadStartTime = Date.now();
+      let lastLoaded = 0;
+      let lastTime = uploadStartTime;
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          
+          // Calculate estimated time remaining
+          const currentTime = Date.now();
+          const timeElapsed = currentTime - lastTime;
+          
+          if (timeElapsed > 1000) { // Update every second
+            const loadDiff = event.loaded - lastLoaded;
+            const timePerByte = timeElapsed / loadDiff;
+            const bytesRemaining = event.total - event.loaded;
+            const estimatedTimeRemaining = bytesRemaining * timePerByte / 1000; // in seconds
+            
+            setUploadProgress(percentComplete);
+            setUploadStats({
+              uploadedSize: event.loaded,
+              totalSize: event.total,
+              estimatedTime: estimatedTimeRemaining
+            });
+            
+            lastLoaded = event.loaded;
+            lastTime = currentTime;
+          } else {
+            setUploadProgress(percentComplete);
+            setUploadStats({
+              uploadedSize: event.loaded,
+              totalSize: event.total,
+              estimatedTime: uploadStats?.estimatedTime || 0
+            });
+          }
+        }
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+        
+        xhr.onerror = () => {
+          reject(new Error('Network error during upload'));
+        };
+        
+        xhr.send(file);
       });
 
-      // After successful upload, notify parent component
+      // After successful upload to S3, notify parent component to handle the model creation
       onSubmit({
-        source: "local",
+        source: "link", // Changed from "local" to "link" since we're using the link endpoint
         folderPath,
-        filename,
-        local: {
-          originalFilename: file.name,
-        },
+        filename: filename || file.name,
+        downloadLink: uploadUrl.split('?')[0],
+        isTemporaryUpload: true,
+        s3ObjectKey: objectKey
       });
     } catch (err) {
       console.error("Upload error:", err);

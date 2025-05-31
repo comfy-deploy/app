@@ -5,7 +5,6 @@ import { z } from "zod";
 import { MachineStatus } from "@/components/machines/machine-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Portal } from "@/components/ui/custom/portal";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -13,12 +12,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import {
-  VersionSelectV2,
-  useSelectedVersion,
-} from "@/components/version-select";
+import { useSelectedVersion } from "@/components/version-select";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
-import { WorkflowDropdown } from "@/components/workflow-dropdown";
 import { SessionCreator } from "@/components/workspace/SessionView";
 import { WorkflowCommitVersion } from "@/components/workspace/WorkflowCommitVersion";
 import { WorkflowDiff } from "@/components/workspace/WorkflowDiff";
@@ -28,14 +23,10 @@ import { useMachine, useMachines } from "@/hooks/use-machine";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, easeOut, motion } from "framer-motion";
 import {
-  AlertTriangle,
   ChevronDown,
-  Diff,
   ExternalLink,
-  Plus,
   RefreshCcw,
   Save,
   Search,

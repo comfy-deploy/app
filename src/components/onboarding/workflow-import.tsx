@@ -30,12 +30,12 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
 import { defaultWorkflowTemplates } from "@/utils/default-workflow";
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import { CheckCircle2, Circle, CircleCheckBig } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
+import { CheckCircle2, Circle, CircleCheckBig, Lightbulb } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { FileURLRender } from "../workflows/OutputRender";
 
 // Add these interfaces
 export interface StepValidation {
@@ -471,6 +471,7 @@ export default function WorkflowImport() {
                       validation.install_custom_node_with_gpu,
                     base_docker_image: validation.base_docker_image,
                     python_version: validation.python_version,
+                    concurrency_limit: 1,
                   }),
                 },
               });
@@ -646,12 +647,37 @@ function DefaultOption({
     );
 
     if (selectedTemplate && validation.importOption === "default") {
-      setValidation({
+      const updatedValidation = {
         ...validation,
         workflowJson: selectedTemplate.workflowJson,
         workflowApi: selectedTemplate.workflowApi,
         importJson: "",
-      });
+        hasEnvironment: selectedTemplate.hasEnvironment || false,
+      };
+
+      // If the template has environment data, include those properties
+      if (selectedTemplate.hasEnvironment) {
+        try {
+          const workflowData = JSON.parse(selectedTemplate.workflowJson);
+          const environment = workflowData.environment;
+
+          if (environment) {
+            Object.assign(updatedValidation, {
+              docker_command_steps: environment.docker_command_steps,
+              gpuType: environment.gpu,
+              comfyUiHash: environment.comfyui_version,
+              install_custom_node_with_gpu:
+                environment.install_custom_node_with_gpu,
+              base_docker_image: environment.base_docker_image,
+              python_version: environment.python_version,
+            });
+          }
+        } catch (error) {
+          console.error("Error parsing workflow JSON:", error);
+        }
+      }
+
+      setValidation(updatedValidation);
     }
   }, [workflowSelected, validation.importOption]);
 
@@ -667,40 +693,45 @@ function DefaultOption({
             Select a workflow as your starting point.{" "}
           </span>
 
-          <div className="mt-4 grid grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-3 gap-1 md:gap-4">
             {defaultWorkflowTemplates.map((template, index) => (
               <button
                 key={template.workflowId}
                 type="button"
                 className={cn(
-                  "w-full rounded-lg border p-4 text-left transition-all",
+                  "group relative h-[350px] w-full overflow-hidden rounded-lg border text-left transition-all duration-500 ease-in-out",
                   workflowSelected === template.workflowId
-                    ? "border-2 border-gray-500 ring-gray-500 ring-offset-2"
-                    : "border-gray-200 hover:border-gray-300",
+                    ? "opacity-100 shadow-lg"
+                    : "opacity-70 grayscale hover:grayscale-0",
                 )}
                 onClick={() => setWorkflowSelected(template.workflowId)}
                 aria-pressed={workflowSelected === template.workflowId}
               >
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    {workflowSelected === template.workflowId ? (
-                      <CircleCheckBig className="h-4 w-4" />
-                    ) : (
-                      <Circle className="h-4 w-4" />
+                <FileURLRender
+                  url={template.workflowImageUrl}
+                  imgClasses="h-full max-w-full w-full object-cover absolute inset-0 group-hover:scale-105 transition-all duration-500 pointer-events-none"
+                />
+                <div className="absolute right-0 bottom-0 left-0 flex flex-col gap-2 bg-gradient-to-t from-background/95 via-background/80 to-transparent p-4">
+                  <div className="flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {workflowSelected === template.workflowId ? (
+                        <CircleCheckBig className="h-4 w-4" />
+                      ) : (
+                        <Circle className="h-4 w-4" />
+                      )}
+                      <h3 className="font-medium text-shadow">
+                        {template.workflowName}
+                      </h3>
+                    </div>
+                    {template.hasEnvironment && (
+                      <Badge variant="yellow" className="whitespace-nowrap">
+                        <Lightbulb className="h-3 w-3" />
+                        With Preset
+                      </Badge>
                     )}
-                    <h3 className="font-medium">{template.workflowName}</h3>
                   </div>
 
-                  <div className="relative aspect-video w-full overflow-hidden rounded-md">
-                    <div className="absolute inset-0 bg-gradient-to-r from-background to-15% to-transparent" />
-                    <img
-                      src={template.workflowImageUrl}
-                      className="h-full w-full object-cover"
-                      alt={`${template.workflowName} example`}
-                    />
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">
+                  <p className="line-clamp-1 text-muted-foreground text-sm backdrop-blur-[2px]">
                     {template.workflowDescription}
                   </p>
                 </div>
@@ -763,8 +794,8 @@ function ImportOptions({
 
       const json = JSON.parse(text);
 
-      var environment = json.environment;
-      var workflowAPIJson = json.workflow_api;
+      const environment = json.environment;
+      const workflowAPIJson = json.workflow_api;
 
       if (!environment) {
         setValidation((prev) => ({

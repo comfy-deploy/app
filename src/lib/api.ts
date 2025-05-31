@@ -34,7 +34,6 @@ export async function api({
   // Always include auth header, but only include Content-Type if not skipping defaults
   const defaultHeaders = {
     ...(skipDefaultHeaders ? {} : { "Content-Type": "application/json" }),
-    Authorization: `Bearer ${auth}`,
   };
 
   const headers = {
@@ -42,7 +41,11 @@ export async function api({
     ...init?.headers,
   };
 
-  const finalUrl = `${process.env.NEXT_PUBLIC_CD_API_URL}/api/${url}${queryString}`;
+  // Use relative URL in production/staging, full URL in local development
+  const isLocal = process.env.NODE_ENV === "development";
+  const finalUrl = isLocal
+    ? `${process.env.NEXT_PUBLIC_CD_API_URL}/api/${url}${queryString}`
+    : `/api/${url}${queryString}`;
 
   // Use XMLHttpRequest for upload progress
   if (onUploadProgress) {
@@ -84,6 +87,7 @@ export async function api({
   return await fetch(finalUrl, {
     ...init,
     headers,
+    credentials: "include",
   }).then(async (res) => {
     if (!res.ok) {
       const errorBody = await res.text();

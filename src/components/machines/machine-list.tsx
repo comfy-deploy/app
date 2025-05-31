@@ -6,8 +6,10 @@ import {
   sharedMachineConfig,
 } from "@/components/machine/machine-schema";
 import { MachineListItem } from "@/components/machines/machine-list-item";
+import { BulkUpdateDialog } from "@/components/machines/bulk-upgrade-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -17,30 +19,48 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { VirtualizedInfiniteList } from "@/components/virtualized-infinite-list";
-import { useCurrentPlan } from "@/hooks/use-current-plan";
+import { useCurrentPlan, useIsBusinessAllowed } from "@/hooks/use-current-plan";
 import { useMachines } from "@/hooks/use-machine";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
 import { comfyui_hash } from "@/utils/comfydeploy-hash";
 import { useNavigate } from "@tanstack/react-router";
-import { Cloud, CloudCog, EllipsisVertical, Plus, Server } from "lucide-react";
+import {
+  Cloud,
+  CloudCog,
+  EllipsisVertical,
+  Plus,
+  RefreshCcw,
+  Server,
+} from "lucide-react";
 import { useQueryState } from "nuqs";
-import { useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Machine {
   id: string;
   name: string;
   type: string;
   status: string;
+  machine_builder_version?: string | number;
   // Add other machine properties as needed
 }
 
 export function MachineList() {
+  const [selectedMachines, setSelectedMachines] = useState<Set<string>>(
+    new Set(),
+  );
+  const [bulkUpgradeDialogOpen, setBulkUpgradeDialogOpen] = useState(false);
   const [searchValue, setSearchValue] = useQueryState("search");
   const [openCustomDialog, setOpenCustomDialog] = useState(false);
   const [openServerlessDialog, setOpenServerlessDialog] = useState(false);
@@ -67,6 +87,7 @@ export function MachineList() {
 
   const sub = useCurrentPlan();
   const hasActiveSub = !sub || !!sub?.sub;
+  const isBusinessAllowed = useIsBusinessAllowed();
 
   const query = useMachines(
     debouncedSearchValue ?? undefined,
@@ -78,19 +99,157 @@ export function MachineList() {
     selectedTab === "docker",
   );
 
+  // Memoize the flattened machine data to prevent unnecessary re-renders
+  const machineData = useMemo(() => {
+    return query.data?.pages.flat() || [];
+  }, [query.data]);
+
+  // Calculate total machines across all loaded pages
+  const totalLoadedMachines = useMemo(() => {
+    if (!query.data?.pages) return 0;
+    return query.data.pages.reduce((total, page) => total + page.length, 0);
+  }, [query.data]);
+
+  // Calculate checkbox state based on all loaded machines
+  const isAllSelected = useMemo(() => {
+    if (totalLoadedMachines === 0) return false;
+    if (selectedMachines.size === 0) return false;
+
+    // Check if all loaded machines are selected
+    for (const page of query.data?.pages || []) {
+      for (const machine of page) {
+        if (!selectedMachines.has(machine.id)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }, [totalLoadedMachines, selectedMachines, query.data]);
+
+  const isPartiallySelected = selectedMachines.size > 0 && !isAllSelected;
+
   return (
-    <div className="mx-auto h-[calc(100vh-100px)] max-h-full w-full max-w-[1200px] px-2 py-4 md:px-10">
-      <div className="mb-2 flex items-start justify-between gap-4">
-        <div className="relative w-[300px]">
-          <Input
-            placeholder="Filter machines..."
-            value={searchValue ?? ""}
-            onChange={(event) => setSearchValue(event.target.value)}
-            className="pr-12"
-          />
-          <kbd className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px] text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>K
-          </kbd>
+    <div className="mx-auto h-[calc(100vh-100px)] max-h-full w-full p-4">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="relative w-full max-w-sm">
+            <Input
+              placeholder="Filter machines..."
+              value={searchValue ?? ""}
+              onChange={(event) => setSearchValue(event.target.value)}
+              className="pr-12"
+            />
+            <kbd className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px] text-muted-foreground opacity-100">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </div>
+
+          {query.data?.pages[0] && query.data.pages[0].length > 0 && (
+            <div className="flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.div
+                      layout
+                      className="group flex w-fit items-center gap-2 rounded-full border bg-white/80 px-4 py-2 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
+                      transition={{
+                        layout: {
+                          duration: 0.15,
+                          ease: "easeOut",
+                        },
+                      }}
+                    >
+                      <Checkbox
+                        id="select-all"
+                        checked={
+                          isAllSelected
+                            ? true
+                            : isPartiallySelected
+                              ? "indeterminate"
+                              : false
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            const allMachineIds = new Set<string>();
+                            for (const page of query.data?.pages || []) {
+                              for (const machine of page) {
+                                allMachineIds.add(machine.id);
+                              }
+                            }
+                            setSelectedMachines(allMachineIds);
+                          } else {
+                            setSelectedMachines(new Set());
+                          }
+                        }}
+                        className="data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary"
+                      />
+                      <label
+                        htmlFor="select-all"
+                        className="cursor-pointer select-none whitespace-nowrap font-medium text-muted-foreground text-xs group-hover:text-gray-900"
+                      >
+                        Select All
+                      </label>
+                      <AnimatePresence>
+                        {selectedMachines.size > 0 && (
+                          <>
+                            {/* <div className="mx-2 h-4 w-[1px] bg-gray-300" /> */}
+                            <motion.span
+                              initial={{ opacity: 0, width: 0 }}
+                              animate={{ opacity: 1, width: "auto" }}
+                              exit={{ opacity: 0, width: 0 }}
+                              className="whitespace-nowrap font-medium text-gray-500 text-xs"
+                              transition={{ duration: 0.15 }}
+                            >
+                              {selectedMachines.size} of {totalLoadedMachines}
+                            </motion.span>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {isAllSelected
+                        ? "Click to deselect all machines"
+                        : isPartiallySelected
+                          ? "Click to select all machines"
+                          : "Select all machines to perform bulk actions"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <AnimatePresence>
+                {selectedMachines.size > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2"
+                    transition={{ duration: 0.15 }}
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex h-auto items-center gap-1.5 rounded-full px-3 py-1.5"
+                      onClick={() => setBulkUpgradeDialogOpen(true)}
+                    >
+                      <RefreshCcw className="h-3.5 w-3.5" />
+                      <span className="text-xs">Bulk Update</span>
+                    </Button>
+                    {/* <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto rounded-full px-3 py-1.5 text-xs"
+                      onClick={() => setSelectedMachines(new Set())}
+                    >
+                      Clear
+                    </Button> */}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
 
         <Tabs value={selectedTab} onValueChange={handleTabChange}>
@@ -141,7 +300,7 @@ export function MachineList() {
       </div>
 
       {query.isLoading ? (
-        <div className="mx-auto w-full max-w-[1200px] overflow-clip rounded-xl border">
+        <div className="mx-auto w-full max-w-screen-2xl overflow-clip rounded-xl border">
           {[...Array(8)].map((_, i) => (
             <div
               key={`loading-${i}`}
@@ -168,7 +327,7 @@ export function MachineList() {
           ))}
         </div>
       ) : query.data?.pages[0].length === 0 ? (
-        <div className="mx-auto w-full max-w-[1200px]">
+        <div className="mx-auto w-full max-w-screen-2xl">
           <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-xl border bg-white/50 p-8 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <Server className="h-6 w-6 text-primary" />
@@ -183,8 +342,8 @@ export function MachineList() {
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-semibold">No machines found</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="font-semibold text-lg">No machines found</h3>
+                  <p className="text-muted-foreground text-sm">
                     Get started by creating your first machine
                   </p>
                 </>
@@ -218,7 +377,7 @@ export function MachineList() {
         </div>
       ) : (
         <VirtualizedInfiniteList
-          className="!h-full fab-machine-list mx-auto w-full max-w-[1200px] rounded-xl border"
+          className="!h-full fab-machine-list mx-auto w-full max-w-screen-2xl rounded-xl border"
           containerClassName="divide-y divide-border"
           queryResult={query}
           renderItem={(machine: Machine, index) => (
@@ -229,6 +388,18 @@ export function MachineList() {
               machineId={machine.id}
               refetchQuery={query.refetch}
               selectedTab={selectedTab}
+              isSelected={selectedMachines.has(machine.id)}
+              onSelectionChange={(machineId, selected) => {
+                setSelectedMachines((prev) => {
+                  const newSet = new Set(prev);
+                  if (selected) {
+                    newSet.add(machineId);
+                  } else {
+                    newSet.delete(machineId);
+                  }
+                  return newSet;
+                });
+              }}
             />
           )}
           renderLoading={() => {
@@ -359,6 +530,18 @@ export function MachineList() {
         }}
       />
 
+      {/* Bulk update dialog */}
+      <BulkUpdateDialog
+        selectedMachines={Array.from(selectedMachines)}
+        machineData={machineData}
+        open={bulkUpgradeDialogOpen}
+        onOpenChange={setBulkUpgradeDialogOpen}
+        onSuccess={() => {
+          setSelectedMachines(new Set());
+          query.refetch();
+        }}
+      />
+
       <Fab
         refScrollingContainerKey="fab-machine-list"
         mainItem={{
@@ -391,13 +574,15 @@ export function MachineList() {
             name: "Self Hosted Machine",
             icon: Server,
             onClick: () => {
-              if (!sub?.features.machineLimited) {
+              if (!sub?.features.machineLimited && isBusinessAllowed) {
                 setOpenCustomDialog(true);
               }
             },
             disabled: {
-              disabled: !(sub?.plans?.plans && sub?.plans?.plans.length > 0),
-              disabledText: "Upgrade to create custom machines.",
+              disabled: !isBusinessAllowed || sub?.features.machineLimited,
+              disabledText: sub?.features.machineLimited
+                ? `Max ${sub?.features.machineLimit} Self-hosted machines for your account. Upgrade to create more machines.`
+                : "Upgrade to Business plan to create self-hosted machines.",
             },
           },
         ]}

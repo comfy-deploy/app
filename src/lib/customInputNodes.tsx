@@ -17,6 +17,7 @@ export const customInputNodes = {
   ComfyUIDeployExternalEnum: "string group - (enum)",
   ComfyUIDeployExternalColor: "string - (hex color code)",
   ComfyUIDeployExternalAudio: "string - (public audio url)",
+  ComfyUIDeployExternalSeed: "integer",
 } as const;
 
 export type CustomInputNodesTypeMap = {
@@ -36,6 +37,7 @@ export type CustomInputNodesTypeMap = {
   ComfyUIDeployExternalNumberSlider: number;
   ComfyUIDeployExternalNumberSliderInt: number;
   ComfyUIDeployExternalAudio: string;
+  ComfyUIDeployExternalSeed: number;
 };
 
 export type InputsType = keyof typeof customInputNodes;

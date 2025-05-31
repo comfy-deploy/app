@@ -23,6 +23,12 @@ import { useEffect } from "react";
 import { orgPrefixPaths } from "./orgPrefixPaths";
 // Set up a Router instance
 import { type RootRouteContext, Route } from "./routes/__root";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import { SidebarProvider } from "./components/ui/sidebar";
+import { Providers } from "./lib/providers";
+import { SidebarGhost } from "./components/ui/sidebar-ghost";
+import { LoadingProgress } from "./components/ui/loading-progress";
+import { AnimatePresence } from "framer-motion";
 
 // Add this function before creating the orgRoute
 function updateRoutePaths(route: RouteType) {
@@ -236,22 +242,20 @@ function InnerApp() {
   const clerk = useClerk();
   publicClerk = clerk;
 
-  if (!auth.isLoaded) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background animate-in fade-in duration-300">
-        <div className="flex flex-col items-center gap-4">
-          <LoadingIcon className="h-8 w-8 animate-spin" />
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Loading your account...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="fade-in animate-in duration-300">
-      <RouterProvider router={router} context={{ auth, clerk }} />
+    <div className="animate-in" style={{ animationDuration: "300ms" }}>
+      <div className="pointer-events-none fixed inset-0 z-[-1] flex flex-row bg-white">
+        <div className="absolute h-full w-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+        <SidebarGhost />
+        <AnimatePresence mode="wait">
+          {!auth.isLoaded && <LoadingProgress key="loading" />}
+        </AnimatePresence>
+      </div>
+      <SidebarProvider>
+        <Providers>
+          <RouterProvider router={router} context={{ auth, clerk }} />
+        </Providers>
+      </SidebarProvider>
     </div>
   );
 }

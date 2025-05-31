@@ -66,7 +66,8 @@ type run = {
     | "queued"
     | "success"
     | "cancelled"
-    | "failed";
+    | "failed"
+    | "timeout";
   live_status?: string;
   progress?: number;
   outputs?: any[];
@@ -242,7 +243,14 @@ export function Playground(props: {
             )}
           >
             <div className="mb-1 flex items-center justify-between">
-              <span className="ml-2 font-semibold text-sm">Edit</span>
+              <div className="flex items-center gap-2">
+                <span className="ml-2 font-semibold text-sm">Edit</span>
+                {!isVersionLoading && version && (
+                  <Badge variant="secondary" className="!text-2xs !py-0">
+                    v{version.version}
+                  </Badge>
+                )}
+              </div>
               <a
                 target="_blank"
                 href="https://www.comfydeploy.com/docs/v2/deployments/inputs"
@@ -265,6 +273,8 @@ export function Playground(props: {
                   runOrigin={props.runOrigin}
                   workflow_version_id={version?.id}
                   machine_id={props.workflow?.selected_machine_id}
+                  workflow_api={version?.workflow_api}
+                  canEditOrder={true}
                 />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-2">
@@ -503,193 +513,207 @@ function RunDisplay({ runId }: { runId?: string }) {
   );
 
   // Common container styles for status messages
-  const containerClass = "flex h-full w-full items-center justify-center";
+  const containerClass =
+    "flex min-h-[calc(100%-20px)] w-full items-center justify-center";
   const messageClass =
-    "animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm";
+    "animate-[pulse_4s_ease-in-out_infinite] text-muted-foreground text-sm text-center";
 
   // Handle loading and empty states
   if (isLoading || !run) {
     return (
-      <div className={containerClass}>
-        <p className={messageClass}>
-          {isLoading ? "Please wait ..." : "Press Run to start the queue"}
-        </p>
+      <div className="scrollbar-track-transparent scrollbar-thin scrollbar-none h-full overflow-x-hidden overflow-y-scroll">
+        <div className={containerClass}>
+          <div className="relative px-8">
+            <p className={messageClass}>
+              {isLoading ? "Please wait ..." : "Press Run to start the queue"}
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Handle different run statuses
-  switch (run.status) {
-    case "cancelled":
-      return (
-        <div className={containerClass}>
-          <p className={messageClass}>Run cancelled.</p>
-        </div>
-      );
+  // Wrap all status cases in scrollable container
+  return (
+    <div className="scrollbar-track-transparent scrollbar-thin scrollbar-none h-full overflow-x-hidden overflow-y-scroll">
+      <div className="sticky top-0 flex min-h-[calc(100%-20px)] w-full items-center justify-center">
+        <div className="relative px-8">
+          {/* Different content based on status */}
+          {(() => {
+            switch (run.status) {
+              case "timeout":
+                return <p className={messageClass}>Run timeout.</p>;
 
-    case "failed":
-      return (
-        <div className={cn(containerClass, "flex-col gap-2")}>
-          <p className={cn(messageClass, "text-red-500")}>
-            Run failed. Check the logs for more details.
-          </p>
-          <div className="max-w-2xl">
-            {run.modal_function_call_id ? (
-              <LogsTab runId={run.id} />
-            ) : (
-              <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-900 p-4 text-gray-300">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="!text-gray-400 text-muted-foreground text-sm">
-                  We're unable to display logs for runs from the workspace.
-                </AlertDescription>
-              </div>
-            )}
-          </div>
-        </div>
-      );
+              case "cancelled":
+                return <p className={messageClass}>Run cancelled.</p>;
 
-    case "success":
-      return (
-        <div className="scrollbar-track-transparent scrollbar-thin scrollbar-none h-full overflow-x-hidden overflow-y-scroll">
-          <div className="sticky top-0 flex min-h-[calc(100%-20px)] w-full items-center justify-center">
-            <div className="relative px-8">
-              {viewingImageIndex !== null &&
-              urlList &&
-              urlList.length > 0 &&
-              urlList[viewingImageIndex] ? (
-                // Image viewer mode
-                <div className="flex flex-col items-center">
-                  <ScrollArea
-                    ref={thumbnailsContainerRef}
-                    className="max-w-2xl rounded-sm p-2"
-                    hideVertical
-                  >
-                    <div className="flex flex-row gap-2 p-1">
-                      {urlList.map((item, index) => (
-                        <button
-                          type="button"
-                          key={index}
-                          onClick={() => setViewingImageIndex(index)}
-                          className={cn(
-                            "relative flex-shrink-0 overflow-hidden rounded-md transition-all",
-                            viewingImageIndex === index
-                              ? "shadow-md outline outline-2 outline-purple-500 outline-offset-2"
-                              : "opacity-70 ring-transparent hover:opacity-100",
-                          )}
-                        >
-                          <FileURLRender
-                            url={item.url}
-                            imgClasses="h-16 w-16 rounded-[8px] object-cover"
-                          />
-                        </button>
-                      ))}
+              case "failed":
+                return (
+                  <div className="flex flex-col gap-2">
+                    <p className={cn(messageClass, "text-red-500")}>
+                      Run failed. Check the logs for more details.
+                    </p>
+                    <div className="max-w-2xl">
+                      {run.modal_function_call_id ? (
+                        <LogsTab runId={run.id} />
+                      ) : (
+                        <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-900 p-4 text-gray-300">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="!text-gray-400 text-muted-foreground text-sm">
+                            We're unable to display logs for runs from the
+                            workspace.
+                          </AlertDescription>
+                        </div>
+                      )}
                     </div>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
+                  </div>
+                );
 
-                  <FileURLRender
-                    url={urlList[viewingImageIndex].url}
-                    imgClasses="max-h-[60vh] object-contain shadow-md max-w-full"
-                    lazyLoading={false}
-                    isMainView={true}
-                  />
-                </div>
-              ) : (
-                // Gallery mode
-                <div className="relative">
-                  <OutputRenderRun
-                    run={run}
-                    imgClasses={cn(
-                      "shadow-md max-w-full mx-auto",
-                      totalUrlCount > 1
-                        ? "max-h-[30vh]"
-                        : "max-h-[80vh] object-contain",
+              case "success":
+                return viewingImageIndex !== null &&
+                  urlList &&
+                  urlList.length > 0 &&
+                  urlList[viewingImageIndex] ? (
+                  // Image viewer mode
+                  <div className="flex flex-col items-center">
+                    <ScrollArea
+                      ref={thumbnailsContainerRef}
+                      className="max-w-2xl rounded-sm p-2"
+                      hideVertical
+                    >
+                      <div className="flex flex-row gap-2 p-1">
+                        {urlList.map((item, index) => (
+                          <button
+                            type="button"
+                            key={index}
+                            onClick={() => setViewingImageIndex(index)}
+                            className={cn(
+                              "relative flex-shrink-0 overflow-hidden rounded-md transition-all",
+                              viewingImageIndex === index
+                                ? "shadow-md outline outline-2 outline-purple-500 outline-offset-2"
+                                : "opacity-70 ring-transparent hover:opacity-100",
+                            )}
+                          >
+                            <FileURLRender
+                              url={item.url}
+                              imgClasses="h-16 w-16 rounded-[8px] object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+
+                    <FileURLRender
+                      url={urlList[viewingImageIndex].url}
+                      imgClasses="max-h-[60vh] object-contain shadow-md max-w-full"
+                      lazyLoading={false}
+                      isMainView={true}
+                      canDownload={true}
+                    />
+                  </div>
+                ) : (
+                  // Gallery mode
+                  <div className="relative">
+                    <OutputRenderRun
+                      run={run}
+                      imgClasses={cn(
+                        "shadow-md max-w-full mx-auto",
+                        totalUrlCount > 1
+                          ? "max-h-[30vh]"
+                          : "max-h-[80vh] object-contain",
+                      )}
+                      lazyLoading={true}
+                      columns={totalUrlCount > 4 ? 3 : 2}
+                      displayCount={totalUrlCount > 9 ? 9 : totalUrlCount}
+                      isMainView={totalUrlCount === 1}
+                      canDownload={true}
+                    />
+                  </div>
+                );
+
+              // Default case for running, uploading, not-started, queued
+              default:
+                return (
+                  <div className="flex animate-[pulse_4s_ease-in-out_infinite] flex-col items-center justify-center gap-1">
+                    <p className="text-muted-foreground text-xs">
+                      {run.live_status || "Starting..."}
+                    </p>
+                    <Progress
+                      value={(run.progress || 0) * 100}
+                      className="w-64 opacity-60"
+                    />
+                    {run.modal_function_call_id && (
+                      <Button
+                        variant="destructive"
+                        onClick={handleCancel}
+                        size="sm"
+                        className="mt-2"
+                      >
+                        Cancel
+                      </Button>
                     )}
-                    lazyLoading={true}
-                    columns={totalUrlCount > 4 ? 3 : 2}
-                    displayCount={totalUrlCount > 9 ? 9 : totalUrlCount}
-                    isMainView={totalUrlCount === 1}
-                  />
-                </div>
-              )}
-
-              <div className="-bottom-12 absolute right-0 left-0 flex flex-col items-center justify-center">
-                <span className="whitespace-nowrap text-muted-foreground text-xs">
-                  Scroll for details
-                </span>
-                <ChevronDown className="h-4 w-4" />
-              </div>
-
-              {totalUrlCount > 1 && (
-                <>
-                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-                  <div
-                    className="-translate-y-1/2 absolute top-1/2 right-0 flex cursor-pointer flex-col items-center justify-center hover:opacity-80"
-                    onClick={() => {
-                      if (viewingImageIndex === null) {
-                        setViewingImageIndex(0);
-                      } else {
-                        setViewingImageIndex((prev) =>
-                          prev === urlList.length - 1 ? 0 : prev + 1,
-                        );
-                      }
-                    }}
-                  >
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-                  <div
-                    className="-translate-y-1/2 absolute top-1/2 left-0 flex cursor-pointer flex-col items-center justify-center hover:opacity-80"
-                    onClick={() => {
-                      if (viewingImageIndex === null) {
-                        setViewingImageIndex(urlList.length - 1);
-                      } else {
-                        setViewingImageIndex((prev) =>
-                          prev === 0 ? urlList.length - 1 : prev - 1,
-                        );
-                      }
-                    }}
-                  >
-                    <ChevronLeft className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                </>
-              )}
-            </div>
+                );
+            }
+          })()}
+
+          {/* Scroll indicator for all cases */}
+          <div className="-bottom-12 absolute right-0 left-0 flex flex-col items-center justify-center">
+            <span className="whitespace-nowrap text-muted-foreground text-xs">
+              Scroll for details
+            </span>
+            <ChevronDown className="h-4 w-4" />
           </div>
-          {runId && (
-            <div className="relative z-10 flex min-h-screen w-full justify-center rounded-t-sm border border-gray-200 bg-white/80 p-8 pb-16 drop-shadow-lg backdrop-blur-lg">
-              <div className="w-full max-w-5xl px-4">
-                <RunDetails run_id={runId} isPlayground={true} />
-              </div>
-            </div>
-          )}
-        </div>
-      );
 
-    // Default case for running, uploading, not-started, queued
-    default:
-      return (
-        <div className="flex h-full w-full animate-[pulse_4s_ease-in-out_infinite] flex-col items-center justify-center gap-1">
-          <p className="text-muted-foreground text-xs">
-            {run.live_status || "Starting..."}
-          </p>
-          <Progress
-            value={(run.progress || 0) * 100}
-            className="w-64 opacity-60"
-          />
-          {run.modal_function_call_id && (
-            <Button
-              variant="destructive"
-              onClick={handleCancel}
-              size="sm"
-              className="mt-2"
-            >
-              Cancel
-            </Button>
+          {/* Navigation controls - only show when needed */}
+          {totalUrlCount > 1 && run.status === "success" && (
+            <>
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+              <div
+                className="-translate-y-1/2 absolute top-1/2 right-0 flex cursor-pointer flex-col items-center justify-center hover:opacity-80"
+                onClick={() => {
+                  if (viewingImageIndex === null) {
+                    setViewingImageIndex(0);
+                  } else {
+                    setViewingImageIndex((prev) =>
+                      prev === urlList.length - 1 ? 0 : prev + 1,
+                    );
+                  }
+                }}
+              >
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+              <div
+                className="-translate-y-1/2 absolute top-1/2 left-0 flex cursor-pointer flex-col items-center justify-center hover:opacity-80"
+                onClick={() => {
+                  if (viewingImageIndex === null) {
+                    setViewingImageIndex(urlList.length - 1);
+                  } else {
+                    setViewingImageIndex((prev) =>
+                      prev === 0 ? urlList.length - 1 : prev - 1,
+                    );
+                  }
+                }}
+              >
+                <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </>
           )}
         </div>
-      );
-  }
+      </div>
+
+      {/* Details section for all cases */}
+      {runId && (
+        <div className="relative z-10 flex min-h-screen w-full justify-center rounded-t-sm border border-gray-200 bg-white/80 p-8 pb-16 drop-shadow-lg backdrop-blur-lg">
+          <div className="w-full max-w-5xl px-4">
+            <RunDetails run_id={runId} isPlayground={true} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function RunGallery({ runId }: { runId: string }) {
@@ -746,9 +770,11 @@ function RunGallery({ runId }: { runId: string }) {
                     ? "border-green-200 bg-green-50 text-green-600"
                     : run.status === "failed"
                       ? "border-red-200 bg-red-50 text-red-600"
-                      : run.status === "running"
-                        ? "border-blue-200 bg-blue-50 text-blue-600"
-                        : "border-gray-200 bg-gray-50 text-gray-600",
+                      : run.status === "timeout"
+                        ? "border-amber-200 bg-amber-50 text-amber-600"
+                        : run.status === "running"
+                          ? "border-blue-200 bg-blue-50 text-blue-600"
+                          : "border-gray-200 bg-gray-50 text-gray-600",
                 )}
               >
                 {run.status}
@@ -868,7 +894,7 @@ export function UserIcon({
               </AvatarFallback>
             </Avatar>
             {displayName && (
-              <span className="text-muted-foreground text-xs">
+              <span className="line-clamp-1 text-muted-foreground text-xs">
                 {userData?.username ||
                   `${userData?.first_name} ${userData?.last_name}`}
               </span>

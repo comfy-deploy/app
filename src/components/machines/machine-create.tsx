@@ -38,7 +38,7 @@ const newMachine = {
   // default values
   machine_builder_version: "4",
   allow_concurrent_inputs: 1,
-  concurrency_limit: 2,
+  concurrency_limit: 1,
   run_timeout: 300,
   idle_timeout: 60,
   ws_timeout: 2,

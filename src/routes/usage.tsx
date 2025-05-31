@@ -53,7 +53,7 @@ export const Route = createFileRoute("/usage")({
 
 function RouteComponent() {
   const [viewMode, setViewMode] = useState<"graph" | "grid">("graph");
-  const { data: invoices } = useQuery<Invoice[]>({
+  const { data: invoices, isLoading: invoicesLoading } = useQuery<Invoice[]>({
     queryKey: ["platform", "invoices"],
   });
 
@@ -184,14 +184,14 @@ function RouteComponent() {
   return (
     <div className="bg-white py-4 w-full">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
-        <Alert variant="warning" className="mb-6">
+        {/* <Alert variant="warning" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Under Maintenance</AlertTitle>
           <AlertDescription>
             The usage page is currently under maintenance. Some features may be
             temporarily unavailable. We apologize for any inconvenience.
           </AlertDescription>
-        </Alert>
+        </Alert> */}
         {/* <Suspense> */}
         <UnpaidInvoices />
         {/* </Suspense> */}
@@ -274,21 +274,63 @@ function RouteComponent() {
                 <SelectValue placeholder="Select billing period" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="current" className="font-medium">
-                  Current Period
-                  <span className="ml-2 text-muted-foreground">
-                    ({currentPeriod?.period_start} - {currentPeriod?.period_end}
-                    )
-                  </span>
-                </SelectItem>
-                <div className="px-2 py-1.5 text-muted-foreground text-xs">
-                  Past Periods
-                </div>
-                {invoices?.map((invoice) => (
-                  <SelectItem key={invoice.id} value={invoice.id}>
-                    {invoice.period_start} - {invoice.period_end}
-                  </SelectItem>
-                ))}
+                {invoicesLoading ? (
+                  <div className="px-4 py-2">
+                    <Skeleton className="h-6 w-full mb-2" />
+                    <Skeleton className="h-6 w-2/3 mb-2" />
+                    <Skeleton className="h-6 w-1/2" />
+                  </div>
+                ) : (
+                  <>
+                    <SelectItem value="current" className="font-medium">
+                      {(() => {
+                        if (!currentPeriod) return null;
+                        const startDate = currentPeriod.period_start_timestamp
+                          ? new Date(
+                              currentPeriod.period_start_timestamp * 1000,
+                            )
+                          : new Date();
+                        const endDate = currentPeriod.period_end_timestamp
+                          ? new Date(currentPeriod.period_end_timestamp * 1000)
+                          : new Date();
+                        const startStr = `${startDate.getMonth() + 1}/${startDate.getDate()}/${String(startDate.getFullYear()).slice(-2)}`;
+                        const endStr = `${endDate.getMonth() + 1}/${endDate.getDate()}/${String(endDate.getFullYear()).slice(-2)}`;
+                        return (
+                          <>
+                            Current Period
+                            <span className="ml-2 text-muted-foreground">
+                              ({startStr} - {endStr})
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </SelectItem>
+                    <div className="px-2 py-1.5 text-muted-foreground text-xs">
+                      Past Periods
+                    </div>
+                    {invoices?.map((invoice) => {
+                      const startDate = invoice.period_start_timestamp
+                        ? new Date(invoice.period_start_timestamp * 1000)
+                        : new Date();
+                      const endDate = invoice.period_end_timestamp
+                        ? new Date(invoice.period_end_timestamp * 1000)
+                        : new Date();
+                      const monthName = startDate.toLocaleString("default", {
+                        month: "long",
+                      });
+                      const startStr = `${startDate.getMonth() + 1}/${startDate.getDate()}/${String(startDate.getFullYear()).slice(-2)}`;
+                      const endStr = `${endDate.getMonth() + 1}/${endDate.getDate()}/${String(endDate.getFullYear()).slice(-2)}`;
+                      return (
+                        <SelectItem key={invoice.id} value={invoice.id}>
+                          {monthName}
+                          <span className="ml-2 text-muted-foreground">
+                            ({startStr} - {endStr})
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </>
+                )}
               </SelectContent>
             </Select>
             <Button

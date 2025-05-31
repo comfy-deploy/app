@@ -10,6 +10,7 @@ type updateUserSettings = {
   s3_bucket_name: string | null;
   s3_region: string | null;
   spend_limit: number;
+  assumed_role_arn: string | null;
 };
 export async function updateUser(body: Partial<updateUserSettings>) {
   if (!body) {

@@ -1,15 +1,17 @@
 import { GalleryView } from "@/components/GalleryView";
 import { PaddingLayout } from "@/components/PaddingLayout";
+import type { AssetType } from "@/components/SDInputs/sd-asset-input";
+import { GuideDialog } from "@/components/guide/GuideDialog";
 import {
   DeploymentDialog,
   DeploymentPage,
   useSelectedDeploymentStore,
 } from "@/components/deployment/deployment-page";
 import { MachineVersionWrapper } from "@/components/machine/machine-overview";
+import { MachineTopStickyBar } from "@/components/machine/machine-page";
 import { MachineSettingsWrapper } from "@/components/machine/machine-settings";
 import { useIsAdminAndMember } from "@/components/permissions";
 import { Playground } from "@/components/run/SharePageComponent";
-import { SessionItem } from "@/components/sessions/SessionItem";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -26,22 +28,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar";
+import {
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  Tooltip,
+} from "@/components/ui/tooltip";
+import { FileURLRender } from "@/components/workflows/OutputRender";
 import { RealtimeWorkflowProvider } from "@/components/workflows/RealtimeRunUpdate";
 import RunComponent from "@/components/workflows/RunComponent";
 import WorkflowComponent from "@/components/workflows/WorkflowComponent";
@@ -51,10 +52,12 @@ import {
 } from "@/components/workspace/ContainersTable";
 import { useWorkflowDeployments } from "@/components/workspace/ContainersTable";
 import { DeploymentDrawer } from "@/components/workspace/DeploymentDisplay";
-import { LogDisplay } from "@/components/workspace/LogDisplay";
-import { useSelectedVersion } from "@/components/workspace/Workspace";
+import {
+  useAssetsBrowserStore,
+  useSelectedVersion,
+} from "@/components/workspace/Workspace";
 import { WorkspaceClientWrapper } from "@/components/workspace/WorkspaceClientWrapper";
-import { WorkspaceStatusBar } from "@/components/workspace/WorkspaceStatusBar";
+import { AssetsBrowserPopup } from "@/components/workspace/assets-browser-drawer";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useMachine } from "@/hooks/use-machine";
 import { useSessionAPI } from "@/hooks/use-session-api";
@@ -65,9 +68,14 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createLazyFileRoute, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Share, Terminal } from "lucide-react";
+import { ImageIcon, Lock, Share } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useIsDeploymentAllowed } from "@/hooks/use-current-plan";
+import { PricingPage } from "@/routes/pricing";
+import { useCurrentPlanQuery } from "@/hooks/use-current-plan";
+import { LoadingIcon } from "@/components/loading-icon";
 
 interface Version {
   id: string;
@@ -161,26 +169,40 @@ function WorkflowPageComponent() {
 
   const { value: version } = useSelectedVersion(workflowId);
   const isAdminAndMember = useIsAdminAndMember();
+  const { isLoading: isPlanLoading } = useCurrentPlanQuery();
+  const isDeploymentAllowed = useIsDeploymentAllowed();
 
   switch (currentView) {
     case "requests":
       view = (
         <PaddingLayout>
-          <RequestPage />
-        </PaddingLayout>
-      );
-      break;
-    case "containers":
-      view = (
-        <PaddingLayout className="mt-10">
-          <ContainersTable workflow_id={workflowId} />
+          {isPlanLoading ? (
+            <div className="flex h-full w-full items-center justify-center">
+              <LoadingIcon />
+            </div>
+          ) : !isDeploymentAllowed ? (
+            <PricingPage />
+          ) : (
+            <RequestPage />
+          )}
         </PaddingLayout>
       );
       break;
     case "deployment":
       view = (
         <PaddingLayout>
-          <DeploymentPage />
+          {isPlanLoading ? (
+            <div className="flex h-full w-full items-center justify-center">
+              <LoadingIcon />
+            </div>
+          ) : !isDeploymentAllowed ? (
+            <PricingPage />
+          ) : (
+            <>
+              <GuideDialog guideType="deployment" />
+              <DeploymentPage />
+            </>
+          )}
         </PaddingLayout>
       );
       break;
@@ -201,45 +223,59 @@ function WorkflowPageComponent() {
       view = <GalleryView workflowID={workflowId} />;
       break;
     case "machine":
-      view = (
-        <PaddingLayout className="mx-auto mt-8 max-w-screen-lg">
-          {machine && (
-            <>
-              <MachineVersionWrapper machine={machine} />
-              <MachineSettingsWrapper
-                title="Machine Settings"
-                machine={machine}
-                readonly={!isAdminAndMember}
-                className="top-0"
-              />
-            </>
-          )}
-        </PaddingLayout>
+      view = machine && (
+        <>
+          <MachineTopStickyBar machine={machine} />
+          <div className="mx-auto mt-4 w-full max-w-screen-lg">
+            <MachineVersionWrapper machine={machine} />
+            <MachineSettingsWrapper
+              title="Machine Settings"
+              machine={machine}
+              readonly={!isAdminAndMember}
+              className="top-0"
+            />
+          </div>
+        </>
       );
       break;
   }
 
   const tabs = isAdminAndMember ? workspace : ["playground", "gallery"];
 
-  const { createSession, listSession, deleteSession } = useSessionAPI(
-    workflow?.selected_machine_id,
-  );
-
-  const { data: sessions } = listSession;
-
   const { openMobile: isMobileSidebarOpen, isMobile } = useSidebar();
 
   const router = useRouter();
 
   const [sessionId, setSessionId] = useQueryState("sessionId");
-  // const sessionSelected = sessions?.find(
-  //   (session) => session.session_id === sessionId,
-  // );
+  const { open: isAssetsOpen, setOpen: setIsAssetsOpen } =
+    useAssetsBrowserStore();
 
   // Find public share deployment if it exists
   const publicShareDeployment = deployments?.find(
     (d: Deployment) => d.environment === "public-share",
   );
+
+  const handleAsset = async (asset: AssetType) => {
+    try {
+      await callServerPromise(
+        api({
+          url: `workflow/${workflowId}`,
+          init: {
+            method: "PATCH",
+            body: JSON.stringify({ cover_image: asset.url }),
+          },
+        }),
+      );
+      toast.success("Cover image updated!");
+      queryClient.invalidateQueries({
+        queryKey: ["workflow", workflowId],
+      });
+    } catch (error) {
+      toast.error("Failed to update cover image");
+    } finally {
+      setIsAssetsOpen(false);
+    }
+  };
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -328,8 +364,22 @@ function WorkflowPageComponent() {
             </SidebarGroup>
 
             {isAdminAndMember && (
-              <SidebarGroup>
-                <SidebarGroupLabel>API</SidebarGroupLabel>
+              <SidebarGroup
+                className={cn(
+                  !isDeploymentAllowed &&
+                    !isPlanLoading &&
+                    "bg-zinc-200/50 shadow-inner",
+                )}
+              >
+                <SidebarGroupLabel className="flex justify-between">
+                  API
+                  {!isDeploymentAllowed && !isPlanLoading && (
+                    <Badge variant="purple" className="!text-2xs">
+                      <Lock className="h-3 w-3" />
+                      Deployment
+                    </Badge>
+                  )}
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="px-1">
                     {deployment.map((tab) => (
@@ -346,11 +396,20 @@ function WorkflowPageComponent() {
                               ? "bg-gray-200 text-gray-900 dark:bg-zinc-800 dark:text-gray-100"
                               : "text-gray-500 dark:text-gray-400",
                             "transition-colors",
+                            !isDeploymentAllowed &&
+                              !isPlanLoading &&
+                              "opacity-60",
                           )}
                           asChild
                         >
-                          <button className="w-full capitalize" type="button">
+                          <button
+                            className="flex w-full justify-between capitalize"
+                            type="button"
+                          >
                             {tab}
+                            {!isDeploymentAllowed && !isPlanLoading && (
+                              <Lock className="!h-3.5 !w-3.5" />
+                            )}
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -362,6 +421,70 @@ function WorkflowPageComponent() {
           </motion.div>
         </AnimatePresence>
       </Portal>
+      <Portal targetId="sidebar-panel-footer">
+        {workflow && (
+          <div className="w-full p-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="mx-auto flex items-center justify-center">
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      {workflow.cover_image ? (
+                        <div className="mb-2 h-36 w-36 overflow-hidden rounded-md">
+                          <FileURLRender
+                            url={workflow.cover_image}
+                            imgClasses="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="mb-2 flex h-36 w-36 items-center justify-center rounded-md border-2 border-gray-300 border-dashed hover:border-gray-400">
+                          <ImageIcon className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add Cover Image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" className="w-40">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    router.navigate({
+                      to: "/workflows/$workflowId/$view",
+                      params: {
+                        workflowId,
+                        view: "gallery",
+                      },
+                      search: {
+                        action: true,
+                      },
+                    });
+                  }}
+                >
+                  From Gallery
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setIsAssetsOpen(true);
+                  }}
+                >
+                  From Assets
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {workflow.description && (
+              <p className="line-clamp-3 text-2xs text-gray-600 leading-snug">
+                {workflow.description}
+              </p>
+            )}
+            {isAssetsOpen && (
+              <AssetsBrowserPopup isPlayground handleAsset={handleAsset} />
+            )}
+          </div>
+        )}
+      </Portal>
       {mountedViews.has("workspace") ? (
         <div
           className="h-full w-full"
@@ -369,6 +492,9 @@ function WorkflowPageComponent() {
             display: currentView === "workspace" ? "block" : "none",
           }}
         >
+          {currentView === "workspace" && (
+            <GuideDialog guideType={sessionId ? "session" : "workspace"} />
+          )}
           <WorkspaceClientWrapper workflow_id={workflowId} />
         </div>
       ) : null}

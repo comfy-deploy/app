@@ -63,7 +63,7 @@ export function OnboardingCall() {
   }, []);
 
   return (
-    <div className="inset-0 z-[1] bg-white w-full">
+    <div className="inset-0 z-[1] w-full bg-white">
       <div className="flex scroll-m-6 flex-col items-center justify-start pt-10">
         <h1 className="mb-4 text-center font-bold">
           <span className="inline-flex animate-background-shine bg-[length:250%_100%] bg-[linear-gradient(110deg,#1e293b,45%,#939393,55%,#1e293b)] bg-clip-text pb-2 text-5xl text-transparent sm:text-6xl md:text-5xl">
@@ -140,7 +140,7 @@ export function BookcallForm() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col items-center justify-center p-8 bg-gradient-to-r from-gray-700 to-gray-900 rounded-lg text-white shadow-lg w-full max-w-2xl mx-auto"
+        className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 p-8 text-white shadow-lg"
       >
         <motion.div
           initial={{ scale: 0 }}
@@ -148,7 +148,7 @@ export function BookcallForm() {
           transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
         >
           <svg
-            className="w-12 h-12 mb-4 text-gray-300"
+            className="mb-4 h-12 w-12 text-gray-300"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -166,7 +166,7 @@ export function BookcallForm() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-2xl font-semibold mb-2 text-gray-100"
+          className="mb-2 font-semibold text-2xl text-gray-100"
         >
           Thank you for booking a call
         </motion.h2>
@@ -174,7 +174,7 @@ export function BookcallForm() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="text-center text-gray-300 mb-6"
+          className="mb-6 text-center text-gray-300"
         >
           See you soon on the introduction call!
         </motion.p>
@@ -186,7 +186,7 @@ export function BookcallForm() {
           <Button
             variant="linkHover2"
             onClick={() => setShowCalendar(true)}
-            className="after:bg-white text-gray-300 hover:text-white transition-colors"
+            className="text-gray-300 transition-colors after:bg-white hover:text-white"
           >
             Need to book another call?
           </Button>
@@ -197,7 +197,7 @@ export function BookcallForm() {
 
   return (
     <>
-      <form action={formAction} className="max-w-3xl space-y-6 mx-auto">
+      <form action={formAction} className="mx-auto max-w-3xl space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName" className="block text-left">

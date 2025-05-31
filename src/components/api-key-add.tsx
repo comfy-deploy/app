@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "./ui/form";
 import { Input } from "./ui/input";
+import { Plus } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(1),
@@ -55,8 +56,9 @@ export function ApiKeyAdd({ onKeyCreated }: ApiKeyAddProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="default" className="">
-          Create API Key
+        <Button variant="default">
+          <Plus className="mr-1 h-4 w-4" />
+          Add Key
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

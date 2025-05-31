@@ -31,5 +31,5 @@ if (!window.Cal) {
         p(cal, ar);
       };
   })(window, "https://app.cal.com/embed/embed.js", "init");
-  Cal("init", "request-demo", { origin: "https://cal.com" });
+  Cal("init", "demo", { origin: "https://cal.com" });
 }

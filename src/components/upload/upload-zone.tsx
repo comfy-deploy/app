@@ -25,6 +25,12 @@ export function UploadZone({
   const { mutateAsync: uploadAsset } = useAssetUpload();
   const setFileInput = useUploadStore((state) => state.setFileInput);
   const setProgress = useUploadStore((state) => state.setProgress);
+  const addToQueue = useUploadStore((state) => state.addToQueue);
+  const removeFromQueue = useUploadStore((state) => state.removeFromQueue);
+  const fileQueue = useUploadStore((state) => state.fileQueue);
+  const isUploading = useUploadStore((state) => state.isUploading);
+  const setCurrentFile = useUploadStore((state) => state.setCurrentFile);
+  const addFailedFile = useUploadStore((state) => state.addFailedFile);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
   const { currentPath } = useAssetBrowserStore();
@@ -35,31 +41,72 @@ export function UploadZone({
     }
   }, [setFileInput]);
 
-  const handleFileImport = useCallback(
-    async (file: File) => {
-      try {
-        setProgress(0);
-        await uploadAsset({
-          file,
-          parent_path: currentPath,
-          onProgress: (progress) => {
-            setProgress(progress);
-          },
-        });
-        toast.success("File uploaded successfully");
-      } catch (e) {
-        toast.error("Error uploading file");
-      } finally {
-        setProgress(null);
+  const processQueue = useCallback(async () => {
+    if (fileQueue.length === 0 || isUploading) return;
+
+    const nextFile = removeFromQueue();
+    if (!nextFile) return;
+
+    // Set the current file being processed
+    setCurrentFile(nextFile);
+
+    try {
+      setProgress(0);
+      await uploadAsset({
+        file: nextFile,
+        parent_path: currentPath,
+        onProgress: (progress) => {
+          setProgress(progress);
+        },
+      });
+      toast.success(`${nextFile.name} uploaded successfully`);
+    } catch (e) {
+      toast.error(`Error uploading ${nextFile.name}`);
+      // Track failed uploads
+      addFailedFile(nextFile.name);
+    } finally {
+      setProgress(null);
+      setCurrentFile(null);
+      // Process next file if there are more in the queue
+      if (fileQueue.length > 0) {
+        setTimeout(() => processQueue(), 500); // Small delay before next file
+      }
+    }
+  }, [
+    uploadAsset,
+    currentPath,
+    setProgress,
+    fileQueue,
+    removeFromQueue,
+    isUploading,
+    setCurrentFile,
+    addFailedFile,
+  ]);
+
+  // Monitor queue and start processing when files are added
+  useEffect(() => {
+    if (fileQueue.length > 0 && !isUploading) {
+      processQueue();
+    }
+  }, [fileQueue, isUploading, processQueue]);
+
+  const handleFilesImport = useCallback(
+    (files: FileList | File[]) => {
+      const fileArray = Array.from(files);
+      if (fileArray.length === 0) return;
+
+      addToQueue(fileArray);
+
+      if (fileArray.length > 1) {
+        toast.info(`Added ${fileArray.length} files to upload queue`);
       }
     },
-    [uploadAsset, currentPath, setProgress],
+    [addToQueue],
   );
 
   // Document-level handlers
   useEffect(() => {
     const handleDocumentDragEnter = (e: DragEvent) => {
-      console.log("drag enter");
       e.preventDefault();
       dragCounter.current++;
       if (e.dataTransfer?.types.includes("Files")) {
@@ -81,7 +128,7 @@ export function UploadZone({
       setIsDragging(false);
 
       if (e.dataTransfer?.files?.length) {
-        handleFileImport(e.dataTransfer.files[0]);
+        handleFilesImport(e.dataTransfer.files);
       }
     };
 
@@ -112,7 +159,7 @@ export function UploadZone({
         capture: true,
       });
     };
-  }, [handleFileImport]);
+  }, [handleFilesImport]);
 
   useEffect(() => {
     if (!iframeEndpoint) return;
@@ -129,7 +176,7 @@ export function UploadZone({
             console.log("Files dropped:", data.files);
             console.log("Drop position:", data.x, data.y);
             setIsDragging(false);
-            handleFileImport(data.files[0]);
+            handleFilesImport(data.files);
             break;
 
           case "file_dragover":
@@ -160,7 +207,7 @@ export function UploadZone({
         capture: true,
       });
     };
-  }, [iframeEndpoint, handleFileImport]);
+  }, [iframeEndpoint, handleFilesImport]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     if (!e.dataTransfer.types.includes("Files")) return;
@@ -184,13 +231,13 @@ export function UploadZone({
     if (!e.dataTransfer.types.includes("Files")) return;
     e.preventDefault();
     e.stopPropagation();
-    handleFileImport(e.dataTransfer.files[0]);
+    handleFilesImport(e.dataTransfer.files);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileImport(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFilesImport(files);
       e.target.value = ""; // Reset input
     }
   };
@@ -208,6 +255,7 @@ export function UploadZone({
         ref={fileInputRef}
         className="hidden"
         onChange={handleFileSelect}
+        multiple
       />
 
       {/* Drag overlay */}
@@ -222,10 +270,10 @@ export function UploadZone({
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="rounded-lg bg-white p-6 text-center shadow-lg">
               <p className="font-medium text-gray-700 text-lg">
-                Drop file here
+                Drop files here
               </p>
               <p className="mt-1 text-gray-500 text-sm">
-                Release to upload asset
+                Release to upload assets
               </p>
             </div>
           </div>

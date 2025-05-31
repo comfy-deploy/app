@@ -59,9 +59,9 @@ export function useSessionAPI(machineId?: string | null) {
           url: `session/${data.sessionId}`,
           init: {
             method: "DELETE",
-            body: JSON.stringify({
-              wait_for_shutdown: data.waitForShutdown,
-            }),
+          },
+          params: {
+            wait_for_shutdown: data.waitForShutdown,
           },
         });
       },

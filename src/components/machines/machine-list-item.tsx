@@ -2,6 +2,7 @@ import { MachineVersionBadge } from "@/components/machine/machine-version-badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   type ChartConfig,
   ChartContainer,
@@ -150,6 +151,8 @@ export function MachineListItem({
   className,
   showMigrateDialog = true,
   children,
+  isSelected,
+  onSelectionChange,
 }: {
   machine: any;
   machineId: any;
@@ -160,6 +163,8 @@ export function MachineListItem({
   className?: string;
   showMigrateDialog?: boolean;
   children?: React.ReactNode;
+  isSelected?: boolean;
+  onSelectionChange?: (machineId: string, selected: boolean) => void;
 }) {
   const { data: events, isLoading } = useMachineEvents(machineId);
   const { hasActiveEvents } = useHasActiveEvents(machineId);
@@ -222,11 +227,30 @@ export function MachineListItem({
         "group relative flex w-full flex-col items-center overflow-hidden rounded-none bg-white px-4 py-3",
         isStale && "bg-gray-50 contrast-75",
         index % 2 !== 0 && "bg-gray-50",
+        isSelected && "bg-primary/5 ring-1 ring-primary/20",
         className,
       )}
     >
       <div className="z-[2] flex w-full flex-row justify-between">
         <div className="flex flex-row items-center gap-4">
+          {/* Selection checkbox */}
+          <div 
+            className="z-20" 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSelectionChange?.(machineId, !isSelected);
+            }}
+          >
+            <Checkbox 
+              checked={isSelected}
+              className="h-4 w-4 cursor-pointer"
+              onCheckedChange={(checked) => {
+                onSelectionChange?.(machineId, !!checked);
+              }}
+            />
+          </div>
+          
           <div className="flex flex-col justify-center">
             <div className="flex flex-row items-center gap-2">
               {(() => {

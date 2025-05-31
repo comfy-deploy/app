@@ -144,7 +144,7 @@ export function WorkspaceLoading({
       arr[index + 1]?.startProgress ?? Number.POSITIVE_INFINITY;
     return progress >= startProgress && progress < nextThreshold;
   });
-  console.log(final_messages, progress);
+  // console.log(final_messages, progress);
 
   // If no special status content, show the default progress messages
   if (!statusContent) {

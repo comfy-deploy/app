@@ -281,11 +281,15 @@ export function MachineVersionListItem({
     from: "/machines/$machineId",
   });
   const sub = useCurrentPlan();
-  const isBusinessOrEnterprise = Boolean(
+  const isBusinessOrEnterpriseOrDeployment = Boolean(
     sub?.plans?.plans[0] &&
-      ["business", "enterprise", "business_monthly"].includes(
-        sub.plans.plans[0].toLowerCase(),
-      ),
+      [
+        "business",
+        "enterprise",
+        "business_monthly",
+        "deployment_monthly",
+        "deployment_yearly",
+      ].includes(sub.plans.plans[0].toLowerCase()),
   );
 
   // Single state to track the build start time
@@ -400,7 +404,7 @@ export function MachineVersionListItem({
           <InstantRollback
             machineVersionId={machineVersion.id}
             machine={machine}
-            isBusinessOrEnterprise={isBusinessOrEnterprise}
+            isBusinessOrEnterprise={isBusinessOrEnterpriseOrDeployment}
           />
         </div>
       </div>

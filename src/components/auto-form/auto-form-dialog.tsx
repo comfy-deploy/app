@@ -147,7 +147,7 @@ export function InlineAutoForm<
       fieldConfig={props.fieldConfig}
       formSchema={props.formSchema}
       onSubmit={async (data) => {
-        console.log(data);
+        // console.log(data);
         setIsLoading(true);
         await props.serverAction(data);
         if (props.mutateFn) {

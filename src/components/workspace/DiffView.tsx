@@ -679,3 +679,229 @@ export function SnapshotDiffView({
     </div>
   );
 }
+
+/**
+ * Gets a minimal representation of workflow differences with just the essential information.
+ *
+ * @param oldWorkflow - The original workflow to compare
+ * @param newWorkflow - The new workflow to compare
+ * @param workflowApi - The workflow API structure providing additional context
+ * @returns Minimal diff with only input names, values, and node types
+ */
+export function getMinimalWorkflowDiff(
+  oldWorkflow: any,
+  newWorkflow: any,
+  workflowApi: any = null,
+) {
+  const differences = diff(oldWorkflow, newWorkflow, {
+    keysToSkip: ["extra", "order", "$index"],
+    embeddedObjKeys: {
+      nodes: "id",
+    },
+  });
+
+  // Data source for node information
+  const nodeSource = workflowApi || newWorkflow;
+  const oldNodeSource = workflowApi || oldWorkflow;
+
+  // Extract node info
+  const getNodeInfo = (workflow: any) => {
+    const nodes = new Map();
+
+    if (!workflow) return nodes;
+
+    // Handle API format (with class_type)
+    const isApiFormat = Object.values(workflow).some(
+      (node: any) => node && typeof node === "object" && "class_type" in node,
+    );
+
+    if (isApiFormat) {
+      for (const [nodeId, data] of Object.entries(workflow)) {
+        if (typeof data === "object" && data !== null) {
+          nodes.set(nodeId, {
+            id: nodeId,
+            type: data.class_type || null,
+            title: data._meta?.title || null,
+            inputs: data.inputs || {},
+          });
+        }
+      }
+    } else if (workflow.nodes) {
+      // Handle standard format
+      for (const [_, node] of Object.entries(workflow.nodes)) {
+        nodes.set(node.id, {
+          id: node.id,
+          type: node.type,
+          title: node.title || null,
+          inputs: node.inputs || {},
+        });
+      }
+    }
+
+    return nodes;
+  };
+
+  const nodeInfo = getNodeInfo(nodeSource);
+  const oldNodeInfo = getNodeInfo(oldNodeSource);
+
+  // Extract node ID from path
+  const getNodeId = (path: string) => {
+    const match = path.match(/^(?:nodes\.)?(\d+)(?:\.|$)/);
+    return match ? match[1] : null;
+  };
+
+  // Extract parameter name from path
+  const getParamName = (
+    path: string,
+    nodeId: string | null,
+    nodes: Map<string, any>,
+  ) => {
+    // Regular input parameter
+    const inputMatch = path.match(/inputs\.([^.]+)$/);
+    if (inputMatch) return inputMatch[1];
+
+    // Widget value (captures both named and numeric indices)
+    const widgetMatch = path.match(/widgets_values\.([^.]+)$/);
+    if (widgetMatch) {
+      const widgetKey = widgetMatch[1];
+
+      // If it's a numeric index, try to map it to an input name
+      if (/^\d+$/.test(widgetKey) && nodeId) {
+        const node = nodes.get(nodeId);
+        if (node?.inputs) {
+          const idx = Number.parseInt(widgetKey, 10);
+          const inputNames = Object.keys(node.inputs);
+          if (inputNames.length > idx) {
+            return inputNames[idx];
+          }
+        }
+        // If we can't map it to an input name, return the index as is
+        return widgetKey;
+      }
+
+      // For named widget values, return as is
+      return widgetKey;
+    }
+
+    return null;
+  };
+
+  // Store simplified changes
+  const changes = {
+    updates: [] as any[],
+    additions: [] as any[],
+    removals: [] as any[],
+  };
+
+  // Change this part to track changes by node+input combination
+  const processedChanges = new Map<string, any>();
+
+  // Process changes
+  const processChange = (change: any, path: string[] = []) => {
+    const fullPath = [...path, change.key].join(".");
+    const nodeId = getNodeId(fullPath);
+    const nodes = change.type === "REMOVE" ? oldNodeInfo : nodeInfo;
+    const paramName = getParamName(fullPath, nodeId, nodes);
+    const nodeData = nodeId ? nodes.get(nodeId) : null;
+
+    // Only process if we have a node ID
+    if (nodeId) {
+      // Create a unique key for this node+input combination
+      const changeKey = `${nodeId}:${paramName || "unknown"}`;
+
+      if (change.type === "UPDATE") {
+        // Only add if we haven't already processed this node+input combo
+        // or if it has a real input name (prefer real input names over null)
+        if (
+          !processedChanges.has(changeKey) ||
+          (paramName && !processedChanges.get(changeKey).inputName)
+        ) {
+          const changeInfo = {
+            nodeId,
+            nodeType: nodeData?.type,
+            nodeTitle: nodeData?.title,
+            inputName: paramName,
+            oldValue: change.oldValue,
+            newValue: change.value,
+            path: fullPath, // Store path for debugging
+          };
+
+          changes.updates.push(changeInfo);
+          processedChanges.set(changeKey, changeInfo);
+        }
+      } else if (change.type === "ADD") {
+        changes.additions.push({
+          nodeId,
+          nodeType: nodeData?.type,
+          nodeTitle: nodeData?.title,
+          inputName: paramName,
+          value: change.value,
+        });
+      } else if (change.type === "REMOVE") {
+        changes.removals.push({
+          nodeId,
+          nodeType: nodeData?.type,
+          nodeTitle: nodeData?.title,
+          inputName: paramName,
+          value: change.value,
+        });
+      }
+    }
+
+    // Process nested changes
+    if (change.changes) {
+      for (const subChange of change.changes) {
+        processChange(subChange, fullPath ? fullPath.split(".") : []);
+      }
+    }
+  };
+
+  // Process all changes
+  if (Array.isArray(differences)) {
+    for (const change of differences) {
+      processChange(change);
+    }
+  }
+
+  // Filter duplicates first
+  const filteredUpdates = [];
+  const updatesByNode = new Map();
+
+  // Group by nodeId
+  for (const update of changes.updates) {
+    const key = update.nodeId;
+    if (!updatesByNode.has(key)) {
+      updatesByNode.set(key, []);
+    }
+    updatesByNode.get(key).push(update);
+  }
+
+  // For each node, keep only the best updates
+  for (const [_, nodeUpdates] of updatesByNode) {
+    // If we have updates with inputName, only keep those
+    const updatesWithNames = nodeUpdates.filter((u) => u.inputName !== null);
+    if (updatesWithNames.length > 0) {
+      filteredUpdates.push(...updatesWithNames);
+    } else {
+      // Otherwise keep all
+      filteredUpdates.push(...nodeUpdates);
+    }
+  }
+
+  // Update the updates array with filtered version
+  changes.updates = filteredUpdates;
+
+  // Calculate the correct summary based on filtered values
+  return {
+    summary: {
+      total:
+        changes.updates.length +
+        changes.additions.length +
+        changes.removals.length,
+      updates: changes.updates.length,
+      additions: changes.additions.length,
+      removals: changes.removals.length,
+    },
+    changes,
+  };
+}

@@ -15,6 +15,7 @@ export const WorkflowInputType = z.object({
   display_name: z.string().optional(),
   description: z.string().optional(),
   enum_values: z.array(z.string()).optional(),
+  nodeId: z.string().optional(), // Add nodeId for reference when saving order
 });
 
 export const WorkflowInputsType = z.array(WorkflowInputType);
@@ -28,8 +29,9 @@ export function getInputsFromWorkflow(workflow_version: any) {
 
 export function getInputsFromWorkflowAPI(workflow_api?: any) {
   if (!workflow_api) return null;
-  return Object.entries(workflow_api)
-    .map(([_, value]) => {
+
+  const inputs = Object.entries(workflow_api)
+    .map(([id, value]: [string, any]) => {
       if (!value.class_type) return undefined;
       const nodeType = (customInputNodes as any)[value.class_type];
       if (nodeType) {
@@ -44,17 +46,31 @@ export function getInputsFromWorkflowAPI(workflow_api?: any) {
           max_value: value.inputs.max_value as number | undefined,
           display_name: value.inputs.display_name as string,
           description: value.inputs.description as string,
+          nodeId: id, // Store the node ID for reference when saving order
         } as any as z.infer<typeof WorkflowInputType>;
       }
       return undefined;
     })
     .filter((item) => item !== undefined) as z.infer<typeof WorkflowInputsType>;
+
+  return inputs.sort((a, b) => {
+    const nodeIdA = a.nodeId as string | undefined;
+    const nodeIdB = b.nodeId as string | undefined;
+
+    if (!nodeIdA || !nodeIdB) return 0;
+
+    const orderA =
+      workflow_api[nodeIdA]?._meta?.cd_input_order ?? Number.MAX_SAFE_INTEGER;
+    const orderB =
+      workflow_api[nodeIdB]?._meta?.cd_input_order ?? Number.MAX_SAFE_INTEGER;
+    return orderA - orderB;
+  });
 }
 
 export function getInputsFromWorkflowJSON(workflow?: any) {
   if (!workflow) return null;
   return workflow.nodes
-    .map((node) => {
+    .map((node: any) => {
       if (!node.type) return undefined;
       const nodeType =
         customInputNodes[node.type as keyof typeof customInputNodes];
@@ -88,7 +104,7 @@ export function getInputsFromWorkflowJSON(workflow?: any) {
       }
       return undefined;
     })
-    .filter((item) => item !== undefined);
+    .filter((item: any) => item !== undefined);
 }
 
 export function getDefaultValuesFromWorkflow(inputs: Record<string, any>) {

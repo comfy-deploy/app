@@ -37,8 +37,6 @@ export default function MachinePage({
     queryKey: ["machine", params.machine_id],
     refetchInterval: 5000,
   });
-  const navigate = useNavigate();
-
   if (isLoading || !machine) {
     return (
       <>
@@ -53,42 +51,7 @@ export default function MachinePage({
   return (
     <div className="w-full">
       <div className="mx-auto w-full">
-        <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm">
-          <div className="flex flex-row items-center gap-2">
-            <Link
-              to={`/machines/${machine.id}`}
-              params={{ machineId: machine.id }}
-              className="flex flex-row items-center gap-2 font-medium text-md"
-            >
-              {machine.name}
-              {machine.machine_version_id && (
-                <MachineVersionBadge machine={machine} isExpanded={true} />
-              )}
-            </Link>
-            {machine.type === "comfy-deploy-serverless" && (
-              <>
-                <MachineRenameButton machine={machine} />
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => {
-                    navigate({
-                      to: "/machines/$machineId/files",
-                      params: { machineId: machine.id },
-                    });
-                  }}
-                >
-                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </>
-            )}
-          </div>
-          <div className="flex flex-row gap-2">
-            <MachineCostEstimate machineId={machine.id} />
-            <LastActiveEvent machineId={machine.id} />
-          </div>
-        </div>
-
+        <MachineTopStickyBar machine={machine} />
         <div className="mx-auto max-w-[1200px]">
           <MachineOverview machine={machine} />
         </div>
@@ -97,6 +60,47 @@ export default function MachinePage({
   );
 }
 
+export function MachineTopStickyBar({ machine }: { machine: any }) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm">
+      <div className="flex flex-row items-center gap-2">
+        <Link
+          to={`/machines/${machine.id}`}
+          params={{ machineId: machine.id }}
+          className="flex flex-row items-center gap-2 font-medium text-md"
+        >
+          {machine.name}
+          {machine.machine_version_id && (
+            <MachineVersionBadge machine={machine} isExpanded={true} />
+          )}
+        </Link>
+        {machine.type === "comfy-deploy-serverless" && (
+          <>
+            <MachineRenameButton machine={machine} />
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                navigate({
+                  to: "/machines/$machineId/files",
+                  params: { machineId: machine.id },
+                });
+              }}
+            >
+              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </>
+        )}
+      </div>
+      <div className="flex flex-row gap-2">
+        <MachineCostEstimate machineId={machine.id} />
+        <LastActiveEvent machineId={machine.id} />
+      </div>
+    </div>
+  );
+}
 function MachineRenameButton({ machine }: { machine: any }) {
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState(machine.name);

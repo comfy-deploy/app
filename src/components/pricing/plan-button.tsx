@@ -17,6 +17,16 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "../auto-form/auto-form-dialog";
 import { Badge } from "../ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 async function getUpgradeOrNewPlan(plan: string, coupon?: string) {
   return api({
@@ -172,6 +182,7 @@ export function UpgradeButton(props: PlanButtonProps) {
   const { userId, orgId } = useAuth();
   const [invoice, setInvoice] = useState<Invoice | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const router = useRouter();
@@ -180,12 +191,9 @@ export function UpgradeButton(props: PlanButtonProps) {
 
   // Parse the subscription data from props.data
   const subscriptionData = props.subscription;
-  console.log(subscriptionData?.products);
   const hasScheduledChange = subscriptionData?.products?.find(
     (plan: any) => plan.status === "scheduled",
   );
-
-  console.log(subscriptionData);
 
   const label = getButtonLabel(
     props.plans || [],
@@ -194,10 +202,6 @@ export function UpgradeButton(props: PlanButtonProps) {
   );
 
   const [coupon, setCoupon] = useState<string>();
-
-  const search = useSearch({
-    from: "/pricing",
-  });
 
   const ready = true; //search?.ready;
 
@@ -221,11 +225,77 @@ export function UpgradeButton(props: PlanButtonProps) {
     !label.includes("Started") &&
     !label.includes("Reactivate");
 
+  const handlePlanChange = async () => {
+    setIsLoading(true);
+    try {
+      const res = await callServerPromise(
+        api({
+          url: "platform/checkout",
+          params: {
+            plan: props.plan,
+            trial: props.trial,
+            redirect_url: window.location.href,
+            upgrade: true,
+            coupon,
+          },
+        }),
+      );
+
+      if (res.error) {
+        toast.error(res.error);
+      } else if (res.url) {
+        window.location.href = res.url;
+      }
+    } catch (error) {
+      toast.error("Failed to process request");
+    } finally {
+      setIsLoading(false);
+      setShowConfirmDialog(false);
+    }
+  };
+
   // Determine if button should be disabled
   // const isDisabled = hasScheduledChange && label !== "Manage";
 
   return (
     <>
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {label === "Upgrade"
+                ? "Confirm Upgrade"
+                : label === "Downgrade"
+                  ? "Confirm Downgrade"
+                  : label.startsWith("Switch to")
+                    ? `Confirm ${label}`
+                    : "Confirm Plan Change"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {label === "Upgrade"
+                ? "Are you sure you want to upgrade your plan? You will be charged immediately."
+                : label === "Downgrade"
+                  ? "Are you sure you want to downgrade your plan? This will take effect at the end of your current billing period."
+                  : label === "Switch to yearly"
+                    ? "Are you sure you want to switch to yearly billing? You will be charged immediately. This may provide savings compared to monthly billing."
+                    : label === "Switch to monthly"
+                      ? "Are you sure you want to switch to monthly billing? You will be charged immediately."
+                      : "Are you sure you want to change your plan? This will update your subscription terms."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePlanChange}>
+              {label.startsWith("Switch to")
+                ? "Confirm Switch"
+                : label === "Upgrade"
+                  ? "Confirm Upgrade"
+                  : "Confirm Downgrade"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Modal
         title={label}
         setOpen={async (open) => {
@@ -284,11 +354,6 @@ export function UpgradeButton(props: PlanButtonProps) {
                 router.navigate({
                   to: "/onboarding-call",
                 });
-                // window.open(
-                //   "https://cal.com/forms/2007157f-bc77-478f-8604-2029f58b364a?solution=" +
-                //     encodeURIComponent("ComfyDeploy Enterprise"),
-                //   "_blank",
-                // );
                 return;
               }
 
@@ -299,36 +364,17 @@ export function UpgradeButton(props: PlanButtonProps) {
                 return;
               }
 
-              setIsLoading(true);
-              try {
-                // const invoice = await callServerPromise(
-                //   getUpgradeOrNewPlan(props.plan, coupon),
-                // );
-
-                // if (!invoice || "error" in invoice) {
-                const res = await callServerPromise(
-                  api({
-                    url: "platform/checkout",
-                    params: {
-                      plan: props.plan,
-                      trial: props.trial,
-                      redirect_url: window.location.href,
-                      upgrade: true,
-                      coupon,
-                    },
-                  }),
-                );
-
-                if (res.error) {
-                  toast.error(res.error);
-                } else if (res.url) {
-                  window.location.href = res.url;
-                }
-              } catch (error) {
-                toast.error("Failed to process upgrade request");
-              } finally {
-                setIsLoading(false);
+              if (
+                label === "Upgrade" ||
+                label === "Downgrade" ||
+                label === "Switch to monthly" ||
+                label === "Switch to yearly"
+              ) {
+                setShowConfirmDialog(true);
+                return;
               }
+
+              await handlePlanChange();
             }}
           >
             {isCustom ? "Book a call" : label}

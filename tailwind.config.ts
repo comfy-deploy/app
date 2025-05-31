@@ -205,6 +205,10 @@ const config: Config = {
         "3xl": "1600px",
         "4xl": "1920px",
       },
+      containers: {
+        "2xs": "16rem",
+        "4xs": "8rem",
+      },
     },
   },
   plugins: [

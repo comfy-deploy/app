@@ -45,7 +45,6 @@ import {
 } from "../ui/select";
 import { Progress } from "../ui/progress";
 import { toast } from "sonner";
-import { defaultWorkflowTemplates } from "@/utils/default-workflow";
 import { sendEventToCD, sendWorkflow } from "./sendEventToCD";
 import { Label } from "../ui/label";
 import Cookies from "js-cookie";
@@ -254,7 +253,7 @@ export function QueueButtons({ endpoint }: WorkspaceButtonProps) {
   const { data: session, refetch } = useQuery<any>({
     queryKey: ["session", sessionId],
     enabled: !!sessionId,
-    refetchInterval: 1000,
+    refetchInterval: (data) => (data ? 1000 : false),
   });
 
   const [timerDialogOpen, setTimerDialogOpen] = useState(false);

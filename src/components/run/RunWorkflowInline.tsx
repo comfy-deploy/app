@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { plainInputsToZod } from "@/lib/workflowVersionInputsToZod";
 // import { HandleFileUpload } from "@/server/uploadFile";
 import { useAuth, useClerk } from "@clerk/clerk-react";
-import { Play } from "lucide-react";
+import { Edit, GripVertical, Play, Save, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import {
   type FormEvent,
@@ -28,11 +28,21 @@ import {
   useMemo,
   useState,
 } from "react";
+import {
+  Sortable,
+  SortableItem,
+  SortableDragHandle,
+} from "@/components/custom/sortable";
+import { UniqueIdentifier } from "@dnd-kit/core";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { uploadFile } from "../files-api";
 import { publicRunStore } from "./VersionSelect";
+import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
+import { api } from "@/lib/api";
+import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
+import { queryClient } from "@/lib/providers";
 
 const MAX_FILE_SIZE_BYTES = 250_000_000; // 250MB
 
@@ -245,7 +255,9 @@ export function RunWorkflowInline({
   runOrigin = "public-share",
   blocking = true,
   model_id,
+  workflow_api,
   scrollAreaClassName,
+  canEditOrder = false,
 }: {
   inputs: z.infer<typeof WorkflowInputsType>;
   workflow_version_id?: string;
@@ -257,6 +269,8 @@ export function RunWorkflowInline({
   blocking?: boolean;
   model_id?: string;
   scrollAreaClassName?: string;
+  workflow_api?: string;
+  canEditOrder?: boolean;
 }) {
   const [values, setValues] =
     useState<
@@ -266,7 +280,22 @@ export function RunWorkflowInline({
       >
     >(default_values);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [currentRunId, setCurrentRunId] = useQueryState("run-id");
+  const [currentWorkflowVersion, setCurrentWorkflowVersion] =
+    useQueryState("version");
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [reorderedInputs, setReorderedInputs] = useState<typeof inputs>([]);
+
+  const workflowId = useWorkflowIdInWorkflowPage();
+  const { workflow } = useCurrentWorkflow(workflowId);
+
+  useEffect(() => {
+    if (isEditMode && inputs) {
+      setReorderedInputs([...inputs]);
+    }
+  }, [isEditMode, inputs]);
 
   const user = useAuth();
   const clerk = useClerk();
@@ -399,14 +428,117 @@ export function RunWorkflowInline({
     setValues(default_values);
   }, [default_values]);
 
+  const saveReordering = async () => {
+    if (!workflow_version_id || !reorderedInputs) return;
+
+    try {
+      setIsSavingOrder(true);
+      if (!workflow_api) {
+        toast.error("No workflow API found");
+        return;
+      }
+
+      const workflowApi = workflow_api;
+
+      reorderedInputs.forEach((input, index) => {
+        const nodeId = input.nodeId as string | undefined;
+        if (nodeId && workflowApi[nodeId]) {
+          workflowApi[nodeId]._meta = {
+            ...(workflowApi[nodeId]._meta || {}),
+            cd_input_order: index,
+          };
+        }
+      });
+
+      const data = await callServerPromise(
+        api({
+          url: `workflow/${workflowId}/version`,
+          init: {
+            method: "POST",
+            body: JSON.stringify({
+              workflow: workflow.versions[0].workflow,
+              workflow_api: workflowApi,
+              comment: "Reordered inputs",
+            }),
+          },
+        }),
+        {
+          loadingText: "Saving input order...",
+        },
+      );
+
+      toast.success("Input order saved successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["workflow", workflowId, "versions"],
+      });
+      setCurrentWorkflowVersion(data.version);
+      setIsEditMode(false);
+      setIsSavingOrder(false);
+    } catch (error) {
+      setIsSavingOrder(false);
+      toast.error(
+        `Failed to save input order: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  };
+
   return (
-    <>
+    <div className="relative h-full">
+      <style jsx>{`
+        :global(.sortable-item-transition) {
+          transition-property: transform, opacity;
+          transition-duration: 0.2s;
+          transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+        }
+      `}</style>
+      {/* Edit button */}
+      {canEditOrder && inputs && inputs.length > 0 && (
+        <div className="absolute top-0 right-1 z-10 flex gap-2">
+          {isEditMode ? (
+            <>
+              <Button
+                onClick={() => setIsEditMode(false)}
+                variant="outline"
+                size="xs"
+                className="shadow-sm backdrop-blur-sm"
+                type="button"
+              >
+                <X size={16} className="mr-1" />
+                Cancel
+              </Button>
+              <Button
+                onClick={saveReordering}
+                variant="default"
+                size="xs"
+                className="shadow-sm backdrop-blur-sm"
+                isLoading={isSavingOrder}
+                type="button"
+              >
+                <Save size={16} className="mr-1" />
+                Save
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={() => setIsEditMode(true)}
+              variant="default"
+              size="xs"
+              className="shadow-sm backdrop-blur-sm"
+              type="button"
+            >
+              <Edit size={16} className="mr-1" />
+              Reorder
+            </Button>
+          )}
+        </div>
+      )}
+
       <SDForm
         onSubmit={onSubmit}
         actionArea={
           !hideRunButton && (
             <Button
-              disabled={!inputs}
+              disabled={!inputs || isEditMode}
               type="submit"
               className="w-full"
               isLoading={isLoading || loading}
@@ -421,25 +553,91 @@ export function RunWorkflowInline({
         scrollAreaClassName={cn("h-full", scrollAreaClassName)}
       >
         {inputs ? (
-          inputs.map((item) => {
-            if (!item?.input_id) {
-              return;
-            }
-            return (
-              <SDInputsRender
-                key={item.input_id}
-                inputNode={item}
-                updateInput={updateInput}
-                inputValue={values[item.input_id]}
-              />
-            );
-          })
+          isEditMode ? (
+            <div className="space-y-2">
+              <Sortable
+                value={reorderedInputs.map((item, index) => ({
+                  id: item.input_id || `item-${index}`,
+                  ...item,
+                }))}
+                onValueChange={(items) => {
+                  setReorderedInputs(items);
+                }}
+                orientation="vertical"
+                overlay={(active) => {
+                  const activeInput = reorderedInputs.find(
+                    (input) => input.input_id === active?.id,
+                  );
+
+                  return (
+                    <div className="border rounded-md p-2 bg-card/95 backdrop-blur-sm shadow-xl transform scale-105 translate-y-[-4px] sortable-item-transition">
+                      <div className="flex items-center w-full">
+                        <div className="p-1 mr-2">
+                          <GripVertical size={16} />
+                        </div>
+                        <div className="flex-1">
+                          {activeInput && (
+                            <SDInputsRender
+                              key={activeInput.input_id}
+                              inputNode={activeInput}
+                              updateInput={() => {}}
+                              inputValue={values[activeInput.input_id || ""]}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }}
+              >
+                {reorderedInputs.map((item) => (
+                  <SortableItem
+                    key={item.input_id || `item-${Math.random()}`}
+                    value={item.input_id || `item-${Math.random()}`}
+                    className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
+                  >
+                    <div className="flex items-center w-full">
+                      <SortableDragHandle
+                        variant="ghost"
+                        className="mr-2 p-1 hover:bg-muted rounded"
+                        size="sm"
+                      >
+                        <GripVertical size={16} />
+                      </SortableDragHandle>
+                      <div className="flex-1">
+                        <SDInputsRender
+                          key={item.input_id}
+                          inputNode={item}
+                          updateInput={isEditMode ? () => {} : updateInput}
+                          inputValue={values[item.input_id || ""]}
+                        />
+                      </div>
+                    </div>
+                  </SortableItem>
+                ))}
+              </Sortable>
+            </div>
+          ) : (
+            inputs.map((item) => {
+              if (!item?.input_id) {
+                return;
+              }
+              return (
+                <SDInputsRender
+                  key={item.input_id}
+                  inputNode={item}
+                  updateInput={updateInput}
+                  inputValue={values[item.input_id]}
+                />
+              );
+            })
+          )
         ) : (
           <div className="py-2 text-center text-muted-foreground text-sm">
             Please save a new version in ComfyUI to run this workflow.
           </div>
         )}
       </SDForm>
-    </>
+    </div>
   );
 }

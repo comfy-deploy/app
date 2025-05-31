@@ -401,11 +401,13 @@ function TreeNode({
       await operations.moveFile(moveSource, moveTarget, overwrite);
       toast.success("Item moved successfully");
       setShowMoveDialog(false);
-    } catch (error: any) {
-      if (error.message?.includes("already exists")) {
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      if (errorMessage.includes("already exists")) {
         setOverwriteConfirm(true);
       } else {
-        toast.error(`Failed to move item: ${error.message || "Unknown error"}`);
+        toast.error(`Failed to move item: ${errorMessage}`);
         setShowMoveDialog(false);
       }
     } finally {
@@ -434,7 +436,7 @@ function TreeNode({
             "flex items-center gap-2 rounded px-2 py-1 hover:bg-accent",
             node.isVirtual && "text-muted-foreground",
             node.type === 2 &&
-              "hover:border hover:border-blue-200 hover:border-dashed hover:bg-blue-50",
+              "border border-transparent hover:border hover:border-blue-200 hover:border-dashed hover:bg-blue-50",
           )}
           onClick={() => setIsOpen(!isOpen)}
         >
@@ -476,7 +478,7 @@ function TreeNode({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 border border-blue-200 bg-blue-50 text-blue-700 opacity-0 transition-opacity hover:bg-blue-100 hover:text-blue-800 group-hover:opacity-100"
+            className="h-7 w-7 border border-transparent bg-transparent text-transparent hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 group-hover:border-blue-200 group-hover:bg-blue-50 group-hover:text-blue-700"
             onClick={() => onAddModel(node.path)}
             title={`Upload model to ${node.path}`}
           >
@@ -489,7 +491,7 @@ function TreeNode({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100"
+              className="h-8 w-8 text-transparent group-hover:text-foreground"
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -1014,35 +1016,36 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
     filter === "public" || filter === "all",
   );
 
-  // Sort function
-  const sortNodes = (nodes: TreeNode[]): TreeNode[] => {
-    // Create a copy to avoid mutating original
-    return [...nodes]
-      .sort((a, b) => {
-        // Folders always come first
-        if (a.type !== b.type) {
-          return a.type === 2 ? -1 : 1;
-        }
-
-        if (sortBy === "name") {
-          const nameA = a.name.toLowerCase();
-          const nameB = b.name.toLowerCase();
-          return sortDirection === "asc"
-            ? nameA.localeCompare(nameB)
-            : nameB.localeCompare(nameA);
-        }
-        // Sort by size
-        return sortDirection === "asc" ? a.size - b.size : b.size - a.size;
-      })
-      .map((node) => ({
-        ...node,
-        children: sortNodes(node.children),
-      }));
-  };
-
   // Apply sorting to the merged tree
   const sortedTree = useMemo(() => {
     console.log("Sorting by:", sortBy, "Direction:", sortDirection);
+
+    // Sort function
+    const sortNodes = (nodes: TreeNode[]): TreeNode[] => {
+      // Create a copy to avoid mutating original
+      return [...nodes]
+        .sort((a, b) => {
+          // Folders always come first
+          if (a.type !== b.type) {
+            return a.type === 2 ? -1 : 1;
+          }
+
+          if (sortBy === "name") {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+            return sortDirection === "asc"
+              ? nameA.localeCompare(nameB)
+              : nameB.localeCompare(nameA);
+          }
+          // Sort by size
+          return sortDirection === "asc" ? a.size - b.size : b.size - a.size;
+        })
+        .map((node) => ({
+          ...node,
+          children: sortNodes(node.children),
+        }));
+    };
+
     return sortNodes(mergedTree);
   }, [mergedTree, sortBy, sortDirection]);
 
@@ -1157,157 +1160,161 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
   return (
     <div className={cn("flex h-full flex-col gap-4", className)}>
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold text-2xl">Model Browser</h3>
-        <DownloadingModels />
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full sm:w-auto sm:flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative w-full max-w-sm sm:w-auto sm:flex-1">
             <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search models..."
+              placeholder="Search models"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
 
-          {/* Sorting controls */}
-          <div className="flex items-center gap-2 rounded-md border bg-white/95 p-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex h-8 items-center gap-1">
-                  <span>{sortBy === "name" ? "Name" : "File size"}</span>
-                  <ChevronDownIcon className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuRadioGroup
-                  value={sortBy}
-                  onValueChange={(v) => setSortBy(v as "name" | "size")}
-                >
-                  <DropdownMenuRadioItem value="name">
-                    Name
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="size">
-                    File size
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center gap-2">
+            {/* Sorting controls */}
+            <div className="flex items-center gap-2 rounded-md border bg-white/95 p-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex h-8 items-center gap-1"
+                  >
+                    <span>{sortBy === "name" ? "Name" : "File size"}</span>
+                    <ChevronDownIcon className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuRadioGroup
+                    value={sortBy}
+                    onValueChange={(v) => setSortBy(v as "name" | "size")}
+                  >
+                    <DropdownMenuRadioItem value="name">
+                      Name
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="size">
+                      File size
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            <div className="h-5 w-[1px] bg-gray-200" />
+              <div className="h-5 w-[1px] bg-gray-200" />
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() =>
-                setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-              }
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() =>
+                  setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+                }
+              >
+                {sortDirection === "asc" ? (
+                  <ArrowUpWideNarrow className="h-4 w-4" />
+                ) : (
+                  <ArrowDownNarrowWide className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                iconPlacement="left"
+                Icon={Upload}
+                onClick={async () => {
+                  onAddModel("");
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                iconPlacement="left"
+                Icon={RefreshCcw}
+                onClick={async () => {
+                  await queryClient.invalidateQueries({ queryKey: ["volume"] });
+                  toast.success("Models refreshed");
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowNewFolderDialog(true)}
+                title="Create folder"
+              >
+                <FolderPlus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Filter tabs */}
+            <Tabs
+              value={filter}
+              onValueChange={(value) => setFilter(value as ModelFilter)}
             >
-              {sortDirection === "asc" ? (
-                <ArrowUpWideNarrow className="h-4 w-4" />
-              ) : (
-                <ArrowDownNarrowWide className="h-4 w-4" />
-              )}
-            </Button>
+              <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50">
+                <TabsList className="relative flex w-fit gap-1 bg-transparent">
+                  <motion.div layout className="relative">
+                    <TabsTrigger
+                      value="private"
+                      className={cn(
+                        "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
+                        filter === "private"
+                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
+                          : "text-gray-600 hover:bg-gray-100",
+                      )}
+                    >
+                      Private
+                    </TabsTrigger>
+                  </motion.div>
+                  <motion.div layout className="relative">
+                    <TabsTrigger
+                      value="public"
+                      className={cn(
+                        "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
+                        filter === "public"
+                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
+                          : "text-gray-600 hover:bg-gray-100",
+                      )}
+                    >
+                      Public
+                    </TabsTrigger>
+                  </motion.div>
+                  <motion.div layout className="relative">
+                    <TabsTrigger
+                      value="all"
+                      className={cn(
+                        "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
+                        filter === "all"
+                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
+                          : "text-gray-600 hover:bg-gray-100",
+                      )}
+                    >
+                      All
+                    </TabsTrigger>
+                  </motion.div>
+                </TabsList>
+              </motion.div>
+            </Tabs>
           </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            {/* <Button
-              variant="ghost"
-              size="icon"
-              iconPlacement="left"
-              Icon={Plus}
-              onClick={async () => {
-                onAddModel("");
-              }}
-            /> */}
-            <Button
-              variant="ghost"
-              size="icon"
-              iconPlacement="left"
-              Icon={RefreshCcw}
-              onClick={async () => {
-                await queryClient.invalidateQueries({ queryKey: ["volume"] });
-                toast.success("Models refreshed");
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowNewFolderDialog(true)}
-              title="Create folder"
-            >
-              <FolderPlus className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Filter tabs */}
-          <Tabs
-            value={filter}
-            onValueChange={(value) => setFilter(value as ModelFilter)}
-          >
-            <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50">
-              <TabsList className="relative flex w-fit gap-1 bg-transparent">
-                <motion.div layout className="relative">
-                  <TabsTrigger
-                    value="private"
-                    className={cn(
-                      "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
-                      filter === "private"
-                        ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                        : "text-gray-600 hover:bg-gray-100",
-                    )}
-                  >
-                    Private
-                  </TabsTrigger>
-                </motion.div>
-                <motion.div layout className="relative">
-                  <TabsTrigger
-                    value="public"
-                    className={cn(
-                      "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
-                      filter === "public"
-                        ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                        : "text-gray-600 hover:bg-gray-100",
-                    )}
-                  >
-                    Public
-                  </TabsTrigger>
-                </motion.div>
-                <motion.div layout className="relative">
-                  <TabsTrigger
-                    value="all"
-                    className={cn(
-                      "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
-                      filter === "all"
-                        ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                        : "text-gray-600 hover:bg-gray-100",
-                    )}
-                  >
-                    All
-                  </TabsTrigger>
-                </motion.div>
-              </TabsList>
-            </motion.div>
-          </Tabs>
         </div>
+        <DownloadingModels />
       </div>
 
-      <div className="flex-1 overflow-auto rounded-sm border border-gray-200 bg-muted/20">
+      <div className="mx-auto w-full max-w-screen-2xl flex-1 overflow-auto rounded-sm border border-gray-200 bg-muted/20">
         {isLoadingPrivate || isLoadingPublic ? (
           <div className="flex flex-col gap-4 p-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={`loading-${i}`} className="flex flex-col gap-2">
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={`loading-folder-${i}`} className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
                   <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
                 </div>
                 <div className="flex flex-col divide-y divide-gray-100">
-                  {Array.from({ length: 2 }).map((_, j) => (
+                  {Array.from({ length: 2 }, (_, j) => (
                     <div
-                      key={`loading-item-${j}`}
+                      key={`loading-file-${i}-${j}`}
                       className="flex items-center gap-2 p-2"
                     >
                       <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
@@ -1354,16 +1361,64 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col">
-            {sortedTree.map((node) => (
-              <TreeNode
-                key={node.path}
-                node={node}
-                search={search}
-                operations={operations}
-                onAddModel={onAddModel}
-              />
-            ))}
+          <div className="flex flex-col p-4">
+            {/* Common Models Section */}
+            <div className="mb-2 mt-1">
+              <h3 className="mb-2 text-sm font-medium text-gray-900">
+                Common Models
+              </h3>
+            </div>
+
+            {/* Display common model folders directly */}
+            {sortedTree
+              .filter(
+                (node) =>
+                  node.path === "checkpoints" ||
+                  node.path === "loras" ||
+                  node.path === "controlnet" ||
+                  node.path.startsWith("checkpoints/") ||
+                  node.path.startsWith("loras/") ||
+                  node.path.startsWith("controlnet/"),
+              )
+              .map((node) => (
+                <TreeNode
+                  key={node.path}
+                  node={node}
+                  search={search}
+                  operations={operations}
+                  onAddModel={onAddModel}
+                />
+              ))}
+
+            {/* All Models Section */}
+            <div className="mb-2 mt-3">
+              <h3 className="mb-2 text-sm font-medium text-gray-900">
+                All Models
+              </h3>
+            </div>
+
+            {/* Display all models except common ones */}
+            {sortedTree
+              .filter(
+                (node) =>
+                  !(
+                    node.path === "checkpoints" ||
+                    node.path === "loras" ||
+                    node.path === "controlnet" ||
+                    node.path.startsWith("checkpoints/") ||
+                    node.path.startsWith("loras/") ||
+                    node.path.startsWith("controlnet/")
+                  ),
+              )
+              .map((node) => (
+                <TreeNode
+                  key={node.path}
+                  node={node}
+                  search={search}
+                  operations={operations}
+                  onAddModel={onAddModel}
+                />
+              ))}
           </div>
         )}
       </div>
