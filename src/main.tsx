@@ -23,7 +23,6 @@ import { useEffect } from "react";
 import { orgPrefixPaths } from "./orgPrefixPaths";
 // Set up a Router instance
 import { type RootRouteContext, Route } from "./routes/__root";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { Providers } from "./lib/providers";
 import { SidebarGhost } from "./components/ui/sidebar-ghost";

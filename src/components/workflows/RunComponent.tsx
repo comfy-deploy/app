@@ -215,7 +215,7 @@ function SearchRunIdInputBox() {
       <Input
         ref={inputRef}
         placeholder="Search by run ID"
-        className="rounded-none border-0 border-b py-1 pr-6 pl-6 focus-visible:border-primary focus-visible:ring-0"
+        className="rounded-none border-0 border-b py-1 pr-6 pl-6 focus-visible:border-primary focus-visible:ring-0 dark:bg-transparent"
         value={searchValue}
         onChange={(e) => setSearchValue(e.target.value)}
         onKeyDown={handleSearch}
@@ -233,7 +233,7 @@ function SearchRunIdInputBox() {
         </Button>
       )}
       {isFocused && searchValue && (
-        <div className="absolute top-full z-50 mt-1 w-full rounded-md border bg-popover bg-white p-3 text-muted-foreground text-xs shadow-md hover:bg-gray-100">
+        <div className="absolute top-full z-50 mt-1 w-full rounded-md border bg-popover bg-white p-3 text-muted-foreground text-xs shadow-md hover:bg-gray-100 dark:bg-zinc-800 dark:text-zinc-400">
           {isValidUuid(searchValue) ? (
             <p className="line-clamp-1">
               Press Enter to search for "{searchValue}"
