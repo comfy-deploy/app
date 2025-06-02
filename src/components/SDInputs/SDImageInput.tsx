@@ -115,7 +115,7 @@ export function SDImageInput({
                   buttonVariants({
                     variant: "outline",
                     className:
-                      "cursor-pointer rounded-[8px] transition-colors hover:bg-gray-50",
+                      "cursor-pointer rounded-[8px] transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50",
                   }),
                 )}
               >

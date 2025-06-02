@@ -288,11 +288,12 @@ function VersionRow({
   setOpen: (workflow: any) => void;
 }) {
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
     <div
       className={cn(
-        "flex flex-row items-center justify-between gap-1 rounded-[6px] px-2 py-1 transition-colors hover:bg-gray-100 cursor-pointer",
+        "flex cursor-pointer flex-row items-center justify-between gap-1 rounded-[6px] px-2 py-1 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50",
         item.version === 1 && "rounded-b-sm",
-        selected === item.version && "bg-gray-100",
+        selected === item.version && "bg-gray-100 dark:bg-gray-500/50",
       )}
       onClick={() => onSelect(item)}
     >

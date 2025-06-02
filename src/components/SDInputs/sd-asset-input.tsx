@@ -46,7 +46,7 @@ export const SDAssetInput = ({ onChange }: Props) => {
             buttonVariants({
               variant: "outline",
               className:
-                "flex cursor-pointer items-center justify-center rounded-[8px] transition-colors hover:bg-gray-50",
+                "flex cursor-pointer items-center justify-center rounded-[8px] transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50",
             }),
           )}
         >

@@ -90,7 +90,7 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
       {sessions.map((session) => (
         <div
           key={session.session_id}
-          className="group flex items-center justify-between rounded-lg border bg-background p-2 hover:bg-blue-50/50"
+          className="group flex items-center justify-between rounded-lg border bg-background p-2 transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/40"
         >
           {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
           <div
@@ -128,7 +128,7 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
                   variant="ghost"
                   size="sm"
                   isLoading={deleteSession.isPending}
-                  className="text-red-500 hover:text-red-600"
+                  className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-500"
                   Icon={StopCircle}
                   iconPlacement="right"
                   onClick={async (e) => {
@@ -468,7 +468,7 @@ function DescriptionForm({
                 <div className="group relative">
                   <Textarea
                     {...field}
-                    className="-m-2 h-28 border-none text-muted-foreground focus-visible:bg-zinc-100/40 focus-visible:text-black focus-visible:ring-transparent"
+                    className="-m-2 h-28 border-none text-muted-foreground focus-visible:bg-zinc-100/40 focus-visible:text-black focus-visible:ring-transparent dark:bg-transparent dark:focus-visible:bg-zinc-900/40 dark:focus-visible:text-white dark:focus-visible:ring-transparent"
                     placeholder="Describe your workflow"
                     onChange={(e) => {
                       field.onChange(e);

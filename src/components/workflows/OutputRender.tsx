@@ -220,12 +220,12 @@ function _FileURLRender({
       return (
         <div
           className={cn(
-            "@container flex aspect-square h-full w-full max-w-[200px] flex-col items-center justify-center gap-2 text-gray-600",
+            "@container flex aspect-square h-full w-full max-w-[200px] flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400",
             mediaClasses,
           )}
         >
           <SearchX size={20} strokeWidth={1.5} />
-          <span className="@4xs:inline hidden">Not found</span>
+          <span className="@4xs:inline hidden text-sm">Not found</span>
         </div>
       );
     }
@@ -304,11 +304,11 @@ function TextFileRenderer({
     return (
       <div
         className={cn(
-          "flex h-[200px] w-full max-w-[500px] items-center justify-center rounded-md bg-gray-50 p-4",
+          "flex h-[200px] w-full max-w-[500px] items-center justify-center rounded-md bg-gray-50 p-4 dark:bg-zinc-700",
           mediaClasses,
         )}
       >
-        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-gray-400 dark:text-gray-400" />
       </div>
     );
   }
@@ -317,7 +317,7 @@ function TextFileRenderer({
     return (
       <div
         className={cn(
-          "w-full max-w-[500px] rounded-md bg-red-50 p-4",
+          "w-full max-w-[500px] rounded-md bg-red-50 p-4 dark:bg-red-900/50",
           mediaClasses,
         )}
       >
@@ -325,7 +325,7 @@ function TextFileRenderer({
           <CircleX size={16} />
           <span className="font-medium">Error loading file</span>
         </div>
-        <p className="text-red-700 text-sm">{error}</p>
+        <p className="text-red-700 text-sm dark:text-red-400">{error}</p>
         <Button
           variant="outline"
           size="sm"
@@ -346,7 +346,7 @@ function TextFileRenderer({
         mediaClasses,
       )}
     >
-      <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+      <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2 dark:bg-zinc-700">
         <span className="max-w-[200px] truncate font-medium text-sm">
           {filename}
         </span>
@@ -359,7 +359,7 @@ function TextFileRenderer({
           scrollAreaClassName="rounded-none"
         />
       ) : (
-        <pre className="whitespace-pre-wrap bg-gray-100 p-4 font-mono text-xs">
+        <pre className="whitespace-pre-wrap bg-gray-100 p-4 font-mono text-xs dark:bg-zinc-800">
           {content}
         </pre>
       )}

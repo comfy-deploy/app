@@ -814,7 +814,7 @@ export function ExternalNodeDocs() {
   return (
     <div className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent overflow-y-auto overflow-x-hidden">
       {/* Search Bar */}
-      <div className="sticky top-0 z-10 border-b bg-white px-0.5 py-3">
+      <div className="sticky top-0 z-10 border-b bg-white px-0.5 py-3 dark:bg-background">
         <div className="relative">
           <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-3.5 w-3.5 text-muted-foreground" />
           <Input
@@ -937,7 +937,7 @@ function NodeDocsTooltip({
     <TooltipProvider delayDuration={0}>
       <Tooltip>
         <TooltipTrigger>
-          <div className="flex cursor-auto items-center justify-between rounded-[8px] p-2 transition-colors hover:bg-gray-100">
+          <div className="flex cursor-auto items-center justify-between rounded-[8px] p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50">
             <div className="flex items-center gap-2">
               <span className="whitespace-nowrap font-medium text-xs">
                 {title}
@@ -978,7 +978,7 @@ function NodeDocsTooltip({
           )}
           {description && (
             <>
-              <p className="mt-2 px-4 text-gray-600 text-xs leading-5">
+              <p className="mt-2 px-4 text-gray-600 text-xs leading-5 dark:text-gray-400">
                 {description}
               </p>
               <Separator className="mx-auto my-2 max-w-20" />
@@ -1019,11 +1019,11 @@ function NodeDocsTooltip({
               </TableBody>
             </Table>
             {alertTitle && (
-              <Alert className="max-w-[400px] border-l-2 border-l-orange-500 bg-orange-50">
+              <Alert className="max-w-[400px] border-l-2 border-l-orange-500 bg-orange-50 dark:bg-orange-900/50">
                 <AlertCircle className="!text-orange-500 h-3.5 w-3.5" />
                 <AlertTitle>{alertTitle}</AlertTitle>
                 {alertDescription && (
-                  <AlertDescription className="text-gray-600 text-xs leading-snug">
+                  <AlertDescription className="text-gray-600 text-xs leading-snug dark:text-gray-300">
                     {alertDescription}
                   </AlertDescription>
                 )}

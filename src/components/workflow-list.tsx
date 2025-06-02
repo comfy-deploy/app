@@ -462,7 +462,7 @@ function WorkflowCard({
                     imgClasses="w-full h-full max-w-full max-h-full rounded-[8px] object-cover transition-all duration-300 ease-in-out group-hover:scale-105"
                   />
                 ) : (
-                  <div className="flex h-full flex-col items-center justify-center ">
+                  <div className="flex h-full flex-col items-center justify-center dark:bg-gradient-to-br dark:from-zinc-800/80 dark:to-zinc-700/80 dark:backdrop-blur-md">
                     <Workflow
                       size={40}
                       strokeWidth={1.5}
@@ -508,7 +508,7 @@ function WorkflowCard({
                         Clone
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        className="text-destructive"
+                        className="text-destructive dark:text-red-400"
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
@@ -556,7 +556,7 @@ function WorkflowCard({
               )}
             </Card>
             <div className="flex flex-col px-2 pt-2">
-              <div className="flex w-full flex-row justify-between truncate font-medium text-gray-700 text-md">
+              <div className="flex w-full flex-row justify-between truncate font-medium text-gray-700 text-md dark:text-gray-300">
                 <div className="mr-2 truncate text-sm">{workflow.name}</div>
                 {status && (
                   <Badge

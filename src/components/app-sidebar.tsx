@@ -416,7 +416,8 @@ function SessionSidebar() {
                         disabled={!hasChanged}
                         className={cn(
                           "mx-auto transition-colors",
-                          hasChanged && "bg-orange-200 hover:bg-orange-300",
+                          hasChanged &&
+                            "bg-orange-200 hover:bg-orange-300 dark:bg-orange-900/50 dark:hover:bg-orange-800/50",
                         )}
                       >
                         <Save className="h-4 w-4" />

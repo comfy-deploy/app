@@ -706,7 +706,7 @@ function RunDisplay({ runId }: { runId?: string }) {
 
       {/* Details section for all cases */}
       {runId && (
-        <div className="relative z-10 flex min-h-screen w-full justify-center rounded-t-sm border border-gray-200 bg-white/80 p-8 pb-16 drop-shadow-lg backdrop-blur-lg">
+        <div className="relative z-10 flex min-h-screen w-full justify-center rounded-t-sm border border-gray-200 bg-white/80 p-8 pb-16 drop-shadow-lg backdrop-blur-lg dark:border-zinc-700 dark:bg-zinc-800/80">
           <div className="w-full max-w-5xl px-4">
             <RunDetails run_id={runId} isPlayground={true} />
           </div>

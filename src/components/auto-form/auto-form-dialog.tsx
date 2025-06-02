@@ -69,7 +69,7 @@ export function useConfirmServerActionDialog<T>(props: {
         <div className="flex justify-end gap-2">
           <Button
             disabled={inProgress}
-            variant={"outline"}
+            variant={"expandIconOutline"}
             Icon={X}
             iconPlacement="right"
             onClick={async () => {

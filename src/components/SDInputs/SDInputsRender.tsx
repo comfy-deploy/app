@@ -164,7 +164,7 @@ export function SDInputsRender({
         <SDTextarea
           key={inputNode.input_id}
           value={inputValue || ""}
-          textareaClasses="mt-1 bg-gray-50 rounded-[8px]"
+          textareaClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
           rows={3}
           placeholder={inputNode.input_id}
           header={header(genericProps)}
@@ -178,7 +178,7 @@ export function SDInputsRender({
         <SDInput
           key={inputNode.input_id}
           value={inputValue || ""}
-          inputClasses="mt-1 bg-gray-50 rounded-[8px]"
+          inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
           header={header(genericProps)}
           {...genericProps}
           type="text"
@@ -193,7 +193,7 @@ export function SDInputsRender({
           value={
             inputValue !== undefined && inputValue !== null ? inputValue : ""
           }
-          inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-zinc-800"
+          inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
           header={header(genericProps)}
           {...genericProps}
           type="number"
@@ -209,7 +209,7 @@ export function SDInputsRender({
           value={
             inputValue !== undefined && inputValue !== null ? inputValue : ""
           }
-          inputClasses="mt-1 bg-gray-50 rounded-[8px]"
+          inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
           header={header(genericProps)}
           {...genericProps}
           type="number"
@@ -233,7 +233,7 @@ export function SDInputsRender({
               }}
             />
             <Input
-              className="w-20 bg-gray-50"
+              className="w-20 bg-gray-50 dark:bg-input/30 dark:ring-zinc-700"
               type="number"
               step="0.01"
               min={inputNode.min_value}
@@ -267,7 +267,7 @@ export function SDInputsRender({
               }}
             />
             <Input
-              className="w-20 bg-gray-50"
+              className="w-20 bg-gray-50 dark:bg-input/30 dark:ring-zinc-700"
               type="number"
               step="1"
               min={inputNode.min_value}
@@ -538,7 +538,7 @@ export function SDInputsRender({
             <SDInput
               key={inputNode.input_id}
               value={inputValue || ""}
-              inputClasses="mt-1 bg-gray-50 rounded-[8px]"
+              inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
               placeholder={`${minValue} - ${maxValue}`}
               header={header(genericProps)}
               {...genericProps}
