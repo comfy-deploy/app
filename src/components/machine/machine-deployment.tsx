@@ -104,7 +104,7 @@ const UserInfoForDeployment = ({ machineVersion }: { machineVersion: any }) => {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-gray-500 text-xs">
+      <span className="text-gray-500 text-xs dark:text-zinc-400">
         {formatShortDistanceToNow(new Date(machineVersion.created_at))} by{" "}
         {user.username ?? `${user.first_name} ${user.last_name}`}
       </span>
@@ -148,7 +148,7 @@ const MachineStatusBadge = ({
           }`}
         />
       </div>
-      <span className="truncate text-gray-600 text-sm">
+      <span className="truncate text-gray-600 text-sm dark:text-zinc-400">
         {isStale ? "Stale" : status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     </>
@@ -244,7 +244,7 @@ export function MachineDeployment(props: { machine: any }) {
       <a
         href="https://www.comfydeploy.com/docs/v2/machines/versioning"
         target="_blank"
-        className="flex cursor-pointer flex-row items-center gap-x-1 px-2 text-gray-500 text-xs hover:text-gray-600 hover:underline md:px-4"
+        className="flex cursor-pointer flex-row items-center gap-x-1 px-2 text-gray-500 text-xs hover:text-gray-600 hover:underline md:px-4 dark:text-zinc-400"
         rel="noreferrer"
       >
         Learn more about machine version control
@@ -322,7 +322,7 @@ export function MachineVersionListItem({
   }, [machineVersion.status, buildStartTime, machineVersion.created_at]);
 
   return (
-    <div className="border-b px-4 hover:bg-gray-100">
+    <div className="border-b px-4 hover:bg-gray-100 dark:hover:bg-zinc-700/50">
       <div className="grid grid-cols-[minmax(120px,1fr)_minmax(150px,1fr)_minmax(100px,1fr)_minmax(250px,auto)] items-center gap-x-4">
         {/* Wrap only the content that should be clickable in Link */}
         <Link
@@ -333,7 +333,7 @@ export function MachineVersionListItem({
           {/* ID and Version */}
           <div className="grid min-w-0 cursor-pointer grid-cols-1 gap-y-1">
             <div className="flex flex-row items-center gap-x-2">
-              <div className="w-fit rounded-md bg-gray-100 px-2 py-0 text-gray-500 text-xs leading-snug">
+              <div className="w-fit rounded-md bg-gray-100 px-2 py-0 text-gray-500 text-xs leading-snug dark:bg-zinc-700 dark:text-zinc-400">
                 v{machineVersion.version}
               </div>
               {machineVersion.id === machine.machine_version_id && (
@@ -356,13 +356,13 @@ export function MachineVersionListItem({
                 createdAt={machineVersion.created_at}
               />
               {machineVersion.status === "building" ? (
-                <LoadingIcon className="h-[14px] w-[14px] shrink-0 text-gray-600" />
+                <LoadingIcon className="h-[14px] w-[14px] shrink-0 text-gray-600 dark:text-zinc-400" />
               ) : (
                 <div className="w-[14px] shrink-0" />
               )}
             </div>
 
-            <span className="truncate text-gray-500 text-sm">
+            <span className="truncate text-gray-500 text-sm dark:text-zinc-400">
               {machineVersion.status === "building"
                 ? differenceInSeconds(
                     new Date(),
@@ -391,7 +391,7 @@ export function MachineVersionListItem({
           <div className="grid grid-cols-[auto,1fr] items-center gap-x-2">
             <HardDrive className="h-[14px] w-[14px] shrink-0" />
             <div className="flex items-center">
-              <span className="text-gray-600 text-xs">
+              <span className="text-gray-600 text-xs dark:text-zinc-400">
                 {machineVersion.gpu}
               </span>
             </div>

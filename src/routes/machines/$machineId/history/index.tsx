@@ -22,7 +22,7 @@ function RouteComponent() {
 
   return (
     <div className="w-full">
-      <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm">
+      <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <div className="flex flex-row items-center gap-4">
           <Link
             to={`/machines/${machine.id}`}
@@ -36,7 +36,9 @@ function RouteComponent() {
           </Link>
 
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-500 text-sm">History</span>
+          <span className="text-gray-500 text-sm dark:text-zinc-400">
+            History
+          </span>
         </div>
         <div className="flex flex-row gap-2">
           <MachineCostEstimate machineId={machine.id} />

@@ -40,7 +40,7 @@ export function UnsavedChangesWarning({
         >
           <motion.div
             animate={controls}
-            className="flex w-96 flex-row items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm shadow-md"
+            className="flex w-96 flex-row items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm shadow-md dark:border-zinc-700 dark:bg-zinc-800"
           >
             <div className="flex flex-row items-center gap-2">
               <Info className="h-4 w-4" /> Unsaved changes

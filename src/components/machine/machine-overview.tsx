@@ -437,13 +437,17 @@ export function LastActiveEvent({ machineId }: { machineId: string }) {
         <div
           className={cn(
             "h-2 w-2 rounded-full",
-            hasActiveEvents ? "animate-pulse bg-yellow-500" : "bg-gray-400",
+            hasActiveEvents
+              ? "animate-pulse bg-yellow-500 dark:bg-yellow-400"
+              : "bg-gray-400 dark:bg-zinc-400",
           )}
         />
         <span
           className={cn(
             "text-xs",
-            hasActiveEvents ? "text-yellow-500" : "text-gray-600",
+            hasActiveEvents
+              ? "text-yellow-500 dark:text-yellow-400"
+              : "text-gray-600 dark:text-zinc-400",
           )}
         >
           Last Active: {getLastActiveText(events)}
@@ -473,8 +477,8 @@ export function MachineCostEstimate({ machineId }: { machineId: string }) {
   return (
     <Link to={"/usage"} className="hidden items-center md:flex">
       <Badge variant="outline" className="flex h-6 items-center gap-2 px-2">
-        <DollarSign className="h-3 w-3 text-gray-600" />
-        <span className="text-gray-600 text-xs">
+        <DollarSign className="h-3 w-3 text-gray-600 dark:text-zinc-400" />
+        <span className="text-gray-600 text-xs dark:text-zinc-400">
           ${machineCost.toFixed(2)} / mo
         </span>
       </Badge>

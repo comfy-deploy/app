@@ -406,7 +406,7 @@ function SearchNodeList({
   return (
     <div
       className={cn(
-        "flex w-full flex-col gap-4 rounded-sm border border-gray-200 bg-white px-4 pb-4 shadow-sm",
+        "flex w-full flex-col gap-4 rounded-sm border border-gray-200 bg-white px-4 pb-4 shadow-sm dark:border-zinc-700 dark:bg-gradient-to-br dark:from-zinc-800 dark:to-zinc-900",
         readonly && "pointer-events-none opacity-40",
       )}
     >
@@ -417,7 +417,7 @@ function SearchNodeList({
             <Input
               placeholder="Search by author, title, or GitHub url..."
               value={searchTerm}
-              className="border-none pr-8 focus-visible:outline-none focus-visible:ring-0"
+              className="border-none pr-8 focus-visible:outline-none focus-visible:ring-0 dark:bg-input/30"
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -524,7 +524,7 @@ function SearchNodeList({
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={i}
-              className="min-h-[50px] w-full animate-pulse rounded-[6px] bg-gray-100"
+              className="min-h-[50px] w-full animate-pulse rounded-[6px] bg-gray-100 dark:bg-zinc-700"
             />
           ))}
         </div>
@@ -556,8 +556,10 @@ function SearchNodeList({
                     data-index={virtualRow.index}
                     ref={rowVirtualizer.measureElement}
                     className={cn(
-                      "flex items-center rounded-[6px] text-sm hover:bg-gray-100",
-                      index % 2 === 0 && "bg-gray-50",
+                      "flex items-center rounded-[6px] text-sm hover:bg-gray-100 dark:hover:bg-zinc-600/40",
+                      index % 2 === 0
+                        ? "bg-gray-50 dark:bg-zinc-800/50"
+                        : "bg-gray-100 dark:bg-zinc-700/50",
                     )}
                     style={{
                       position: "absolute",
@@ -575,7 +577,7 @@ function SearchNodeList({
                           (n) =>
                             isCustomNodeData(n) &&
                             n.data.url.toLowerCase() === nodeRefLower,
-                        ) && "opacity-30",
+                        ) && "cursor-not-allowed opacity-30",
                       )}
                     >
                       <div className="flex flex-row items-center justify-between">
@@ -793,7 +795,7 @@ function SelectedNodeList({
   };
 
   return (
-    <div className="flex w-full flex-col gap-2 rounded-sm border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="flex w-full flex-col gap-2 rounded-sm border border-gray-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-gradient-to-br dark:from-zinc-800 dark:to-zinc-900">
       <div className="flex flex-row items-center justify-between">
         <h2 className="font-medium text-md">
           Selected Nodes ({validation.docker_command_steps.steps.length})
@@ -1122,7 +1124,7 @@ function SelectedNodeList({
         >
           <div>
             {validation.docker_command_steps.steps.length > 1 && !readonly && (
-              <span className="text-gray-500 text-xs">
+              <span className="text-gray-500 text-xs dark:text-zinc-400">
                 <span className="text-red-500">* </span>Long press and drag to
                 reorder the nodes.
               </span>
@@ -1365,7 +1367,7 @@ function CustomNodeCard({
   return (
     <div
       key={node.data.url}
-      className="relative flex items-center justify-between gap-2 rounded-[6px] border border-gray-200 bg-gray-50 px-2 py-1 text-sm"
+      className="relative flex items-center justify-between gap-2 rounded-[6px] border border-gray-200 bg-gray-50 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800/50"
     >
       <div className="group flex w-full flex-col">
         <div className="flex items-center justify-between">
@@ -1416,8 +1418,13 @@ function CustomNodeCard({
                 />
               ) : (
                 <div className="flex min-w-0 flex-1 items-center gap-1">
-                  <code className="shrink-0 rounded bg-gray-100 px-1 py-0.5 text-[10px]">
-                    <span className={cn(isHashChanged && "text-amber-600")}>
+                  <code className="shrink-0 rounded bg-gray-100 px-1 py-0.5 text-[10px] dark:bg-zinc-700">
+                    <span
+                      className={cn(
+                        isHashChanged && "text-amber-600 dark:text-amber-400",
+                        " dark:text-zinc-400",
+                      )}
+                    >
                       {node.data.hash?.slice(0, 7)}
                     </span>
                   </code>

@@ -64,7 +64,7 @@ export function MachineTopStickyBar({ machine }: { machine: any }) {
   const navigate = useNavigate();
 
   return (
-    <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm">
+    <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex flex-row items-center gap-2">
         <Link
           to={`/machines/${machine.id}`}

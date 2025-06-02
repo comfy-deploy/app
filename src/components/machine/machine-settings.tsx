@@ -131,7 +131,7 @@ export function MachineSettingsWrapper({
     <div>
       <div
         className={cn(
-          "sticky top-[57px] z-10 flex h-[72px] flex-col bg-background/80 backdrop-blur-sm md:h-12 md:flex-row md:items-center md:justify-between",
+          "sticky top-[57px] z-10 flex h-[72px] flex-col bg-background/80 backdrop-blur-sm md:h-12 md:flex-row md:items-center md:justify-between dark:bg-transparent",
           className,
         )}
       >
@@ -214,7 +214,7 @@ export function MachineSettingsWrapper({
           )}
         </div>
       </div>
-      <Card className="mb-20 flex flex-col rounded-[16px] px-2 pb-2">
+      <Card className="mb-20 flex flex-col rounded-[16px] px-2 pb-2 dark:bg-gradient-to-b dark:from-zinc-900 dark:to-zinc-950">
         {isServerless ? (
           <ServerlessSettings
             machine={machine}

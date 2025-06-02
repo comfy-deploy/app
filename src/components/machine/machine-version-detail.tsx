@@ -42,7 +42,7 @@ export function MachineVersionDetail({
 
   return (
     <div className="mx-auto w-full">
-      <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm">
+      <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <div className="flex flex-row items-center gap-4">
           <Link
             to={`/machines/${machine.id}`}
@@ -58,12 +58,12 @@ export function MachineVersionDetail({
           <Link
             to={`/machines/${machine.id}/history`}
             params={{ machineId: machine.id }}
-            className="text-gray-500 text-sm"
+            className="text-gray-500 text-sm dark:text-zinc-400"
           >
             History
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-500 text-sm">
+          <span className="text-gray-500 text-sm dark:text-zinc-400">
             v{machineVersion.version}
           </span>
           <Badge
@@ -105,7 +105,7 @@ export function MachineVersionDetail({
               setSelectedTab(value as "build-log" | "version-detail")
             }
           >
-            <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50 ">
+            <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50 dark:bg-zinc-800 dark:ring-zinc-700/50">
               <TabsList className="relative flex w-fit gap-1 bg-transparent">
                 <motion.div layout className="relative">
                   <TabsTrigger
@@ -113,8 +113,8 @@ export function MachineVersionDetail({
                     className={cn(
                       "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                       selectedTab === "version-detail"
-                        ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                        : "text-gray-600 hover:bg-gray-100",
+                        ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
+                        : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                     )}
                   >
                     Version Details
@@ -126,8 +126,8 @@ export function MachineVersionDetail({
                     className={cn(
                       "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                       selectedTab === "build-log"
-                        ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                        : "text-gray-600 hover:bg-gray-100",
+                        ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
+                        : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                     )}
                   >
                     Build Log
@@ -167,7 +167,7 @@ function MachineVersionBuildLog({
   return (
     <div className="flex flex-col gap-2">
       <div className="mt-3 ml-2 font-medium text-xl">Build Log</div>
-      <div className="rounded-lg border border-gray-200 p-4">
+      <div className="rounded-lg border border-gray-200 p-4 dark:border-zinc-700">
         {machineVersion.status === "building" ? (
           <MachineBuildLog
             machine={machine}

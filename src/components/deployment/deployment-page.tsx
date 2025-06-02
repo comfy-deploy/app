@@ -424,7 +424,7 @@ export function DeploymentDialog({
               )
             }
           >
-            <TabsList className="inline-flex items-center rounded-lg bg-white/95 h-fit ring-1 ring-gray-200/50">
+            <TabsList className="inline-flex h-fit items-center rounded-lg bg-white/95 ring-1 ring-gray-200/50 dark:bg-zinc-800 dark:ring-zinc-700/50">
               {!publicLinkOnly && (
                 <>
                   <TabsTrigger
@@ -432,8 +432,8 @@ export function DeploymentDialog({
                     className={cn(
                       "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                       selectedEnvironment === "staging"
-                        ? "bg-gradient-to-b from-white to-yellow-100 shadow-sm ring-1 ring-gray-200/50"
-                        : "text-gray-600 hover:bg-gray-100",
+                        ? "bg-gradient-to-b from-white to-yellow-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-yellow-900 dark:ring-yellow-900/50"
+                        : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-700",
                     )}
                   >
                     Staging
@@ -443,8 +443,8 @@ export function DeploymentDialog({
                     className={cn(
                       "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                       selectedEnvironment === "production"
-                        ? "bg-gradient-to-b from-white to-blue-100 shadow-sm ring-1 ring-gray-200/50"
-                        : "text-gray-600 hover:bg-gray-100",
+                        ? "bg-gradient-to-b from-white to-blue-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-blue-900 dark:ring-blue-900/50"
+                        : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-700",
                     )}
                   >
                     Production
@@ -456,8 +456,8 @@ export function DeploymentDialog({
                 className={cn(
                   "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                   selectedEnvironment === "public-share"
-                    ? "bg-gradient-to-b from-white to-green-100 shadow-sm ring-1 ring-gray-200/50"
-                    : "text-gray-600 hover:bg-gray-100",
+                    ? "bg-gradient-to-b from-white to-green-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-green-900 dark:ring-green-900/50"
+                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-700",
                 )}
               >
                 Link Share
@@ -535,7 +535,7 @@ function DeploymentWorkflowVersionList({ workflowId }: { workflowId: string }) {
         <div className="-top-1 absolute right-2">
           <Button
             variant="default"
-            className="h-[30px] rounded-[8px] text-2xs focus-visible:ring-transparent"
+            className="h-[30px] rounded-[8px] text-2xs focus-visible:ring-transparent dark:bg-gradient-to-br dark:from-zinc-100 dark:to-zinc-300"
             size="sm"
             onClick={() => {
               setSelectedVersion(versions[0]);

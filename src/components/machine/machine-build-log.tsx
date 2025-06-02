@@ -219,9 +219,9 @@ function StepsUI(props: { logs: LogsType; machine: any }) {
                 step.id === lastRunningStep
                   ? "border-l-2 border-l-blue-500"
                   : ""
-              } ${isCached && !isPending ? "bg-gray-100" : ""} ${
-                isPending ? "bg-yellow-50" : ""
-              }`}
+              } ${
+                isCached && !isPending ? "bg-gray-100 dark:bg-zinc-700/50" : ""
+              } ${isPending ? "bg-yellow-50 dark:bg-yellow-900/50" : ""}`}
             >
               <button
                 type="button"
