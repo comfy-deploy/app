@@ -1250,7 +1250,7 @@ export function AppSidebar() {
           </div>
 
           {!(workflow_id && parentPath === "workflows") && (
-            <div className="mt-1 flex items-center justify-center gap-0 rounded-[8px] bg-gray-100">
+            <div className="mt-1 flex items-center justify-center gap-0 rounded-[8px] bg-gray-100 dark:bg-gradient-to-r dark:from-zinc-800 dark:to-zinc-900">
               <div className="flex min-h-[44px] w-full items-center justify-center">
                 <OrganizationSwitcher
                   organizationProfileUrl="/organization-profile"
@@ -1258,6 +1258,7 @@ export function AppSidebar() {
                   afterSelectOrganizationUrl="/org/:slug/workflows"
                   afterSelectPersonalUrl={`/user/${personalOrg}/workflows`}
                   appearance={{
+                    baseTheme: theme === "dark" ? dark : undefined,
                     elements: {
                       rootBox: cn(
                         "items-center justify-center p-0 w-full",
