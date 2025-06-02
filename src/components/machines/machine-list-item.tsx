@@ -224,9 +224,9 @@ export function MachineListItem({
   const content = (
     <div
       className={cn(
-        "group relative flex w-full flex-col items-center overflow-hidden rounded-none bg-white px-4 py-3",
-        isStale && "bg-gray-50 contrast-75",
-        index % 2 !== 0 && "bg-gray-50",
+        "group relative flex w-full flex-col items-center overflow-hidden rounded-none bg-white px-4 py-3 dark:bg-zinc-900",
+        isStale && "bg-gray-50 contrast-75 dark:bg-zinc-800",
+        index % 2 !== 0 && "bg-gray-50 dark:bg-zinc-800",
         isSelected && "bg-primary/5 ring-1 ring-primary/20",
         className,
       )}
@@ -234,15 +234,15 @@ export function MachineListItem({
       <div className="z-[2] flex w-full flex-row justify-between">
         <div className="flex flex-row items-center gap-4">
           {/* Selection checkbox */}
-          <div 
-            className="z-20" 
+          <div
+            className="z-20"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onSelectionChange?.(machineId, !isSelected);
             }}
           >
-            <Checkbox 
+            <Checkbox
               checked={isSelected}
               className="h-4 w-4 cursor-pointer"
               onCheckedChange={(checked) => {
@@ -250,7 +250,7 @@ export function MachineListItem({
               }}
             />
           </div>
-          
+
           <div className="flex flex-col justify-center">
             <div className="flex flex-row items-center gap-2">
               {(() => {

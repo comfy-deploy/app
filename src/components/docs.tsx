@@ -616,7 +616,7 @@ print(data)`;
             <h1 className="text-2xl font-bold">{openApiSpec.info.title}</h1>
           )}
           {!hideDescription && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-zinc-400">
               {openApiSpec.info.description}
             </p>
           )}
@@ -740,7 +740,7 @@ print(data)`;
                     </Button>
                   </div>
                 </div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 dark:text-zinc-400">
                   {selectedEndpoint?.summary}
                 </div>
                 {selectedEndpoint?.description && (
@@ -789,7 +789,7 @@ print(data)`;
                     <Textarea
                       value={requestBody}
                       onChange={(e) => setRequestBody(e.target.value)}
-                      className="font-mono h-64 text-xs rounded-sm"
+                      className="font-mono h-64 text-xs rounded-sm dark:text-zinc-200"
                       disabled={isLoading}
                     />
 
@@ -799,7 +799,7 @@ print(data)`;
                       <div className="border rounded-sm overflow-hidden">
                         <div className="overflow-x-auto">
                           <table className="w-full text-xs font-mono min-w-[800px]">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-gray-50 dark:bg-zinc-900">
                               <tr>
                                 <th className="px-2 py-1 text-left font-medium w-[200px]">
                                   Name
@@ -814,7 +814,10 @@ print(data)`;
                             </thead>
                             <tbody className="divide-y">
                               {getAllTypes().map((type, index) => (
-                                <tr key={index} className="hover:bg-gray-50">
+                                <tr
+                                  key={index}
+                                  className="hover:bg-gray-50 dark:hover:bg-zinc-700/50"
+                                >
                                   <td className="px-2 py-1">
                                     <div className="flex items-center gap-1">
                                       <TooltipProvider>

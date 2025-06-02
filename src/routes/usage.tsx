@@ -182,7 +182,7 @@ function RouteComponent() {
   // console.log(selectedInvoice);
 
   return (
-    <div className="bg-white py-4 w-full">
+    <div className="w-full bg-white py-4 dark:bg-transparent">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
         {/* <Alert variant="warning" className="mb-6">
           <AlertCircle className="h-4 w-4" />

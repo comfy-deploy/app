@@ -436,7 +436,7 @@ function TreeNode({
             "flex items-center gap-2 rounded px-2 py-1 hover:bg-accent",
             node.isVirtual && "text-muted-foreground",
             node.type === 2 &&
-              "border border-transparent hover:border hover:border-blue-200 hover:border-dashed hover:bg-blue-50",
+              "border border-transparent hover:border hover:border-blue-200 hover:border-dashed hover:bg-blue-50 dark:hover:border-blue-700 dark:hover:bg-blue-900/50",
           )}
           onClick={() => setIsOpen(!isOpen)}
         >
@@ -478,7 +478,7 @@ function TreeNode({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 border border-transparent bg-transparent text-transparent hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 group-hover:border-blue-200 group-hover:bg-blue-50 group-hover:text-blue-700"
+            className="h-7 w-7 border border-transparent bg-transparent text-transparent hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 group-hover:border-blue-200 group-hover:bg-blue-50 group-hover:text-blue-700 dark:group-hover:border-blue-700 dark:group-hover:bg-blue-900/50 dark:hover:border-blue-700 dark:hover:bg-blue-900/50"
             onClick={() => onAddModel(node.path)}
             title={`Upload model to ${node.path}`}
           >
@@ -1173,7 +1173,7 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
 
           <div className="flex items-center gap-2">
             {/* Sorting controls */}
-            <div className="flex items-center gap-2 rounded-md border bg-white/95 p-1">
+            <div className="flex items-center gap-2 rounded-md border bg-white/95 p-1 dark:bg-zinc-900">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -1199,7 +1199,7 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <div className="h-5 w-[1px] bg-gray-200" />
+              <div className="h-5 w-[1px] bg-gray-200 dark:bg-zinc-700" />
 
               <Button
                 variant="ghost"
@@ -1253,7 +1253,7 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
               value={filter}
               onValueChange={(value) => setFilter(value as ModelFilter)}
             >
-              <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50">
+              <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50 dark:bg-zinc-900">
                 <TabsList className="relative flex w-fit gap-1 bg-transparent">
                   <motion.div layout className="relative">
                     <TabsTrigger
@@ -1261,8 +1261,8 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
                       className={cn(
                         "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                         filter === "private"
-                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                          : "text-gray-600 hover:bg-gray-100",
+                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
+                          : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                       )}
                     >
                       Private
@@ -1274,8 +1274,8 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
                       className={cn(
                         "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                         filter === "public"
-                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                          : "text-gray-600 hover:bg-gray-100",
+                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
+                          : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                       )}
                     >
                       Public
@@ -1287,8 +1287,8 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
                       className={cn(
                         "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                         filter === "all"
-                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                          : "text-gray-600 hover:bg-gray-100",
+                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
+                          : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                       )}
                     >
                       All
@@ -1302,14 +1302,14 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
         <DownloadingModels />
       </div>
 
-      <div className="mx-auto w-full max-w-screen-2xl flex-1 overflow-auto rounded-sm border border-gray-200 bg-muted/20">
+      <div className="mx-auto w-full max-w-screen-2xl flex-1 overflow-auto rounded-sm border border-gray-200 bg-muted/20 dark:border-zinc-700 dark:bg-gradient-to-b dark:from-zinc-800/50 dark:to-zinc-900/50">
         {isLoadingPrivate || isLoadingPublic ? (
           <div className="flex flex-col gap-4 p-4">
             {Array.from({ length: 3 }, (_, i) => (
               <div key={`loading-folder-${i}`} className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
+                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
                 </div>
                 <div className="flex flex-col divide-y divide-gray-100">
                   {Array.from({ length: 2 }, (_, j) => (
@@ -1317,9 +1317,9 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
                       key={`loading-file-${i}-${j}`}
                       className="flex items-center gap-2 p-2"
                     >
-                      <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
-                      <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-                      <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                      <div className="h-4 w-4 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
+                      <div className="h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
+                      <div className="h-4 w-16 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
                     </div>
                   ))}
                 </div>
@@ -1328,11 +1328,13 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
           </div>
         ) : showEmptyState ? (
           <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-2 p-8 text-center">
-            <div className="rounded-full bg-gray-100 p-3">
-              <FolderIcon className="h-6 w-6 text-gray-400" />
+            <div className="rounded-full bg-gray-100 p-3 dark:bg-zinc-800">
+              <FolderIcon className="h-6 w-6 text-gray-400 dark:text-zinc-400" />
             </div>
-            <div className="font-medium text-gray-900">No models found</div>
-            <p className="text-muted-foreground text-sm">
+            <div className="font-medium text-gray-900 dark:text-zinc-300">
+              No models found
+            </div>
+            <p className="text-muted-foreground text-sm dark:text-zinc-400">
               {filter === "all"
                 ? "No models available. Upload models to your folders or create a new folder."
                 : filter === "private"
@@ -1364,7 +1366,7 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
           <div className="flex flex-col p-4">
             {/* Common Models Section */}
             <div className="mb-2 mt-1">
-              <h3 className="mb-2 text-sm font-medium text-gray-900">
+              <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-zinc-300">
                 Common Models
               </h3>
             </div>
@@ -1392,7 +1394,7 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
 
             {/* All Models Section */}
             <div className="mb-2 mt-3">
-              <h3 className="mb-2 text-sm font-medium text-gray-900">
+              <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-zinc-300">
                 All Models
               </h3>
             </div>

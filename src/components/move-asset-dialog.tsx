@@ -313,14 +313,14 @@ export function MoveAssetDialog({
       <div key={node.id} style={{ marginLeft: `${depth * 8}px` }}>
         <div
           className={cn(
-            "flex cursor-pointer items-center gap-2 rounded-[8px] py-1 pr-2 pl-2 hover:bg-gray-50",
-            selectedPath === node.path && "bg-blue-50",
+            "flex cursor-pointer items-center gap-2 rounded-[8px] py-1 pr-2 pl-2 hover:bg-gray-50 dark:hover:bg-zinc-700/50",
+            selectedPath === node.path && "bg-blue-50 dark:bg-blue-900/50",
           )}
         >
           {/* Expand/collapse button */}
           <button
             type="button"
-            className="flex h-5 w-5 items-center justify-center text-gray-500"
+            className="flex h-5 w-5 items-center justify-center text-gray-500 dark:text-zinc-400"
             onClick={() => toggleFolder(node.id, node.path)}
           >
             {node.isExpanded ? (

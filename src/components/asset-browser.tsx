@@ -276,7 +276,7 @@ export function AssetBrowser({
       )}
       {/* Header with breadcrumb and actions - fixed */}
       <div className="flex shrink-0 items-center justify-between gap-4 p-4 pb-0">
-        <div className="flex items-center gap-2 pl-1 text-gray-500 text-sm">
+        <div className="flex items-center gap-2 pl-1 text-gray-500 text-sm dark:text-zinc-400">
           {breadcrumbs.map((crumb, i) => (
             <>
               <div key={`separator-${crumb.path}`}>
@@ -286,7 +286,7 @@ export function AssetBrowser({
                 <button
                   type="button"
                   onClick={() => handleNavigate(crumb.path)}
-                  className="max-w-[100px] truncate hover:text-gray-900"
+                  className="max-w-[100px] truncate hover:text-gray-900 dark:hover:text-zinc-300"
                   disabled={crumb.path === currentPath}
                 >
                   {crumb.name}
@@ -406,9 +406,9 @@ export function AssetBrowser({
                   <button
                     type="button"
                     onClick={() => handleNavigate(asset.path)}
-                    className="flex h-full w-full flex-col items-center justify-center rounded-[8px] border-2 border-dashed p-4 hover:bg-gray-50"
+                    className="flex h-full w-full flex-col items-center justify-center rounded-[8px] border-2 border-dashed p-4 hover:bg-gray-50 dark:hover:bg-zinc-800/50"
                   >
-                    <Folder className="h-12 w-12 text-gray-400" />
+                    <Folder className="h-12 w-12 text-gray-400 dark:text-zinc-400" />
                   </button>
                 ) : (
                   // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
@@ -458,7 +458,7 @@ export function AssetBrowser({
         ) : (
           <div className="w-full p-4">
             {/* Column headers for list view */}
-            <div className="sticky top-0 z-10 flex w-full items-center border-b bg-white px-3 py-2 font-medium text-gray-500 text-sm">
+            <div className="sticky top-0 z-10 flex w-full items-center border-b bg-white px-3 py-2 font-medium text-gray-500 text-sm dark:bg-zinc-900/50">
               {isSelectionMode && (
                 <div className="flex w-8 items-center justify-center">
                   {/* Header checkbox could be added here later for select all */}
@@ -485,7 +485,7 @@ export function AssetBrowser({
             {sortedAssets?.map((asset) => (
               <div
                 key={asset.id}
-                className="group flex w-full items-center border-b px-3 py-2 hover:bg-gray-50"
+                className="group flex w-full items-center border-b px-3 py-2 hover:bg-gray-50 dark:hover:bg-zinc-700/50"
               >
                 {/* Selection checkbox for list view */}
                 {isSelectionMode && (

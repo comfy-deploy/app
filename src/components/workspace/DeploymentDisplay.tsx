@@ -1072,7 +1072,7 @@ export function DeploymentSettings({
 
   return (
     <div className="flex flex-col px-2">
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-4 rounded-[8px] bg-zinc-50 px-4 py-2">
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-4 rounded-[8px] bg-zinc-50 px-4 py-2 dark:bg-zinc-900">
         <div className="flex items-center gap-4">
           <div className="font-medium text-md">Deployment</div>
           <Select
@@ -1192,7 +1192,7 @@ export function DeploymentDrawer(props: {
 
         {isLoading || (!deployment && selectedDeployment) ? (
           <div className="flex flex-col px-2">
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-zinc-50 pt-1 pb-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-zinc-50 pt-1 pb-4 dark:bg-zinc-900">
               <div className="flex items-center gap-4">
                 <Skeleton className="h-6 w-24" />
                 <Skeleton className="h-9 w-[180px]" />

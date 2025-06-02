@@ -359,7 +359,7 @@ function PricingTier({
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 10 }}
-                      className="ml-1 text-gray-500"
+                      className="ml-1 text-gray-500 dark:text-zinc-400"
                     >
                       /month
                     </motion.span>
@@ -367,12 +367,14 @@ function PricingTier({
                 )}
             </div>
             {isYearly && tier.priceMonthly !== "Free" && (
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="text-sm text-gray-500 mt-1 dark:text-zinc-400">
                 Billed yearly: {getYearlyTotal(tier.priceMonthly)}{" "}
                 <span className="ml-1 text-green-600">(2 months free)</span>
               </div>
             )}
-            <p className="mt-2 text-sm text-gray-600">{tier.description}</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-zinc-400">
+              {tier.description}
+            </p>
           </div>
 
           <ul className="mt-4 space-y-1.5 text-xs">
@@ -380,7 +382,7 @@ function PricingTier({
             {renderIncludesMessage() && (
               <li className="flex items-center">
                 <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
-                <span className="ml-2 font-medium text-gray-900">
+                <span className="ml-2 font-medium text-gray-900 dark:text-zinc-200">
                   {renderIncludesMessage()}
                 </span>
               </li>
@@ -390,7 +392,7 @@ function PricingTier({
             {tier.name === "Free" ? (
               <li className="flex items-center">
                 <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
-                <span className="ml-2 text-gray-600">
+                <span className="ml-2 text-gray-600 dark:text-zinc-400">
                   Run public workflow{" "}
                   <Badge
                     variant="secondary"
@@ -452,7 +454,7 @@ function PricingTier({
                   return (
                     <li key={feature.name} className="flex items-center">
                       <Check className="h-4 w-4 flex-shrink-0 text-green-500" />
-                      <span className="ml-2 text-gray-600">
+                      <span className="ml-2 text-gray-600 dark:text-zinc-400">
                         {feature.name}
                         {typeof value === "string" && (
                           <Badge
@@ -480,7 +482,7 @@ function PricingTier({
                   plan={`${tier.id}_${isYearly ? "yearly" : "monthly"}`}
                   href={`/checkout?plan=${tier.id}`}
                   plans={plans}
-                  className="border-b-0 border-t border-x-0 hover:bg-gray-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
+                  className="border-b-0 border-t border-x-0 hover:bg-gray-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full dark:hover:bg-zinc-700 dark:hover:text-zinc-100 dark:text-gray-300"
                   trial={false}
                   allowCoupon={true}
                   data={{
@@ -492,7 +494,7 @@ function PricingTier({
                 />
                 <Button
                   asChild
-                  className="border-b-0 border-t border-x-0 hover:bg-purple-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
+                  className="border-b-0 border-t border-x-0 hover:bg-purple-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full dark:hover:bg-purple-900/50 dark:hover:text-zinc-100 dark:text-purple-400"
                   variant="outline"
                 >
                   <Link to="/onboarding-call" target="_blank">
@@ -505,7 +507,7 @@ function PricingTier({
               <div className="grid grid-cols-1 gap-px">
                 <Button
                   asChild
-                  className="border-b-0 border-t border-x-0 hover:bg-indigo-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
+                  className="border-b-0 border-t border-x-0 hover:bg-indigo-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full dark:hover:bg-indigo-900/50 dark:hover:text-zinc-100 dark:text-indigo-400"
                   variant="outline"
                 >
                   <Link to="/onboarding-call" target="_blank">
@@ -519,7 +521,7 @@ function PricingTier({
                 plan={`${tier.id}_${isYearly ? "yearly" : "monthly"}`}
                 href={`/checkout?plan=${tier.id}`}
                 plans={plans}
-                className="border-b-0 border-t border-x-0 hover:bg-gray-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full"
+                className="border-b-0 border-t border-x-0 hover:bg-gray-900 hover:text-white p-6 rounded-none text-gray-900 transition-colors w-full dark:hover:bg-zinc-700 dark:hover:text-zinc-100 dark:text-zinc-200"
                 trial={false}
                 allowCoupon={true}
                 data={{
@@ -545,24 +547,26 @@ function GPUPricingTable() {
 
   return (
     <div className="mt-16 mx-auto max-w-5xl">
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-zinc-900 dark:border-zinc-700">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="font-bold text-2xl text-gray-900">GPU Pricing</h2>
-              <p className="mt-1 text-gray-500 text-sm">
+              <h2 className="font-bold text-2xl text-gray-900 dark:text-zinc-200">
+                GPU Pricing
+              </h2>
+              <p className="mt-1 text-gray-500 text-sm dark:text-zinc-400">
                 Transparent, usage-based pricing for all GPU types
               </p>
             </div>
-            <motion.div className="inline-flex items-center rounded-full bg-white/95 p-0.5 shadow-md ring-1 ring-gray-200/50 backdrop-blur-sm">
+            <motion.div className="inline-flex items-center rounded-full bg-white/95 p-0.5 shadow-md ring-1 ring-gray-200/50 backdrop-blur-sm dark:bg-zinc-900 dark:ring-zinc-700/50">
               <Button
                 variant="ghost"
                 onClick={() => setActiveTab("per_sec")}
                 className={cn(
                   "font-medium px-4 py-1.5 rounded-full text-sm transition-all",
                   activeTab === "per_sec"
-                    ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                    : "hover:bg-gray-100 text-gray-600",
+                    ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700/50"
+                    : "hover:bg-gray-100 text-gray-600 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                 )}
               >
                 Per second
@@ -573,8 +577,8 @@ function GPUPricingTable() {
                 className={cn(
                   "font-medium px-4 py-1.5 rounded-full text-sm transition-all",
                   activeTab === "per_hour"
-                    ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                    : "hover:bg-gray-100 text-gray-600",
+                    ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700/50"
+                    : "hover:bg-gray-100 text-gray-600 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                 )}
               >
                 Per hour
@@ -606,7 +610,7 @@ function GPUPricingTable() {
                             {gpu === "L40S" && (
                               <Badge
                                 variant="secondary"
-                                className="bg-blue-50 h-4 px-1 py-0 text-[10px] text-blue-700"
+                                className="bg-blue-50 h-4 px-1 py-0 text-[10px] text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
                               >
                                 NEW
                               </Badge>
@@ -696,10 +700,10 @@ export function PricingPage() {
       <div className="px-4 mx-auto pb-20">
         {/* Header */}
         <div className="mx-auto max-w-5xl py-12">
-          <h1 className="font-bold sm:text-5xl text-4xl text-gray-900 tracking-tight">
+          <h1 className="font-bold sm:text-5xl text-4xl text-gray-900 tracking-tight dark:text-zinc-200">
             Power your teams with Cloud Hosted ComfyUI
           </h1>
-          <p className="leading-8 mt-4 text-lg text-gray-600">
+          <p className="leading-8 mt-4 text-lg text-gray-600 dark:text-zinc-400">
             We work closely with you to bring your workflow to your teams.
           </p>
         </div>
@@ -745,7 +749,7 @@ export function PricingPage() {
           {/* Billing period toggle - Positioned on top of pricing cards */}
           <div className="absolute -top-6 left-1/2 z-20 -translate-x-1/2">
             <motion.div
-              className="inline-flex items-center rounded-full bg-white/95 p-0.5 shadow-md ring-1 ring-gray-200/50 backdrop-blur-sm"
+              className="inline-flex items-center rounded-full bg-white/95 p-0.5 shadow-md ring-1 ring-gray-200/50 backdrop-blur-sm dark:bg-zinc-900/95 dark:ring-zinc-700/50"
               layout
             >
               <motion.div layout className="relative">
@@ -755,8 +759,8 @@ export function PricingPage() {
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-all",
                     !isYearly
-                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                      : "text-gray-600 hover:bg-gray-100",
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700/50 dark:text-zinc-100"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                   )}
                 >
                   Monthly
@@ -769,13 +773,12 @@ export function PricingPage() {
                   className={cn(
                     "relative rounded-full px-4 py-1.5 text-sm font-medium transition-all",
                     isYearly
-                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                      : "text-gray-600 hover:bg-gray-100",
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700/50 dark:text-zinc-100"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                   )}
                 >
                   Yearly
                   <AnimatePresence mode="wait">
-                    {/* {isYearly && ( */}
                     <motion.div
                       className="inline-flex items-center overflow-hidden"
                       initial={{ width: 0, marginLeft: 0 }}
@@ -787,7 +790,7 @@ export function PricingPage() {
                       }}
                     >
                       <motion.span
-                        className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-600 whitespace-nowrap"
+                        className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-600 whitespace-nowrap dark:bg-green-900/80 dark:text-green-300"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -799,7 +802,6 @@ export function PricingPage() {
                         2 months free
                       </motion.span>
                     </motion.div>
-                    {/* )} */}
                   </AnimatePresence>
                 </Button>
               </motion.div>
@@ -807,7 +809,7 @@ export function PricingPage() {
           </div>
 
           {/* Pricing Cards */}
-          <div className="relative z-10 overflow-hidden rounded-sm shadow-lg">
+          <div className="relative z-10 overflow-hidden rounded-sm shadow-lg dark:shadow-2xl dark:shadow-zinc-900">
             {/* Free Tier */}
             <div className="relative z-10">
               <div>
@@ -816,7 +818,7 @@ export function PricingPage() {
                     tier={filteredTiers.find((tier) => tier.id === "free")!}
                     isLoading={isLoading}
                     plans={_sub?.plans?.plans ?? []}
-                    className="rounded-t-sm border bg-gradient-to-bl from-gray-50/10 via-gray-50/80 to-gray-100"
+                    className="rounded-t-sm border bg-gradient-to-bl from-gray-50/10 via-gray-50/80 to-gray-100 dark:border-zinc-700 dark:from-zinc-800/10 dark:via-zinc-800/80 dark:to-zinc-700"
                     isYearly={isYearly}
                     showCreatorTier={filteredTiers.some(
                       (tier) => tier.id === "creator",
@@ -833,7 +835,7 @@ export function PricingPage() {
                 filteredTiers.some((tier) => tier.id === "deployment")) && (
                 <div
                   className={cn(
-                    "grid border border-gray-200 border-t-0",
+                    "grid border border-gray-200 border-t-0 dark:border-zinc-700",
                     filteredTiers.some((tier) => tier.id === "creator") &&
                       filteredTiers.some((tier) => tier.id === "deployment")
                       ? "grid-cols-1 lg:grid-cols-2"
@@ -848,9 +850,9 @@ export function PricingPage() {
                       isLoading={isLoading}
                       plans={_sub?.plans?.plans ?? []}
                       className={cn(
-                        "bg-gradient-to-bl from-amber-50/10 via-amber-50/80 to-amber-100",
+                        "bg-gradient-to-bl from-amber-50/10 via-amber-50/80 to-amber-100 dark:from-amber-900/10 dark:via-amber-900/30 dark:to-amber-800/50",
                         filteredTiers.some((tier) => tier.id === "deployment")
-                          ? "lg:border-r"
+                          ? "lg:border-r dark:lg:border-zinc-700"
                           : "",
                       )}
                       isYearly={isYearly}
@@ -869,7 +871,7 @@ export function PricingPage() {
                       }
                       isLoading={isLoading}
                       plans={_sub?.plans?.plans ?? []}
-                      className="bg-gradient-to-bl from-blue-50/10 via-blue-50/80 to-blue-100"
+                      className="bg-gradient-to-bl from-blue-50/10 via-blue-50/80 to-blue-100 dark:from-blue-900/10 dark:via-blue-900/30 dark:to-blue-800/50"
                       isYearly={isYearly}
                       showCreatorTier={filteredTiers.some(
                         (tier) => tier.id === "creator",
@@ -889,7 +891,7 @@ export function PricingPage() {
                     tier={filteredTiers.find((tier) => tier.id === "business")!}
                     isLoading={isLoading}
                     plans={_sub?.plans?.plans ?? []}
-                    className="border border-t-0 bg-gradient-to-bl from-purple-50/10 via-purple-50/80 to-purple-100"
+                    className="border border-t-0 bg-gradient-to-bl from-purple-50/10 via-purple-50/80 to-purple-100 dark:border-zinc-700 dark:from-purple-900/10 dark:via-purple-900/30 dark:to-purple-800/50"
                     isYearly={isYearly}
                     showCreatorTier={filteredTiers.some(
                       (tier) => tier.id === "creator",
@@ -914,7 +916,7 @@ export function PricingPage() {
                     }
                     isLoading={isLoading}
                     plans={_sub?.plans?.plans ?? []}
-                    className="overflow-hidden rounded-b-sm border border-t-0 bg-gradient-to-bl from-indigo-50/10 via-indigo-50/80 to-indigo-100"
+                    className="overflow-hidden rounded-b-sm border border-t-0 bg-gradient-to-bl from-indigo-50/10 via-indigo-50/80 to-indigo-100 dark:border-zinc-700 dark:from-indigo-900/10 dark:via-indigo-900/30 dark:to-indigo-800/50"
                     isYearly={isYearly}
                     showCreatorTier={filteredTiers.some(
                       (tier) => tier.id === "creator",
@@ -927,7 +929,7 @@ export function PricingPage() {
               </div>
             </div>
 
-            <div className="absolute inset-0 h-full w-full bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem] bg-white" />
+            <div className="absolute inset-0 h-full w-full bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem] bg-white dark:bg-[linear-gradient(to_right,#27272a_1px,transparent_1px),linear-gradient(to_bottom,#27272a_1px,transparent_1px)] dark:bg-zinc-900" />
           </div>
         </div>
 

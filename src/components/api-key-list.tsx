@@ -47,7 +47,7 @@ function APIKeyRow({ item, onDelete }: { item: APIKey; onDelete: () => void }) {
   };
 
   return (
-    <div className="border-border/50 border-b bg-background transition-colors hover:bg-muted/30">
+    <div className="border-border/50 border-b bg-background transition-colors hover:bg-muted/30 dark:bg-transparent dark:hover:bg-zinc-700/50">
       <div className="group mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           {/* Icon */}
@@ -93,7 +93,7 @@ function APIKeyRow({ item, onDelete }: { item: APIKey; onDelete: () => void }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0 text-destructive opacity-0 transition-opacity hover:bg-destructive/10 group-hover:opacity-100"
+                className="shrink-0 text-destructive opacity-0 transition-opacity hover:bg-destructive/10 group-hover:opacity-100 dark:text-red-500 dark:hover:bg-red-500/10"
               >
                 <span className="sr-only">Delete API key</span>
                 <Trash2 className="h-4 w-4" />
@@ -208,7 +208,7 @@ export function APIKeyList() {
   return (
     <div className="flex h-full w-full flex-col">
       {/* Header */}
-      <div className="border-border border-b bg-background">
+      <div className="border-border border-b bg-background dark:bg-transparent">
         <div className="mx-auto flex items-center justify-between gap-2 p-4">
           {/* Search */}
           <div className="relative w-full">

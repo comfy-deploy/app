@@ -151,7 +151,7 @@ export function MachineList() {
                   <TooltipTrigger asChild>
                     <motion.div
                       layout
-                      className="group flex w-fit items-center gap-2 rounded-full border bg-white/80 px-4 py-2 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
+                      className="group flex w-fit items-center gap-2 rounded-full border bg-white/80 px-4 py-2 shadow-sm transition-all hover:border-gray-300 hover:shadow-md dark:bg-zinc-900"
                       transition={{
                         layout: {
                           duration: 0.15,
@@ -181,11 +181,11 @@ export function MachineList() {
                             setSelectedMachines(new Set());
                           }
                         }}
-                        className="data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary"
+                        className="data-[state=checked]:border-primary data-[state=indeterminate]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:bg-primary"
                       />
                       <label
                         htmlFor="select-all"
-                        className="cursor-pointer select-none whitespace-nowrap font-medium text-muted-foreground text-xs group-hover:text-gray-900"
+                        className="cursor-pointer select-none whitespace-nowrap font-medium text-muted-foreground text-xs group-hover:text-gray-900 dark:group-hover:text-zinc-300"
                       >
                         Select All
                       </label>
@@ -253,7 +253,7 @@ export function MachineList() {
         </div>
 
         <Tabs value={selectedTab} onValueChange={handleTabChange}>
-          <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50 ">
+          <motion.div className="inline-flex items-center rounded-lg bg-white/95 py-0.5 ring-1 ring-gray-200/50 dark:bg-zinc-900">
             <TabsList className="relative flex w-fit gap-1 bg-transparent">
               <motion.div layout className="relative">
                 <TabsTrigger
@@ -261,8 +261,8 @@ export function MachineList() {
                   className={cn(
                     "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                     selectedTab === "docker"
-                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                      : "text-gray-600 hover:bg-gray-100",
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                   )}
                 >
                   Docker Machine
@@ -274,8 +274,8 @@ export function MachineList() {
                   className={cn(
                     "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                     selectedTab === "self-hosted"
-                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50"
-                      : "text-gray-600 hover:bg-gray-100",
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
                   )}
                 >
                   Self Hosted
@@ -304,21 +304,21 @@ export function MachineList() {
           {[...Array(8)].map((_, i) => (
             <div
               key={`loading-${i}`}
-              className="flex h-[68px] w-full animate-pulse items-center justify-between border-b bg-white p-4"
+              className="flex h-[68px] w-full animate-pulse items-center justify-between border-b bg-white p-4 dark:bg-zinc-900"
             >
               <div className="flex items-center gap-4">
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-row items-center gap-2">
-                    <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
-                    <div className="h-4 w-60 rounded bg-gray-200" />
+                    <div className="h-[10px] w-[10px] rounded-full bg-gray-200 dark:bg-zinc-700" />
+                    <div className="h-4 w-60 rounded bg-gray-200 dark:bg-zinc-700" />
                   </div>
-                  <div className="h-3 w-32 rounded bg-gray-200" />
+                  <div className="h-3 w-32 rounded bg-gray-200 dark:bg-zinc-700" />
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-5 w-12 rounded-md bg-gray-200" />
-                <div className="h-5 w-20 rounded-md bg-gray-200" />
-                <div className="h-5 w-12 rounded-md bg-gray-200" />
+                <div className="h-5 w-12 rounded-md bg-gray-200 dark:bg-zinc-700" />
+                <div className="h-5 w-20 rounded-md bg-gray-200 dark:bg-zinc-700" />
+                <div className="h-5 w-12 rounded-md bg-gray-200 dark:bg-zinc-700" />
                 <Button variant="ghost" size="icon">
                   <EllipsisVertical className="h-4 w-4" />
                 </Button>
@@ -328,7 +328,7 @@ export function MachineList() {
         </div>
       ) : query.data?.pages[0].length === 0 ? (
         <div className="mx-auto w-full max-w-screen-2xl">
-          <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-xl border bg-white/50 p-8 text-center">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-xl border bg-white/50 p-8 text-center dark:bg-zinc-900">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <Server className="h-6 w-6 text-primary" />
             </div>
@@ -406,21 +406,21 @@ export function MachineList() {
             return [...Array(4)].map((_, i) => (
               <div
                 key={`loading-item-${i}`}
-                className="flex h-[80px] w-full animate-pulse items-center justify-between border bg-white p-4"
+                className="flex h-[80px] w-full animate-pulse items-center justify-between border bg-white p-4 dark:bg-zinc-900"
               >
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-row items-center gap-2">
-                      <div className="h-[10px] w-[10px] rounded-full bg-gray-200" />
-                      <div className="h-4 w-60 rounded bg-gray-200" />
+                      <div className="h-[10px] w-[10px] rounded-full bg-gray-200 dark:bg-zinc-700" />
+                      <div className="h-4 w-60 rounded bg-gray-200 dark:bg-zinc-700" />
                     </div>
-                    <div className="h-3 w-32 rounded bg-gray-200" />
+                    <div className="h-3 w-32 rounded bg-gray-200 dark:bg-zinc-700" />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-5 w-12 rounded-md bg-gray-200" />
-                  <div className="h-5 w-20 rounded-md bg-gray-200" />
-                  <div className="h-5 w-12 rounded-md bg-gray-200" />
+                  <div className="h-5 w-12 rounded-md bg-gray-200 dark:bg-zinc-700" />
+                  <div className="h-5 w-20 rounded-md bg-gray-200 dark:bg-zinc-700" />
+                  <div className="h-5 w-12 rounded-md bg-gray-200 dark:bg-zinc-700" />
                   <Button variant="ghost" size="icon">
                     <EllipsisVertical className="h-4 w-4" />
                   </Button>
