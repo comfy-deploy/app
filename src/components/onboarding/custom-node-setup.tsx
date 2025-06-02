@@ -1259,7 +1259,7 @@ function CustomNodeCard({
   // Handle command type
   if (node.type === "commands") {
     return (
-      <div className="group relative flex flex-col rounded-[6px] border border-gray-200 bg-gray-50 p-2 text-sm">
+      <div className="group relative flex flex-col rounded-[6px] border border-gray-200 bg-gray-50 p-2 text-sm dark:border-zinc-700 dark:bg-zinc-800/50">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 flex-col">
             {editingCommand === node.id ? (
@@ -1286,7 +1286,7 @@ function CustomNodeCard({
                 }}
               />
             ) : (
-              <pre className="whitespace-pre-wrap font-mono text-gray-600 text-xs">
+              <pre className="line-clamp-4 whitespace-pre-wrap font-mono text-gray-600 text-xs dark:text-zinc-400">
                 $ {node.data as string}
               </pre>
             )}

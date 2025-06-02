@@ -349,7 +349,7 @@ function ModelRendererComponent({
             alt="3D Model Thumbnail"
             className="h-full w-full rounded-lg bg-gray-100 object-contain dark:bg-gray-800"
           />
-          <Box size={12} className="absolute right-0 bottom-0" />
+          <Box size={12} className="absolute right-0 bottom-0 dark:shadow-lg" />
         </div>
       );
     }

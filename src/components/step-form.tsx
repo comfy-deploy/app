@@ -166,7 +166,7 @@ export function StepForm<T>({
     <div className="relative flex h-screen w-full flex-col overflow-hidden">
       {!hideProgressBar && (
         <div className="sticky top-0 left-0 z-50 mx-auto mt-10 w-full max-w-5xl">
-          <div className="relative overflow-hidden bg-background">
+          <div className="relative overflow-hidden bg-background dark:bg-transparent">
             <Breadcrumb>
               <BreadcrumbList>
                 {steps.map((stepItem, index) => {
