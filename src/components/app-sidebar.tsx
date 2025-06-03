@@ -15,12 +15,14 @@ import {
   LineChart,
   MessageCircle,
   MessageSquare,
+  Moon,
   Plus,
   Receipt,
   Rss,
   Save,
   Server,
   Settings,
+  Sun,
   Users,
   Workflow,
   Link2,
@@ -1152,7 +1154,7 @@ export function AppSidebar() {
   const sessionId = useSessionIdInSessionView();
   const shareSlug = useShareSlug();
   const { setOpen } = useSidebar();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   const items = flatPages.map((page) => ({
     title: page.name,
@@ -1453,6 +1455,24 @@ export function AppSidebar() {
                   </span>
                 </a>
               ))}
+
+              {/* Theme Switch Item */}
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+              <div
+                className="flex w-full cursor-pointer flex-row items-center justify-between gap-2 pr-2 text-2xs text-muted-foreground transition-colors hover:text-foreground"
+                onClick={() => {
+                  setTheme(theme === "dark" ? "light" : "dark");
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  {theme === "dark" ? (
+                    <Moon size={16} className="w-3" />
+                  ) : (
+                    <Sun size={16} className="w-3" />
+                  )}
+                  <span>Theme</span>
+                </div>
+              </div>
             </div>
           )}
         </SidebarFooter>

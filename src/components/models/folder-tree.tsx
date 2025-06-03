@@ -1311,7 +1311,7 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
                   <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
                   <div className="h-4 w-16 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
                 </div>
-                <div className="flex flex-col divide-y divide-gray-100">
+                <div className="flex flex-col divide-y divide-gray-100 dark:divide-zinc-700">
                   {Array.from({ length: 2 }, (_, j) => (
                     <div
                       key={`loading-file-${i}-${j}`}

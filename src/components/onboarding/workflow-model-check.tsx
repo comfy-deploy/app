@@ -361,8 +361,8 @@ export function WorkflowModelCheck({
       {!initialWorkflow && (
         <div className="relative hidden md:block">
           {isModelBrowserExpanded && (
-            <div className="w-[500px] rounded-xl border bg-white p-4 drop-shadow-lg">
-              <div className="mt-2 h-[calc(70vh)] overflow-auto bg-muted/20">
+            <div className="w-[500px] rounded-xl border bg-white p-4 drop-shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              <div className="mt-2 h-[calc(70vh)] overflow-auto bg-muted/20 dark:bg-zinc-900">
                 <FolderTree onAddModel={handleAddModel} />
               </div>
             </div>
@@ -811,7 +811,9 @@ const OptionList = memo(
                               key={`${workflowNode.type}-${workflowNode.id}-${index}`}
                               className={cn(
                                 "mb-0.5 flex flex-col items-center gap-2 rounded-[4px] px-2 py-2",
-                                index % 2 === 1 ? "bg-gray-100" : "",
+                                index % 2 === 1
+                                  ? "bg-gray-100 dark:bg-zinc-700/50"
+                                  : "",
                                 isModelBrowserExpanded || isModal
                                   ? ""
                                   : "md:flex-row md:justify-between",
@@ -974,7 +976,7 @@ export function ModelSelectComboBox({
                 "w-full justify-between rounded-md",
                 !currentValue || isValid
                   ? ""
-                  : "border-yellow-500 bg-yellow-50/80",
+                  : "border-yellow-500 bg-yellow-50/80 dark:border-yellow-500 dark:bg-yellow-900/50",
               )}
             >
               <span className="truncate">

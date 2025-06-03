@@ -212,7 +212,7 @@ export default function AutoFormObject<
             <AccordionItem
               value={groupName}
               key={groupName}
-              className="m-0.5 rounded-md border border-1 px-4 ring-1 ring-gray-200"
+              className="m-0.5 rounded-md border border-1 px-4 ring-1 ring-gray-200 dark:ring-zinc-700"
             >
               <AccordionTrigger>
                 <span className="flex items-center gap-2">

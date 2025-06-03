@@ -52,7 +52,7 @@ function RouteComponent() {
 
   return (
     <div className="w-full">
-      <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm">
+      <div className="sticky top-0 z-50 flex flex-row justify-between border-gray-200 border-b bg-[#fcfcfc] p-4 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900">
         <div className="flex flex-row items-center gap-4">
           <Link
             to={`/machines/${machine.id}`}
@@ -66,7 +66,9 @@ function RouteComponent() {
           </Link>
 
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-500 text-sm">Files</span>
+          <span className="text-gray-500 text-sm dark:text-gray-400">
+            Files
+          </span>
         </div>
         <div className="flex flex-row gap-2">
           <ErrorBoundary fallback={(error) => <div>{error.message}</div>}>
@@ -108,7 +110,7 @@ function FileBreadcrumbs({
 
   return (
     <div className="flex shrink-0 items-center justify-between gap-4 p-4 pb-0">
-      <div className="flex items-center gap-2 pl-1 text-gray-500 text-sm">
+      <div className="flex items-center gap-2 pl-1 text-gray-500 text-sm dark:text-gray-400">
         {breadcrumbs.map((crumb, i) => (
           <div key={crumb.path} className="flex items-center">
             {i > 0 && <ChevronRight className="mr-2 h-4 w-4" />}
@@ -120,7 +122,7 @@ function FileBreadcrumbs({
                   search: (prev) => ({ ...prev, path: crumb.path }),
                 });
               }}
-              className="hover:text-gray-900"
+              className="hover:text-gray-900 dark:hover:text-gray-100"
             >
               {crumb.name}
             </button>
@@ -180,7 +182,7 @@ function MachineFileList() {
   if (!data) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <p className="text-gray-500 text-sm">
+        <p className="text-gray-500 text-sm dark:text-gray-400">
           No data available. Please rebuild your machine to view the files.
         </p>
       </div>
@@ -199,7 +201,7 @@ function MachineFileList() {
       <div className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent flex-1 overflow-y-auto">
         <div className="w-full p-4">
           {/* Column headers for list view */}
-          <div className="sticky top-0 z-10 flex w-full items-center border-b bg-white px-3 py-2 font-medium text-gray-500 text-sm">
+          <div className="sticky top-0 z-10 flex w-full items-center border-b bg-white px-3 py-2 font-medium text-gray-500 text-sm dark:border-zinc-700/50 dark:bg-zinc-900/50 dark:text-gray-400">
             <div className="flex flex-1 items-center">
               <div className="w-8" /> {/* Space for icon */}
               <div className="flex-1 px-2">Name</div>
@@ -217,7 +219,7 @@ function MachineFileList() {
           {data.directories.map((dirName) => (
             <div
               key={dirName}
-              className="group flex w-full items-center border-b px-3 py-2 hover:bg-gray-50"
+              className="group flex w-full items-center border-b px-3 py-2 hover:bg-gray-50 dark:hover:bg-zinc-800"
             >
               <div className="flex flex-1 items-center">
                 {/* Icon column */}
@@ -254,7 +256,7 @@ function MachineFileList() {
             return (
               <div
                 key={fileName}
-                className="group flex w-full items-center border-b px-3 py-2 hover:bg-gray-50"
+                className="group flex w-full items-center border-b px-3 py-2 hover:bg-gray-50 dark:hover:bg-zinc-800"
               >
                 <div className="flex flex-1 items-center">
                   {/* Icon column */}

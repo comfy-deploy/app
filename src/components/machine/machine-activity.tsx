@@ -113,8 +113,8 @@ function MachineWorkflowDeployment({ machine }: { machine: any }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "flex flex-row items-center gap-2 rounded-[4px] p-1 text-xs transition-all hover:bg-gray-100",
-                      index % 2 === 1 && "bg-gray-50",
+                      "flex flex-row items-center gap-2 rounded-[4px] p-1 text-xs transition-all hover:bg-gray-100 dark:hover:bg-zinc-800",
+                      index % 2 === 1 && "bg-gray-50 dark:bg-zinc-800/50",
                     )}
                   >
                     <Box className="h-4 w-4" />
@@ -141,8 +141,8 @@ function MachineWorkflowDeployment({ machine }: { machine: any }) {
                   <div
                     key={deployment.id}
                     className={cn(
-                      "flex flex-row items-center justify-between rounded-[4px] p-1 transition-all hover:bg-gray-100",
-                      index % 2 === 1 && "bg-gray-50",
+                      "flex flex-row items-center justify-between rounded-[4px] p-1 transition-all hover:bg-gray-100 dark:hover:bg-zinc-800",
+                      index % 2 === 1 && "bg-gray-50 dark:bg-zinc-800/50",
                     )}
                   >
                     <Link
