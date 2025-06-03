@@ -475,7 +475,7 @@ function WorkflowPageComponent() {
               </DropdownMenuContent>
             </DropdownMenu>
             {workflow.description && (
-              <p className="line-clamp-3 text-2xs text-gray-600 leading-snug">
+              <p className="line-clamp-3 text-2xs text-gray-600 leading-snug dark:text-gray-400">
                 {workflow.description}
               </p>
             )}

@@ -10,6 +10,7 @@ import { updateUser } from "./user-api";
 
 export function UserSettings() {
   const sub = useCurrentPlan();
+  const freeTier = !sub?.plans?.plans || sub?.plans?.plans.length === 0;
   const DEFAULT_MAX_SPEND_LIMIT = sub?.plans ? 1000 : 5;
   const { data: userSettings } = useUserSettings();
 
@@ -17,11 +18,11 @@ export function UserSettings() {
 
   return (
     <div className={cn("mx-auto w-full max-w-lg py-10")}>
-      {!sub?.plans?.plans && (
-        <div className="mb-4 border-yellow-400 border-l-4 bg-yellow-50 p-4">
+      {freeTier && (
+        <div className="mb-4 border-yellow-400 border-l-4 bg-yellow-50 p-4 dark:border-yellow-500 dark:bg-yellow-900/50">
           <div className="flex">
             <div className="ml-3">
-              <p className="text-sm text-yellow-700">
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
                 Settings are disabled for free tier users. Please upgrade your
                 plan to access these features.
               </p>
@@ -32,7 +33,7 @@ export function UserSettings() {
       <InlineAutoForm
         className={cn(
           "w-full",
-          !sub?.plans?.plans && "disabled pointer-events-none opacity-50",
+          freeTier && "disabled pointer-events-none opacity-50",
         )}
         buttonTitle="Save"
         formSchema={z.object({

@@ -533,7 +533,7 @@ function RunRow({
     // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
     <div
       className={cn(
-        "@container/run-row flex h-[42px] cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm transition-all",
+        "@container/run-row flex h-[42px] cursor-pointer items-center justify-between overflow-hidden border-b p-2 text-sm transition-all dark:border-zinc-700/50",
         isSelected
           ? "bg-gray-50 shadow-md dark:bg-gradient-to-r dark:bg-transparent dark:from-zinc-900 dark:to-zinc-800 dark:shadow-gray-900/50"
           : "hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gradient-to-r dark:hover:bg-transparent dark:hover:from-zinc-900 dark:hover:to-zinc-800",

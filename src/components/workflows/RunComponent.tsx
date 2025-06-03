@@ -145,7 +145,7 @@ function InputComponent({ workflowId }: { workflowId: string }) {
       </Button>
       {inputModalOpen && (
         <MyDrawer
-          desktopClassName="w-[500px] shadow-lg border border-gray-200"
+          desktopClassName="w-[500px] shadow-lg border border-gray-200 dark:border-zinc-700"
           backgroundInteractive={true}
           open={inputModalOpen}
           onClose={() => {

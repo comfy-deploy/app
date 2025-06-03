@@ -1254,7 +1254,7 @@ export function AppSidebar() {
             <div className="mt-1 flex items-center justify-center gap-0 rounded-[8px] bg-gray-100 dark:bg-gradient-to-r dark:from-zinc-800 dark:to-zinc-900">
               <div className="flex min-h-[44px] w-full items-center justify-center">
                 <OrganizationSwitcher
-                  organizationProfileUrl="/organization-profile"
+                  organizationProfileUrl={`/org/${orgSlug}/organization-profile`}
                   organizationProfileMode="navigation"
                   afterSelectOrganizationUrl="/org/:slug/workflows"
                   afterSelectPersonalUrl={`/user/${personalOrg}/workflows`}

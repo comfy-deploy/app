@@ -161,7 +161,7 @@ export const LoadingMachineVerSkeleton = () => {
       {[...Array(5)].map((_, i) => (
         <div
           key={i}
-          className="mb-4 rounded-[8px] border bg-white p-4 shadow-sm"
+          className="mb-4 rounded-[8px] border bg-white p-4 shadow-sm dark:bg-zinc-900"
         >
           <div className="grid grid-cols-[minmax(120px,1fr)_minmax(150px,1fr)_minmax(180px,2fr)_auto] items-center gap-x-4">
             {/* ID and Version */}

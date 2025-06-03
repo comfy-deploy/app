@@ -40,7 +40,7 @@ export default function MachinePage({
   if (isLoading || !machine) {
     return (
       <>
-        <div className="h-[57px] w-full border-b bg-[#fcfcfc] shadow-sm" />
+        <div className="h-[57px] w-full border-b bg-[#fcfcfc] shadow-sm dark:bg-zinc-900" />
         <div className="mx-auto h-[calc(100vh-100px)] max-h-full w-full max-w-[1200px] px-2 py-4 md:px-4">
           <LoadingMachineVerSkeleton />
         </div>
