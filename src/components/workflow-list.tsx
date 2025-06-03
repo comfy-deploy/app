@@ -454,7 +454,7 @@ function WorkflowCard({
       >
         {view === "grid" ? (
           <>
-            <Card className="group relative flex aspect-square w-full flex-col overflow-hidden rounded-md transition-all duration-300 ease-in-out hover:shadow-lg">
+            <Card className="group relative flex aspect-square w-full flex-col overflow-hidden rounded-md transition-all duration-300 ease-in-out hover:shadow-lg dark:hover:shadow-zinc-800">
               <div className="h-full w-full">
                 {workflow.cover_image || latest_output?.images?.[0]?.url ? (
                   <FileURLRender
