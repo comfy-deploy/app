@@ -458,7 +458,7 @@ export function AssetBrowser({
         ) : (
           <div className="w-full p-4">
             {/* Column headers for list view */}
-            <div className="sticky top-0 z-10 flex w-full items-center border-b bg-white px-3 py-2 font-medium text-gray-500 text-sm dark:bg-zinc-900/50">
+            <div className="sticky top-0 z-10 flex w-full items-center border-b bg-white px-3 py-2 font-medium text-gray-500 text-sm dark:bg-zinc-900/50 dark:text-zinc-400">
               {isSelectionMode && (
                 <div className="flex w-8 items-center justify-center">
                   {/* Header checkbox could be added here later for select all */}
