@@ -67,6 +67,7 @@ import {
 import {
   useCurrentPlan,
   useCurrentPlanWithStatus,
+  useIsBusinessAllowed,
 } from "@/hooks/use-current-plan";
 import { api } from "@/lib/api";
 import { callServerPromise } from "@/lib/call-server-promise";
@@ -1155,6 +1156,7 @@ export function AppSidebar() {
   const shareSlug = useShareSlug();
   const { setOpen } = useSidebar();
   const { theme, setTheme } = useTheme();
+  const isBusinessAllowed = Boolean(useIsBusinessAllowed());
 
   const items = flatPages.map((page) => ({
     title: page.name,
@@ -1457,27 +1459,28 @@ export function AppSidebar() {
               ))}
 
               {/* Theme Switch Item */}
-              {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-              <div
-                className="flex w-full cursor-pointer flex-row items-center justify-between gap-2 pr-2 text-2xs text-muted-foreground transition-colors hover:text-foreground"
-                onClick={() => {
-                  setTheme(theme === "dark" ? "light" : "dark");
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  {theme === "dark" ? (
-                    <Moon size={16} className="w-3" />
-                  ) : (
-                    <Sun size={16} className="w-3" />
-                  )}
-                  <span>Theme</span>
+              {isBusinessAllowed && (
+                // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+                <div
+                  className="flex w-full cursor-pointer flex-row items-center justify-between gap-2 pr-2 text-2xs text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => {
+                    setTheme(theme === "dark" ? "light" : "dark");
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    {theme === "dark" ? (
+                      <Moon size={16} className="w-3" />
+                    ) : (
+                      <Sun size={16} className="w-3" />
+                    )}
+                    <span>Theme</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </SidebarFooter>
       </Sidebar>
-
       {window.location.hostname === "localhost" && (
         <div className="fixed top-2 right-2 z-[9999] flex items-center gap-2 opacity-65">
           <Badge className="pointer-events-none bg-orange-300 text-orange-700 shadow-md">

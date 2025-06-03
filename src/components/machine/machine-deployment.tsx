@@ -322,7 +322,7 @@ export function MachineVersionListItem({
   }, [machineVersion.status, buildStartTime, machineVersion.created_at]);
 
   return (
-    <div className="border-b px-4 hover:bg-gray-100 dark:hover:bg-zinc-700/50">
+    <div className="border-b px-4 hover:bg-gray-100 dark:border-zinc-700/50 dark:hover:bg-zinc-700/50">
       <div className="grid grid-cols-[minmax(120px,1fr)_minmax(150px,1fr)_minmax(100px,1fr)_minmax(250px,auto)] items-center gap-x-4">
         {/* Wrap only the content that should be clickable in Link */}
         <Link

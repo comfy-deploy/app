@@ -368,7 +368,7 @@ function WorkflowPageComponent() {
                 className={cn(
                   !isDeploymentAllowed &&
                     !isPlanLoading &&
-                    "bg-zinc-200/50 shadow-inner",
+                    "bg-zinc-200/50 shadow-inner dark:bg-zinc-800/50 dark:shadow-gray-950",
                 )}
               >
                 <SidebarGroupLabel className="flex justify-between">
