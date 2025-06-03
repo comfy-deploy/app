@@ -261,8 +261,8 @@ export function MachineList() {
                   className={cn(
                     "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                     selectedTab === "docker"
-                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
-                      : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700",
                   )}
                 >
                   Docker Machine
@@ -274,8 +274,8 @@ export function MachineList() {
                   className={cn(
                     "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
                     selectedTab === "self-hosted"
-                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700/50 dark:ring-zinc-700/50"
-                      : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700/50",
+                      ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700",
                   )}
                 >
                   Self Hosted
