@@ -1,6 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Image, Loader2, Ratio, RotateCw, RotateCwSquare } from "lucide-react";
+import {
+  Image as ImageIcon,
+  Loader2,
+  Ratio,
+  RotateCwSquare,
+} from "lucide-react";
 import { Suspense, lazy, useState, useCallback } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
@@ -242,7 +247,7 @@ export function SDImageCrop({ image, onSave, onCancel }: SDImageCropProps) {
           Reset
         </Button>
         <div className="flex flex-row items-center gap-4">
-          <Image className="h-4 w-4 text-muted-foreground" />
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
           <Slider
             value={[zoom]}
             onValueChange={(value) => setZoom(value[0])}
@@ -251,7 +256,7 @@ export function SDImageCrop({ image, onSave, onCancel }: SDImageCropProps) {
             step={0.1}
             className="w-52 flex-1"
           />
-          <Image className="h-5 w-5 text-muted-foreground" />
+          <ImageIcon className="h-5 w-5 text-muted-foreground" />
         </div>
         <Button variant="ghost" onClick={handleRotate} size="icon">
           <RotateCwSquare className="h-5 w-5" />
@@ -259,7 +264,7 @@ export function SDImageCrop({ image, onSave, onCancel }: SDImageCropProps) {
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-2 flex justify-end">
+      <div className="flex justify-end">
         <Button onClick={handleSave} disabled={isSaving || !croppedAreaPixels}>
           {isSaving ? "Saving..." : "Apply"}
         </Button>
