@@ -1,4 +1,5 @@
 import { SDImageInputPreview } from "@/components/SDInputs/SDImageInputPreview";
+import { SDImageEditor } from "@/components/SDInputs/SDImageEditor";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,7 @@ export function SDImageInput({
   header,
 }: SDImageInputProps) {
   const dropRef: RefObject<any> = useRef(null);
+  const [openEditor, setOpenEditor] = useState(false);
   const ImgView: ImgView | null = useMemo(() => {
     if (file && typeof file === "object") {
       const imgURL = URL.createObjectURL(file);
@@ -111,6 +113,7 @@ export function SDImageInput({
                   variant="outline"
                   type="button"
                   className="cursor-pointer rounded-[8px] transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  onClick={() => setOpenEditor(true)}
                 >
                   <Pencil size={18} />
                 </Button>
@@ -156,6 +159,19 @@ export function SDImageInput({
           />
         )}
       </div>
+
+      {/* Image Editor Dialog */}
+      {hasTextInput && (
+        <SDImageEditor
+          open={openEditor}
+          onOpenChange={setOpenEditor}
+          imageUrl={String(file || "")}
+          onSave={(editedFile) => {
+            onChange(editedFile);
+            setOpenEditor(false);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -89,6 +89,7 @@
     "react": "^19.0.0",
     "react-day-picker": "^8.9.1",
     "react-dom": "^19.0.0",
+    "react-easy-crop": "^5.4.2",
     "react-grid-layout": "^1.5.0",
     "react-hook-form": "^7.54.1",
     "react-hotkeys-hook": "^4.6.1",
