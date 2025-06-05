@@ -314,6 +314,7 @@ export function SDInputsRender({
           file={inputValue}
           inputClasses="mt-1"
           header={header(genericProps)}
+          isDisplayAssetInput={true}
           {...genericProps}
           onChange={(file: File | string | undefined) => {
             updateInput(inputNode.input_id, file);

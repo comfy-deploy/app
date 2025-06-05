@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { Eye, Paperclip, Trash } from "lucide-react";
+import { SDAssetInput } from "./sd-asset-input";
 import React, {
   type ChangeEvent,
   type DragEvent,
@@ -26,8 +27,9 @@ type SDVideoInputProps = {
   inputClasses?: string;
   file: File | undefined;
   multiple?: boolean;
-  onChange: (file: File | string | undefined) => void;
+  onChange: (file: File | string | undefined | FileList) => void;
   header?: ReactNode;
+  isDisplayAssetInput?: boolean;
 };
 
 export function SDVideoInput({
@@ -37,6 +39,7 @@ export function SDVideoInput({
   file,
   onChange,
   header,
+  isDisplayAssetInput,
 }: SDVideoInputProps) {
   const dropRef: RefObject<any> = useRef(null);
 
@@ -112,6 +115,11 @@ export function SDVideoInput({
               }}
               type="file"
             />
+            {isDisplayAssetInput && (
+              <div className="flex items-center justify-center">
+                <SDAssetInput onChange={onChange} />
+              </div>
+            )}
           </>
         )}
         {displayVideoName && <ViewVideo file={file} onDelete={onDelete} />}
