@@ -39,6 +39,8 @@ export function SDImageEditor({
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [imageData, setImageData] = useState<ImgView | null>(null);
+  const [brushMode, setBrushMode] = useState<"brush" | "eraser">("brush");
+  const [brushSize, setBrushSize] = useState<number>(100);
   const canvasRef = useRef<any>(null);
 
   const validateAndLoadImage = async (url: string) => {
@@ -104,6 +106,23 @@ export function SDImageEditor({
   const triggerMaskSave = () => {
     if (canvasRef.current) {
       canvasRef.current.requestData();
+    }
+  };
+
+  const onUndo = () => {
+    if (canvasRef.current) {
+      canvasRef.current.undo();
+    }
+  };
+
+  const handleModeChange = (mode: "brush" | "eraser") => {
+    setBrushMode(mode);
+  };
+
+  const handleBrushSizeChange = (size: number) => {
+    setBrushSize(size);
+    if (canvasRef.current) {
+      canvasRef.current.setBrushSize(size);
     }
   };
 
@@ -230,15 +249,24 @@ export function SDImageEditor({
                             ref={canvasRef}
                             image={imageData}
                             getCanvasURL={handleMaskSave}
+                            onModeChange={handleModeChange}
+                            onBrushSizeChange={handleBrushSizeChange}
+                            brushSize={brushSize}
                           />
                         </Suspense>
                       </div>
                     </div>
                     <div className="mt-4 flex flex-col items-center justify-center gap-2">
                       <span className="text-muted-foreground text-xs">
-                        Scroll to adjust the brush size.
+                        Use E/D keys or scroll to adjust the brush size.
                       </span>
-                      <DrawerMenu />
+                      <DrawerMenu
+                        onUndo={onUndo}
+                        currentMode={brushMode}
+                        onModeChange={handleModeChange}
+                        brushSize={brushSize}
+                        onBrushSizeChange={handleBrushSizeChange}
+                      />
                     </div>
                     <div className="mt-4 flex justify-end">
                       <Button onClick={triggerMaskSave}>Save Mask</Button>

@@ -1,7 +1,4 @@
-"use client";
-
 import type { ImgView } from "@/components/SDInputs/SDImageInput";
-import { brushPreview } from "@/components/SDInputs/SDMaskDrawerUtils/brushPreview";
 import { fabricImage } from "@/components/SDInputs/SDMaskDrawerUtils/fabricImage";
 import { Canvas, Image, PencilBrush } from "fabric";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
@@ -10,17 +7,50 @@ import "./main.css";
 type SDMaskDrawerProps = {
   image: ImgView;
   getCanvasURL: (e: any) => void;
+  onModeChange?: (mode: "brush" | "eraser") => void;
+  onBrushSizeChange?: (size: number) => void;
+  brushSize?: number;
 };
 
 export const SDDrawerCanvas = forwardRef(
-  ({ image, getCanvasURL }: SDMaskDrawerProps, ref) => {
+  (
+    {
+      image,
+      getCanvasURL,
+      onModeChange,
+      onBrushSizeChange,
+      brushSize = 100,
+    }: SDMaskDrawerProps,
+    ref,
+  ) => {
     const containerEl = useRef<HTMLDivElement>(null);
     const canvasEl = useRef<HTMLCanvasElement>(null);
     const canvasMask = useRef<HTMLCanvasElement>(null);
     const canvasBrush = useRef<HTMLDivElement>(null);
     const history = useRef<any[]>([]);
     const maskCanvasInstance = useRef<Canvas | null>(null);
+    const currentBrushSize = useRef<number>(brushSize);
+    const minZoom = useRef<number>(1);
+    const callbacksRef = useRef({ onModeChange, onBrushSizeChange });
     const MAX_HISTORY_SIZE = 20;
+
+    // Update callback refs when they change
+    useEffect(() => {
+      callbacksRef.current = { onModeChange, onBrushSizeChange };
+    }, [onModeChange, onBrushSizeChange]);
+
+    // Update brush size when prop changes
+    useEffect(() => {
+      currentBrushSize.current = brushSize;
+      if (maskCanvasInstance.current?.freeDrawingBrush) {
+        maskCanvasInstance.current.freeDrawingBrush.width = brushSize;
+        // Update brush preview size
+        if (canvasBrush.current) {
+          canvasBrush.current.style.width = `${brushSize * minZoom.current}px`;
+          canvasBrush.current.style.height = `${brushSize * minZoom.current}px`;
+        }
+      }
+    }, [brushSize]);
 
     useImperativeHandle(ref, () => ({
       requestData() {
@@ -50,11 +80,22 @@ export const SDDrawerCanvas = forwardRef(
         getCanvasURL(upscaledCanvas.toDataURL());
       },
       undo() {
+        console.log("undo");
         if (history.current.length > 0 && maskCanvasInstance.current) {
           const lastObject = history.current.pop();
           if (lastObject) {
             maskCanvasInstance.current.remove(lastObject);
             maskCanvasInstance.current.renderAll();
+          }
+        }
+      },
+      setBrushSize(size: number) {
+        currentBrushSize.current = size;
+        if (maskCanvasInstance.current?.freeDrawingBrush) {
+          maskCanvasInstance.current.freeDrawingBrush.width = size;
+          if (canvasBrush.current) {
+            canvasBrush.current.style.width = `${size * minZoom.current}px`;
+            canvasBrush.current.style.height = `${size * minZoom.current}px`;
           }
         }
       },
@@ -68,9 +109,10 @@ export const SDDrawerCanvas = forwardRef(
       };
       const canvas = new Canvas(canvasEl.current!, options);
 
-      const minZoom =
+      const zoom =
         (containerEl.current?.offsetHeight || 1) / (image.height || 1);
-      canvas.setZoom(minZoom);
+      minZoom.current = zoom;
+      canvas.setZoom(zoom);
       const center = {
         left: canvas.getWidth() / 2,
         top: canvas.getHeight() / 2,
@@ -101,9 +143,10 @@ export const SDDrawerCanvas = forwardRef(
       };
       const canvas = new Canvas(canvasMask.current!, options);
       maskCanvasInstance.current = canvas;
-      const minZoom =
+      const zoom =
         (containerEl.current?.offsetHeight || 1) / (image.height || 1);
-      canvas.setZoom(minZoom);
+      minZoom.current = zoom;
+      canvas.setZoom(zoom);
       const center = {
         left: canvas.getWidth() / 2,
         top: canvas.getHeight() / 2,
@@ -117,9 +160,9 @@ export const SDDrawerCanvas = forwardRef(
       canvas.freeDrawingBrush = new PencilBrush(canvas);
       canvas.isDrawingMode = true;
       canvas.freeDrawingBrush.color = "rgba(255, 255, 255, 1)"; // Brush color
-      canvas.freeDrawingBrush.width = 100; // Brush width
+      canvas.freeDrawingBrush.width = currentBrushSize.current; // Use current brush size
 
-      canvas.on('path:created', function(e) {
+      canvas.on("path:created", (e) => {
         history.current.push(e.path);
         if (history.current.length > MAX_HISTORY_SIZE) {
           history.current.shift();
@@ -134,57 +177,83 @@ export const SDDrawerCanvas = forwardRef(
         }
       }
 
-      document.addEventListener("keydown", (e) => {
+      function handleKeyDown(e: KeyboardEvent) {
         if (e.key === "e") {
           // Press 'E' to toggle eraser
           toggleEraser(true);
-        }
-      });
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "d") {
+          callbacksRef.current.onModeChange?.("eraser");
+        } else if (e.key === "d") {
           // Press 'D' to toggle draw mode
           toggleEraser(false);
+          callbacksRef.current.onModeChange?.("brush");
         }
-      });
+      }
 
-      brushPreview(canvas, canvasBrush.current, minZoom);
+      // Handle mouse wheel for brush size adjustment
+      function handleMouseWheel(opt: any) {
+        const delta = opt.e.deltaY < 0 ? 10 : -10;
+        let newWidth = canvas.freeDrawingBrush.width + delta;
+        newWidth = Math.max(1, Math.min(200, newWidth));
+
+        canvas.freeDrawingBrush.width = newWidth;
+        currentBrushSize.current = newWidth;
+        callbacksRef.current.onBrushSizeChange?.(newWidth);
+
+        // Update brush preview size
+        if (canvasBrush.current) {
+          canvasBrush.current.style.width = `${newWidth * minZoom.current}px`;
+          canvasBrush.current.style.height = `${newWidth * minZoom.current}px`;
+        }
+
+        opt.e.preventDefault();
+        opt.e.stopPropagation();
+      }
+
+      document.addEventListener("keydown", handleKeyDown);
+      canvas.on("mouse:wheel", handleMouseWheel);
+
+      // Set initial brush preview size
+      if (canvasBrush.current) {
+        canvasBrush.current.style.width = `${currentBrushSize.current * minZoom.current}px`;
+        canvasBrush.current.style.height = `${currentBrushSize.current * minZoom.current}px`;
+      }
 
       return () => {
         history.current = [];
         maskCanvasInstance.current = null;
+        document.removeEventListener("keydown", handleKeyDown);
         canvas.dispose();
       };
-    }, []);
+    }, []); // REMOVED the callback dependencies that were causing the re-render
 
     useEffect(() => {
       const circle = canvasBrush.current;
-      const contaienr = containerEl.current;
-      if (!circle || !contaienr) {
+      const container = containerEl.current;
+      if (!circle || !container) {
         return;
       }
 
       function moveCircle(e: MouseEvent) {
-        if (!circle || !contaienr) {
+        if (!circle || !container) {
           return;
         }
         // Update circle position to follow mouse cursor
         // Offset by half the circle's dimensions to center it on the cursor
         circle.style.left =
           e.pageX -
-          contaienr.getBoundingClientRect().left -
+          container.getBoundingClientRect().left -
           circle.offsetWidth / 2 +
           "px";
         circle.style.top =
           e.pageY -
-          contaienr.getBoundingClientRect().top -
+          container.getBoundingClientRect().top -
           circle.offsetHeight / 2 +
           "px";
       }
 
       document.addEventListener("mousemove", moveCircle);
       return () => {
-        if (!circle || !contaienr) {
+        if (!circle || !container) {
           return;
         }
         document.removeEventListener("mousemove", moveCircle);
