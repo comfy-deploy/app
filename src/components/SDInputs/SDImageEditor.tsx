@@ -8,6 +8,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Suspense, lazy, useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { ImgView } from "./SDImageInput";
+import { Loader2, RefreshCcw } from "lucide-react";
+import { Button } from "../ui/button";
 
 const SDImageCrop = lazy(() =>
   import("./SDImageCrop").then((mod) => ({ default: mod.SDImageCrop })),
@@ -55,7 +57,12 @@ export function SDImageEditor({
           setImageData(imgView);
           resolve(img);
         };
-        img.onerror = () => reject(new Error("Failed to load image. Please check that the URL is valid and accessible."));
+        img.onerror = () =>
+          reject(
+            new Error(
+              "Failed to load image. Please check that the URL is valid and accessible.",
+            ),
+          );
         img.src = url;
       });
 
@@ -64,9 +71,6 @@ export function SDImageEditor({
       console.error("Image validation error:", error);
       setImageError(true);
       setIsLoading(false);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load image",
-      );
     }
   };
 
@@ -111,114 +115,87 @@ export function SDImageEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] bg-black/90 border-white/20 text-white">
+      <DialogContent className="max-w-4xl dark:bg-zinc-900">
         <DialogHeader>
-          <DialogTitle className="text-white">Edit Image</DialogTitle>
+          <DialogTitle>Edit Image</DialogTitle>
         </DialogHeader>
 
-        {isLoading && (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-white">Loading image...</div>
+        {isLoading ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="p-6">
+              <Loader2 className="animate-spin text-muted-foreground" />
+            </div>
           </div>
-        )}
-
-        {imageError && (
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="text-red-400 text-center">
-              <p className="text-lg font-medium">Failed to load image</p>
-              <p className="text-sm opacity-80">
+        ) : imageError ? (
+          <div className="flex h-full flex-col items-center justify-center gap-4 py-4">
+            <div className="text-center">
+              <p className="font-medium text-lg">Failed to load image</p>
+              <p className="text-muted-foreground text-sm">
                 Please check that the URL is valid and points to an image
               </p>
             </div>
-            <button
-              onClick={() => validateAndLoadImage(imageUrl)}
-              className="px-4 py-2 bg-white/10 text-white border border-white/20 rounded hover:bg-white/20 transition-colors"
-            >
-              Retry
-            </button>
           </div>
-        )}
-
-        {!isLoading && !imageError && imageData && (
-          <Tabs
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as "crop" | "mask")}
-            className="h-full flex flex-col"
-          >
-            <TabsList className="grid w-full grid-cols-2 bg-white/10 border-white/20">
-              <TabsTrigger
-                value="crop"
-                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white"
-              >
-                Crop Image
-              </TabsTrigger>
-              <TabsTrigger
-                value="mask"
-                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white"
-              >
-                Create Mask
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="crop" className="flex-1 mt-4">
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center h-full text-white">
-                    Loading crop tool...
-                  </div>
+        ) : (
+          <>
+            {!isLoading && !imageError && imageData && (
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) =>
+                  setActiveTab(value as "crop" | "mask")
                 }
+                className="flex h-full flex-col"
               >
-                <SDImageCrop
-                  image={imageUrl}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
-                />
-              </Suspense>
-            </TabsContent>
+                <TabsList className="grid w-full grid-cols-2 ">
+                  <TabsTrigger value="crop">Crop Image</TabsTrigger>
+                  <TabsTrigger value="mask">Create Mask</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="mask" className="flex-1 mt-4">
-              <div className="h-full flex flex-col">
-                <div
-                  className="flex-1 overflow-hidden rounded-lg"
-                  style={{
-                    aspectRatio:
-                      (imageData.width || 1) / (imageData.height || 1),
-                  }}
-                >
+                <TabsContent value="crop" className="mt-4 flex-1">
                   <Suspense
                     fallback={
-                      <div className="flex items-center justify-center h-full text-white">
-                        Loading mask tool...
+                      <div className="flex h-full items-center justify-center">
+                        <Loader2 className="animate-spin text-muted-foreground" />
                       </div>
                     }
                   >
-                    <SDDrawerCanvas
-                      image={imageData}
-                      getCanvasURL={handleMaskSave}
+                    <SDImageCrop
+                      image={imageUrl}
+                      onSave={handleSave}
+                      onCancel={handleCancel}
                     />
                   </Suspense>
-                </div>
-                <div className="mt-4 flex justify-between">
-                  <button
-                    onClick={handleCancel}
-                    className="px-4 py-2 bg-white/10 text-white border border-white/20 rounded hover:bg-white/20 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      toast.info(
-                        "Use the drawing tools to create your mask, then save",
-                      );
-                    }}
-                    className="px-4 py-2 bg-white/20 text-white border border-white/20 rounded hover:bg-white/30 transition-colors"
-                  >
-                    Save Mask
-                  </button>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+                </TabsContent>
+
+                <TabsContent value="mask" className="mt-4 flex-1">
+                  <div className="flex h-full max-h-[500px] flex-col">
+                    <div
+                      className="flex-1 overflow-hidden rounded-lg"
+                      style={{
+                        aspectRatio:
+                          (imageData.width || 1) / (imageData.height || 1),
+                      }}
+                    >
+                      <Suspense
+                        fallback={
+                          <div className="flex h-full items-center justify-center">
+                            <Loader2 className="animate-spin text-muted-foreground" />
+                          </div>
+                        }
+                      >
+                        <SDDrawerCanvas
+                          image={imageData}
+                          getCanvasURL={handleMaskSave}
+                        />
+                      </Suspense>
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                      <Button>Save Mask</Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>
