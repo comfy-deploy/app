@@ -41,16 +41,6 @@ export function SDImageEditor({
     setImageError(false);
 
     try {
-      const response = await fetch(url, { method: "HEAD" });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.startsWith("image/")) {
-        throw new Error("URL does not point to a valid image");
-      }
-
       const img = new Image();
       img.crossOrigin = "anonymous";
 
@@ -65,7 +55,7 @@ export function SDImageEditor({
           setImageData(imgView);
           resolve(img);
         };
-        img.onerror = () => reject(new Error("Failed to load image"));
+        img.onerror = () => reject(new Error("Failed to load image. Please check that the URL is valid and accessible."));
         img.src = url;
       });
 
