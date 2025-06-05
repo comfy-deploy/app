@@ -1,7 +1,8 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Brush, Eraser } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Brush, Eraser, Undo2 } from "lucide-react";
 
-export function DrawerMenu() {
+export function DrawerMenu({ onUndo }: { onUndo?: () => void }) {
   function onSelectBrush() {
     const event = new KeyboardEvent("keydown", {
       key: "d",
@@ -31,21 +32,26 @@ export function DrawerMenu() {
   }
 
   return (
-    <ToggleGroup type="single" defaultValue="brush">
-      <ToggleGroupItem
-        value="brush"
-        aria-label="Toggle brush"
-        onClick={onSelectBrush}
-      >
-        <Brush />
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        value="ereaser"
-        aria-label="Toggle ereaser"
-        onClick={onSelectEraser}
-      >
-        <Eraser />
-      </ToggleGroupItem>
-    </ToggleGroup>
+    <div className="flex gap-2">
+      <ToggleGroup type="single" defaultValue="brush">
+        <ToggleGroupItem
+          value="brush"
+          aria-label="Toggle brush"
+          onClick={onSelectBrush}
+        >
+          <Brush />
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="ereaser"
+          aria-label="Toggle ereaser"
+          onClick={onSelectEraser}
+        >
+          <Eraser />
+        </ToggleGroupItem>
+      </ToggleGroup>
+      <Button variant="ghost" size="icon" onClick={onUndo} aria-label="Undo">
+        <Undo2 className="h-5 w-5" />
+      </Button>
+    </div>
   );
 }

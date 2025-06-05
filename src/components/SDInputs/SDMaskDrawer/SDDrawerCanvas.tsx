@@ -18,6 +18,7 @@ export const SDDrawerCanvas = forwardRef(
     const canvasEl = useRef<HTMLCanvasElement>(null);
     const canvasMask = useRef<HTMLCanvasElement>(null);
     const canvasBrush = useRef<HTMLDivElement>(null);
+    const history = useRef<any[]>([]);
 
     useImperativeHandle(ref, () => ({
       requestData() {
@@ -46,6 +47,18 @@ export const SDDrawerCanvas = forwardRef(
         );
         getCanvasURL(upscaledCanvas.toDataURL());
       },
+      undo() {
+        if (history.current.length > 0) {
+          const lastObject = history.current.pop();
+          if (lastObject && canvasMask.current) {
+            const canvas = canvasMask.current as any;
+            if (canvas.__fabric_instance) {
+              canvas.__fabric_instance.remove(lastObject);
+              canvas.__fabric_instance.renderAll();
+            }
+          }
+        }
+      },
     }));
 
     useEffect(() => {
@@ -54,7 +67,7 @@ export const SDDrawerCanvas = forwardRef(
         width: containerEl.current?.offsetWidth,
         backgroundColor: "pink",
       };
-      const canvas = new Canvas(canvasEl.current, options);
+      const canvas = new Canvas(canvasEl.current!, options);
 
       const minZoom =
         (containerEl.current?.offsetHeight || 1) / (image.height || 1);
@@ -87,7 +100,7 @@ export const SDDrawerCanvas = forwardRef(
         width: containerEl.current?.offsetWidth,
         backgroundColor: "black",
       };
-      const canvas = new Canvas(canvasMask.current, options);
+      const canvas = new Canvas(canvasMask.current!, options);
       const minZoom =
         (containerEl.current?.offsetHeight || 1) / (image.height || 1);
       canvas.setZoom(minZoom);
@@ -106,11 +119,15 @@ export const SDDrawerCanvas = forwardRef(
       canvas.freeDrawingBrush.color = "rgba(255, 255, 255, 1)"; // Brush color
       canvas.freeDrawingBrush.width = 100; // Brush width
 
+      canvas.on('path:created', function(e) {
+        history.current.push(e.path);
+      });
+
       function toggleEraser(enable: boolean) {
         if (enable) {
-          canvas.freeDrawingBrush.color = "Black";
+          canvas.freeDrawingBrush!.color = "Black";
         } else {
-          canvas.freeDrawingBrush.color = "rgba(255, 255, 255, 1)";
+          canvas.freeDrawingBrush!.color = "rgba(255, 255, 255, 1)";
         }
       }
 
@@ -131,6 +148,7 @@ export const SDDrawerCanvas = forwardRef(
       brushPreview(canvas, canvasBrush.current, minZoom);
 
       return () => {
+        history.current = [];
         canvas.dispose();
       };
     }, []);

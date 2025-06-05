@@ -45,6 +45,12 @@ export function SDMaskDrawer({
     }
     childRef.current.requestData();
   }
+
+  function handleUndo() {
+    if (childRef.current) {
+      childRef.current.undo();
+    }
+  }
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="flex h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] flex-col">
@@ -66,7 +72,7 @@ export function SDMaskDrawer({
           </Suspense>
         </div>
         <div className="flex gap-4 self-center">
-          <DrawerMenu />
+          <DrawerMenu onUndo={handleUndo} />
           <Button onClick={handleCreateMask}>Save Mask</Button>
         </div>
       </DialogContent>
