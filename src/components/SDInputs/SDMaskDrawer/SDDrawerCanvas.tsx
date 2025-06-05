@@ -19,6 +19,8 @@ export const SDDrawerCanvas = forwardRef(
     const canvasMask = useRef<HTMLCanvasElement>(null);
     const canvasBrush = useRef<HTMLDivElement>(null);
     const history = useRef<any[]>([]);
+    const maskCanvasInstance = useRef<Canvas | null>(null);
+    const MAX_HISTORY_SIZE = 20;
 
     useImperativeHandle(ref, () => ({
       requestData() {
@@ -48,14 +50,11 @@ export const SDDrawerCanvas = forwardRef(
         getCanvasURL(upscaledCanvas.toDataURL());
       },
       undo() {
-        if (history.current.length > 0) {
+        if (history.current.length > 0 && maskCanvasInstance.current) {
           const lastObject = history.current.pop();
-          if (lastObject && canvasMask.current) {
-            const canvas = canvasMask.current as any;
-            if (canvas.__fabric_instance) {
-              canvas.__fabric_instance.remove(lastObject);
-              canvas.__fabric_instance.renderAll();
-            }
+          if (lastObject) {
+            maskCanvasInstance.current.remove(lastObject);
+            maskCanvasInstance.current.renderAll();
           }
         }
       },
@@ -101,6 +100,7 @@ export const SDDrawerCanvas = forwardRef(
         backgroundColor: "black",
       };
       const canvas = new Canvas(canvasMask.current!, options);
+      maskCanvasInstance.current = canvas;
       const minZoom =
         (containerEl.current?.offsetHeight || 1) / (image.height || 1);
       canvas.setZoom(minZoom);
@@ -121,6 +121,9 @@ export const SDDrawerCanvas = forwardRef(
 
       canvas.on('path:created', function(e) {
         history.current.push(e.path);
+        if (history.current.length > MAX_HISTORY_SIZE) {
+          history.current.shift();
+        }
       });
 
       function toggleEraser(enable: boolean) {
@@ -149,6 +152,7 @@ export const SDDrawerCanvas = forwardRef(
 
       return () => {
         history.current = [];
+        maskCanvasInstance.current = null;
         canvas.dispose();
       };
     }, []);
