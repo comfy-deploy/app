@@ -1,11 +1,9 @@
-import { SDImageInputPreview } from "@/components/SDInputs/SDImageInputPreview";
 import { SDImageEditor } from "@/components/SDInputs/SDImageEditor";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { Eye, Paperclip, Pencil, Trash } from "lucide-react";
+import { Paperclip, Pencil, Trash } from "lucide-react";
 import {
   type ChangeEvent,
   type DragEvent,
@@ -38,7 +36,7 @@ export function SDImageInput({
   multiple,
   header,
 }: SDImageInputProps) {
-  const dropRef: RefObject<any> = useRef(null);
+  const dropRef: RefObject<HTMLDivElement> = useRef(null);
   const [openEditor, setOpenEditor] = useState(false);
   const ImgView: ImgView | null = useMemo(() => {
     if (file && typeof file === "object") {
@@ -93,7 +91,8 @@ export function SDImageInput({
       // dropRef.current.removeEventListener('dragover', handleDragOver);
       dropRef.current.removeEventListener("drop", handleDrop);
     };
-  }, []);
+  }, [multiple, onChange]);
+
   return (
     <div className={className} ref={dropRef}>
       {header}
@@ -152,20 +151,59 @@ export function SDImageInput({
           </>
         )}
         {ImgView && (
-          <ListView
-            viewList={[ImgView]}
-            onDelete={onDeleteImg}
-            onMaskChange={(file) => onChange(file)}
-          />
+          <div className="flex w-full items-center justify-between rounded-[8px] border border-gray-200 px-2 py-1 dark:border-gray-700">
+            <div className="flex flex-auto items-center gap-2">
+              <p className="line-clamp-1 font-medium text-xs">
+                {ImgView.imgName}
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              <ImageInputsTooltip tooltipText="Edit">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => setOpenEditor(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setOpenEditor(true);
+                    }
+                  }}
+                >
+                  <Pencil size={16} />
+                </Button>
+              </ImageInputsTooltip>
+              <ImageInputsTooltip tooltipText="Delete">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={onDeleteImg}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onDeleteImg();
+                    }
+                  }}
+                >
+                  <Trash
+                    className="text-red-700 hover:text-red-600"
+                    size={16}
+                  />
+                </Button>
+              </ImageInputsTooltip>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Image Editor Dialog */}
-      {hasTextInput && (
+      {(hasTextInput || ImgView) && (
         <SDImageEditor
           open={openEditor}
           onOpenChange={setOpenEditor}
-          imageUrl={String(file || "")}
+          imageUrl={ImgView ? ImgView.imgURL : String(file || "")}
           onSave={(editedFile) => {
             onChange(editedFile);
             setOpenEditor(false);
@@ -182,67 +220,3 @@ export type ImgView = {
   width?: number;
   height?: number;
 };
-type listViewProps = {
-  viewList: ImgView[] | null;
-  onAddImg?: () => void;
-  onDelete?: () => void;
-  onEdit?: (index: number, img: File) => void;
-  onMaskChange: (file: File) => void;
-};
-function ListView({ viewList, onDelete, onMaskChange }: listViewProps) {
-  const [imgPreview, setImgPreview] = useState<ImgView | null>(null);
-
-  if (!viewList) {
-    return;
-  }
-
-  function handleOnMaskChange(file: File) {
-    onMaskChange(file);
-    setImgPreview(null);
-  }
-  return (
-    <>
-      {imgPreview && (
-        <SDImageInputPreview
-          image={imgPreview}
-          onClose={() => setImgPreview(null)}
-          onMaskChange={handleOnMaskChange}
-        />
-      )}
-      <Table>
-        <TableBody>
-          {viewList.map((item, index) => {
-            return (
-              <TableRow key={item.imgName} className="w-full ">
-                <TableCell className="flex w-full items-center justify-between py-2 font-medium">
-                  <div
-                    className="flex flex-auto cursor-pointer items-center justify-between gap-2 duration-200 ease-in-out hover:text-slate-600"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setImgPreview(item);
-                    }}
-                  >
-                    <p className="line-clamp-1">{item.imgName}</p>
-                    <Eye />
-                  </div>
-                  {onDelete && (
-                    <Button variant="ghost" type="button">
-                      <Trash
-                        className="text-red-700 ease-in-out hover:text-red-600"
-                        size={20}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          onDelete();
-                        }}
-                      />
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </>
-  );
-}
