@@ -33,7 +33,17 @@ import {
   SortableItem,
   SortableDragHandle,
 } from "@/components/custom/sortable";
-import { UniqueIdentifier } from "@dnd-kit/core";
+import { 
+  UniqueIdentifier, 
+  useDroppable, 
+  DndContext,
+  useSensors,
+  useSensor,
+  PointerSensor,
+  KeyboardSensor
+} from "@dnd-kit/core";
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { SDInputGroup } from "@/components/SDInputs/SDInputGroup";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -124,7 +134,7 @@ export function WorkflowInputsForm({
   defaultValues,
   ...props
 }: {
-  workflow: z.infer<typeof workflowType>;
+  workflow: any;
   inputs: ReturnType<typeof getInputsFromWorkflow>;
   defaultValues: Record<string, any>;
   onSubmit: (
@@ -294,6 +304,87 @@ export function RunWorkflowInline({
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [reorderedInputs, setReorderedInputs] = useState<typeof inputs>([]);
+  const [inputGroups, setInputGroups] = useState<Array<{
+    id: string;
+    title: string;
+    inputIds: string[];
+  }>>([]);
+
+  const createGroup = () => {
+    const newGroup = {
+      id: `group-${Date.now()}`,
+      title: "New Group",
+      inputIds: [],
+    };
+    setInputGroups([...inputGroups, newGroup]);
+  };
+
+  const deleteGroup = (groupId: string) => {
+    const group = inputGroups.find(g => g.id === groupId);
+    if (group) {
+      const updatedInputs = reorderedInputs.map(input => 
+        group.inputIds.includes(input.input_id || '') 
+          ? { ...input, groupId: undefined }
+          : input
+      );
+      setReorderedInputs(updatedInputs);
+    }
+    setInputGroups(inputGroups.filter(g => g.id !== groupId));
+  };
+
+  const updateGroupTitle = (groupId: string, title: string) => {
+    setInputGroups(inputGroups.map(g => 
+      g.id === groupId ? { ...g, title } : g
+    ));
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    const activeId = active.id;
+    const overId = over.id;
+    
+    if (over.data?.current?.type === "group") {
+      const groupId = over.data.current.groupId;
+      const updatedInputs = reorderedInputs.map(input =>
+        input.input_id === activeId
+          ? { ...input, groupId }
+          : input
+      );
+      setReorderedInputs(updatedInputs);
+      
+      setInputGroups(groups => groups.map(group => {
+        if (group.id === groupId && !group.inputIds.includes(activeId)) {
+          return { ...group, inputIds: [...group.inputIds, activeId] };
+        }
+        return group;
+      }));
+      return;
+    }
+    
+    if (activeId !== overId) {
+      const oldIndex = reorderedInputs.findIndex(item => item.input_id === activeId);
+      const newIndex = reorderedInputs.findIndex(item => item.input_id === overId);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newItems = arrayMove(reorderedInputs, oldIndex, newIndex);
+        setReorderedInputs(newItems);
+      }
+    }
+  };
 
   const workflowId = useWorkflowIdInWorkflowPage();
   const { workflow } = useCurrentWorkflow(workflowId);
@@ -444,7 +535,7 @@ export function RunWorkflowInline({
         return;
       }
 
-      const workflowApi = workflow_api;
+      const workflowApi = JSON.parse(workflow_api);
 
       reorderedInputs.forEach((input, index) => {
         const nodeId = input.nodeId as string | undefined;
@@ -452,8 +543,17 @@ export function RunWorkflowInline({
           workflowApi[nodeId]._meta = {
             ...(workflowApi[nodeId]._meta || {}),
             cd_input_order: index,
+            cd_input_group_id: input.groupId || null,
           };
         }
+      });
+
+      if (!workflowApi._groups) workflowApi._groups = {};
+      inputGroups.forEach(group => {
+        workflowApi._groups[group.id] = {
+          title: group.title,
+          inputIds: group.inputIds,
+        };
       });
 
       const data = await callServerPromise(
@@ -463,7 +563,7 @@ export function RunWorkflowInline({
             method: "POST",
             body: JSON.stringify({
               workflow: workflow.versions[0].workflow,
-              workflow_api: workflowApi,
+              workflow_api: JSON.stringify(workflowApi),
               comment: "Reordered inputs",
             }),
           },
@@ -490,8 +590,8 @@ export function RunWorkflowInline({
 
   return (
     <div className="relative h-full">
-      <style jsx>{`
-        :global(.sortable-item-transition) {
+      <style>{`
+        .sortable-item-transition {
           transition-property: transform, opacity;
           transition-duration: 0.2s;
           transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
@@ -560,69 +660,123 @@ export function RunWorkflowInline({
       >
         {inputs ? (
           isEditMode ? (
-            <div className="space-y-2">
-              <Sortable
-                value={reorderedInputs.map((item, index) => ({
-                  id: item.input_id || `item-${index}`,
-                  ...item,
-                }))}
-                onValueChange={(items) => {
-                  setReorderedInputs(items);
-                }}
-                orientation="vertical"
-                overlay={(active) => {
-                  const activeInput = reorderedInputs.find(
-                    (input) => input.input_id === active?.id,
-                  );
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <div className="space-y-4">
+                {/* Create Group Button */}
+                <Button
+                  onClick={createGroup}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  type="button"
+                >
+                  + Create Group
+                </Button>
 
-                  return (
-                    <div className="border rounded-md p-2 bg-card/95 backdrop-blur-sm shadow-xl transform scale-105 translate-y-[-4px] sortable-item-transition">
-                      <div className="flex items-center w-full">
-                        <div className="p-1 mr-2">
-                          <GripVertical size={16} />
-                        </div>
-                        <div className="flex-1">
-                          {activeInput && (
-                            <SDInputsRender
-                              key={activeInput.input_id}
-                              inputNode={activeInput}
-                              updateInput={() => {}}
-                              inputValue={values[activeInput.input_id || ""]}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                {/* Render Groups */}
+                {inputGroups.map((group) => {
+                  const groupInputs = reorderedInputs.filter(input => 
+                    group.inputIds.includes(input.input_id || '')
                   );
-                }}
-              >
-                {reorderedInputs.map((item) => (
-                  <SortableItem
-                    key={item.input_id || `item-${Math.random()}`}
-                    value={item.input_id || `item-${Math.random()}`}
-                    className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
-                  >
-                    <div className="flex items-center w-full">
-                      <SortableDragHandle
-                        variant="ghost"
-                        className="mr-2 p-1 hover:bg-muted rounded"
-                        size="sm"
-                      >
-                        <GripVertical size={16} />
-                      </SortableDragHandle>
-                      <div className="flex-1">
-                        <SDInputsRender
-                          key={item.input_id}
-                          inputNode={item}
-                          updateInput={isEditMode ? () => {} : updateInput}
-                          inputValue={values[item.input_id || ""]}
-                        />
+                  
+                  return (
+                    <SDInputGroup
+                      key={group.id}
+                      id={group.id}
+                      title={group.title}
+                      onTitleChange={updateGroupTitle}
+                      onDelete={deleteGroup}
+                      isEmpty={groupInputs.length === 0}
+                      items={groupInputs.map(item => item.input_id || '')}
+                    >
+                      {groupInputs.map((item) => (
+                        <SortableItem
+                          key={item.input_id || `item-${Math.random()}`}
+                          value={item.input_id || `item-${Math.random()}`}
+                          className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
+                        >
+                          <div className="flex items-center w-full">
+                            <SortableDragHandle
+                              variant="ghost"
+                              className="mr-2 p-1 hover:bg-muted rounded"
+                              size="sm"
+                            >
+                              <GripVertical size={16} />
+                            </SortableDragHandle>
+                            <div className="flex-1">
+                              <SDInputsRender
+                                key={item.input_id}
+                                inputNode={item}
+                                updateInput={() => {}}
+                                inputValue={values[item.input_id || ""]}
+                              />
+                            </div>
+                          </div>
+                        </SortableItem>
+                      ))}
+                    </SDInputGroup>
+                  );
+                })}
+
+                {/* Ungrouped Inputs */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">Ungrouped Inputs</h3>
+                  <Sortable
+                    value={reorderedInputs
+                      .filter(item => !item.groupId)
+                      .map((item, index) => ({
+                        id: item.input_id || `item-${index}`,
+                        ...item,
+                      }))}
+                    onValueChange={(items) => {
+                      const groupedInputs = reorderedInputs.filter(item => item.groupId);
+                      setReorderedInputs([...groupedInputs, ...items]);
+                    }}
+                    orientation="vertical"
+                    overlay={
+                      <div className="border rounded-md p-2 bg-card/95 backdrop-blur-sm shadow-xl transform scale-105 translate-y-[-4px] sortable-item-transition">
+                        <div className="flex items-center w-full">
+                          <div className="p-1 mr-2">
+                            <GripVertical size={16} />
+                          </div>
+                          <div className="flex-1 text-sm text-muted-foreground">
+                            Dragging input...
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </SortableItem>
-                ))}
-              </Sortable>
-            </div>
+                    }
+                  >
+                    {reorderedInputs
+                      .filter(item => !item.groupId)
+                      .map((item) => (
+                        <SortableItem
+                          key={item.input_id || `item-${Math.random()}`}
+                          value={item.input_id || `item-${Math.random()}`}
+                          className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
+                        >
+                          <div className="flex items-center w-full">
+                            <SortableDragHandle
+                              variant="ghost"
+                              className="mr-2 p-1 hover:bg-muted rounded"
+                              size="sm"
+                            >
+                              <GripVertical size={16} />
+                            </SortableDragHandle>
+                            <div className="flex-1">
+                              <SDInputsRender
+                                key={item.input_id}
+                                inputNode={item}
+                                updateInput={() => {}}
+                                inputValue={values[item.input_id || ""]}
+                              />
+                            </div>
+                          </div>
+                        </SortableItem>
+                      ))}
+                  </Sortable>
+                </div>
+              </div>
+            </DndContext>
           ) : (
             inputs.map((item) => {
               if (!item?.input_id) {
