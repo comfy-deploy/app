@@ -319,6 +319,10 @@ export function RunWorkflowInline({
       title: string;
     }>
   >([]);
+  
+  const [layoutOrder, setLayoutOrder] = useState<
+    Array<{ type: 'group' | 'input'; id: string }>
+  >([]);
 
   const createGroup = () => {
     const newGroup = {
@@ -474,6 +478,41 @@ export function RunWorkflowInline({
         });
 
         // Delay setting isDragging to false to prevent visual glitches
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 50);
+        return;
+      }
+
+      // Handle group positioning among ungrouped items
+      if (
+        activeId.toString().startsWith("group-") &&
+        !overId.toString().startsWith("group-") &&
+        over.data?.current?.type !== "ungrouped" &&
+        over.data?.current?.type !== "group"
+      ) {
+        console.log("Group positioning among ungrouped items detected");
+        
+        const targetLayoutIndex = layoutOrder.findIndex(
+          (item) => item.id === overId
+        );
+        
+        if (targetLayoutIndex !== -1) {
+          const groupId = activeId;
+          
+          startTransition(() => {
+            setLayoutOrder((prevOrder) => {
+              // Remove the group from its current position
+              const filteredOrder = prevOrder.filter(item => item.id !== groupId);
+              
+              const newOrder = [...filteredOrder];
+              newOrder.splice(targetLayoutIndex, 0, { type: 'group', id: groupId });
+              
+              return newOrder;
+            });
+          });
+        }
+        
         setTimeout(() => {
           isDraggingRef.current = false;
         }, 50);
@@ -748,6 +787,24 @@ export function RunWorkflowInline({
     };
   }, [reorderedInputs]);
 
+  useEffect(() => {
+    if (isEditMode && inputs && !isDraggingRef.current) {
+      const newLayoutOrder: Array<{ type: 'group' | 'input'; id: string }> = [];
+      
+      inputGroups.forEach(group => {
+        newLayoutOrder.push({ type: 'group', id: group.id });
+      });
+      
+      ungroupedInputs.forEach(input => {
+        if (input.input_id) {
+          newLayoutOrder.push({ type: 'input', id: input.input_id });
+        }
+      });
+      
+      setLayoutOrder(newLayoutOrder);
+    }
+  }, [isEditMode, inputs, inputGroups, ungroupedInputs]);
+
   // Ungrouped drop zone component
   const UngroupedDropZone = ({ children }: { children: React.ReactNode }) => {
     const { isOver, setNodeRef } = useDroppable({
@@ -859,10 +916,7 @@ export function RunWorkflowInline({
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={[
-                  ...inputGroups.map((group) => group.id),
-                  ...reorderedInputs.map((item) => item.input_id || ""),
-                ]}
+                items={layoutOrder.map(item => item.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-4">
@@ -877,103 +931,98 @@ export function RunWorkflowInline({
                     + Create Group
                   </Button>
 
-                  {/* Render Groups */}
-                  {inputGroups.map((group) => {
-                    const groupInputs = groupedInputsByGroup[group.id] || [];
-
-                    // Skip rendering if group has been dissolved
-                    if (isDraggingRef.current && groupInputs.length === 0) {
-                      return null;
-                    }
-
-                    return (
-                      <SortableItem
-                        key={group.id}
-                        value={group.id}
-                        className="mb-4"
-                      >
-                        <SDInputGroup
-                          id={group.id}
-                          title={group.title}
-                          onTitleChange={updateGroupTitle}
-                          onDelete={deleteGroup}
-                          isEmpty={groupInputs.length === 0}
-                          items={groupInputs.map((item) => item.input_id || "")}
-                          isDraggable={true}
+                  {/* Render items based on layout order */}
+                  {layoutOrder.map((layoutItem) => {
+                    if (layoutItem.type === 'group') {
+                      const group = inputGroups.find(g => g.id === layoutItem.id);
+                      if (!group) return null;
+                      
+                      const groupInputs = groupedInputsByGroup[group.id] || [];
+                      
+                      // Skip rendering if group has been dissolved
+                      if (isDraggingRef.current && groupInputs.length === 0) {
+                        return null;
+                      }
+                      
+                      return (
+                        <SortableItem
+                          key={group.id}
+                          value={group.id}
+                          className="mb-4"
                         >
-                          {groupInputs.map((item, index) => {
-                            const stableKey = `${group.id}-${item.input_id || index}`;
-                            return (
-                              <SortableItem
-                                key={stableKey}
-                                value={item.input_id || `item-${index}`}
-                                className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
-                              >
-                                <div className="flex items-center w-full">
-                                  <SortableDragHandle
-                                    type="button"
-                                    variant="ghost"
-                                    className="hover:bg-muted mr-2 p-1 rounded"
-                                    size="sm"
-                                  >
-                                    <GripVertical size={16} />
-                                  </SortableDragHandle>
-                                  <div className="flex-1">
-                                    <SDInputsRender
-                                      key={item.input_id}
-                                      inputNode={item}
-                                      updateInput={() => {}}
-                                      inputValue={values[item.input_id || ""]}
-                                    />
-                                  </div>
-                                </div>
-                              </SortableItem>
-                            );
-                          })}
-                        </SDInputGroup>
-                      </SortableItem>
-                    );
-                  })}
-
-                  {/* Ungrouped Inputs */}
-                  <UngroupedDropZone>
-                    <div className="space-y-2">
-                      <h3 className="font-medium text-muted-foreground text-sm">
-                        Ungrouped Inputs
-                      </h3>
-                      <div className="space-y-2">
-                        {ungroupedInputs.map((item, index) => {
-                          const stableKey = `ungrouped-${item.input_id || index}`;
-                          return (
-                            <SortableItem
-                              key={stableKey}
-                              value={item.input_id || `item-${index}`}
-                              className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
-                            >
-                              <div className="flex items-center w-full">
-                                <SortableDragHandle
-                                  type="button"
-                                  variant="ghost"
-                                  className="hover:bg-muted mr-2 p-1 rounded"
-                                  size="sm"
+                          <SDInputGroup
+                            id={group.id}
+                            title={group.title}
+                            onTitleChange={updateGroupTitle}
+                            onDelete={deleteGroup}
+                            isEmpty={groupInputs.length === 0}
+                            items={groupInputs.map((item) => item.input_id || "")}
+                            isDraggable={true}
+                          >
+                            {groupInputs.map((item, index) => {
+                              const stableKey = `${group.id}-${item.input_id || index}`;
+                              return (
+                                <SortableItem
+                                  key={stableKey}
+                                  value={item.input_id || `item-${index}`}
+                                  className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
                                 >
-                                  <GripVertical size={16} />
-                                </SortableDragHandle>
-                                <div className="flex-1">
-                                  <SDInputsRender
-                                    key={item.input_id}
-                                    inputNode={item}
-                                    updateInput={() => {}}
-                                    inputValue={values[item.input_id || ""]}
-                                  />
-                                </div>
-                              </div>
-                            </SortableItem>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </UngroupedDropZone>
+                                  <div className="flex items-center w-full">
+                                    <SortableDragHandle
+                                      type="button"
+                                      variant="ghost"
+                                      className="hover:bg-muted mr-2 p-1 rounded"
+                                      size="sm"
+                                    >
+                                      <GripVertical size={16} />
+                                    </SortableDragHandle>
+                                    <div className="flex-1">
+                                      <SDInputsRender
+                                        key={item.input_id}
+                                        inputNode={item}
+                                        updateInput={() => {}}
+                                        inputValue={values[item.input_id || ""]}
+                                      />
+                                    </div>
+                                  </div>
+                                </SortableItem>
+                              );
+                            })}
+                          </SDInputGroup>
+                        </SortableItem>
+                      );
+                    } else {
+                      const input = ungroupedInputs.find(i => i.input_id === layoutItem.id);
+                      if (!input) return null;
+                      
+                      return (
+                        <SortableItem
+                          key={input.input_id}
+                          value={input.input_id || ''}
+                          className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
+                        >
+                          <div className="flex items-center w-full">
+                            <SortableDragHandle
+                              type="button"
+                              variant="ghost"
+                              className="hover:bg-muted mr-2 p-1 rounded"
+                              size="sm"
+                            >
+                              <GripVertical size={16} />
+                            </SortableDragHandle>
+                            <div className="flex-1">
+                              <SDInputsRender
+                                key={input.input_id}
+                                inputNode={input}
+                                updateInput={() => {}}
+                                inputValue={values[input.input_id || ""]}
+                              />
+                            </div>
+                          </div>
+                        </SortableItem>
+                      );
+                    }
+                  })}
                 </div>
               </SortableContext>
             </DndContext>
