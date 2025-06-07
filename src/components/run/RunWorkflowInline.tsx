@@ -26,6 +26,7 @@ import {
   use,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -344,11 +345,19 @@ export function RunWorkflowInline({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+  const isDraggingRef = useRef(false);
+
+  const handleDragStart = () => {
+    isDraggingRef.current = true;
+  };
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     
-    if (!over) return;
+    if (!over) {
+      isDraggingRef.current = false;
+      return;
+    }
     
     const activeId = active.id;
     const overId = over.id;
@@ -361,6 +370,7 @@ export function RunWorkflowInline({
           : input
       );
       setReorderedInputs(updatedInputs);
+      isDraggingRef.current = false;
       return;
     }
     
@@ -373,13 +383,15 @@ export function RunWorkflowInline({
         setReorderedInputs(newItems);
       }
     }
+    
+    isDraggingRef.current = false;
   };
 
   const workflowId = useWorkflowIdInWorkflowPage();
   const { workflow } = useCurrentWorkflow(workflowId);
 
   useEffect(() => {
-    if (isEditMode && inputs) {
+    if (isEditMode && inputs && !isDraggingRef.current) {
       setReorderedInputs([...inputs]);
     }
   }, [isEditMode, inputs]);
@@ -648,7 +660,7 @@ export function RunWorkflowInline({
       >
         {inputs ? (
           isEditMode ? (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
               <div className="space-y-4">
                 {/* Create Group Button */}
                 <Button
