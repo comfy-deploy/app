@@ -308,28 +308,23 @@ export function RunWorkflowInline({
   const [inputGroups, setInputGroups] = useState<Array<{
     id: string;
     title: string;
-    inputIds: string[];
   }>>([]);
 
   const createGroup = () => {
     const newGroup = {
       id: `group-${Date.now()}`,
       title: "New Group",
-      inputIds: [],
     };
     setInputGroups([...inputGroups, newGroup]);
   };
 
   const deleteGroup = (groupId: string) => {
-    const group = inputGroups.find(g => g.id === groupId);
-    if (group) {
-      const updatedInputs = reorderedInputs.map(input => 
-        group.inputIds.includes(input.input_id || '') 
-          ? { ...input, groupId: undefined }
-          : input
-      );
-      setReorderedInputs(updatedInputs);
-    }
+    const updatedInputs = reorderedInputs.map(input => 
+      input.groupId === groupId
+        ? { ...input, groupId: undefined }
+        : input
+    );
+    setReorderedInputs(updatedInputs);
     setInputGroups(inputGroups.filter(g => g.id !== groupId));
   };
 
@@ -366,13 +361,6 @@ export function RunWorkflowInline({
           : input
       );
       setReorderedInputs(updatedInputs);
-      
-      setInputGroups(groups => groups.map(group => {
-        if (group.id === groupId && !group.inputIds.includes(activeId)) {
-          return { ...group, inputIds: [...group.inputIds, activeId] };
-        }
-        return group;
-      }));
       return;
     }
     
@@ -553,7 +541,6 @@ export function RunWorkflowInline({
       inputGroups.forEach(group => {
         workflowApi._groups[group.id] = {
           title: group.title,
-          inputIds: group.inputIds,
         };
       });
 
@@ -677,7 +664,7 @@ export function RunWorkflowInline({
                 {/* Render Groups */}
                 {inputGroups.map((group) => {
                   const groupInputs = reorderedInputs.filter(input => 
-                    group.inputIds.includes(input.input_id || '')
+                    input.groupId === group.id
                   );
                   
                   return (
