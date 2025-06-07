@@ -1,10 +1,15 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { cn } from "@/lib/utils";
 import { Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SortableDragHandle } from "@/components/custom/sortable";
 
 interface SDInputGroupProps {
   id: string;
@@ -14,6 +19,7 @@ interface SDInputGroupProps {
   onDelete: (id: string) => void;
   isEmpty: boolean;
   items: any[];
+  isDraggable?: boolean;
 }
 
 export function SDInputGroup({
@@ -24,10 +30,11 @@ export function SDInputGroup({
   onDelete,
   isEmpty,
   items,
+  isDraggable = false,
 }: SDInputGroupProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [localTitle, setLocalTitle] = useState(title);
-  
+
   const { isOver, setNodeRef } = useDroppable({
     id: `group-${id}`,
     data: {
@@ -49,12 +56,23 @@ export function SDInputGroup({
         isOver
           ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
           : "border-gray-300 dark:border-gray-600",
-        isEmpty && "min-h-[120px] flex items-center justify-center"
+        isEmpty && "min-h-[120px] flex items-center justify-center",
       )}
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-1">
-          <GripVertical size={16} className="text-muted-foreground" />
+          {isDraggable ? (
+            <SortableDragHandle
+              type="button"
+              variant="ghost"
+              className="hover:bg-muted p-1 rounded"
+              size="sm"
+            >
+              <GripVertical size={16} className="text-muted-foreground" />
+            </SortableDragHandle>
+          ) : (
+            <GripVertical size={16} className="text-muted-foreground" />
+          )}
           {isEditing ? (
             <Input
               value={localTitle}
@@ -80,6 +98,7 @@ export function SDInputGroup({
           )}
         </div>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => onDelete(id)}
@@ -88,16 +107,14 @@ export function SDInputGroup({
           <Trash2 size={14} />
         </Button>
       </div>
-      
+
       {isEmpty ? (
         <div className="text-center text-muted-foreground text-sm">
           Drop inputs here to create a group
         </div>
       ) : (
         <SortableContext items={items} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
-            {children}
-          </div>
+          <div className="space-y-2">{children}</div>
         </SortableContext>
       )}
     </div>

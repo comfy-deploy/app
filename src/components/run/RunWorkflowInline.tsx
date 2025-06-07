@@ -28,23 +28,30 @@ import {
   useMemo,
   useRef,
   useState,
+  startTransition,
+  useCallback,
 } from "react";
 import {
   Sortable,
   SortableItem,
   SortableDragHandle,
 } from "@/components/custom/sortable";
-import { 
-  UniqueIdentifier, 
-  useDroppable, 
+import {
+  UniqueIdentifier,
+  useDroppable,
   DndContext,
   useSensors,
   useSensor,
   PointerSensor,
   KeyboardSensor,
-  closestCenter
+  closestCenter,
 } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  arrayMove,
+  sortableKeyboardCoordinates,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { SDInputGroup } from "@/components/SDInputs/SDInputGroup";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
@@ -306,10 +313,12 @@ export function RunWorkflowInline({
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [reorderedInputs, setReorderedInputs] = useState<typeof inputs>([]);
-  const [inputGroups, setInputGroups] = useState<Array<{
-    id: string;
-    title: string;
-  }>>([]);
+  const [inputGroups, setInputGroups] = useState<
+    Array<{
+      id: string;
+      title: string;
+    }>
+  >([]);
 
   const createGroup = () => {
     const newGroup = {
@@ -320,19 +329,17 @@ export function RunWorkflowInline({
   };
 
   const deleteGroup = (groupId: string) => {
-    const updatedInputs = reorderedInputs.map(input => 
-      input.groupId === groupId
-        ? { ...input, groupId: undefined }
-        : input
+    const updatedInputs = reorderedInputs.map((input) =>
+      input.groupId === groupId ? { ...input, groupId: undefined } : input,
     );
     setReorderedInputs(updatedInputs);
-    setInputGroups(inputGroups.filter(g => g.id !== groupId));
+    setInputGroups(inputGroups.filter((g) => g.id !== groupId));
   };
 
   const updateGroupTitle = (groupId: string, title: string) => {
-    setInputGroups(inputGroups.map(g => 
-      g.id === groupId ? { ...g, title } : g
-    ));
+    setInputGroups(
+      inputGroups.map((g) => (g.id === groupId ? { ...g, title } : g)),
+    );
   };
 
   const sensors = useSensors(
@@ -343,7 +350,7 @@ export function RunWorkflowInline({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
   const isDraggingRef = useRef(false);
 
@@ -351,48 +358,179 @@ export function RunWorkflowInline({
     isDraggingRef.current = true;
   };
 
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-    
-    if (!over) {
-      isDraggingRef.current = false;
-      return;
-    }
-    
-    const activeId = active.id;
-    const overId = over.id;
-    
-    if (over.data?.current?.type === "group") {
-      const groupId = over.data.current.groupId;
-      const updatedInputs = reorderedInputs.map(input =>
-        input.input_id === activeId
-          ? { ...input, groupId }
-          : input
-      );
-      setReorderedInputs(updatedInputs);
-      isDraggingRef.current = false;
-      return;
-    }
-    
-    if (activeId !== overId) {
-      const oldIndex = reorderedInputs.findIndex(item => item.input_id === activeId);
-      const newIndex = reorderedInputs.findIndex(item => item.input_id === overId);
-      
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newItems = arrayMove(reorderedInputs, oldIndex, newIndex);
-        setReorderedInputs(newItems);
+  const handleDragEnd = useCallback(
+    (event: any) => {
+      const { active, over } = event;
+
+      if (!over) {
+        isDraggingRef.current = false;
+        return;
       }
-    }
-    
-    isDraggingRef.current = false;
-  };
+
+      const activeId = active.id;
+      const overId = over.id;
+
+      console.log(`Drag end: ${activeId} -> ${overId}`, {
+        overData: over.data?.current,
+        isGroup: activeId.toString().startsWith("group-"),
+        isUngrouped: over.data?.current?.type === "ungrouped",
+      });
+
+      // Handle group reordering
+      if (
+        activeId.toString().startsWith("group-") &&
+        overId.toString().startsWith("group-")
+      ) {
+        console.log("Group reordering detected");
+        const oldIndex = inputGroups.findIndex(
+          (group) => group.id === activeId,
+        );
+        const newIndex = inputGroups.findIndex((group) => group.id === overId);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          startTransition(() => {
+            setInputGroups((prevGroups) =>
+              arrayMove(prevGroups, oldIndex, newIndex),
+            );
+          });
+        }
+
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 50);
+        return;
+      }
+
+      // Handle dropping into a group
+      if (over.data?.current?.type === "group") {
+        const groupId = over.data.current.groupId;
+
+        startTransition(() => {
+          setReorderedInputs((prevInputs) =>
+            prevInputs.map((input) =>
+              input.input_id === activeId ? { ...input, groupId } : input,
+            ),
+          );
+        });
+
+        // Delay setting isDragging to false to prevent visual glitches
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 50);
+        return;
+      }
+
+      // Handle dropping into ungrouped area
+      if (over.data?.current?.type === "ungrouped") {
+        // If dragging a group into ungrouped area, dissolve the group
+        if (activeId.toString().startsWith("group-")) {
+          const groupId = activeId;
+          const groupToDissolve = inputGroups.find((g) => g.id === groupId);
+          const itemCount = reorderedInputs.filter(
+            (input) => input.groupId === groupId,
+          ).length;
+
+          console.log(`Dissolving group ${groupId} with ${itemCount} items`);
+
+          // Make state updates immediate for group dissolution
+          // Move all items from this group to ungrouped
+          setReorderedInputs((prevInputs) =>
+            prevInputs.map((input) =>
+              input.groupId === groupId
+                ? { ...input, groupId: undefined }
+                : input,
+            ),
+          );
+
+          // Remove the group
+          setInputGroups((prevGroups) =>
+            prevGroups.filter((group) => group.id !== groupId),
+          );
+
+          console.log(`Group ${groupId} dissolved`);
+
+          // Show feedback
+          if (groupToDissolve && itemCount > 0) {
+            toast.success(
+              `Dissolved "${groupToDissolve.title}" - ${itemCount} item${itemCount > 1 ? "s" : ""} moved to ungrouped`,
+            );
+          }
+
+          setTimeout(() => {
+            isDraggingRef.current = false;
+          }, 50);
+          return;
+        }
+
+        // If dragging an individual item into ungrouped area
+        startTransition(() => {
+          setReorderedInputs((prevInputs) =>
+            prevInputs.map((input) =>
+              input.input_id === activeId
+                ? { ...input, groupId: undefined }
+                : input,
+            ),
+          );
+        });
+
+        // Delay setting isDragging to false to prevent visual glitches
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 50);
+        return;
+      }
+
+      // Handle reordering within the same context
+      if (activeId !== overId) {
+        const oldIndex = reorderedInputs.findIndex(
+          (item) => item.input_id === activeId,
+        );
+        const newIndex = reorderedInputs.findIndex(
+          (item) => item.input_id === overId,
+        );
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const activeItem = reorderedInputs[oldIndex];
+          const overItem = reorderedInputs[newIndex];
+
+          // Check if both items are in the same context (both ungrouped or both in the same group)
+          const bothUngrouped = !activeItem.groupId && !overItem.groupId;
+          const sameGroup =
+            activeItem.groupId &&
+            overItem.groupId &&
+            activeItem.groupId === overItem.groupId;
+
+          if (bothUngrouped || sameGroup) {
+            startTransition(() => {
+              setReorderedInputs((prevInputs) =>
+                arrayMove(prevInputs, oldIndex, newIndex),
+              );
+            });
+          }
+        }
+      }
+
+      // Delay setting isDragging to false to prevent visual glitches
+      setTimeout(() => {
+        isDraggingRef.current = false;
+      }, 50);
+    },
+    [reorderedInputs, inputGroups],
+  );
 
   const workflowId = useWorkflowIdInWorkflowPage();
   const { workflow } = useCurrentWorkflow(workflowId);
 
   useEffect(() => {
     if (isEditMode && inputs && !isDraggingRef.current) {
-      setReorderedInputs([...inputs]);
+      startTransition(() => {
+        setReorderedInputs((prevInputs) => {
+          if (prevInputs.length === 0 || prevInputs.length !== inputs.length) {
+            return [...inputs];
+          }
+          return prevInputs;
+        });
+      });
     }
   }, [isEditMode, inputs]);
 
@@ -550,11 +688,11 @@ export function RunWorkflowInline({
       });
 
       if (!workflowApi._groups) workflowApi._groups = {};
-      inputGroups.forEach(group => {
+      for (const group of inputGroups) {
         workflowApi._groups[group.id] = {
           title: group.title,
         };
-      });
+      }
 
       const data = await callServerPromise(
         api({
@@ -586,6 +724,60 @@ export function RunWorkflowInline({
         `Failed to save input order: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
+  };
+
+  // Memoize the grouped and ungrouped inputs to prevent unnecessary re-renders
+  const { groupedInputsByGroup, ungroupedInputs } = useMemo(() => {
+    const grouped: Record<string, typeof inputs> = {};
+    const ungrouped: typeof inputs = [];
+
+    for (const input of reorderedInputs) {
+      if (input.groupId) {
+        if (!grouped[input.groupId]) {
+          grouped[input.groupId] = [];
+        }
+        grouped[input.groupId].push(input);
+      } else {
+        ungrouped.push(input);
+      }
+    }
+
+    return {
+      groupedInputsByGroup: grouped,
+      ungroupedInputs: ungrouped,
+    };
+  }, [reorderedInputs]);
+
+  // Ungrouped drop zone component
+  const UngroupedDropZone = ({ children }: { children: React.ReactNode }) => {
+    const { isOver, setNodeRef } = useDroppable({
+      id: "ungrouped-area",
+      data: {
+        type: "ungrouped",
+      },
+    });
+
+    const hasUngroupedItems = ungroupedInputs.length > 0;
+
+    return (
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "transition-all duration-200",
+          // Only show border when dragging over or when empty
+          isOver || !hasUngroupedItems
+            ? "border-2 border-dashed p-4 rounded-lg"
+            : "",
+          isOver
+            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+            : !hasUngroupedItems
+              ? "border-gray-300 dark:border-gray-600"
+              : "",
+        )}
+      >
+        {children}
+      </div>
+    );
   };
 
   return (
@@ -660,105 +852,130 @@ export function RunWorkflowInline({
       >
         {inputs ? (
           isEditMode ? (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-              <div className="space-y-4">
-                {/* Create Group Button */}
-                <Button
-                  onClick={createGroup}
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  type="button"
-                >
-                  + Create Group
-                </Button>
-
-                {/* Render Groups */}
-                {inputGroups.map((group) => {
-                  const groupInputs = reorderedInputs.filter(input => 
-                    input.groupId === group.id
-                  );
-                  
-                  return (
-                    <SDInputGroup
-                      key={group.id}
-                      id={group.id}
-                      title={group.title}
-                      onTitleChange={updateGroupTitle}
-                      onDelete={deleteGroup}
-                      isEmpty={groupInputs.length === 0}
-                      items={groupInputs.map(item => item.input_id || '')}
-                    >
-                      {groupInputs.map((item) => (
-                        <SortableItem
-                          key={item.input_id || `item-${Math.random()}`}
-                          value={item.input_id || `item-${Math.random()}`}
-                          className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
-                        >
-                          <div className="flex items-center w-full">
-                            <SortableDragHandle
-                              variant="ghost"
-                              className="mr-2 p-1 hover:bg-muted rounded"
-                              size="sm"
-                            >
-                              <GripVertical size={16} />
-                            </SortableDragHandle>
-                            <div className="flex-1">
-                              <SDInputsRender
-                                key={item.input_id}
-                                inputNode={item}
-                                updateInput={() => {}}
-                                inputValue={values[item.input_id || ""]}
-                              />
-                            </div>
-                          </div>
-                        </SortableItem>
-                      ))}
-                    </SDInputGroup>
-                  );
-                })}
-
-                {/* Ungrouped Inputs */}
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">Ungrouped Inputs</h3>
-                  <SortableContext 
-                    items={reorderedInputs
-                      .filter(item => !item.groupId)
-                      .map(item => item.input_id || '')}
-                    strategy={verticalListSortingStrategy}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={[
+                  ...inputGroups.map((group) => group.id),
+                  ...reorderedInputs.map((item) => item.input_id || ""),
+                ]}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-4">
+                  {/* Create Group Button */}
+                  <Button
+                    onClick={createGroup}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    type="button"
                   >
-                    <div className="space-y-2">
-                      {reorderedInputs
-                        .filter(item => !item.groupId)
-                        .map((item) => (
-                          <SortableItem
-                            key={item.input_id || `item-${Math.random()}`}
-                            value={item.input_id || `item-${Math.random()}`}
-                            className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
-                          >
-                            <div className="flex items-center w-full">
-                              <SortableDragHandle
-                                variant="ghost"
-                                className="mr-2 p-1 hover:bg-muted rounded"
-                                size="sm"
+                    + Create Group
+                  </Button>
+
+                  {/* Render Groups */}
+                  {inputGroups.map((group) => {
+                    const groupInputs = groupedInputsByGroup[group.id] || [];
+
+                    // Skip rendering if group has been dissolved
+                    if (isDraggingRef.current && groupInputs.length === 0) {
+                      return null;
+                    }
+
+                    return (
+                      <SortableItem
+                        key={group.id}
+                        value={group.id}
+                        className="mb-4"
+                      >
+                        <SDInputGroup
+                          id={group.id}
+                          title={group.title}
+                          onTitleChange={updateGroupTitle}
+                          onDelete={deleteGroup}
+                          isEmpty={groupInputs.length === 0}
+                          items={groupInputs.map((item) => item.input_id || "")}
+                          isDraggable={true}
+                        >
+                          {groupInputs.map((item, index) => {
+                            const stableKey = `${group.id}-${item.input_id || index}`;
+                            return (
+                              <SortableItem
+                                key={stableKey}
+                                value={item.input_id || `item-${index}`}
+                                className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
                               >
-                                <GripVertical size={16} />
-                              </SortableDragHandle>
-                              <div className="flex-1">
-                                <SDInputsRender
-                                  key={item.input_id}
-                                  inputNode={item}
-                                  updateInput={() => {}}
-                                  inputValue={values[item.input_id || ""]}
-                                />
+                                <div className="flex items-center w-full">
+                                  <SortableDragHandle
+                                    type="button"
+                                    variant="ghost"
+                                    className="hover:bg-muted mr-2 p-1 rounded"
+                                    size="sm"
+                                  >
+                                    <GripVertical size={16} />
+                                  </SortableDragHandle>
+                                  <div className="flex-1">
+                                    <SDInputsRender
+                                      key={item.input_id}
+                                      inputNode={item}
+                                      updateInput={() => {}}
+                                      inputValue={values[item.input_id || ""]}
+                                    />
+                                  </div>
+                                </div>
+                              </SortableItem>
+                            );
+                          })}
+                        </SDInputGroup>
+                      </SortableItem>
+                    );
+                  })}
+
+                  {/* Ungrouped Inputs */}
+                  <UngroupedDropZone>
+                    <div className="space-y-2">
+                      <h3 className="font-medium text-muted-foreground text-sm">
+                        Ungrouped Inputs
+                      </h3>
+                      <div className="space-y-2">
+                        {ungroupedInputs.map((item, index) => {
+                          const stableKey = `ungrouped-${item.input_id || index}`;
+                          return (
+                            <SortableItem
+                              key={stableKey}
+                              value={item.input_id || `item-${index}`}
+                              className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
+                            >
+                              <div className="flex items-center w-full">
+                                <SortableDragHandle
+                                  type="button"
+                                  variant="ghost"
+                                  className="hover:bg-muted mr-2 p-1 rounded"
+                                  size="sm"
+                                >
+                                  <GripVertical size={16} />
+                                </SortableDragHandle>
+                                <div className="flex-1">
+                                  <SDInputsRender
+                                    key={item.input_id}
+                                    inputNode={item}
+                                    updateInput={() => {}}
+                                    inputValue={values[item.input_id || ""]}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          </SortableItem>
-                        ))}
+                            </SortableItem>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </SortableContext>
+                  </UngroupedDropZone>
                 </div>
-              </div>
+              </SortableContext>
             </DndContext>
           ) : (
             inputs.map((item) => {
