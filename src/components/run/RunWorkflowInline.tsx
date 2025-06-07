@@ -40,9 +40,10 @@ import {
   useSensors,
   useSensor,
   PointerSensor,
-  KeyboardSensor
+  KeyboardSensor,
+  closestCenter
 } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { arrayMove, sortableKeyboardCoordinates, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { SDInputGroup } from "@/components/SDInputs/SDInputGroup";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
@@ -660,7 +661,7 @@ export function RunWorkflowInline({
       >
         {inputs ? (
           isEditMode ? (
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <div className="space-y-4">
                 {/* Create Group Button */}
                 <Button
@@ -721,59 +722,42 @@ export function RunWorkflowInline({
                 {/* Ungrouped Inputs */}
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-muted-foreground">Ungrouped Inputs</h3>
-                  <Sortable
-                    value={reorderedInputs
+                  <SortableContext 
+                    items={reorderedInputs
                       .filter(item => !item.groupId)
-                      .map((item, index) => ({
-                        id: item.input_id || `item-${index}`,
-                        ...item,
-                      }))}
-                    onValueChange={(items) => {
-                      const groupedInputs = reorderedInputs.filter(item => item.groupId);
-                      setReorderedInputs([...groupedInputs, ...items]);
-                    }}
-                    orientation="vertical"
-                    overlay={
-                      <div className="border rounded-md p-2 bg-card/95 backdrop-blur-sm shadow-xl transform scale-105 translate-y-[-4px] sortable-item-transition">
-                        <div className="flex items-center w-full">
-                          <div className="p-1 mr-2">
-                            <GripVertical size={16} />
-                          </div>
-                          <div className="flex-1 text-sm text-muted-foreground">
-                            Dragging input...
-                          </div>
-                        </div>
-                      </div>
-                    }
+                      .map(item => item.input_id || '')}
+                    strategy={verticalListSortingStrategy}
                   >
-                    {reorderedInputs
-                      .filter(item => !item.groupId)
-                      .map((item) => (
-                        <SortableItem
-                          key={item.input_id || `item-${Math.random()}`}
-                          value={item.input_id || `item-${Math.random()}`}
-                          className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
-                        >
-                          <div className="flex items-center w-full">
-                            <SortableDragHandle
-                              variant="ghost"
-                              className="mr-2 p-1 hover:bg-muted rounded"
-                              size="sm"
-                            >
-                              <GripVertical size={16} />
-                            </SortableDragHandle>
-                            <div className="flex-1">
-                              <SDInputsRender
-                                key={item.input_id}
-                                inputNode={item}
-                                updateInput={() => {}}
-                                inputValue={values[item.input_id || ""]}
-                              />
+                    <div className="space-y-2">
+                      {reorderedInputs
+                        .filter(item => !item.groupId)
+                        .map((item) => (
+                          <SortableItem
+                            key={item.input_id || `item-${Math.random()}`}
+                            value={item.input_id || `item-${Math.random()}`}
+                            className="flex items-center border rounded-md p-2 bg-card mb-2 sortable-item-transition"
+                          >
+                            <div className="flex items-center w-full">
+                              <SortableDragHandle
+                                variant="ghost"
+                                className="mr-2 p-1 hover:bg-muted rounded"
+                                size="sm"
+                              >
+                                <GripVertical size={16} />
+                              </SortableDragHandle>
+                              <div className="flex-1">
+                                <SDInputsRender
+                                  key={item.input_id}
+                                  inputNode={item}
+                                  updateInput={() => {}}
+                                  inputValue={values[item.input_id || ""]}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        </SortableItem>
-                      ))}
-                  </Sortable>
+                          </SortableItem>
+                        ))}
+                    </div>
+                  </SortableContext>
                 </div>
               </div>
             </DndContext>
