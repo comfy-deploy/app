@@ -165,6 +165,7 @@ function InputComponent({ workflowId }: { workflowId: string }) {
                 inputs={getInputsFromWorkflow(version)}
                 workflow_version_id={version?.id}
                 machine_id={workflow?.selected_machine_id}
+                workflow_api={version?.workflow_api}
               />
             )}
           </div>
