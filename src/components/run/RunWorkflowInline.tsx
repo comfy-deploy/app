@@ -328,19 +328,21 @@ export function RunWorkflowInline({
   // Add a ref to track if we've initialized
   const isInitializedRef = useRef(false);
 
-  // Single initialization effect that runs once
+  // Single initialization effect that runs once per version
   useEffect(() => {
-    if (!workflow_api || !inputs || isInitializedRef.current) {
+    if (!workflow_api || !inputs) {
       return;
     }
 
-    // Mark as initialized
+    // Reset and mark as initialized for this version
     isInitializedRef.current = true;
 
     // Load existing groups
     const existingGroups = getGroupsFromWorkflowAPI(workflow_api);
     if (existingGroups.length > 0) {
       setInputGroups(existingGroups);
+    } else {
+      setInputGroups([]); // Clear previous groups
     }
 
     // Initialize reorderedInputs with group information
@@ -377,6 +379,11 @@ export function RunWorkflowInline({
 
     setLayoutOrder(newLayoutOrder);
   }, [workflow_api, inputs]);
+
+  // Add a separate effect to reset initialization when version changes
+  useEffect(() => {
+    isInitializedRef.current = false;
+  }, [workflow_version_id]);
 
   // Remove all the other useEffects related to isEditMode
   // Only keep this one for handling input changes
