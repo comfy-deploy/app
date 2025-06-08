@@ -38,6 +38,8 @@ export function getInputsFromWorkflowAPI(workflow_api?: any) {
       if (nodeType) {
         const input_id = value.inputs.input_id as string;
         const default_value = value.inputs.default_value as string | number;
+        const meta = value._meta || {};
+
         return {
           ...value.inputs,
           class_type: value.class_type,
@@ -48,6 +50,7 @@ export function getInputsFromWorkflowAPI(workflow_api?: any) {
           display_name: value.inputs.display_name as string,
           description: value.inputs.description as string,
           nodeId: id, // Store the node ID for reference when saving order
+          groupId: meta.cd_input_group_id || undefined, // Add group ID from saved data
         } as any as z.infer<typeof WorkflowInputType>;
       }
       return undefined;
@@ -66,6 +69,24 @@ export function getInputsFromWorkflowAPI(workflow_api?: any) {
       workflow_api[nodeIdB]?._meta?.cd_input_order ?? Number.MAX_SAFE_INTEGER;
     return orderA - orderB;
   });
+}
+
+export function getGroupsFromWorkflowAPI(workflow_api?: any) {
+  if (!workflow_api) return [];
+
+  const groups = new Map<string, { id: string; title: string }>();
+
+  // Extract groups from inputs that have cd_group_name
+  Object.entries(workflow_api).forEach(([nodeId, value]: [string, any]) => {
+    if (value._meta?.cd_input_group_id && value._meta?.cd_group_name) {
+      groups.set(value._meta.cd_input_group_id, {
+        id: value._meta.cd_input_group_id,
+        title: value._meta.cd_group_name,
+      });
+    }
+  });
+
+  return Array.from(groups.values());
 }
 
 export function getInputsFromWorkflowJSON(workflow?: any) {

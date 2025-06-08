@@ -13,6 +13,7 @@ import {
   type WorkflowInputsType,
   type getInputsFromWorkflow,
   getInputsFromWorkflowJSON,
+  getGroupsFromWorkflowAPI,
 } from "@/lib/getInputsFromWorkflow";
 import { cn } from "@/lib/utils";
 import { plainInputsToZod } from "@/lib/workflowVersionInputsToZod";
@@ -324,6 +325,47 @@ export function RunWorkflowInline({
     Array<{ type: "group" | "input"; id: string }>
   >([]);
 
+  // Initialize groups from workflow_api when component mounts or workflow_api changes
+  useEffect(() => {
+    if (workflow_api && inputs && !isDraggingRef.current && !isEditMode) {
+      // Load existing groups
+      const existingGroups = getGroupsFromWorkflowAPI(workflow_api);
+      if (existingGroups.length > 0) {
+        setInputGroups(existingGroups);
+      }
+
+      // Initialize reorderedInputs with group information
+      const inputsWithGroups = inputs.map((input) => ({
+        ...input,
+        groupId: input.groupId || undefined,
+      }));
+      setReorderedInputs(inputsWithGroups);
+
+      // Reconstruct layout order based on saved order
+      if (existingGroups.length > 0 || inputs.some((i) => i.groupId)) {
+        const newLayoutOrder: Array<{ type: "group" | "input"; id: string }> =
+          [];
+        const processedGroups = new Set<string>();
+        const processedInputs = new Set<string>();
+
+        // Process inputs in their saved order (they're already sorted by cd_input_order)
+        for (const input of inputsWithGroups) {
+          if (input.groupId && !processedGroups.has(input.groupId)) {
+            // Add group when we encounter its first input
+            newLayoutOrder.push({ type: "group", id: input.groupId });
+            processedGroups.add(input.groupId);
+          } else if (!input.groupId && input.input_id) {
+            // Add ungrouped input
+            newLayoutOrder.push({ type: "input", id: input.input_id });
+            processedInputs.add(input.input_id);
+          }
+        }
+
+        setLayoutOrder(newLayoutOrder);
+      }
+    }
+  }, [workflow_api, inputs, isEditMode]);
+
   const createGroup = () => {
     const newGroup = {
       id: `group-${Date.now()}`,
@@ -545,90 +587,48 @@ export function RunWorkflowInline({
 
   useEffect(() => {
     if (isEditMode && inputs && !isDraggingRef.current) {
+      // First ensure we have the latest groups and inputs loaded from workflow_api
+      if (workflow_api) {
+        const existingGroups = getGroupsFromWorkflowAPI(workflow_api);
+        if (existingGroups.length > 0 && inputGroups.length === 0) {
+          setInputGroups(existingGroups);
+        }
+      }
+
       setLayoutOrder((prevLayoutOrder) => {
-        // Only initialize if layoutOrder is empty (first time entering edit mode)
-        if (prevLayoutOrder.length === 0) {
-          const newLayoutOrder: Array<{ type: "group" | "input"; id: string }> =
-            [];
+        // Build layout order from scratch based on current reorderedInputs
+        const newLayoutOrder: Array<{ type: "group" | "input"; id: string }> =
+          [];
+        const processedGroups = new Set<string>();
 
-          // Add existing groups first
-          for (const group of inputGroups) {
-            newLayoutOrder.push({ type: "group", id: group.id });
-          }
-
-          // Add ungrouped inputs - use inputs directly, not reorderedInputs
-          for (const input of inputs) {
-            if (input.input_id && !input.groupId) {
-              newLayoutOrder.push({ type: "input", id: input.input_id });
-            }
-          }
-
-          return newLayoutOrder;
-        }
-
-        // Otherwise, just ensure all items are present in the layout order
-        // This handles cases where new inputs/groups are added
-        const existingIds = new Set(prevLayoutOrder.map((item) => item.id));
-        const updatedOrder = [...prevLayoutOrder];
-
-        // Add any new groups that aren't in the layout order yet
-        for (const group of inputGroups) {
-          if (!existingIds.has(group.id)) {
-            updatedOrder.push({ type: "group", id: group.id });
-          }
-        }
-
-        // Add any new ungrouped inputs that aren't in the layout order yet
+        // Process inputs in their saved order (they're already sorted by cd_input_order)
         for (const input of reorderedInputs) {
-          if (input.input_id && !existingIds.has(input.input_id)) {
-            updatedOrder.push({ type: "input", id: input.input_id });
+          if (input.groupId && !processedGroups.has(input.groupId)) {
+            // Add group when we encounter its first input
+            newLayoutOrder.push({ type: "group", id: input.groupId });
+            processedGroups.add(input.groupId);
+          } else if (!input.groupId && input.input_id) {
+            // Add ungrouped input
+            newLayoutOrder.push({ type: "input", id: input.input_id });
           }
         }
 
-        // Remove any items that no longer exist
-        const validIds = new Set([
-          ...inputGroups.map((g) => g.id),
-          ...reorderedInputs.map((i) => i.input_id).filter(Boolean),
-        ]);
-
-        return updatedOrder.filter((item) => validIds.has(item.id));
+        return newLayoutOrder;
       });
     }
-  }, [isEditMode, inputs, inputGroups.length, reorderedInputs.length]); // Only track lengths to avoid unnecessary updates
-
-  // Also add this to reset layoutOrder when exiting edit mode
-  useEffect(() => {
-    if (!isEditMode) {
-      setLayoutOrder([]);
-    }
-  }, [isEditMode]);
+  }, [isEditMode, inputs, workflow_api, reorderedInputs, inputGroups.length]); // Added inputGroups.length dependency
 
   useEffect(() => {
     if (isEditMode && inputs && !isDraggingRef.current) {
-      setReorderedInputs((prevInputs) => {
-        // Only reset if we truly don't have the right inputs yet
-        if (prevInputs.length === 0) {
-          console.log("Initializing reorderedInputs from inputs");
-          return [...inputs];
-        }
-        // If inputs changed significantly, update
-        if (prevInputs.length !== inputs.length) {
-          console.log("Input count changed, updating reorderedInputs");
-          return [...inputs];
-        }
-        // Otherwise, keep the existing order
-        console.log("Keeping existing reorderedInputs order");
-        return prevInputs;
+      setReorderedInputs(() => {
+        // Always use inputs as the source of truth since they already have groupId from workflow_api
+        return [...inputs];
       });
     }
-  }, [isEditMode, inputs.length]); // Use inputs.length instead of inputs to avoid unnecessary resets
+  }, [isEditMode, inputs]);
 
   const user = useAuth();
   const clerk = useClerk();
-
-  const schema = useMemo(() => {
-    return plainInputsToZod(inputs);
-  }, [inputs]);
 
   const fetchToken = useAuthStore((state) => state.fetchToken);
 
@@ -763,24 +763,134 @@ export function RunWorkflowInline({
         return;
       }
 
-      const workflowApi = JSON.parse(workflow_api);
+      const workflowApi = JSON.parse(JSON.stringify(workflow_api)); // Deep clone to avoid mutations
 
-      reorderedInputs.forEach((input, index) => {
-        const nodeId = input.nodeId as string | undefined;
-        if (nodeId && workflowApi[nodeId]) {
-          workflowApi[nodeId]._meta = {
-            ...(workflowApi[nodeId]._meta || {}),
-            cd_input_order: index,
-            cd_input_group_id: input.groupId || null,
-          };
+      // Store existing group information before clearing
+      const existingGroupInfo = new Map<
+        string,
+        { groupId: string; groupName?: string }
+      >();
+      for (const nodeId of Object.keys(workflowApi)) {
+        const meta = workflowApi[nodeId]._meta;
+        if (meta?.cd_input_group_id) {
+          existingGroupInfo.set(nodeId, {
+            groupId: meta.cd_input_group_id,
+            groupName: meta.cd_group_name,
+          });
         }
-      });
+      }
 
-      if (!workflowApi._groups) workflowApi._groups = {};
-      for (const group of inputGroups) {
-        workflowApi._groups[group.id] = {
-          title: group.title,
-        };
+      // Clear existing meta data for inputs
+      for (const nodeId of Object.keys(workflowApi)) {
+        if (workflowApi[nodeId]._meta) {
+          delete workflowApi[nodeId]._meta.cd_input_order;
+          delete workflowApi[nodeId]._meta.cd_input_group_id;
+          delete workflowApi[nodeId]._meta.cd_group_name;
+        }
+      }
+
+      // If layoutOrder is empty, reconstruct it from reorderedInputs
+      let effectiveLayoutOrder = layoutOrder;
+
+      if (layoutOrder.length === 0) {
+        const reconstructedOrder: Array<{
+          type: "group" | "input";
+          id: string;
+        }> = [];
+        const processedGroups = new Set<string>();
+
+        // First try to use existing group info from workflow_api
+        for (const input of reorderedInputs) {
+          const nodeId = input.nodeId as string | undefined;
+          const groupInfo = nodeId ? existingGroupInfo.get(nodeId) : undefined;
+
+          if (groupInfo && !processedGroups.has(groupInfo.groupId)) {
+            reconstructedOrder.push({ type: "group", id: groupInfo.groupId });
+            processedGroups.add(groupInfo.groupId);
+          } else if (!groupInfo && input.input_id) {
+            reconstructedOrder.push({ type: "input", id: input.input_id });
+          }
+        }
+
+        // If still no order, fallback to current groupId from inputs
+        if (reconstructedOrder.length === 0) {
+          const processedGroups2 = new Set<string>();
+          for (const input of reorderedInputs) {
+            if (input.groupId && !processedGroups2.has(input.groupId)) {
+              reconstructedOrder.push({ type: "group", id: input.groupId });
+              processedGroups2.add(input.groupId);
+            } else if (!input.groupId && input.input_id) {
+              reconstructedOrder.push({ type: "input", id: input.input_id });
+            }
+          }
+        }
+
+        effectiveLayoutOrder = reconstructedOrder;
+        console.log(
+          "Using reconstructed layoutOrder for save:",
+          reconstructedOrder,
+        );
+      }
+
+      // Assign continuous order numbers based on effectiveLayoutOrder
+      let orderIndex = 0;
+
+      // use for of
+      for (const layoutItem of effectiveLayoutOrder) {
+        if (layoutItem.type === "group") {
+          // Process all inputs in this group
+          const groupInputs = reorderedInputs.filter(
+            (input) => input.groupId === layoutItem.id,
+          );
+          const group = inputGroups.find((g) => g.id === layoutItem.id);
+
+          // If no group info exists, try to get it from existingGroupInfo
+          let groupName = group?.title;
+          if (!groupName) {
+            // Find any input with this group ID that has a group name
+            for (const input of groupInputs) {
+              const nodeId = input.nodeId as string | undefined;
+              const groupInfo = nodeId
+                ? existingGroupInfo.get(nodeId)
+                : undefined;
+              if (groupInfo?.groupName) {
+                groupName = groupInfo.groupName;
+                break;
+              }
+            }
+          }
+
+          for (const [idx, input] of groupInputs.entries()) {
+            const nodeId = input.nodeId as string | undefined;
+            if (nodeId && workflowApi[nodeId]) {
+              if (!workflowApi[nodeId]._meta) {
+                workflowApi[nodeId]._meta = {};
+              }
+              workflowApi[nodeId]._meta.cd_input_order = orderIndex++;
+              workflowApi[nodeId]._meta.cd_input_group_id = layoutItem.id;
+
+              // Only add group name to the first input in the group
+              if (idx === 0 && groupName) {
+                workflowApi[nodeId]._meta.cd_group_name = groupName;
+              }
+            }
+          }
+        } else {
+          // Process ungrouped input
+          const input = reorderedInputs.find(
+            (i) => i.input_id === layoutItem.id,
+          );
+          if (input) {
+            const nodeId = input.nodeId as string | undefined;
+            if (nodeId && workflowApi[nodeId]) {
+              if (!workflowApi[nodeId]._meta) {
+                workflowApi[nodeId]._meta = {};
+              }
+              workflowApi[nodeId]._meta.cd_input_order = orderIndex++;
+              workflowApi[nodeId]._meta.cd_input_group_id = null;
+            }
+          }
+        }
       }
 
       const data = await callServerPromise(
@@ -790,7 +900,7 @@ export function RunWorkflowInline({
             method: "POST",
             body: JSON.stringify({
               workflow: workflow.versions[0].workflow,
-              workflow_api: JSON.stringify(workflowApi),
+              workflow_api: workflowApi,
               comment: "Reordered inputs",
             }),
           },
@@ -925,7 +1035,7 @@ export function RunWorkflowInline({
                     onClick={createGroup}
                     variant="outline"
                     size="sm"
-                    className="mt-8 w-full"
+                    className="sticky top-8 mb-8 w-full shadow-sm"
                     type="button"
                   >
                     <Plus size={16} className="mr-1" />
@@ -992,13 +1102,13 @@ export function RunWorkflowInline({
                                 <SortableItem
                                   key={stableKey}
                                   value={item.input_id || `item-${index}`}
-                                  className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
+                                  className="mb-2 flex items-center rounded-md border bg-card p-2 sortable-item-transition"
                                 >
-                                  <div className="flex items-center w-full">
+                                  <div className="flex w-full items-center">
                                     <SortableDragHandle
                                       type="button"
                                       variant="ghost"
-                                      className="hover:bg-muted mr-2 p-1 rounded"
+                                      className="mr-2 rounded p-1 hover:bg-muted"
                                       size="sm"
                                     >
                                       <GripVertical size={16} />
@@ -1028,13 +1138,13 @@ export function RunWorkflowInline({
                       <SortableItem
                         key={input.input_id}
                         value={input.input_id || ""}
-                        className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
+                        className="mb-2 flex items-center rounded-md border bg-card p-2 sortable-item-transition"
                       >
-                        <div className="flex items-center w-full">
+                        <div className="flex w-full items-center">
                           <SortableDragHandle
                             type="button"
                             variant="ghost"
-                            className="hover:bg-muted mr-2 p-1 rounded"
+                            className="mr-2 rounded p-1 hover:bg-muted"
                             size="sm"
                           >
                             <GripVertical size={16} />
@@ -1055,19 +1165,105 @@ export function RunWorkflowInline({
               </SortableContext>
             </DndContext>
           ) : (
-            inputs.map((item) => {
-              if (!item?.input_id) {
-                return;
+            // Render inputs respecting groups in non-edit mode
+            (() => {
+              // If no groups exist, render inputs normally
+              if (inputGroups.length === 0) {
+                return inputs.map((item) => {
+                  if (!item?.input_id) {
+                    return null;
+                  }
+                  return (
+                    <SDInputsRender
+                      key={item.input_id}
+                      inputNode={item}
+                      updateInput={updateInput}
+                      inputValue={values[item.input_id]}
+                    />
+                  );
+                });
               }
-              return (
-                <SDInputsRender
-                  key={item.input_id}
-                  inputNode={item}
-                  updateInput={updateInput}
-                  inputValue={values[item.input_id]}
-                />
-              );
-            })
+
+              // Render with groups
+              const renderedItems: ReactNode[] = [];
+              const renderedInputIds = new Set<string>();
+
+              // First render items based on layout order
+              for (const layoutItem of layoutOrder) {
+                if (layoutItem.type === "group") {
+                  const group = inputGroups.find((g) => g.id === layoutItem.id);
+                  if (!group) return;
+
+                  const groupInputs = inputs.filter(
+                    (input) =>
+                      input.groupId === layoutItem.id && input.input_id,
+                  );
+
+                  if (groupInputs.length > 0) {
+                    renderedItems.push(
+                      <SDInputGroup
+                        key={group.id}
+                        id={group.id}
+                        title={group.title}
+                        onTitleChange={() => {}}
+                        onDelete={() => {}}
+                        isEmpty={false}
+                        items={groupInputs.map((item) => item.input_id || "")}
+                        isDraggable={false}
+                        isEditMode={false}
+                      >
+                        {groupInputs.map((item) => {
+                          if (item.input_id) {
+                            renderedInputIds.add(item.input_id);
+                          }
+                          return (
+                            <div key={item.input_id} className="mb-2">
+                              <SDInputsRender
+                                inputNode={item}
+                                updateInput={updateInput}
+                                inputValue={values[item.input_id || ""]}
+                              />
+                            </div>
+                          );
+                        })}
+                      </SDInputGroup>,
+                    );
+                  }
+                } else {
+                  // Render ungrouped input
+                  const input = inputs.find(
+                    (i) => i.input_id === layoutItem.id && !i.groupId,
+                  );
+                  if (input?.input_id) {
+                    renderedInputIds.add(input.input_id);
+                    renderedItems.push(
+                      <SDInputsRender
+                        key={input.input_id}
+                        inputNode={input}
+                        updateInput={updateInput}
+                        inputValue={values[input.input_id]}
+                      />,
+                    );
+                  }
+                }
+              }
+
+              // Render any remaining inputs that weren't in layoutOrder
+              for (const item of inputs) {
+                if (item.input_id && !renderedInputIds.has(item.input_id)) {
+                  renderedItems.push(
+                    <SDInputsRender
+                      key={item.input_id}
+                      inputNode={item}
+                      updateInput={updateInput}
+                      inputValue={values[item.input_id]}
+                    />,
+                  );
+                }
+              }
+
+              return renderedItems;
+            })()
           )
         ) : (
           <div className="py-2 text-center text-muted-foreground text-sm">

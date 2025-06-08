@@ -6,7 +6,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { cn } from "@/lib/utils";
-import { Trash2, GripVertical } from "lucide-react";
+import { Trash2, GripVertical, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortableDragHandle } from "@/components/custom/sortable";
@@ -20,6 +20,8 @@ interface SDInputGroupProps {
   isEmpty: boolean;
   items: any[];
   isDraggable?: boolean;
+  isEditMode?: boolean; // New prop to control editing controls
+  defaultCollapsed?: boolean; // New prop to set default collapsed state
 }
 
 export function SDInputGroup({
@@ -31,9 +33,12 @@ export function SDInputGroup({
   isEmpty,
   items,
   isDraggable = false,
+  isEditMode = true, // Default to true for backward compatibility
+  defaultCollapsed = false,
 }: SDInputGroupProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [localTitle, setLocalTitle] = useState(title);
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   const { isOver, setNodeRef } = useDroppable({
     id: `group-${id}`,
@@ -52,28 +57,48 @@ export function SDInputGroup({
     <div
       ref={setNodeRef}
       className={cn(
-        "mb-4 rounded-lg border-2 border-dashed p-4 transition-all duration-200",
-        isOver
-          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-          : "border-gray-300 dark:border-gray-600",
-        isEmpty && "flex flex-col items-center justify-center",
+        "rounded-lg transition-all duration-200",
+        isEditMode && "p-4",
+        isEditMode && !isCollapsed
+          ? cn(
+              "border-2 border-dashed",
+              isOver
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                : "border-gray-300 dark:border-gray-600",
+            )
+          : isEditMode && isCollapsed
+            ? "border border-gray-200 dark:border-gray-700"
+            : "",
+        isEmpty && !isCollapsed && "flex flex-col items-center justify-center",
       )}
     >
       <div className="mb-3 flex w-full items-center justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          {isDraggable ? (
-            <SortableDragHandle
-              type="button"
-              variant="ghost"
-              className="hover:bg-muted p-1 rounded"
-              size="sm"
-            >
-              <GripVertical size={16} className="text-muted-foreground" />
-            </SortableDragHandle>
-          ) : (
-            <GripVertical size={16} className="text-muted-foreground" />
+        <div
+          className={cn(
+            "flex flex-1 items-center gap-2",
+            !isEditMode && "justify-between",
           )}
-          {isEditing ? (
+        >
+          {isEditMode &&
+            (isDraggable ? (
+              <SortableDragHandle
+                type="button"
+                variant="ghost"
+                className="rounded p-0 px-1 hover:bg-muted"
+                size="sm"
+              >
+                <GripVertical
+                  size={14}
+                  className="shrink-0 text-muted-foreground"
+                />
+              </SortableDragHandle>
+            ) : (
+              <GripVertical
+                size={14}
+                className="shrink-0 text-muted-foreground"
+              />
+            ))}
+          {isEditMode && isEditing ? (
             <Input
               value={localTitle}
               onChange={(e) => setLocalTitle(e.target.value)}
@@ -85,38 +110,81 @@ export function SDInputGroup({
                   setIsEditing(false);
                 }
               }}
-              className="text-sm font-medium"
+              className="font-medium text-sm"
               autoFocus
             />
           ) : (
+            // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
             <h3
-              className="text-sm font-medium cursor-pointer hover:text-blue-600"
-              onClick={() => setIsEditing(true)}
+              className={cn(
+                "select-none text-xs",
+                isEditMode && "cursor-pointer font-medium hover:text-blue-600",
+                !isEditMode &&
+                  "cursor-pointer text-muted-foreground hover:text-foreground/80",
+              )}
+              onClick={
+                isEditMode
+                  ? () => setIsEditing(true)
+                  : () => setIsCollapsed(!isCollapsed)
+              }
             >
               {title}
             </h3>
           )}
+          {/* Vertical divider line */}
+          {!isEditMode && <div className="h-px w-full max-w-64 bg-border/50" />}
+          {/* Collapse/Expand toggle button */}
+          {!isEditMode && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="h-6 w-6 p-0 hover:bg-muted"
+            >
+              {isCollapsed ? (
+                <ChevronRight
+                  size={14}
+                  className="text-muted-foreground transition-transform duration-200"
+                />
+              ) : (
+                <ChevronDown
+                  size={14}
+                  className="text-muted-foreground transition-transform duration-200"
+                />
+              )}
+            </Button>
+          )}
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(id)}
-          className="text-red-500 hover:text-red-600 hover:bg-red-50"
-        >
-          <Trash2 size={14} />
-        </Button>
+        {isEditMode && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(id)}
+            className="h-6 w-6 p-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+          >
+            <Trash2 size={14} />
+          </Button>
+        )}
       </div>
 
-      {isEmpty ? (
-        <div className="p-4 text-center text-muted-foreground text-sm">
-          Drop inputs here to create a group
-        </div>
-      ) : (
-        <SortableContext items={items} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">{children}</div>
-        </SortableContext>
-      )}
+      <div
+        className={cn(
+          "overflow-hidden pl-2 transition-all duration-300 ease-in-out",
+          isCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100",
+        )}
+      >
+        {isEmpty ? (
+          <div className="p-4 text-center text-muted-foreground text-sm">
+            Drop inputs here to create a group
+          </div>
+        ) : (
+          <SortableContext items={items} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2 pb-2">{children}</div>
+          </SortableContext>
+        )}
+      </div>
     </div>
   );
 }
