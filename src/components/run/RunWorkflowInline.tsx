@@ -1200,7 +1200,7 @@ export function RunWorkflowInline({
                               defaultCollapsed={
                                 groupCollapseStates[group.id] || false
                               }
-                              onCollapseToggle={(id, collapsed) => {
+                              onCollapseToggle={(id: string, collapsed: boolean) => {
                                 setGroupCollapseStates((prev) => ({
                                   ...prev,
                                   [id]: collapsed,
@@ -1234,7 +1234,7 @@ export function RunWorkflowInline({
                             defaultCollapsed={
                               groupCollapseStates[group.id] || false
                             }
-                            onCollapseToggle={(id, collapsed) => {
+                            onCollapseToggle={(id: string, collapsed: boolean) => {
                               setGroupCollapseStates((prev) => ({
                                 ...prev,
                                 [id]: collapsed,
@@ -1355,11 +1355,10 @@ export function RunWorkflowInline({
                         isEmpty={false}
                         items={groupInputs.map((item) => item.input_id || "")}
                         isDraggable={false}
-                        isEditMode={false}
                         defaultCollapsed={
                           groupCollapseStates[group.id] || false
                         }
-                        onCollapseToggle={(id, collapsed) => {
+                        onCollapseToggle={(id: string, collapsed: boolean) => {
                           setGroupCollapseStates((prev) => ({
                             ...prev,
                             [id]: collapsed,
