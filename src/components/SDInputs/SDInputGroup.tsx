@@ -58,16 +58,13 @@ export function SDInputGroup({
       className={cn(
         "rounded-lg transition-all duration-200",
         isEditMode && "p-4",
-        isEditMode && !isCollapsed
-          ? cn(
-              "border-2 border-dashed",
-              isOver
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                : "border-gray-300 dark:border-gray-600",
-            )
-          : isEditMode && isCollapsed
-            ? "border border-gray-200 dark:border-gray-700"
-            : "",
+        isEditMode &&
+          cn(
+            "border-2 border-dashed",
+            isOver
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+              : "border-gray-300 dark:border-gray-600",
+          ),
         isEmpty && !isCollapsed && "flex flex-col items-center justify-center",
       )}
     >
@@ -76,14 +73,13 @@ export function SDInputGroup({
           ref={setNodeRef}
           className={cn(
             "absolute inset-0 z-10 rounded-lg transition-all duration-200",
-            isOver && "bg-blue-500/10 ring-2 ring-blue-500 ring-inset",
           )}
           style={{ pointerEvents: isOver ? "auto" : "none" }}
         />
       )}
 
       <div
-        className="mb-3 flex w-full items-center justify-between"
+        className="flex w-full items-center justify-between"
         ref={isEmpty ? setNodeRef : undefined}
       >
         <div
@@ -145,27 +141,25 @@ export function SDInputGroup({
             </h3>
           )}
           {!isEditMode && <div className="h-px w-full max-w-64 bg-border/50" />}
-          {!isEditMode && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="h-6 w-6 p-0 hover:bg-muted"
-            >
-              {isCollapsed ? (
-                <ChevronRight
-                  size={14}
-                  className="text-muted-foreground transition-transform duration-200"
-                />
-              ) : (
-                <ChevronDown
-                  size={14}
-                  className="text-muted-foreground transition-transform duration-200"
-                />
-              )}
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="h-6 w-6 p-0 hover:bg-muted"
+          >
+            {isCollapsed ? (
+              <ChevronRight
+                size={14}
+                className="text-muted-foreground transition-transform duration-200"
+              />
+            ) : (
+              <ChevronDown
+                size={14}
+                className="text-muted-foreground transition-transform duration-200"
+              />
+            )}
+          </Button>
         </div>
         {isEditMode && (
           <Button
