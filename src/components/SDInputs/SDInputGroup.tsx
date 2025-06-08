@@ -20,8 +20,8 @@ interface SDInputGroupProps {
   isEmpty: boolean;
   items: any[];
   isDraggable?: boolean;
-  isEditMode?: boolean; // New prop to control editing controls
-  defaultCollapsed?: boolean; // New prop to set default collapsed state
+  isEditMode?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 export function SDInputGroup({
@@ -33,7 +33,7 @@ export function SDInputGroup({
   isEmpty,
   items,
   isDraggable = false,
-  isEditMode = true, // Default to true for backward compatibility
+  isEditMode = true,
   defaultCollapsed = false,
 }: SDInputGroupProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -55,7 +55,6 @@ export function SDInputGroup({
 
   return (
     <div
-      ref={setNodeRef}
       className={cn(
         "rounded-lg transition-all duration-200",
         isEditMode && "p-4",
@@ -72,7 +71,21 @@ export function SDInputGroup({
         isEmpty && !isCollapsed && "flex flex-col items-center justify-center",
       )}
     >
-      <div className="mb-3 flex w-full items-center justify-between">
+      {isEditMode && !isEmpty && !isCollapsed && (
+        <div
+          ref={setNodeRef}
+          className={cn(
+            "absolute inset-0 z-10 rounded-lg transition-all duration-200",
+            isOver && "bg-blue-500/10 ring-2 ring-blue-500 ring-inset",
+          )}
+          style={{ pointerEvents: isOver ? "auto" : "none" }}
+        />
+      )}
+
+      <div
+        className="mb-3 flex w-full items-center justify-between"
+        ref={isEmpty ? setNodeRef : undefined}
+      >
         <div
           className={cn(
             "flex flex-1 items-center gap-2",
@@ -114,13 +127,13 @@ export function SDInputGroup({
               autoFocus
             />
           ) : (
-            // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
             <h3
               className={cn(
                 "select-none text-xs",
-                isEditMode && "cursor-pointer font-medium hover:text-blue-600",
+                isEditMode &&
+                  "cursor-pointer whitespace-nowrap font-medium hover:text-blue-600",
                 !isEditMode &&
-                  "cursor-pointer text-muted-foreground hover:text-foreground/80",
+                  "cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground/80",
               )}
               onClick={
                 isEditMode
@@ -131,9 +144,7 @@ export function SDInputGroup({
               {title}
             </h3>
           )}
-          {/* Vertical divider line */}
           {!isEditMode && <div className="h-px w-full max-w-64 bg-border/50" />}
-          {/* Collapse/Expand toggle button */}
           {!isEditMode && (
             <Button
               type="button"
@@ -171,7 +182,7 @@ export function SDInputGroup({
 
       <div
         className={cn(
-          "overflow-hidden pl-2 transition-all duration-300 ease-in-out",
+          "overflow-hidden pl-2 transition-all duration-300 ease-in-out relative",
           isCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100",
         )}
       >
@@ -180,9 +191,34 @@ export function SDInputGroup({
             Drop inputs here to create a group
           </div>
         ) : (
-          <SortableContext items={items} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2 pb-2">{children}</div>
-          </SortableContext>
+          <>
+            {isEditMode && (
+              <div
+                ref={setNodeRef}
+                className={cn(
+                  "w-full h-4 -mb-2 z-20 relative",
+                  isOver && "bg-blue-500/20 rounded",
+                )}
+              />
+            )}
+            <SortableContext
+              items={items}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2 pb-2 relative">
+                {children}
+                {isEditMode && (
+                  <div
+                    ref={setNodeRef}
+                    className={cn(
+                      "w-full h-4 -mt-2 z-20 relative",
+                      isOver && "bg-blue-500/20 rounded",
+                    )}
+                  />
+                )}
+              </div>
+            </SortableContext>
+          </>
         )}
       </div>
     </div>
