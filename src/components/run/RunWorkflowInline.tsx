@@ -351,24 +351,31 @@ export function RunWorkflowInline({
     setReorderedInputs(inputsWithGroups);
 
     // Build initial layout order
-    if (existingGroups.length > 0 || inputs.some((i) => i.groupId)) {
-      const newLayoutOrder: Array<{ type: "group" | "input"; id: string }> = [];
-      const processedGroups = new Set<string>();
+    const newLayoutOrder: Array<{ type: "group" | "input"; id: string }> = [];
+    const processedGroups = new Set<string>();
 
-      // Process inputs in their saved order (they're already sorted by cd_input_order)
+    // Process inputs in their saved order (they're already sorted by cd_input_order)
+    for (const input of inputsWithGroups) {
+      if (input.groupId && !processedGroups.has(input.groupId)) {
+        // Add group when we encounter its first input
+        newLayoutOrder.push({ type: "group", id: input.groupId });
+        processedGroups.add(input.groupId);
+      } else if (!input.groupId && input.input_id) {
+        // Add ungrouped input
+        newLayoutOrder.push({ type: "input", id: input.input_id });
+      }
+    }
+
+    // If no layout order was built (no groups, no metadata), add all inputs as ungrouped
+    if (newLayoutOrder.length === 0) {
       for (const input of inputsWithGroups) {
-        if (input.groupId && !processedGroups.has(input.groupId)) {
-          // Add group when we encounter its first input
-          newLayoutOrder.push({ type: "group", id: input.groupId });
-          processedGroups.add(input.groupId);
-        } else if (!input.groupId && input.input_id) {
-          // Add ungrouped input
+        if (input.input_id) {
           newLayoutOrder.push({ type: "input", id: input.input_id });
         }
       }
-
-      setLayoutOrder(newLayoutOrder);
     }
+
+    setLayoutOrder(newLayoutOrder);
   }, [workflow_api, inputs]);
 
   // Remove all the other useEffects related to isEditMode
