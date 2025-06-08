@@ -152,7 +152,7 @@ export function SDInputGroup({
             variant="ghost"
             size="sm"
             onClick={handleCollapseToggle}
-            className="h-6 w-6 p-0 hover:bg-muted"
+            className="h-6 w-6 shrink-0 p-0 hover:bg-muted"
           >
             {isCollapsed ? (
               <ChevronRight
@@ -182,8 +182,8 @@ export function SDInputGroup({
 
       <div
         className={cn(
-          "overflow-hidden pl-2 transition-all duration-300 ease-in-out relative",
-          isCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100",
+          "relative overflow-hidden pl-2 transition-all duration-300 ease-in-out",
+          isCollapsed ? "max-h-0 opacity-0" : "mt-2 max-h-[2000px] opacity-100",
         )}
       >
         {isEmpty ? (
