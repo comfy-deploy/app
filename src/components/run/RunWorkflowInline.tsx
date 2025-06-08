@@ -25,6 +25,7 @@ import {
   useRef,
   useState,
   useCallback,
+  startTransition,
 } from "react";
 import { SortableItem, SortableDragHandle } from "@/components/custom/sortable";
 import {
@@ -415,61 +416,64 @@ export function RunWorkflowInline({
     });
   }, [inputs]);
 
-  const createGroup = () => {
+  const createGroup = useCallback(() => {
     const newGroup = {
       id: `group-${Date.now()}`,
       title: "New Group",
     };
-    setInputGroups((prevGroups) => [...prevGroups, newGroup]);
+    
+    startTransition(() => {
+      setInputGroups((prevGroups) => [...prevGroups, newGroup]);
+      setLayoutOrder((prevOrder) => [
+        { type: "group", id: newGroup.id },
+        ...prevOrder,
+      ]);
+    });
+  }, []);
 
-    // Add the new group to the top of the layout order
-    setLayoutOrder((prevOrder) => [
-      { type: "group", id: newGroup.id },
-      ...prevOrder,
-    ]);
-  };
-
-  const deleteGroup = (groupId: string) => {
+  const deleteGroup = useCallback((groupId: string) => {
     // First, get all inputs that are in this group before we modify them
     const inputsInGroup = reorderedInputs.filter(
       (input) => input.groupId === groupId,
     );
 
-    setReorderedInputs((prevInputs) =>
-      prevInputs.map((input) =>
-        input.groupId === groupId ? { ...input, groupId: undefined } : input,
-      ),
-    );
+    startTransition(() => {
+      setReorderedInputs((prevInputs) =>
+        prevInputs.map((input) =>
+          input.groupId === groupId ? { ...input, groupId: undefined } : input,
+        ),
+      );
 
-    setInputGroups((prevGroups) => prevGroups.filter((g) => g.id !== groupId));
+      setInputGroups((prevGroups) => prevGroups.filter((g) => g.id !== groupId));
 
-    // Remove the group from layout order AND add the ungrouped inputs back
-    setLayoutOrder((prevOrder) => {
-      const filteredOrder = prevOrder.filter((item) => item.id !== groupId);
+      // Remove the group from layout order AND add the ungrouped inputs back
+      setLayoutOrder((prevOrder) => {
+        const filteredOrder = prevOrder.filter((item) => item.id !== groupId);
 
-      // Add the inputs that were in the deleted group back to the layout
-      const inputsToAdd = inputsInGroup
-        .filter((input) => input.input_id) // Make sure input_id exists
-        .map((input) => ({ type: "input" as const, id: input.input_id! }));
+        // Add the inputs that were in the deleted group back to the layout
+        const inputsToAdd = inputsInGroup
+          .filter((input) => input.input_id) // Make sure input_id exists
+          .map((input) => ({ type: "input" as const, id: input.input_id! }));
 
-      // Add them at the position where the group was, or at the end
-      const groupIndex = prevOrder.findIndex((item) => item.id === groupId);
-      if (groupIndex !== -1) {
-        // Insert at the group's position
-        filteredOrder.splice(groupIndex, 0, ...inputsToAdd);
-        return filteredOrder;
-      } else {
-        // Add at the end
-        return [...filteredOrder, ...inputsToAdd];
-      }
+        // Add them at the position where the group was, or at the end
+        const groupIndex = prevOrder.findIndex((item) => item.id === groupId);
+        if (groupIndex !== -1) {
+          // Insert at the group's position
+          filteredOrder.splice(groupIndex, 0, ...inputsToAdd);
+          return filteredOrder;
+        } else {
+          // Add at the end
+          return [...filteredOrder, ...inputsToAdd];
+        }
+      });
     });
-  };
+  }, [reorderedInputs]);
 
-  const updateGroupTitle = (groupId: string, title: string) => {
-    setInputGroups(
-      inputGroups.map((g) => (g.id === groupId ? { ...g, title } : g)),
+  const updateGroupTitle = useCallback((groupId: string, title: string) => {
+    setInputGroups((prevGroups) =>
+      prevGroups.map((g) => (g.id === groupId ? { ...g, title } : g)),
     );
-  };
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -795,12 +799,245 @@ export function RunWorkflowInline({
   }, [default_values]);
 
   // Add a function to toggle collapse state
-  const toggleGroupCollapse = (groupId: string) => {
+  const toggleGroupCollapse = useCallback((groupId: string) => {
     setGroupCollapseStates((prev) => ({
       ...prev,
       [groupId]: !prev[groupId],
     }));
-  };
+  }, []);
+
+  const getGroupCollapseState = useCallback((groupId: string) => {
+    return groupCollapseStates[groupId] || false;
+  }, [groupCollapseStates]);
+
+  const handleGroupCollapseToggle = useCallback((id: string, collapsed: boolean) => {
+    setGroupCollapseStates((prev) => ({
+      ...prev,
+      [id]: collapsed,
+    }));
+  }, []);
+
+  const renderGroupItem = useCallback((group: { id: string; title: string }, groupInputs: typeof reorderedInputs) => (
+    <SortableItem
+      key={group.id}
+      value={group.id}
+      className="mb-4"
+    >
+      <SDInputGroup
+        id={group.id}
+        title={group.title}
+        onTitleChange={updateGroupTitle}
+        onDelete={deleteGroup}
+        isEmpty={groupInputs.length === 0}
+        items={groupInputs.map((item) => item.input_id || "")}
+        isDraggable={true}
+        defaultCollapsed={getGroupCollapseState(group.id)}
+        onCollapseToggle={handleGroupCollapseToggle}
+      >
+        <SortableContext
+          items={groupInputs.map((item) => item.input_id || "")}
+          strategy={verticalListSortingStrategy}
+        >
+          {groupInputs.map((item) => (
+            <SortableItem
+              key={item.input_id}
+              value={item.input_id || ""}
+              className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
+            >
+              <div className="flex items-center w-full">
+                <SortableDragHandle
+                  variant="ghost"
+                  className="mr-2 p-1 hover:bg-muted rounded"
+                  size="sm"
+                >
+                  <GripVertical size={16} />
+                </SortableDragHandle>
+                <div className="flex-1">
+                  <SDInputsRender
+                    key={item.input_id}
+                    inputNode={item}
+                    updateInput={updateInput}
+                    inputValue={values[item.input_id || ""]}
+                  />
+                </div>
+              </div>
+            </SortableItem>
+          ))}
+        </SortableContext>
+      </SDInputGroup>
+    </SortableItem>
+  ), [updateGroupTitle, deleteGroup, getGroupCollapseState, handleGroupCollapseToggle, updateInput, values]);
+
+  const renderUngroupedItem = useCallback((input: typeof reorderedInputs[0]) => (
+    <SortableItem
+      key={input.input_id}
+      value={input.input_id || ""}
+      className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
+    >
+      <div className="flex items-center w-full">
+        <SortableDragHandle
+          variant="ghost"
+          className="mr-2 p-1 hover:bg-muted rounded"
+          size="sm"
+        >
+          <GripVertical size={16} />
+        </SortableDragHandle>
+        <div className="flex-1">
+          <SDInputsRender
+            key={input.input_id}
+            inputNode={input}
+            updateInput={updateInput}
+            inputValue={values[input.input_id || ""]}
+          />
+        </div>
+      </div>
+    </SortableItem>
+  ), [updateInput, values]);
+
+  const renderLayoutItems = useCallback(() => {
+    const renderedInputIds = new Set<string>();
+    const renderedItems: React.ReactNode[] = [];
+    
+    const grouped: Record<string, typeof reorderedInputs> = {};
+    const ungrouped: typeof reorderedInputs = [];
+
+    reorderedInputs.forEach((input) => {
+      if (input.groupId) {
+        if (!grouped[input.groupId]) {
+          grouped[input.groupId] = [];
+        }
+        grouped[input.groupId].push(input);
+      } else {
+        ungrouped.push(input);
+      }
+    });
+
+    for (const layoutItem of layoutOrder) {
+      if (layoutItem.type === "group") {
+        const group = inputGroups.find((g) => g.id === layoutItem.id);
+        if (group) {
+          const groupInputs = grouped[group.id] || [];
+          renderedItems.push(renderGroupItem(group, groupInputs));
+          
+          groupInputs.forEach((item) => {
+            if (item.input_id) {
+              renderedInputIds.add(item.input_id);
+            }
+          });
+        }
+      } else {
+        // Render ungrouped input
+        const input = ungrouped.find((i) => i.input_id === layoutItem.id);
+        if (input?.input_id) {
+          renderedInputIds.add(input.input_id);
+          renderedItems.push(renderUngroupedItem(input));
+        }
+      }
+    }
+
+    // Render any remaining inputs that weren't in layoutOrder
+    for (const item of inputs || []) {
+      if (item.input_id && !renderedInputIds.has(item.input_id)) {
+        renderedItems.push(
+          <SDInputsRender
+            key={item.input_id}
+            inputNode={item}
+            updateInput={updateInput}
+            inputValue={values[item.input_id]}
+          />
+        );
+      }
+    }
+
+    return renderedItems;
+  }, [layoutOrder, inputGroups, reorderedInputs, inputs, renderGroupItem, renderUngroupedItem, updateInput, values]);
+
+  const renderNonEditModeItems = useCallback(() => {
+    const renderedInputIds = new Set<string>();
+    const renderedItems: React.ReactNode[] = [];
+    
+    const grouped: Record<string, typeof reorderedInputs> = {};
+
+    reorderedInputs.forEach((input) => {
+      if (input.groupId) {
+        if (!grouped[input.groupId]) {
+          grouped[input.groupId] = [];
+        }
+        grouped[input.groupId].push(input);
+      }
+    });
+
+    // Render groups
+    for (const group of inputGroups) {
+      const groupInputs = grouped[group.id] || [];
+      if (groupInputs.length > 0) {
+        renderedItems.push(
+          <SDInputGroup
+            key={group.id}
+            id={group.id}
+            title={group.title}
+            onTitleChange={() => {}}
+            onDelete={() => {}}
+            isEmpty={false}
+            items={groupInputs.map((item) => item.input_id || "")}
+            isDraggable={false}
+            defaultCollapsed={getGroupCollapseState(group.id)}
+            onCollapseToggle={handleGroupCollapseToggle}
+          >
+            {groupInputs.map((item) => {
+              if (item.input_id) {
+                renderedInputIds.add(item.input_id);
+              }
+              return (
+                <div key={item.input_id} className="mb-2">
+                  <SDInputsRender
+                    inputNode={item}
+                    updateInput={updateInput}
+                    inputValue={values[item.input_id || ""]}
+                  />
+                </div>
+              );
+            })}
+          </SDInputGroup>
+        );
+      }
+    }
+
+    // Render ungrouped inputs
+    for (const input of inputs || []) {
+      if (
+        input.input_id &&
+        !input.groupId &&
+        !renderedInputIds.has(input.input_id)
+      ) {
+        renderedInputIds.add(input.input_id);
+        renderedItems.push(
+          <SDInputsRender
+            key={input.input_id}
+            inputNode={input}
+            updateInput={updateInput}
+            inputValue={values[input.input_id]}
+          />
+        );
+      }
+    }
+
+    // Render any remaining inputs that weren't in layoutOrder
+    for (const item of inputs || []) {
+      if (item.input_id && !renderedInputIds.has(item.input_id)) {
+        renderedItems.push(
+          <SDInputsRender
+            key={item.input_id}
+            inputNode={item}
+            updateInput={updateInput}
+            inputValue={values[item.input_id]}
+          />
+        );
+      }
+    }
+
+    return renderedItems;
+  }, [inputGroups, inputs, getGroupCollapseState, handleGroupCollapseToggle, updateInput, values]);
 
   // Modify the saveReordering function (around line 698) to save collapse states
   const saveReordering = async () => {

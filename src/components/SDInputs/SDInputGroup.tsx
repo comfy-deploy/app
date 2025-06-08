@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -50,32 +50,49 @@ export function SDInputGroup({
     },
   });
 
-  const handleTitleSubmit = () => {
+  const handleTitleSubmit = useCallback(() => {
     onTitleChange(id, localTitle);
     setIsEditing(false);
-  };
+  }, [id, localTitle, onTitleChange]);
 
-  const handleCollapseToggle = () => {
+  const handleTitleClick = useCallback(() => {
+    setIsEditing(true);
+  }, []);
+
+  const handleDeleteClick = useCallback(() => {
+    onDelete(id);
+  }, [id, onDelete]);
+
+  const handleCollapseToggle = useCallback(() => {
     const newCollapsedState = !isCollapsed;
     setIsCollapsed(newCollapsedState);
     onCollapseToggle?.(id, newCollapsedState);
-  };
+  }, [id, isCollapsed, onCollapseToggle]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleTitleSubmit();
+    } else if (e.key === "Escape") {
+      setLocalTitle(title);
+      setIsEditing(false);
+    }
+  }, [handleTitleSubmit, title]);
+
+  const containerClassName = useMemo(() => cn(
+    "rounded-lg transition-all duration-200",
+    isEditMode && "p-4",
+    isEditMode &&
+      cn(
+        "border-2 border-dashed",
+        isOver
+          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+          : "border-gray-300 dark:border-gray-600",
+      ),
+    isEmpty && !isCollapsed && "flex flex-col items-center justify-center",
+  ), [isEditMode, isOver, isEmpty, isCollapsed]);
 
   return (
-    <div
-      className={cn(
-        "rounded-lg transition-all duration-200",
-        isEditMode && "p-4",
-        isEditMode &&
-          cn(
-            "border-2 border-dashed",
-            isOver
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-              : "border-gray-300 dark:border-gray-600",
-          ),
-        isEmpty && !isCollapsed && "flex flex-col items-center justify-center",
-      )}
-    >
+    <div className={containerClassName}>
       {isEditMode && !isEmpty && !isCollapsed && (
         <div
           ref={setNodeRef}
@@ -120,13 +137,7 @@ export function SDInputGroup({
               value={localTitle}
               onChange={(e) => setLocalTitle(e.target.value)}
               onBlur={handleTitleSubmit}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleTitleSubmit();
-                if (e.key === "Escape") {
-                  setLocalTitle(title);
-                  setIsEditing(false);
-                }
-              }}
+              onKeyDown={handleKeyDown}
               className="font-medium text-sm"
               autoFocus
             />
@@ -140,7 +151,7 @@ export function SDInputGroup({
                   "cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground/80",
               )}
               onClick={
-                isEditMode ? () => setIsEditing(true) : handleCollapseToggle
+                isEditMode ? handleTitleClick : handleCollapseToggle
               }
             >
               {title}
@@ -172,7 +183,7 @@ export function SDInputGroup({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => onDelete(id)}
+            onClick={handleDeleteClick}
             className="h-6 w-6 p-0 text-red-500 hover:bg-red-50 hover:text-red-600"
           >
             <Trash2 size={14} />
