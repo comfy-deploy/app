@@ -52,15 +52,15 @@ export function SDInputGroup({
     <div
       ref={setNodeRef}
       className={cn(
-        "border-2 border-dashed rounded-lg p-4 mb-4 transition-all duration-200",
+        "mb-4 rounded-lg border-2 border-dashed p-4 transition-all duration-200",
         isOver
           ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
           : "border-gray-300 dark:border-gray-600",
-        isEmpty && "min-h-[120px] flex items-center justify-center",
+        isEmpty && "flex flex-col items-center justify-center",
       )}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 flex-1">
+      <div className="mb-3 flex w-full items-center justify-between">
+        <div className="flex flex-1 items-center gap-2">
           {isDraggable ? (
             <SortableDragHandle
               type="button"
@@ -109,7 +109,7 @@ export function SDInputGroup({
       </div>
 
       {isEmpty ? (
-        <div className="text-center text-muted-foreground text-sm">
+        <div className="p-4 text-center text-muted-foreground text-sm">
           Drop inputs here to create a group
         </div>
       ) : (

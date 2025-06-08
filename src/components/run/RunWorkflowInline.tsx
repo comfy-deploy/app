@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { plainInputsToZod } from "@/lib/workflowVersionInputsToZod";
 // import { HandleFileUpload } from "@/server/uploadFile";
 import { useAuth, useClerk } from "@clerk/clerk-react";
-import { Edit, GripVertical, Play, Save, X } from "lucide-react";
+import { Edit, GripVertical, Play, Plus, Save, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import {
   type FormEvent,
@@ -330,6 +330,12 @@ export function RunWorkflowInline({
       title: "New Group",
     };
     setInputGroups([...inputGroups, newGroup]);
+
+    // Also add the new group to the top of the layout order
+    setLayoutOrder((prevOrder) => [
+      { type: "group", id: newGroup.id },
+      ...prevOrder,
+    ]);
   };
 
   const deleteGroup = (groupId: string) => {
@@ -366,8 +372,10 @@ export function RunWorkflowInline({
     (event: any) => {
       const { active, over } = event;
 
+      // Always reset dragging state immediately
+      isDraggingRef.current = false;
+
       if (!over) {
-        isDraggingRef.current = false;
         return;
       }
 
@@ -392,16 +400,10 @@ export function RunWorkflowInline({
         const newIndex = inputGroups.findIndex((group) => group.id === overId);
 
         if (oldIndex !== -1 && newIndex !== -1) {
-          startTransition(() => {
-            setInputGroups((prevGroups) =>
-              arrayMove(prevGroups, oldIndex, newIndex),
-            );
-          });
+          setInputGroups((prevGroups) =>
+            arrayMove(prevGroups, oldIndex, newIndex),
+          );
         }
-
-        setTimeout(() => {
-          isDraggingRef.current = false;
-        }, 50);
         return;
       }
 
@@ -409,17 +411,11 @@ export function RunWorkflowInline({
       if (over.data?.current?.type === "group") {
         const groupId = over.data.current.groupId;
 
-        startTransition(() => {
-          setReorderedInputs((prevInputs) =>
-            prevInputs.map((input) =>
-              input.input_id === activeId ? { ...input, groupId } : input,
-            ),
-          );
-        });
-
-        setTimeout(() => {
-          isDraggingRef.current = false;
-        }, 50);
+        setReorderedInputs((prevInputs) =>
+          prevInputs.map((input) =>
+            input.input_id === activeId ? { ...input, groupId } : input,
+          ),
+        );
         return;
       }
 
@@ -460,10 +456,6 @@ export function RunWorkflowInline({
               `Dissolved "${groupToDissolve.title}" - ${itemCount} item${itemCount > 1 ? "s" : ""} moved to ungrouped`,
             );
           }
-
-          setTimeout(() => {
-            isDraggingRef.current = false;
-          }, 50);
           return;
         }
 
@@ -477,26 +469,20 @@ export function RunWorkflowInline({
         if (targetLayoutIndex !== -1) {
           const groupId = activeId;
 
-          startTransition(() => {
-            setLayoutOrder((prevOrder) => {
-              const filteredOrder = prevOrder.filter(
-                (item) => item.id !== groupId,
-              );
+          setLayoutOrder((prevOrder) => {
+            const filteredOrder = prevOrder.filter(
+              (item) => item.id !== groupId,
+            );
 
-              const newOrder = [...filteredOrder];
-              newOrder.splice(targetLayoutIndex, 0, {
-                type: "group",
-                id: groupId,
-              });
-
-              return newOrder;
+            const newOrder = [...filteredOrder];
+            newOrder.splice(targetLayoutIndex, 0, {
+              type: "group",
+              id: groupId,
             });
+
+            return newOrder;
           });
         }
-
-        setTimeout(() => {
-          isDraggingRef.current = false;
-        }, 50);
         return;
       }
 
@@ -520,18 +506,36 @@ export function RunWorkflowInline({
             activeItem.groupId === overItem.groupId;
 
           if (bothUngrouped || sameGroup) {
-            startTransition(() => {
-              setReorderedInputs((prevInputs) =>
-                arrayMove(prevInputs, oldIndex, newIndex),
-              );
-            });
+            console.log(
+              `Reordering: moving item from ${oldIndex} to ${newIndex}`,
+            );
+            setReorderedInputs((prevInputs) =>
+              arrayMove(prevInputs, oldIndex, newIndex),
+            );
+
+            // Also update layoutOrder if reordering ungrouped items
+            if (bothUngrouped) {
+              setLayoutOrder((prevOrder) => {
+                const activeLayoutIndex = prevOrder.findIndex(
+                  (item) => item.id === activeId,
+                );
+                const overLayoutIndex = prevOrder.findIndex(
+                  (item) => item.id === overId,
+                );
+
+                if (activeLayoutIndex !== -1 && overLayoutIndex !== -1) {
+                  return arrayMove(
+                    prevOrder,
+                    activeLayoutIndex,
+                    overLayoutIndex,
+                  );
+                }
+                return prevOrder;
+              });
+            }
           }
         }
       }
-
-      setTimeout(() => {
-        isDraggingRef.current = false;
-      }, 50);
     },
     [reorderedInputs, inputGroups, layoutOrder],
   );
@@ -541,16 +545,83 @@ export function RunWorkflowInline({
 
   useEffect(() => {
     if (isEditMode && inputs && !isDraggingRef.current) {
-      startTransition(() => {
-        setReorderedInputs((prevInputs) => {
-          if (prevInputs.length === 0 || prevInputs.length !== inputs.length) {
-            return [...inputs];
+      setLayoutOrder((prevLayoutOrder) => {
+        // Only initialize if layoutOrder is empty (first time entering edit mode)
+        if (prevLayoutOrder.length === 0) {
+          const newLayoutOrder: Array<{ type: "group" | "input"; id: string }> =
+            [];
+
+          // Add existing groups first
+          for (const group of inputGroups) {
+            newLayoutOrder.push({ type: "group", id: group.id });
           }
-          return prevInputs;
-        });
+
+          // Add ungrouped inputs - use inputs directly, not reorderedInputs
+          for (const input of inputs) {
+            if (input.input_id && !input.groupId) {
+              newLayoutOrder.push({ type: "input", id: input.input_id });
+            }
+          }
+
+          return newLayoutOrder;
+        }
+
+        // Otherwise, just ensure all items are present in the layout order
+        // This handles cases where new inputs/groups are added
+        const existingIds = new Set(prevLayoutOrder.map((item) => item.id));
+        const updatedOrder = [...prevLayoutOrder];
+
+        // Add any new groups that aren't in the layout order yet
+        for (const group of inputGroups) {
+          if (!existingIds.has(group.id)) {
+            updatedOrder.push({ type: "group", id: group.id });
+          }
+        }
+
+        // Add any new ungrouped inputs that aren't in the layout order yet
+        for (const input of reorderedInputs) {
+          if (input.input_id && !existingIds.has(input.input_id)) {
+            updatedOrder.push({ type: "input", id: input.input_id });
+          }
+        }
+
+        // Remove any items that no longer exist
+        const validIds = new Set([
+          ...inputGroups.map((g) => g.id),
+          ...reorderedInputs.map((i) => i.input_id).filter(Boolean),
+        ]);
+
+        return updatedOrder.filter((item) => validIds.has(item.id));
       });
     }
-  }, [isEditMode, inputs]);
+  }, [isEditMode, inputs, inputGroups.length, reorderedInputs.length]); // Only track lengths to avoid unnecessary updates
+
+  // Also add this to reset layoutOrder when exiting edit mode
+  useEffect(() => {
+    if (!isEditMode) {
+      setLayoutOrder([]);
+    }
+  }, [isEditMode]);
+
+  useEffect(() => {
+    if (isEditMode && inputs && !isDraggingRef.current) {
+      setReorderedInputs((prevInputs) => {
+        // Only reset if we truly don't have the right inputs yet
+        if (prevInputs.length === 0) {
+          console.log("Initializing reorderedInputs from inputs");
+          return [...inputs];
+        }
+        // If inputs changed significantly, update
+        if (prevInputs.length !== inputs.length) {
+          console.log("Input count changed, updating reorderedInputs");
+          return [...inputs];
+        }
+        // Otherwise, keep the existing order
+        console.log("Keeping existing reorderedInputs order");
+        return prevInputs;
+      });
+    }
+  }, [isEditMode, inputs.length]); // Use inputs.length instead of inputs to avoid unnecessary resets
 
   const user = useAuth();
   const clerk = useClerk();
@@ -766,24 +837,6 @@ export function RunWorkflowInline({
     };
   }, [reorderedInputs]);
 
-  useEffect(() => {
-    if (isEditMode && inputs && !isDraggingRef.current) {
-      const newLayoutOrder: Array<{ type: "group" | "input"; id: string }> = [];
-
-      for (const group of inputGroups) {
-        newLayoutOrder.push({ type: "group", id: group.id });
-      }
-
-      for (const input of ungroupedInputs) {
-        if (input.input_id) {
-          newLayoutOrder.push({ type: "input", id: input.input_id });
-        }
-      }
-
-      setLayoutOrder(newLayoutOrder);
-    }
-  }, [isEditMode, inputs, inputGroups, ungroupedInputs]);
-
   return (
     <div className="relative h-full">
       <style>{`
@@ -866,16 +919,17 @@ export function RunWorkflowInline({
                 items={layoutOrder.map((item) => item.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {/* Create Group Button */}
                   <Button
                     onClick={createGroup}
                     variant="outline"
                     size="sm"
-                    className="w-full"
+                    className="mt-8 w-full"
                     type="button"
                   >
-                    + Create Group
+                    <Plus size={16} className="mr-1" />
+                    Create Group
                   </Button>
 
                   {/* Render items based on layout order */}
@@ -907,7 +961,7 @@ export function RunWorkflowInline({
                               items={[]}
                               isDraggable={false}
                             >
-                              <div className="p-4 text-center text-muted-foreground text-sm border-2 border-dashed border-muted-foreground/20 rounded-md">
+                              <div className="rounded-md border-2 border-muted-foreground/20 border-dashed p-4 text-center text-muted-foreground text-sm">
                                 Drag items here to add them to this group
                               </div>
                             </SDInputGroup>
