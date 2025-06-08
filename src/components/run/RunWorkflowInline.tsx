@@ -410,17 +410,39 @@ export function RunWorkflowInline({
   };
 
   const deleteGroup = (groupId: string) => {
+    // First, get all inputs that are in this group before we modify them
+    const inputsInGroup = reorderedInputs.filter(
+      (input) => input.groupId === groupId,
+    );
+
     setReorderedInputs((prevInputs) =>
       prevInputs.map((input) =>
         input.groupId === groupId ? { ...input, groupId: undefined } : input,
       ),
     );
+
     setInputGroups((prevGroups) => prevGroups.filter((g) => g.id !== groupId));
 
-    // Remove from layout order
-    setLayoutOrder((prevOrder) =>
-      prevOrder.filter((item) => item.id !== groupId),
-    );
+    // Remove the group from layout order AND add the ungrouped inputs back
+    setLayoutOrder((prevOrder) => {
+      const filteredOrder = prevOrder.filter((item) => item.id !== groupId);
+
+      // Add the inputs that were in the deleted group back to the layout
+      const inputsToAdd = inputsInGroup
+        .filter((input) => input.input_id) // Make sure input_id exists
+        .map((input) => ({ type: "input" as const, id: input.input_id! }));
+
+      // Add them at the position where the group was, or at the end
+      const groupIndex = prevOrder.findIndex((item) => item.id === groupId);
+      if (groupIndex !== -1) {
+        // Insert at the group's position
+        filteredOrder.splice(groupIndex, 0, ...inputsToAdd);
+        return filteredOrder;
+      } else {
+        // Add at the end
+        return [...filteredOrder, ...inputsToAdd];
+      }
+    });
   };
 
   const updateGroupTitle = (groupId: string, title: string) => {
@@ -977,29 +999,61 @@ export function RunWorkflowInline({
             <>
               <Button
                 onClick={() => {
-                  // Remove empty groups when canceling
-                  const emptyGroupIds = inputGroups
-                    .filter(
-                      (group) =>
-                        !reorderedInputs.some(
-                          (input) => input.groupId === group.id,
-                        ),
-                    )
-                    .map((g) => g.id);
+                  // On cancel, restore the original state from workflow_api
+                  if (workflow_api && inputs) {
+                    // Restore original groups
+                    const existingGroups =
+                      getGroupsFromWorkflowAPI(workflow_api);
+                    setInputGroups(existingGroups);
 
-                  if (emptyGroupIds.length > 0) {
-                    setInputGroups((prev) =>
-                      prev.filter((g) => !emptyGroupIds.includes(g.id)),
-                    );
-                    setLayoutOrder((prev) =>
-                      prev.filter(
-                        (item) =>
-                          !(
-                            item.type === "group" &&
-                            emptyGroupIds.includes(item.id)
-                          ),
-                      ),
-                    );
+                    // Restore original reorderedInputs with their original groupIds
+                    const inputsWithGroups = inputs.map((input) => ({
+                      ...input,
+                      groupId: input.groupId || undefined,
+                    }));
+                    setReorderedInputs(inputsWithGroups);
+
+                    // Restore original layout order
+                    if (
+                      existingGroups.length > 0 ||
+                      inputs.some((i) => i.groupId)
+                    ) {
+                      const newLayoutOrder: Array<{
+                        type: "group" | "input";
+                        id: string;
+                      }> = [];
+                      const processedGroups = new Set<string>();
+
+                      for (const input of inputsWithGroups) {
+                        if (
+                          input.groupId &&
+                          !processedGroups.has(input.groupId)
+                        ) {
+                          newLayoutOrder.push({
+                            type: "group",
+                            id: input.groupId,
+                          });
+                          processedGroups.add(input.groupId);
+                        } else if (!input.groupId && input.input_id) {
+                          newLayoutOrder.push({
+                            type: "input",
+                            id: input.input_id,
+                          });
+                        }
+                      }
+
+                      setLayoutOrder(newLayoutOrder);
+                    } else {
+                      // No groups, just ungrouped inputs
+                      setLayoutOrder(
+                        inputs
+                          .filter((i) => i.input_id)
+                          .map((i) => ({
+                            type: "input" as const,
+                            id: i.input_id!,
+                          })),
+                      );
+                    }
                   }
 
                   setIsEditMode(false);
@@ -1076,7 +1130,7 @@ export function RunWorkflowInline({
                     onClick={createGroup}
                     variant="outline"
                     size="sm"
-                    className="sticky top-8 mb-8 w-full shadow-sm"
+                    className="sticky top-8 z-50 mb-8 w-full shadow-sm"
                     type="button"
                   >
                     <Plus size={16} className="mr-1" />
