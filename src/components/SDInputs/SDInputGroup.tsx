@@ -22,6 +22,7 @@ interface SDInputGroupProps {
   isDraggable?: boolean;
   isEditMode?: boolean;
   defaultCollapsed?: boolean;
+  onCollapseToggle?: (id: string, collapsed: boolean) => void;
 }
 
 export function SDInputGroup({
@@ -35,6 +36,7 @@ export function SDInputGroup({
   isDraggable = false,
   isEditMode = true,
   defaultCollapsed = false,
+  onCollapseToggle,
 }: SDInputGroupProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [localTitle, setLocalTitle] = useState(title);
@@ -51,6 +53,12 @@ export function SDInputGroup({
   const handleTitleSubmit = () => {
     onTitleChange(id, localTitle);
     setIsEditing(false);
+  };
+
+  const handleCollapseToggle = () => {
+    const newCollapsedState = !isCollapsed;
+    setIsCollapsed(newCollapsedState);
+    onCollapseToggle?.(id, newCollapsedState);
   };
 
   return (
@@ -132,9 +140,7 @@ export function SDInputGroup({
                   "cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground/80",
               )}
               onClick={
-                isEditMode
-                  ? () => setIsEditing(true)
-                  : () => setIsCollapsed(!isCollapsed)
+                isEditMode ? () => setIsEditing(true) : handleCollapseToggle
               }
             >
               {title}
@@ -145,7 +151,7 @@ export function SDInputGroup({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleCollapseToggle}
             className="h-6 w-6 p-0 hover:bg-muted"
           >
             {isCollapsed ? (

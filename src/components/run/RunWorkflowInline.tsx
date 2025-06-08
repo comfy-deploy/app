@@ -1,5 +1,3 @@
-"use client";
-
 import { SDForm } from "@/components/SDInputs/SDForm";
 import {
   type RGBColor,
@@ -12,11 +10,9 @@ import { callServerPromise } from "@/lib/call-server-promise";
 import {
   type WorkflowInputsType,
   type getInputsFromWorkflow,
-  getInputsFromWorkflowJSON,
   getGroupsFromWorkflowAPI,
 } from "@/lib/getInputsFromWorkflow";
 import { cn } from "@/lib/utils";
-import { plainInputsToZod } from "@/lib/workflowVersionInputsToZod";
 // import { HandleFileUpload } from "@/server/uploadFile";
 import { useAuth, useClerk } from "@clerk/clerk-react";
 import { Edit, GripVertical, Play, Plus, Save, X } from "lucide-react";
@@ -24,22 +20,14 @@ import { useQueryState } from "nuqs";
 import {
   type FormEvent,
   type ReactNode,
-  use,
   useEffect,
   useMemo,
   useRef,
   useState,
-  startTransition,
   useCallback,
 } from "react";
+import { SortableItem, SortableDragHandle } from "@/components/custom/sortable";
 import {
-  Sortable,
-  SortableItem,
-  SortableDragHandle,
-} from "@/components/custom/sortable";
-import {
-  UniqueIdentifier,
-  useDroppable,
   DndContext,
   useSensors,
   useSensor,
@@ -328,7 +316,12 @@ export function RunWorkflowInline({
   // Add a ref to track if we've initialized
   const isInitializedRef = useRef(false);
 
-  // Single initialization effect that runs once per version
+  // Add collapse state tracking after line 44
+  const [groupCollapseStates, setGroupCollapseStates] = useState<
+    Record<string, boolean>
+  >({});
+
+  // Modify the initialization effect (around line 335) to include collapse state
   useEffect(() => {
     if (!workflow_api || !inputs) {
       return;
@@ -344,6 +337,19 @@ export function RunWorkflowInline({
     } else {
       setInputGroups([]); // Clear previous groups
     }
+
+    // Load collapse states from metadata
+    const collapseStates: Record<string, boolean> = {};
+    Object.entries(workflow_api).forEach(([nodeId, value]: [string, any]) => {
+      if (
+        value._meta?.cd_input_group_id &&
+        value._meta?.cd_group_collapsed !== undefined
+      ) {
+        collapseStates[value._meta.cd_input_group_id] =
+          value._meta.cd_group_collapsed;
+      }
+    });
+    setGroupCollapseStates(collapseStates);
 
     // Initialize reorderedInputs with group information
     const inputsWithGroups = inputs.map((input) => ({
@@ -788,6 +794,15 @@ export function RunWorkflowInline({
     setValues(default_values);
   }, [default_values]);
 
+  // Add a function to toggle collapse state
+  const toggleGroupCollapse = (groupId: string) => {
+    setGroupCollapseStates((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  };
+
+  // Modify the saveReordering function (around line 698) to save collapse states
   const saveReordering = async () => {
     if (!workflow_version_id || !reorderedInputs) return;
 
@@ -885,7 +900,6 @@ export function RunWorkflowInline({
       // Assign continuous order numbers based on effectiveLayoutOrder
       let orderIndex = 0;
 
-      // use for of
       for (const layoutItem of effectiveLayoutOrder) {
         if (layoutItem.type === "group") {
           // Process all inputs in this group
@@ -918,6 +932,10 @@ export function RunWorkflowInline({
               }
               workflowApi[nodeId]._meta.cd_input_order = orderIndex++;
               workflowApi[nodeId]._meta.cd_input_group_id = layoutItem.id;
+
+              // Save collapse state
+              workflowApi[nodeId]._meta.cd_group_collapsed =
+                groupCollapseStates[layoutItem.id] || false;
 
               // Only add group name to the first input in the group
               if (idx === 0 && groupName) {
@@ -1179,6 +1197,15 @@ export function RunWorkflowInline({
                               isEmpty={true}
                               items={[]}
                               isDraggable={false}
+                              defaultCollapsed={
+                                groupCollapseStates[group.id] || false
+                              }
+                              onCollapseToggle={(id, collapsed) => {
+                                setGroupCollapseStates((prev) => ({
+                                  ...prev,
+                                  [id]: collapsed,
+                                }));
+                              }}
                             >
                               <div className="rounded-md border-2 border-muted-foreground/20 border-dashed p-4 text-center text-muted-foreground text-sm">
                                 Drag items here to add them to this group
@@ -1204,6 +1231,15 @@ export function RunWorkflowInline({
                               (item) => item.input_id || "",
                             )}
                             isDraggable={true}
+                            defaultCollapsed={
+                              groupCollapseStates[group.id] || false
+                            }
+                            onCollapseToggle={(id, collapsed) => {
+                              setGroupCollapseStates((prev) => ({
+                                ...prev,
+                                [id]: collapsed,
+                              }));
+                            }}
                           >
                             {groupInputs.map((item, index) => {
                               const stableKey = `${group.id}-${item.input_id || index}`;
@@ -1320,6 +1356,15 @@ export function RunWorkflowInline({
                         items={groupInputs.map((item) => item.input_id || "")}
                         isDraggable={false}
                         isEditMode={false}
+                        defaultCollapsed={
+                          groupCollapseStates[group.id] || false
+                        }
+                        onCollapseToggle={(id, collapsed) => {
+                          setGroupCollapseStates((prev) => ({
+                            ...prev,
+                            [id]: collapsed,
+                          }));
+                        }}
                       >
                         {groupInputs.map((item) => {
                           if (item.input_id) {
