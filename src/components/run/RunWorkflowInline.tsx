@@ -319,9 +319,9 @@ export function RunWorkflowInline({
       title: string;
     }>
   >([]);
-  
+
   const [layoutOrder, setLayoutOrder] = useState<
-    Array<{ type: 'group' | 'input'; id: string }>
+    Array<{ type: "group" | "input"; id: string }>
   >([]);
 
   const createGroup = () => {
@@ -417,17 +417,24 @@ export function RunWorkflowInline({
           );
         });
 
-        // Delay setting isDragging to false to prevent visual glitches
         setTimeout(() => {
           isDraggingRef.current = false;
         }, 50);
         return;
       }
 
-      // Handle dropping into ungrouped area
-      if (over.data?.current?.type === "ungrouped") {
-        // If dragging a group into ungrouped area, dissolve the group
-        if (activeId.toString().startsWith("group-")) {
+      // Handle group positioning among ungrouped items OR dissolving groups
+      if (
+        activeId.toString().startsWith("group-") &&
+        (over.data?.current?.type === "ungrouped" ||
+          (!overId.toString().startsWith("group-") &&
+            over.data?.current?.type !== "group"))
+      ) {
+        // If dropping specifically into ungrouped area (not on a specific item), dissolve the group
+        if (
+          over.data?.current?.type === "ungrouped" &&
+          !overId.toString().includes("input")
+        ) {
           const groupId = activeId;
           const groupToDissolve = inputGroups.find((g) => g.id === groupId);
           const itemCount = reorderedInputs.filter(
@@ -436,8 +443,6 @@ export function RunWorkflowInline({
 
           console.log(`Dissolving group ${groupId} with ${itemCount} items`);
 
-          // Make state updates immediate for group dissolution
-          // Move all items from this group to ungrouped
           setReorderedInputs((prevInputs) =>
             prevInputs.map((input) =>
               input.groupId === groupId
@@ -446,14 +451,10 @@ export function RunWorkflowInline({
             ),
           );
 
-          // Remove the group
           setInputGroups((prevGroups) =>
             prevGroups.filter((group) => group.id !== groupId),
           );
 
-          console.log(`Group ${groupId} dissolved`);
-
-          // Show feedback
           if (groupToDissolve && itemCount > 0) {
             toast.success(
               `Dissolved "${groupToDissolve.title}" - ${itemCount} item${itemCount > 1 ? "s" : ""} moved to ungrouped`,
@@ -466,53 +467,33 @@ export function RunWorkflowInline({
           return;
         }
 
-        // If dragging an individual item into ungrouped area
-        startTransition(() => {
-          setReorderedInputs((prevInputs) =>
-            prevInputs.map((input) =>
-              input.input_id === activeId
-                ? { ...input, groupId: undefined }
-                : input,
-            ),
-          );
-        });
-
-        // Delay setting isDragging to false to prevent visual glitches
-        setTimeout(() => {
-          isDraggingRef.current = false;
-        }, 50);
-        return;
-      }
-
-      // Handle group positioning among ungrouped items
-      if (
-        activeId.toString().startsWith("group-") &&
-        !overId.toString().startsWith("group-") &&
-        over.data?.current?.type !== "ungrouped" &&
-        over.data?.current?.type !== "group"
-      ) {
+        // Otherwise, position the group among ungrouped items
         console.log("Group positioning among ungrouped items detected");
-        
+
         const targetLayoutIndex = layoutOrder.findIndex(
-          (item) => item.id === overId
+          (item) => item.id === overId,
         );
-        
+
         if (targetLayoutIndex !== -1) {
           const groupId = activeId;
-          
+
           startTransition(() => {
             setLayoutOrder((prevOrder) => {
-              // Remove the group from its current position
-              const filteredOrder = prevOrder.filter(item => item.id !== groupId);
-              
+              const filteredOrder = prevOrder.filter(
+                (item) => item.id !== groupId,
+              );
+
               const newOrder = [...filteredOrder];
-              newOrder.splice(targetLayoutIndex, 0, { type: 'group', id: groupId });
-              
+              newOrder.splice(targetLayoutIndex, 0, {
+                type: "group",
+                id: groupId,
+              });
+
               return newOrder;
             });
           });
         }
-        
+
         setTimeout(() => {
           isDraggingRef.current = false;
         }, 50);
@@ -532,7 +513,6 @@ export function RunWorkflowInline({
           const activeItem = reorderedInputs[oldIndex];
           const overItem = reorderedInputs[newIndex];
 
-          // Check if both items are in the same context (both ungrouped or both in the same group)
           const bothUngrouped = !activeItem.groupId && !overItem.groupId;
           const sameGroup =
             activeItem.groupId &&
@@ -549,12 +529,11 @@ export function RunWorkflowInline({
         }
       }
 
-      // Delay setting isDragging to false to prevent visual glitches
       setTimeout(() => {
         isDraggingRef.current = false;
       }, 50);
     },
-    [reorderedInputs, inputGroups],
+    [reorderedInputs, inputGroups, layoutOrder],
   );
 
   const workflowId = useWorkflowIdInWorkflowPage();
@@ -789,53 +768,21 @@ export function RunWorkflowInline({
 
   useEffect(() => {
     if (isEditMode && inputs && !isDraggingRef.current) {
-      const newLayoutOrder: Array<{ type: 'group' | 'input'; id: string }> = [];
-      
-      inputGroups.forEach(group => {
-        newLayoutOrder.push({ type: 'group', id: group.id });
-      });
-      
-      ungroupedInputs.forEach(input => {
+      const newLayoutOrder: Array<{ type: "group" | "input"; id: string }> = [];
+
+      for (const group of inputGroups) {
+        newLayoutOrder.push({ type: "group", id: group.id });
+      }
+
+      for (const input of ungroupedInputs) {
         if (input.input_id) {
-          newLayoutOrder.push({ type: 'input', id: input.input_id });
+          newLayoutOrder.push({ type: "input", id: input.input_id });
         }
-      });
-      
+      }
+
       setLayoutOrder(newLayoutOrder);
     }
   }, [isEditMode, inputs, inputGroups, ungroupedInputs]);
-
-  // Ungrouped drop zone component
-  const UngroupedDropZone = ({ children }: { children: React.ReactNode }) => {
-    const { isOver, setNodeRef } = useDroppable({
-      id: "ungrouped-area",
-      data: {
-        type: "ungrouped",
-      },
-    });
-
-    const hasUngroupedItems = ungroupedInputs.length > 0;
-
-    return (
-      <div
-        ref={setNodeRef}
-        className={cn(
-          "transition-all duration-200",
-          // Only show border when dragging over or when empty
-          isOver || !hasUngroupedItems
-            ? "border-2 border-dashed p-4 rounded-lg"
-            : "",
-          isOver
-            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-            : !hasUngroupedItems
-              ? "border-gray-300 dark:border-gray-600"
-              : "",
-        )}
-      >
-        {children}
-      </div>
-    );
-  };
 
   return (
     <div className="relative h-full">
@@ -916,7 +863,7 @@ export function RunWorkflowInline({
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={layoutOrder.map(item => item.id)}
+                items={layoutOrder.map((item) => item.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-4">
@@ -933,17 +880,41 @@ export function RunWorkflowInline({
 
                   {/* Render items based on layout order */}
                   {layoutOrder.map((layoutItem) => {
-                    if (layoutItem.type === 'group') {
-                      const group = inputGroups.find(g => g.id === layoutItem.id);
+                    if (layoutItem.type === "group") {
+                      const group = inputGroups.find(
+                        (g) => g.id === layoutItem.id,
+                      );
                       if (!group) return null;
-                      
+
                       const groupInputs = groupedInputsByGroup[group.id] || [];
-                      
+                      const isEmpty = groupInputs.length === 0;
+
                       // Skip rendering if group has been dissolved
-                      if (isDraggingRef.current && groupInputs.length === 0) {
+                      if (isDraggingRef.current && isEmpty) {
                         return null;
                       }
-                      
+
+                      // For empty groups, render without SortableItem to prevent dragging
+                      if (isEmpty) {
+                        return (
+                          <div key={group.id} className="mb-4">
+                            <SDInputGroup
+                              id={group.id}
+                              title={group.title}
+                              onTitleChange={updateGroupTitle}
+                              onDelete={deleteGroup}
+                              isEmpty={true}
+                              items={[]}
+                              isDraggable={false}
+                            >
+                              <div className="p-4 text-center text-muted-foreground text-sm border-2 border-dashed border-muted-foreground/20 rounded-md">
+                                Drag items here to add them to this group
+                              </div>
+                            </SDInputGroup>
+                          </div>
+                        );
+                      }
+
                       return (
                         <SortableItem
                           key={group.id}
@@ -955,8 +926,10 @@ export function RunWorkflowInline({
                             title={group.title}
                             onTitleChange={updateGroupTitle}
                             onDelete={deleteGroup}
-                            isEmpty={groupInputs.length === 0}
-                            items={groupInputs.map((item) => item.input_id || "")}
+                            isEmpty={false}
+                            items={groupInputs.map(
+                              (item) => item.input_id || "",
+                            )}
                             isDraggable={true}
                           >
                             {groupInputs.map((item, index) => {
@@ -991,37 +964,38 @@ export function RunWorkflowInline({
                           </SDInputGroup>
                         </SortableItem>
                       );
-                    } else {
-                      const input = ungroupedInputs.find(i => i.input_id === layoutItem.id);
-                      if (!input) return null;
-                      
-                      return (
-                        <SortableItem
-                          key={input.input_id}
-                          value={input.input_id || ''}
-                          className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
-                        >
-                          <div className="flex items-center w-full">
-                            <SortableDragHandle
-                              type="button"
-                              variant="ghost"
-                              className="hover:bg-muted mr-2 p-1 rounded"
-                              size="sm"
-                            >
-                              <GripVertical size={16} />
-                            </SortableDragHandle>
-                            <div className="flex-1">
-                              <SDInputsRender
-                                key={input.input_id}
-                                inputNode={input}
-                                updateInput={() => {}}
-                                inputValue={values[input.input_id || ""]}
-                              />
-                            </div>
-                          </div>
-                        </SortableItem>
-                      );
                     }
+                    const input = ungroupedInputs.find(
+                      (i) => i.input_id === layoutItem.id,
+                    );
+                    if (!input) return null;
+
+                    return (
+                      <SortableItem
+                        key={input.input_id}
+                        value={input.input_id || ""}
+                        className="border bg-card flex items-center mb-2 p-2 rounded-md sortable-item-transition"
+                      >
+                        <div className="flex items-center w-full">
+                          <SortableDragHandle
+                            type="button"
+                            variant="ghost"
+                            className="hover:bg-muted mr-2 p-1 rounded"
+                            size="sm"
+                          >
+                            <GripVertical size={16} />
+                          </SortableDragHandle>
+                          <div className="flex-1">
+                            <SDInputsRender
+                              key={input.input_id}
+                              inputNode={input}
+                              updateInput={() => {}}
+                              inputValue={values[input.input_id || ""]}
+                            />
+                          </div>
+                        </div>
+                      </SortableItem>
+                    );
                   })}
                 </div>
               </SortableContext>
