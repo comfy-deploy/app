@@ -255,37 +255,22 @@ function processModel(
 }
 
 function Model({ url }: { url: string }) {
-  const [proxiedUrl, setProxiedUrl] = useState<string | null>(null);
   const fileExtension = url.split(".").pop()?.toLowerCase();
-
-  useEffect(() => {
-    const fetchProxiedUrl = async () => {
-      if (url.includes("s3.amazonaws.com")) {
-        const proxyUrl = await getProxiedModelUrl(url);
-        setProxiedUrl(proxyUrl);
-      } else {
-        setProxiedUrl(url);
-      }
-    };
-
-    fetchProxiedUrl();
-  }, [url]);
-
-  if (!proxiedUrl) {
-    return <ModelLoader />;
-  }
 
   let modelScene: THREE.Object3D;
 
   if (fileExtension === "obj") {
     // Handle OBJ files
-    const obj = useLoader(OBJLoader, proxiedUrl);
+    const obj = useLoader(OBJLoader, url);
     modelScene = obj;
   } else {
     // Handle GLB/GLTF files (default)
-    useGLTF.preload(proxiedUrl);
-    const { scene } = useGLTF(proxiedUrl, undefined, undefined, (loader) => {
-      loader.setCrossOrigin("anonymous");
+    useGLTF.preload(url);
+    const { scene } = useGLTF(url, undefined, undefined, (loader) => {
+      // Only set crossOrigin for non-S3 signed URLs
+      if (!isS3SignedUrl(url)) {
+        loader.setCrossOrigin("anonymous");
+      }
     });
     modelScene = scene;
   }
