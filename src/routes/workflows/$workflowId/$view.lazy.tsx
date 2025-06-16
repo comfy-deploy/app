@@ -343,7 +343,7 @@ function WorkflowPageComponent() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="opacity-0 transition-all hover:bg-gray-200 group-hover/my-nav-item:opacity-100 dark:hover:bg-zinc-600/40"
+                                className="opacity-60 transition-all hover:bg-gray-200 hover:opacity-100 group-hover/my-nav-item:opacity-100 dark:hover:bg-zinc-600/40"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
