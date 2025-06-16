@@ -7,8 +7,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { easeOut } from "framer-motion";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, Share } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { lazy, useEffect, useState } from "react";
 import { MyDrawer } from "../drawer";
@@ -34,6 +33,7 @@ interface WorkspaceClientWrapperProps {
   workflow_id: string;
   className?: string;
   isPublic?: boolean;
+  onShareWorkflow?: () => void;
 }
 
 interface MachineUpdateCheckerProps {
@@ -227,7 +227,7 @@ export function WorkspaceClientWrapper({
               className="pt-20 mx-auto flex h-full w-full max-w-xl px-4 flex-col gap-4 z-30"
               // layout
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <SessionCreatorForm
                   workflowId={props.workflow_id}
                   version={versions[0]?.version ?? 0}
@@ -236,6 +236,15 @@ export function WorkspaceClientWrapper({
                     workflow?.selected_machine_version_id
                   }
                 />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0"
+                  onClick={() => props.onShareWorkflow?.()}
+                >
+                  <Share className="h-4 w-4 mr-2" />
+                  Share Workflow
+                </Button>
               </div>
               <MachineUpdateChecker machineId={machine.id} />
             </motion.div>

@@ -247,23 +247,25 @@ export function SessionCreatorForm({
     <div className="flex w-full flex-col gap-6">
       <div>
         <h2 className="font-semibold text-lg">ComfyUI</h2>
-        <p className="flex items-center gap-2 text-muted-foreground text-sm">
-          Start and edit your workflow{" "}
-          <Badge
-            variant="outline"
-            className="gap-2 dark:outline dark:outline-gray-600/40"
-          >
-            {isFluidVersion && (
-              <div className="rounded-full bg-blue-100 p-0.5">
-                <Droplets
-                  strokeWidth={2}
-                  className="h-[12px] w-[12px] text-blue-600"
-                />
-              </div>
-            )}
-            v{version}
-          </Badge>
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-2 text-muted-foreground text-sm">
+            Start and edit your workflow{" "}
+            <Badge
+              variant="outline"
+              className="gap-2 dark:outline dark:outline-gray-600/40"
+            >
+              {isFluidVersion && (
+                <div className="rounded-full bg-blue-100 p-0.5">
+                  <Droplets
+                    strokeWidth={2}
+                    className="h-[12px] w-[12px] text-blue-600"
+                  />
+                </div>
+              )}
+              v{version}
+            </Badge>
+          </p>
+        </div>
       </div>
 
       <DescriptionForm
