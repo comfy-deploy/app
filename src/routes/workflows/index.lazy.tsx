@@ -51,7 +51,9 @@ function RouteComponent() {
           }}
           disabled={{
             disabled: sub?.features.workflowLimited || !isAdminOrMember,
-            disabledText: "Workflows Limited Exceeded. ",
+            disabledText: sub?.features.workflowLimited 
+              ? "Workflow Limit Exceeded." 
+              : "Insufficient permissions to create workflows.",
           }}
         />
       )}
