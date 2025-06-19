@@ -11,6 +11,7 @@ import { useMediaQuery } from "usehooks-ts";
 import { Drawer } from "vaul";
 import { AssetBrowser } from "../asset-browser";
 import { useAssetsBrowserStore } from "./Workspace";
+import type { AssetType } from "@/types/common";
 
 interface Props {
   isPlayground?: boolean;
@@ -18,13 +19,17 @@ interface Props {
 }
 
 export function AssetsBrowserPopup({ isPlayground, handleAsset }: Props) {
-  const { open, setOpen, targetNodeData } = useAssetsBrowserStore();
+  const { open, setOpen, targetNodeData, onSelect, setOnSelect } =
+    useAssetsBrowserStore();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
     <Drawer.Root
       open={open}
-      onOpenChange={(open) => setOpen(open)}
+      onOpenChange={(open) => {
+        if (!open) setOnSelect(undefined);
+        setOpen(open);
+      }}
       direction={isMobile ? "bottom" : "right"}
     >
       <Drawer.Portal>
@@ -43,8 +48,15 @@ export function AssetsBrowserPopup({ isPlayground, handleAsset }: Props) {
           <div className="flex h-full w-full grow flex-col rounded-[16px] bg-zinc-50 p-5">
             <AssetBrowser
               onItemClick={(asset) => {
+                if (onSelect) {
+                  onSelect(asset);
+                  setOnSelect(undefined);
+                  setOpen(false);
+                  return;
+                }
                 if (isPlayground && handleAsset) {
                   handleAsset(asset);
+                  setOpen(false);
                   return;
                 }
                 if (targetNodeData?.node) {

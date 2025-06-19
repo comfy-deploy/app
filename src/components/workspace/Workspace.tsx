@@ -5,6 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import { diff } from "json-diff-ts";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import type { AssetType } from "@/types/common";
 import {
   reloadIframe,
   sendEventToCD,
@@ -615,6 +616,8 @@ interface AssetsBrowserState {
   setOpen: (open: boolean) => void;
   targetNodeData: any;
   setTargetNodeData: (targetNodeData: any) => void;
+  onSelect?: (asset: AssetType) => void;
+  setOnSelect: (cb?: (asset: AssetType) => void) => void;
 }
 
 export const useAssetsBrowserStore = create<AssetsBrowserState>((set) => ({
@@ -622,4 +625,6 @@ export const useAssetsBrowserStore = create<AssetsBrowserState>((set) => ({
   setOpen: (open) => set({ open }),
   targetNodeData: null,
   setTargetNodeData: (targetNodeData) => set({ targetNodeData }),
+  onSelect: undefined,
+  setOnSelect: (cb) => set({ onSelect: cb }),
 }));

@@ -1,27 +1,22 @@
 import { cn } from "@/lib/utils";
 import { Image } from "lucide-react";
 import { buttonVariants } from "../ui/button";
-import { useState } from "react";
 import { ImageInputsTooltip } from "../image-inputs-tooltip";
-import { AssetsBrowserPopup } from "../workspace/assets-browser-drawer";
 import { useAssetsBrowserStore } from "../workspace/Workspace";
+import type { AssetType } from "@/types/common";
 
 interface Props {
   onChange: (file: File | string | undefined | FileList) => void;
 }
 
 export const SDAssetInput = ({ onChange }: Props) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { setOpen } = useAssetsBrowserStore();
+  const { setOpen, setOnSelect } = useAssetsBrowserStore();
 
   const handleClick = () => {
-    setIsOpen(true);
+    setOnSelect((asset: AssetType) => {
+      onChange(asset.url);
+    });
     setOpen(true);
-  };
-
-  const handleAsset = (asset: AssetType) => {
-    onChange(asset.url);
-    setIsOpen(false);
   };
 
   return (
@@ -41,7 +36,6 @@ export const SDAssetInput = ({ onChange }: Props) => {
           <Image size={18} />
         </button>
       </ImageInputsTooltip>
-      {isOpen && <AssetsBrowserPopup isPlayground handleAsset={handleAsset} />}
     </>
   );
 };
