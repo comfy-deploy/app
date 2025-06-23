@@ -54,10 +54,12 @@ export function ExploreSharedWorkflows() {
   const parentRef = React.useRef<HTMLDivElement>(null);
   useInfiniteScroll(parentRef, fetchNextPage, hasNextPage, isFetchingNextPage);
 
-  const flatData = React.useMemo(
-    () => sharedWorkflowsData?.pages.flat() ?? [],
-    [sharedWorkflowsData],
-  );
+  const flatData = React.useMemo(() => {
+    const result = sharedWorkflowsData?.pages.flat() ?? [];
+    console.log('ExploreSharedWorkflows - sharedWorkflowsData:', sharedWorkflowsData);
+    console.log('ExploreSharedWorkflows - flatData:', result);
+    return result;
+  }, [sharedWorkflowsData]);
 
   return (
     <div className="flex h-full w-full flex-col">

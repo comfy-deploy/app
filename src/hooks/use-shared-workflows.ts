@@ -54,18 +54,26 @@ export function useSharedWorkflows(
       return undefined;
     },
     initialPageParam: 0,
-    select: (data) => ({
-      ...data,
-      pages: data.pages.map(
-        (page: SharedWorkflowListResponse | SharedWorkflow[]) => {
-          // Handle the backend response structure
-          return (
-            (page as SharedWorkflowListResponse)?.shared_workflows ||
-            (page as SharedWorkflow[]) ||
-            []
-          );
-        },
-      ),
-    }),
+    select: (data) => {
+      console.log('useSharedWorkflows select - raw data:', data);
+      const result = {
+        ...data,
+        pages: data.pages.map(
+          (page: SharedWorkflowListResponse | SharedWorkflow[]) => {
+            console.log('useSharedWorkflows select - processing page:', page);
+            // Handle the backend response structure
+            const processedPage = (
+              (page as SharedWorkflowListResponse)?.shared_workflows ||
+              (page as SharedWorkflow[]) ||
+              []
+            );
+            console.log('useSharedWorkflows select - processed page:', processedPage);
+            return processedPage;
+          },
+        ),
+      };
+      console.log('useSharedWorkflows select - final result:', result);
+      return result;
+    },
   });
 }
