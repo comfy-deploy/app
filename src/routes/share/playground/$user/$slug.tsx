@@ -322,7 +322,10 @@ function RouteComponent() {
 
   const displayImageUrls = useMemo(() => {
     if (runId === "") return [];
-    const { urls: urlList } = getTotalUrlCountAndUrls(runResult?.outputs || []);
+    const { urls: urlList } = getTotalUrlCountAndUrls(
+      runResult?.outputs || [],
+      runId,
+    );
     // Take at most 4 images
     return urlList.slice(0, 4).map((url) => url.url);
   }, [runId, runResult?.outputs]);
