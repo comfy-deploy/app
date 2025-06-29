@@ -463,6 +463,8 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                             page.data?.files?.[0]?.filename ||
                             undefined
                           }
+                          runId={page.run_id}
+                          outputId={page.output_id}
                         >
                           <DropdownMenuItem
                             disabled={loadingCoverId === page.output_id}
