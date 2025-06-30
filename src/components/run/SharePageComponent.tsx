@@ -429,6 +429,7 @@ function RunDisplay({ runId }: { runId?: string }) {
   const { data: run, isLoading, refetch } = useRun(runId);
   const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
     run?.outputs || [],
+    run?.id,
   );
   const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(
     null,

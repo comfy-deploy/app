@@ -23,6 +23,7 @@ import {
   Search,
   FileText,
   FolderOpen,
+  Share,
   Clock,
 } from "lucide-react";
 import {
@@ -48,6 +49,7 @@ import { useAddAsset } from "@/hooks/hook";
 import { toast } from "sonner";
 import { MoveAssetDialog } from "../move-asset-dialog";
 import { useAuthStore } from "@/lib/auth-store";
+import { api } from "@/lib/api";
 
 // Create a lazy-loaded version of the component
 const LazyModelRenderer = lazy(() =>
@@ -520,6 +522,7 @@ function FileURLRenderMulti({
                 imgClasses={imgClasses}
                 lazyLoading={lazyLoading}
                 canDownload={canDownload}
+                runId={runId}
               />
             );
           })}
@@ -533,6 +536,7 @@ function FileURLRenderMulti({
               imgClasses={imgClasses}
               lazyLoading={lazyLoading}
               canDownload={canDownload}
+              runId={runId}
             />
           ))}
         </>
@@ -546,11 +550,13 @@ function MediaDisplay({
   imgClasses,
   lazyLoading,
   canDownload = false,
+  runId,
 }: {
   urlImage: any;
   imgClasses: string;
   lazyLoading: boolean;
   canDownload: boolean;
+  runId?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -579,6 +585,9 @@ function MediaDisplay({
             <FileURLRenderDropdown
               itemUrl={urlImage.url}
               itemFilename={urlImage.filename}
+              runId={runId}
+              outputId={urlImage.output_id}
+              outputType={urlImage.output_type}
             />
           </div>
         </div>
@@ -628,6 +637,9 @@ export function FileURLRenderDropdown({
   itemFilename,
   canDownload = true,
   canAddToAssets = true,
+  runId,
+  outputId,
+  outputType,
   children,
 }: {
   itemUrl: string;
@@ -637,9 +649,13 @@ export function FileURLRenderDropdown({
   itemFilename?: string;
   canDownload?: boolean;
   canAddToAssets?: boolean;
+  runId?: string;
+  outputId?: string;
+  outputType?: string;
   children?: ReactNode;
 }) {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
 
   const { mutate: addAsset } = useAddAsset();
 
@@ -703,6 +719,52 @@ export function FileURLRenderDropdown({
               </div>
             </DropdownMenuItem>
           )}
+          {runId && outputId && (
+            <DropdownMenuItem
+              onClick={async (event) => {
+                event.stopPropagation();
+                if (shareLoading) return;
+                setShareLoading(true);
+                try {
+                  const data = await api({
+                    url: "share/output",
+                    init: {
+                      method: "POST",
+                      body: JSON.stringify({
+                        run_id: runId,
+                        output_id: outputId,
+                        output_type: outputType ?? "other",
+                        visibility: "private",
+                      }),
+                    },
+                  });
+                  const isLocal = process.env.NODE_ENV === "development";
+                  const shareUrl = isLocal
+                    ? `${process.env.NEXT_PUBLIC_CD_API_URL}/api/share/output/${data.id}`
+                    : `/api/share/output/${data.id}`;
+                  try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    toast.success("Share link copied to clipboard!");
+                  } catch {
+                    toast.error("Share link created, but failed to copy");
+                  }
+                } catch {
+                  toast.error("Failed to create share link");
+                } finally {
+                  setShareLoading(false);
+                }
+              }}
+            >
+              <div className="flex w-full items-center justify-between">
+                Share
+                {shareLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Share className="h-3.5 w-3.5" />
+                )}
+              </div>
+            </DropdownMenuItem>
+          )}
           {children && (
             <>
               {(canDownload || canAddToAssets) && <DropdownMenuSeparator />}
@@ -735,26 +797,40 @@ export function FileURLRenderDropdown({
   );
 }
 
-export function getTotalUrlCountAndUrls(outputs: any[]) {
+export function getTotalUrlCountAndUrls(outputs: any[], runId?: string) {
   const urls: any[] = [];
   const total: number =
     outputs?.reduce((total, output) => {
+      const outputId = output.output_id ?? output.id;
+      const outputType = output.output_type ?? output.file_type;
       const files = [
         ...(output.data.images?.map((image: any) => ({
           ...image,
           node_meta: output.node_meta,
+          output_id: outputId,
+          output_type: outputType,
+          run_id: runId,
         })) || []),
         ...(output.data.files?.map((file: any) => ({
           ...file,
           node_meta: output.node_meta,
+          output_id: outputId,
+          output_type: outputType,
+          run_id: runId,
         })) || []),
         ...(output.data.gifs?.map((gif: any) => ({
           ...gif,
           node_meta: output.node_meta,
+          output_id: outputId,
+          output_type: outputType,
+          run_id: runId,
         })) || []),
         ...(output.data.model_files?.map((model_file: any) => ({
           ...model_file,
           node_meta: output.node_meta,
+          output_id: outputId,
+          output_type: outputType,
+          run_id: runId,
         })) || []),
       ];
       urls.push(...files);
@@ -796,6 +872,7 @@ export function OutputRenderRun({
 }) {
   const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
     run.outputs || [],
+    run.id,
   );
 
   const urlsToDisplay =
@@ -892,6 +969,7 @@ export function PlaygroundOutputRenderRun({
 }) {
   const { total: totalUrlCount, urls: urlList } = getTotalUrlCountAndUrls(
     run.outputs || [],
+    run.id,
   );
   const urlsToDisplay = urlList.length > 0 ? urlList.slice(0, 1) : [];
 

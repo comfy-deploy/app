@@ -599,7 +599,10 @@ function OutputPreview(props: { runId: string }) {
 
   if (isLoading) return <Skeleton className="h-6 w-24" />;
 
-  const { urls: urlList } = getTotalUrlCountAndUrls(run?.outputs || []);
+  const { urls: urlList } = getTotalUrlCountAndUrls(
+    run?.outputs || [],
+    run?.id,
+  );
 
   const MAX_DISPLAY = 2;
   const urlsToDisplay =
