@@ -72,6 +72,10 @@ export const queryClient = new QueryClient({
           return true;
         }
 
+        if (error.message.includes("404")) {
+          return false;
+        }
+
         console.log(count, error);
         return count < 2;
       },
