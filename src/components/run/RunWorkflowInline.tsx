@@ -169,16 +169,19 @@ export function WorkflowInputsForm({
 }) {
   const { inputs, hideRunButton } = props;
 
-  function updateInput(
-    key: string,
-    val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
-  ) {
-    if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
-      toast.error("Cannot upload files bigger than 250MB");
-      return;
-    }
-    setValues((prev: any) => ({ ...prev, [key]: val }));
-  }
+  const updateInput = useCallback(
+    (
+      key: string,
+      val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
+    ) => {
+      if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
+        toast.error("Cannot upload files bigger than 250MB");
+        return;
+      }
+      setValues((prev: any) => ({ ...prev, [key]: val }));
+    },
+    [setValues],
+  );
 
   const [_isLoading, setIsLoading] = useState(false);
   const isLoading = _isLoading;
@@ -1032,16 +1035,19 @@ export function RunWorkflowInline({
     runWorkflow();
   }
 
-  function updateInput(
-    key: string,
-    val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
-  ) {
-    if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
-      toast.error("Cannot upload files bigger than 250MB");
-      return;
-    }
-    setValues((prev) => ({ ...prev, [key]: val }));
-  }
+  const updateInput = useCallback(
+    (
+      key: string,
+      val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
+    ) => {
+      if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
+        toast.error("Cannot upload files bigger than 250MB");
+        return;
+      }
+      setValues((prev) => ({ ...prev, [key]: val }));
+    },
+    [setValues],
+  );
 
   useHotkeys(
     "meta+enter",

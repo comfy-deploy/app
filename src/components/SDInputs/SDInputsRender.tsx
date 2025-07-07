@@ -49,7 +49,7 @@ type SDInputsRenderProps = {
   ) => void;
   inputValue: string | any;
 };
-export function SDInputsRender({
+function SDInputsRenderComponent({
   inputNode,
   updateInput,
   inputValue,
@@ -775,3 +775,9 @@ export function FileDropdown(props: {
     </div>
   );
 }
+
+export const SDInputsRender = React.memo(
+  SDInputsRenderComponent,
+  (prev, next) =>
+    prev.inputValue === next.inputValue && prev.inputNode === next.inputNode,
+);
