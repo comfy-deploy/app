@@ -49,7 +49,7 @@ import Cookies from "js-cookie";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { getOptimizedImage } from "@/lib/utils";
 import { diff } from "json-diff-ts";
-import { ScrollArea, ScrollBar } from "../ui/scroll-area";
+
 import {
   useFeaturedWorkflows,
   type FeaturedWorkflow,
@@ -305,7 +305,10 @@ export function QueueButtons({ endpoint }: WorkspaceButtonProps) {
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
       setCountdown(
-        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+          2,
+          "0",
+        )}:${String(seconds).padStart(2, "0")}`,
       );
     };
 
@@ -869,7 +872,7 @@ function WorkflowTemplateDialog({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
           hideOverlay
-          className="overflow-hidden border-zinc-800 bg-zinc-900 text-white drop-shadow-md sm:max-w-[850px]"
+          className="overflow-hidden border-zinc-800 bg-zinc-900 text-white drop-shadow-md w-[95vw] max-w-[850px] h-[85vh] sm:h-auto"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -882,41 +885,43 @@ function WorkflowTemplateDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex">
+          <div className="flex flex-col sm:flex-row">
             {/* Category sidebar */}
-            <div className="w-48 overflow-y-auto border-zinc-800 border-r pr-2">
+            <div className="w-full sm:w-48 overflow-y-auto border-zinc-800 sm:border-r border-b sm:border-b-0 pr-0 sm:pr-2 pb-2 sm:pb-0">
               <div className="py-2">
-                {allCategories.map((category) => (
-                  <button
-                    type="button"
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`w-full rounded-[10px] px-3 py-2 text-left text-sm transition-colors ${
-                      selectedCategory === category
-                        ? "bg-zinc-800 text-white"
-                        : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      {category === "featured" && (
-                        <Sparkles className="mr-2 h-3.5 w-3.5 text-yellow-400" />
-                      )}
-                      {capitalizeFirstLetter(category)}
-                      <span className="ml-auto text-xs text-zinc-500">
-                        {category === "featured"
-                          ? featuredItems.length
-                          : category === "others"
+                <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-x-visible">
+                  {allCategories.map((category) => (
+                    <button
+                      type="button"
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      className={`flex-shrink-0 sm:w-full rounded-[10px] px-3 py-2 text-left text-sm transition-colors ${
+                        selectedCategory === category
+                          ? "bg-zinc-800 text-white"
+                          : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                      }`}
+                    >
+                      <div className="flex items-center whitespace-nowrap">
+                        {category === "featured" && (
+                          <Sparkles className="mr-2 h-3.5 w-3.5 text-yellow-400" />
+                        )}
+                        {capitalizeFirstLetter(category)}
+                        <span className="ml-auto text-xs text-zinc-500">
+                          {category === "featured"
+                            ? featuredItems.length
+                            : category === "others"
                             ? noTagWorkflows.length
                             : groupedWorkflows[category]?.length || 0}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Templates grid */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-4">
               <h2 className="mb-3 flex items-center font-medium text-sm">
                 {selectedCategory === "featured" && (
                   <Sparkles className="mr-1 h-3.5 w-3.5 text-yellow-400" />
@@ -926,17 +931,14 @@ function WorkflowTemplateDialog({
 
               <div className="grid grid-cols-1 gap-4">
                 {displayedWorkflows.length > 0 ? (
-                  <ScrollArea hideVertical>
-                    <div className="flex min-w-full snap-x gap-2">
-                      {displayedWorkflows.map((template: FeaturedWorkflow) => (
-                        <TemplateCard
-                          key={template.workflow.id}
-                          template={template}
-                        />
-                      ))}
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {displayedWorkflows.map((template: FeaturedWorkflow) => (
+                      <TemplateCard
+                        key={template.workflow.id}
+                        template={template}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <div className="py-8 text-center text-sm text-zinc-500">
                     No templates available in this category
@@ -966,7 +968,7 @@ function TemplateCard({ template }: { template: FeaturedWorkflow }) {
       onClick={() => {
         sendWorkflow(template.workflow.workflow);
       }}
-      className="group relative w-[250px] flex-shrink-0 cursor-pointer snap-start overflow-hidden rounded-[10px] border border-zinc-800 bg-zinc-950 transition-all hover:border-zinc-700"
+      className="group relative cursor-pointer overflow-hidden rounded-[10px] border border-zinc-800 bg-zinc-950 transition-all hover:border-zinc-700"
     >
       <div className="aspect-square overflow-hidden">
         <img
