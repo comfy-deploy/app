@@ -21,7 +21,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Portal } from "@/components/ui/custom/portal";
+import { WorkflowNavbar } from "@/components/workflow-navbar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -288,250 +288,26 @@ function WorkflowPageComponent() {
 
   return (
     <div className="relative flex h-full w-full flex-col">
-      <Portal
-        targetId="sidebar-panel"
-        trigger={isMobile || !!sessionId ? isMobileSidebarOpen : true}
-      >
-        <AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <SidebarGroup>
-              {/* <SidebarGroupLabel>Workspace</SidebarGroupLabel> */}
-              <SidebarGroupContent>
-                <SidebarMenu className="px-1">
-                  {tabs.map((tab) => (
-                    <SidebarMenuItem key={tab}>
-                      <SidebarMenuButton
-                        onClick={() => {
-                          router.navigate({
-                            to: "/workflows/$workflowId/$view",
-                            params: { workflowId, view: tab },
-                          });
-                        }}
-                        className={cn(
-                          "group/my-nav-item",
-                          currentView === tab
-                            ? "bg-gray-200 text-gray-900 dark:bg-zinc-800 dark:text-gray-100"
-                            : "text-gray-500 dark:text-gray-400",
-                          "capitalize transition-colors",
-                        )}
-                      >
-                        {tab === "workspace"
-                          ? "Workflow"
-                          : tab === "machine"
-                            ? "Environment"
-                            : tab}
-
-                        {tab === "playground" && (
-                          <div className="ml-auto flex items-center gap-2">
-                            {publicShareDeployment && (
-                              <Badge
-                                className={cn(
-                                  "!text-2xs w-fit cursor-pointer whitespace-nowrap rounded-md hover:shadow-sm",
-                                  getEnvColor(
-                                    publicShareDeployment.environment,
-                                  ),
-                                )}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setSelectedDeployment(
-                                    publicShareDeployment.id,
-                                  );
-                                }}
-                              >
-                                Shared
-                              </Badge>
-                            )}
-                            {communityShareDeployment && (
-                              <Badge
-                                className={cn(
-                                  "!text-2xs w-fit cursor-pointer whitespace-nowrap rounded-md hover:shadow-sm",
-                                  getEnvColor(
-                                    communityShareDeployment.environment,
-                                  ),
-                                )}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setSelectedDeployment(
-                                    communityShareDeployment.id,
-                                  );
-                                }}
-                              >
-                                Community
-                              </Badge>
-                            )}
-                            {privateShareDeployment && (
-                              <Badge
-                                className={cn(
-                                  "!text-2xs w-fit cursor-pointer whitespace-nowrap rounded-md hover:shadow-sm",
-                                  getEnvColor(
-                                    privateShareDeployment.environment,
-                                  ),
-                                )}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setSelectedDeployment(
-                                    privateShareDeployment.id,
-                                  );
-                                }}
-                              >
-                                Internal
-                              </Badge>
-                            )}
-                            {!publicShareDeployment &&
-                              !privateShareDeployment &&
-                              !communityShareDeployment && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="opacity-0 transition-all hover:bg-gray-200 group-hover/my-nav-item:opacity-100 dark:hover:bg-zinc-600/40"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (versions?.[0]) {
-                                      setSelectedVersion(versions[0]);
-                                      setIsDrawerOpen(true);
-                                    }
-                                  }}
-                                >
-                                  <Share className="h-4 w-4" />
-                                </Button>
-                              )}
-                          </div>
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {isAdminAndMember && (
-              <SidebarGroup
-                className={cn(
-                  !isDeploymentAllowed &&
-                    !isPlanLoading &&
-                    "bg-zinc-200/50 shadow-inner dark:bg-zinc-800/50 dark:shadow-gray-950",
-                )}
-              >
-                <SidebarGroupLabel className="flex justify-between">
-                  API
-                  {!isDeploymentAllowed && !isPlanLoading && (
-                    <Badge variant="purple" className="!text-2xs">
-                      <Lock className="h-3 w-3" />
-                      Deployment
-                    </Badge>
-                  )}
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu className="px-1">
-                    {deployment.map((tab) => (
-                      <SidebarMenuItem key={tab}>
-                        <SidebarMenuButton
-                          onClick={() => {
-                            router.navigate({
-                              to: "/workflows/$workflowId/$view",
-                              params: { workflowId, view: tab },
-                            });
-                          }}
-                          className={cn(
-                            currentView === tab
-                              ? "bg-gray-200 text-gray-900 dark:bg-zinc-800 dark:text-gray-100"
-                              : "text-gray-500 dark:text-gray-400",
-                            "transition-colors",
-                            !isDeploymentAllowed &&
-                              !isPlanLoading &&
-                              "opacity-60",
-                          )}
-                          asChild
-                        >
-                          <button
-                            className="flex w-full justify-between capitalize"
-                            type="button"
-                          >
-                            {tab}
-                            {!isDeploymentAllowed && !isPlanLoading && (
-                              <Lock className="!h-3.5 !w-3.5" />
-                            )}
-                          </button>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </Portal>
-      <Portal targetId="sidebar-panel-footer">
-        {workflow && (
-          <div className="w-full p-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="mx-auto flex items-center justify-center">
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      {workflow.cover_image ? (
-                        <div className="mb-2 h-36 w-36 overflow-hidden rounded-md">
-                          <FileURLRender
-                            url={workflow.cover_image}
-                            imgClasses="w-full h-full object-cover aspect-square"
-                          />
-                        </div>
-                      ) : (
-                        <div className="mb-2 flex h-36 w-36 items-center justify-center rounded-md border-2 border-gray-300 border-dashed hover:border-gray-400">
-                          <ImageIcon className="h-6 w-6 text-gray-400" />
-                        </div>
-                      )}
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Add Cover Image</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" className="w-40">
-                <DropdownMenuItem
-                  onSelect={() => {
-                    router.navigate({
-                      to: "/workflows/$workflowId/$view",
-                      params: {
-                        workflowId,
-                        view: "gallery",
-                      },
-                      search: {
-                        action: true,
-                      },
-                    });
-                  }}
-                >
-                  From Gallery
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setOnAssetSelect(handleAsset);
-                    setAssetsOpen(true);
-                  }}
-                >
-                  From Assets
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {workflow.description && (
-              <p className="line-clamp-3 text-2xs text-gray-600 leading-snug dark:text-gray-400">
-                {workflow.description}
-              </p>
-            )}
-          </div>
-        )}
-      </Portal>
+      <WorkflowNavbar
+        workflowId={workflowId}
+        currentView={currentView}
+        workflow={workflow}
+        tabs={tabs}
+        deployment={deployment}
+        isAdminAndMember={isAdminAndMember}
+        isDeploymentAllowed={!!isDeploymentAllowed}
+        isPlanLoading={isPlanLoading}
+        publicShareDeployment={publicShareDeployment}
+        communityShareDeployment={communityShareDeployment}
+        privateShareDeployment={privateShareDeployment}
+        versions={versions}
+        setSelectedVersion={setSelectedVersion}
+        setIsDrawerOpen={setIsDrawerOpen}
+        setSelectedDeployment={setSelectedDeployment}
+        setOnAssetSelect={setOnAssetSelect}
+        setAssetsOpen={setAssetsOpen}
+        handleAsset={handleAsset}
+      />
       {mountedViews.has("workspace") ? (
         <div
           className="h-full w-full"
