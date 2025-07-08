@@ -132,14 +132,14 @@ function RootComponent() {
           </SignedIn>
         )
       )}
-      <div
-        className={`fixed top-0 z-50 flex h-[40px] w-full flex-row items-center gap-2 border-gray-200 border-b bg-transparent p-1 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-md ${isWorkflowRoute ? "" : "md:hidden"}`}
-      >
-        <SidebarTrigger className="h-8 w-8 rounded-none border-gray-200 border-r p-2 dark:border-zinc-700" />
-        <Link href="/" className="flex flex-row items-center justify-center">
-          <Icon />
-        </Link>
-      </div>
+      {!isWorkflowRoute && (
+        <div className="fixed top-0 z-50 flex h-[40px] w-full flex-row items-center gap-2 border-gray-200 border-b bg-transparent p-1 md:hidden dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-md">
+          <SidebarTrigger className="h-8 w-8 rounded-none border-gray-200 border-r p-2 dark:border-zinc-700" />
+          <Link href="/" className="flex flex-row items-center justify-center">
+            <Icon />
+          </Link>
+        </div>
+      )}
       <div
         className={`flex w-full flex-col items-center justify-start overflow-x-auto ${isWorkflowRoute ? "mt-[40px] max-h-[calc(100dvh-40px)]" : "mt-[40px] max-h-[calc(100dvh-40px)] md:mt-0 md:max-h-[100dvh]"}`}
       >
