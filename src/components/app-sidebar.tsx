@@ -91,7 +91,7 @@ import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { parseAsString } from "nuqs";
 import { useQueryState } from "nuqs";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { MyDrawer } from "./drawer";
 import { Chat } from "./master-comfy/chat";
@@ -386,8 +386,6 @@ function SessionSidebar() {
       setWorkflowUpdateTrigger((prev) => prev + 1);
     }
   }, [workflow]);
-
-  console.log(activeDrawer);
 
   return (
     <>
@@ -1536,24 +1534,28 @@ export function AppSidebar() {
 function PlanBadge() {
   const { data: plan, isLoading } = useCurrentPlanWithStatus();
 
-  const planId = plan?.plans?.plans[0] || "";
+  const { displayPlan, badgeColor } = useMemo(() => {
+    const planId = plan?.plans?.plans[0] || "";
 
-  let displayPlan = "Free";
-  let badgeColor = "secondary";
+    let displayPlan = "Free";
+    let badgeColor = "secondary";
 
-  // Logic to determine which plan to display
-  if (planId.includes("pro")) {
-    displayPlan = "Pro";
-  } else if (planId.includes("creator") || planId.includes("creator_")) {
-    displayPlan = "Creator";
-    badgeColor = "yellow";
-  } else if (planId.includes("deployment")) {
-    displayPlan = "Deployment";
-    badgeColor = "blue";
-  } else if (planId.includes("business")) {
-    displayPlan = "Business";
-    badgeColor = "purple";
-  }
+    // Logic to determine which plan to display
+    if (planId.includes("pro")) {
+      displayPlan = "Pro";
+    } else if (planId.includes("creator") || planId.includes("creator_")) {
+      displayPlan = "Creator";
+      badgeColor = "yellow";
+    } else if (planId.includes("deployment")) {
+      displayPlan = "Deployment";
+      badgeColor = "blue";
+    } else if (planId.includes("business")) {
+      displayPlan = "Business";
+      badgeColor = "purple";
+    }
+
+    return { displayPlan, badgeColor };
+  }, [plan?.plans?.plans]);
 
   if (isLoading) {
     return <Skeleton className="h-5 w-12" />;
