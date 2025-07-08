@@ -152,8 +152,8 @@ function getStepNavigation(
         prev: validation.hasEnvironment
           ? 3
           : validation.importOption === "default"
-            ? 2
-            : 3,
+          ? 2
+          : 3,
       };
 
     default:
@@ -1011,13 +1011,13 @@ function DefaultOption({
             Select a workflow as your starting point.{" "}
           </span>
 
-          <div className="mt-4 grid grid-cols-3 gap-1 md:gap-4">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {defaultWorkflowTemplates.map((template, index) => (
               <button
                 key={template.workflowId}
                 type="button"
                 className={cn(
-                  "group relative h-[350px] w-full overflow-hidden rounded-lg border text-left transition-all duration-500 ease-in-out",
+                  "group relative h-[280px] w-full overflow-hidden rounded-lg border text-left transition-all duration-500 ease-in-out sm:h-[320px] lg:h-[350px]",
                   workflowSelected === template.workflowId
                     ? "opacity-100 shadow-lg"
                     : "opacity-70 grayscale hover:grayscale-0",
