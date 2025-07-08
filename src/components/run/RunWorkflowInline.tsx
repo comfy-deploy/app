@@ -3,6 +3,7 @@ import {
   type RGBColor,
   SDInputsRender,
 } from "@/components/SDInputs/SDInputsRender";
+import { SDInputWrapper } from "@/components/SDInputs/SDInputWrapper";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -68,7 +69,6 @@ import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { api } from "@/lib/api";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { queryClient } from "@/lib/providers";
-import { useDebouncedFormState } from "@/hooks/use-debounced-state";
 
 const MAX_FILE_SIZE_BYTES = 250_000_000; // 250MB
 
@@ -250,11 +250,12 @@ export const WorkflowInputsForm = memo(function WorkflowInputsForm({
           return null;
         }
         return (
-          <SDInputsRender
+          <SDInputWrapper
             key={item.input_id}
             inputNode={item}
-            updateInput={updateInput}
-            inputValue={values[item.input_id]}
+            initialValue={values[item.input_id]}
+            onValueChange={updateInput}
+            debounceMs={200}
           />
         );
       })}
@@ -309,10 +310,11 @@ const DraggableInputItem = memo(function DraggableInputItem({
           <GripVertical size={16} />
         </SortableDragHandle>
         <div className="flex-1">
-          <SDInputsRender
+          <SDInputWrapper
             inputNode={input}
-            updateInput={updateInput}
-            inputValue={value}
+            initialValue={value}
+            onValueChange={updateInput}
+            debounceMs={200}
           />
         </div>
       </div>
@@ -389,10 +391,11 @@ const InputGroupWithItems = memo(function InputGroupWithItems({
     >
       {inputs.map((item) => (
         <div key={item.input_id} className="mb-2">
-          <SDInputsRender
+          <SDInputWrapper
             inputNode={item}
-            updateInput={updateInput}
-            inputValue={values[item.input_id || ""]}
+            initialValue={values[item.input_id || ""]}
+            onValueChange={updateInput}
+            debounceMs={200}
           />
         </div>
       ))}
@@ -430,11 +433,13 @@ export function RunWorkflowInline({
   workflow_api?: string;
   canEditOrder?: boolean;
 }) {
-  // Use debounced state for form values to prevent excessive re-renders
-  const { values, debouncedValues, updateValue, setValues } = useDebouncedFormState(
-    default_values,
-    200 // 200ms debounce delay
-  );
+  // Regular state - the individual inputs will handle their own debouncing
+  const [values, setValues] = useState<
+    Record<
+      string,
+      string | File | undefined | (File | string)[] | boolean | RGBColor[]
+    >
+  >(default_values);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
@@ -615,16 +620,6 @@ export function RunWorkflowInline({
     );
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
   const isDraggingRef = useRef(false);
   const [activeIdState, setActiveIdState] = useState<string | null>(null);
   const { setNodeRef: setUngroupedRef } = useDroppable({
@@ -918,12 +913,12 @@ export function RunWorkflowInline({
         toast.error("Cannot upload files bigger than 250MB");
         return;
       }
-      updateValue(key as keyof typeof values, val);
+      setValues((prev) => ({ ...prev, [key]: val }));
     },
-    [updateValue]
+    []
   );
 
-  // Use debouncedValues for the actual workflow submission
+  // Use values for the actual workflow submission
   const runWorkflow = async () => {
     if (!user.isSignedIn) {
       clerk.openSignIn({
@@ -932,11 +927,8 @@ export function RunWorkflowInline({
       return;
     }
 
-    // Use debouncedValues instead of values for submission
-    const valuesToSubmit = debouncedValues;
-
     // Check for folder inputs and validate
-    const folderInputs = Object.entries(valuesToSubmit).filter(([key, value]) => {
+    const folderInputs = Object.entries(values).filter(([key, value]) => {
       // Handle folder stored as JSON string
       if (typeof value === "string") {
         try {
@@ -1014,7 +1006,7 @@ export function RunWorkflowInline({
       // Helper function to process a single image
       const processImage = async (image: any, index: number) => {
         const currentValues = {
-          ...debouncedValues,
+          ...values,
           [inputKey]: image.url,
         };
 
@@ -1103,7 +1095,7 @@ export function RunWorkflowInline({
     setLoading2(true);
     setIsLoading(true);
     try {
-      const valuesParsed = await parseFilesToImgURLs({ ...debouncedValues });
+      const valuesParsed = await parseFilesToImgURLs({ ...values });
       const val = parseInputValues(valuesParsed);
       console.log(val);
       setStatus({ state: "preparing", live_status: "", progress: 0 });
@@ -1415,6 +1407,28 @@ export function RunWorkflowInline({
     };
   }, [reorderedInputs]);
 
+  // Memoize drag and drop sensors
+  const sensors = useMemo(() => 
+    [
+      useSensor(PointerSensor, {
+        activationConstraint: {
+          distance: 8,
+        },
+      }),
+      useSensor(KeyboardSensor, {
+        coordinateGetter: sortableKeyboardCoordinates,
+      })
+    ], 
+  []);
+
+  // Memoize sorted items for SortableContext
+  const sortableItems = useMemo(() => {
+    if (activeIdState && !layoutOrder.some((i) => i.id === activeIdState)) {
+      return [...layoutOrder.map((item) => item.id), activeIdState];
+    }
+    return layoutOrder.map((item) => item.id);
+  }, [layoutOrder, activeIdState]);
+
   return (
     <div className="relative h-full">
       <style>{`
@@ -1669,12 +1683,7 @@ export function RunWorkflowInline({
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={
-                  activeIdState &&
-                  !layoutOrder.some((i) => i.id === activeIdState)
-                    ? [...layoutOrder.map((item) => item.id), activeIdState]
-                    : layoutOrder.map((item) => item.id)
-                }
+                items={sortableItems}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="absolute top-0 z-50 h-24 w-full bg-gradient-to-b from-white to-transparent dark:from-zinc-900" />
@@ -1788,11 +1797,12 @@ export function RunWorkflowInline({
                     return null;
                   }
                   return (
-                    <SDInputsRender
+                    <SDInputWrapper
                       key={item.input_id}
                       inputNode={item}
-                      updateInput={updateInput}
-                      inputValue={values[item.input_id]}
+                      initialValue={values[item.input_id]}
+                      onValueChange={updateInput}
+                      debounceMs={200}
                     />
                   );
                 });
@@ -1847,11 +1857,12 @@ export function RunWorkflowInline({
                   if (input?.input_id) {
                     renderedInputIds.add(input.input_id);
                     renderedItems.push(
-                      <SDInputsRender
+                      <SDInputWrapper
                         key={input.input_id}
                         inputNode={input}
-                        updateInput={updateInput}
-                        inputValue={values[input.input_id]}
+                        initialValue={values[input.input_id]}
+                        onValueChange={updateInput}
+                        debounceMs={200}
                       />,
                     );
                   }
@@ -1862,11 +1873,12 @@ export function RunWorkflowInline({
               for (const item of inputs) {
                 if (item.input_id && !renderedInputIds.has(item.input_id)) {
                   renderedItems.push(
-                    <SDInputsRender
+                    <SDInputWrapper
                       key={item.input_id}
                       inputNode={item}
-                      updateInput={updateInput}
-                      inputValue={values[item.input_id]}
+                      initialValue={values[item.input_id]}
+                      onValueChange={updateInput}
+                      debounceMs={200}
                     />,
                   );
                 }
