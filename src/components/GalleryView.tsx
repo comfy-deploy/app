@@ -178,8 +178,8 @@ function RenderAlert({
           variant === "destructive"
             ? "red"
             : variant === "warning"
-              ? "yellow"
-              : "gray"
+            ? "yellow"
+            : "gray"
         }-100`}
         variant="ghost"
         size="icon"
@@ -316,11 +316,6 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
 
   const items = query.data?.pages.flat() || [];
 
-  // Debug: Log the first few items to see what data we're getting
-  if (items.length > 0) {
-    console.log("Gallery items sample:", items.slice(0, 3));
-  }
-
   // Split items into columns
   const columns: GalleryItem[][] = Array.from(
     { length: columnCount },
@@ -453,7 +448,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                           open={openDropdownId === page.output_id}
                           onOpenChange={(isOpen) =>
                             setOpenDropdownId(
-                              isOpen ? (page.output_id ?? null) : null,
+                              isOpen ? page.output_id ?? null : null,
                             )
                           }
                           itemUrl={outputUrl}
@@ -530,8 +525,8 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
               {query.isFetching
                 ? "Loading..."
                 : query.hasNextPage
-                  ? "Load More"
-                  : "No More Results"}
+                ? "Load More"
+                : "No More Results"}
             </Button>
           ) : (
             <div className="mt-2 border-gray-200 border-t-2 pt-2">

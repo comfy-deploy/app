@@ -840,8 +840,8 @@ function WorkspaceConfigPopover({
     return settings.autoSaveInterval === "30"
       ? "30 sec"
       : settings.autoSaveInterval === "300"
-        ? "5 min"
-        : "1 min";
+      ? "5 min"
+      : "1 min";
   };
 
   useEffect(() => {
@@ -1085,7 +1085,9 @@ function TimerPopover({
               {session?.timeout_end && session?.created_at && (
                 <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
                   <div
-                    className={`h-full transition-all ${totalSeconds < 30 ? "bg-yellow-500" : "bg-primary"}`}
+                    className={`h-full transition-all ${
+                      totalSeconds < 30 ? "bg-yellow-500" : "bg-primary"
+                    }`}
                     style={{
                       width: `${
                         ((new Date(session.timeout_end).getTime() -
@@ -1533,7 +1535,6 @@ export function AppSidebar() {
 
 function PlanBadge() {
   const { data: plan, isLoading } = useCurrentPlanWithStatus();
-  console.log(isLoading);
 
   const planId = plan?.plans?.plans[0] || "";
 
