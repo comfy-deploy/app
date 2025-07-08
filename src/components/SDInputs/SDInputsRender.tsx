@@ -49,113 +49,172 @@ type SDInputsRenderProps = {
   ) => void;
   inputValue: string | any;
 };
-export function SDInputsRender({
+
+// Memoize the header component to prevent re-renders
+const InputHeader = React.memo(({
+  display_name,
+  label,
+  description,
+}: {
+  display_name?: string;
+  label: string;
+  description?: string;
+}) => {
+  const [isHovering, setIsHovering] = React.useState(false);
+  const [isLocked, setIsLocked] = React.useState(false);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const showDescription = React.useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsHovering(true);
+  }, []);
+
+  const hideDescription = React.useCallback(() => {
+    if (!isLocked) {
+      timerRef.current = setTimeout(() => {
+        setIsHovering(false);
+      }, 300);
+    }
+  }, [isLocked]);
+
+  const toggleLock = React.useCallback(() => {
+    setIsLocked(!isLocked);
+  }, [isLocked]);
+
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-center justify-between">
+        <div className="ml-2 flex items-center gap-2">
+          {display_name && (
+            <Label htmlFor={display_name} className="font-normal text-sm">
+              {display_name}
+            </Label>
+          )}
+          {!display_name && label && (
+            <Label
+              htmlFor={label}
+              className="font-mono text-2xs text-muted-foreground"
+            >
+              {label}
+            </Label>
+          )}
+          {label && display_name && (
+            <Badge
+              variant="outline"
+              className="!text-[9px] h-4 overflow-hidden text-ellipsis whitespace-nowrap px-1 font-mono text-muted-foreground"
+              title={label}
+            >
+              {label}
+            </Badge>
+          )}
+          {description && (
+            // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+            <div
+              onMouseEnter={showDescription}
+              onMouseLeave={hideDescription}
+              onClick={toggleLock}
+              className="cursor-help"
+            >
+              <HelpCircle
+                size={16}
+                className={`${
+                  isHovering || isLocked
+                    ? "text-foreground"
+                    : "text-muted-foreground"
+                } transition-colors`}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {description && (isHovering || isLocked) && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden rounded-md bg-muted/30 text-muted-foreground text-xs"
+            onMouseEnter={showDescription}
+            onMouseLeave={hideDescription}
+          >
+            <div className="whitespace-pre-wrap p-2 leading-snug">
+              {description}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
+
+InputHeader.displayName = 'InputHeader';
+
+export const SDInputsRender = React.memo(function SDInputsRender({
   inputNode,
   updateInput,
   inputValue,
 }: SDInputsRenderProps) {
   if (!inputNode) {
-    return;
+    return null;
   }
+
   const genericProps = {
     label: inputNode.input_id,
     display_name: inputNode.display_name,
     description: inputNode.description,
   };
 
-  // for all input title, as they all have the same structure
-  const header = ({
-    display_name,
-    label,
-    description,
-  }: typeof genericProps) => {
-    const [isHovering, setIsHovering] = React.useState(false);
-    const [isLocked, setIsLocked] = React.useState(false);
-    const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  // Memoize the header element
+  const header = React.useMemo(
+    () => <InputHeader {...genericProps} />,
+    [genericProps.label, genericProps.display_name, genericProps.description]
+  );
 
-    const showDescription = () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
+  // Memoize onChange handlers
+  const handleTextChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      updateInput(inputNode.input_id, e.target.value);
+    },
+    [inputNode.input_id, updateInput]
+  );
+
+  const handleNumberChange = React.useCallback(
+    (value: string) => {
+      updateInput(inputNode.input_id, value);
+    },
+    [inputNode.input_id, updateInput]
+  );
+
+  const handleFileChange = React.useCallback(
+    (file: File | string | undefined | FileList | { type: "folder"; path: string; name: string }) => {
+      if (file instanceof FileList) {
+        updateInput(inputNode.input_id, file[0]);
+        return;
       }
-      setIsHovering(true);
-    };
-
-    const hideDescription = () => {
-      if (!isLocked) {
-        timerRef.current = setTimeout(() => {
-          setIsHovering(false);
-        }, 300);
+      if (
+        typeof file === "object" &&
+        file !== null &&
+        "type" in file &&
+        file.type === "folder"
+      ) {
+        updateInput(inputNode.input_id, JSON.stringify(file));
+        return;
       }
-    };
-
-    return (
-      <div className="flex flex-col">
-        <div className="flex items-center justify-between">
-          <div className="ml-2 flex items-center gap-2">
-            {display_name && (
-              <Label htmlFor={display_name} className="font-normal text-sm">
-                {display_name}
-              </Label>
-            )}
-            {!display_name && label && (
-              <Label
-                htmlFor={label}
-                className="font-mono text-2xs text-muted-foreground"
-              >
-                {label}
-              </Label>
-            )}
-            {label && display_name && (
-              <Badge
-                variant="outline"
-                className="!text-[9px] h-4 overflow-hidden text-ellipsis whitespace-nowrap px-1 font-mono text-muted-foreground"
-                title={label}
-              >
-                {label}
-              </Badge>
-            )}
-            {description && (
-              // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-              <div
-                onMouseEnter={showDescription}
-                onMouseLeave={hideDescription}
-                onClick={() => setIsLocked(!isLocked)}
-                className="cursor-help"
-              >
-                <HelpCircle
-                  size={16}
-                  className={`${
-                    isHovering || isLocked
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  } transition-colors`}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {description && (isHovering || isLocked) && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden rounded-md bg-muted/30 text-muted-foreground text-xs"
-              onMouseEnter={showDescription}
-              onMouseLeave={hideDescription}
-            >
-              <div className="whitespace-pre-wrap p-2 leading-snug">
-                {description}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  };
+      if (
+        typeof file === "string" ||
+        file instanceof File ||
+        file === undefined
+      ) {
+        updateInput(inputNode.input_id, file);
+      }
+    },
+    [inputNode.input_id, updateInput]
+  );
 
   switch (inputNode.class_type) {
     case "ComfyUIDeployExternalText":
@@ -167,9 +226,9 @@ export function SDInputsRender({
           textareaClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
           rows={3}
           placeholder={inputNode.input_id}
-          header={header(genericProps)}
+          header={header}
           {...genericProps}
-          onChange={(e: any) => updateInput(inputNode.input_id, e.target.value)}
+          onChange={handleTextChange}
         />
       );
 
@@ -179,10 +238,10 @@ export function SDInputsRender({
           key={inputNode.input_id}
           value={inputValue || ""}
           inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
-          header={header(genericProps)}
+          header={header}
           {...genericProps}
           type="text"
-          onChange={(e: any) => updateInput(inputNode.input_id, e.target.value)}
+          onChange={handleTextChange}
         />
       );
 
@@ -194,11 +253,11 @@ export function SDInputsRender({
             inputValue !== undefined && inputValue !== null ? inputValue : ""
           }
           inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
-          header={header(genericProps)}
+          header={header}
           {...genericProps}
           type="number"
           pattern="\d+"
-          onChange={(e: any) => updateInput(inputNode.input_id, e.target.value)}
+          onChange={handleTextChange}
         />
       );
 
@@ -210,18 +269,18 @@ export function SDInputsRender({
             inputValue !== undefined && inputValue !== null ? inputValue : ""
           }
           inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
-          header={header(genericProps)}
+          header={header}
           {...genericProps}
           type="number"
           step="0.1"
-          onChange={(e: any) => updateInput(inputNode.input_id, e.target.value)}
+          onChange={handleTextChange}
         />
       );
 
     case "ComfyUIDeployExternalNumberSlider":
       return (
         <div className="flex flex-col gap-1">
-          <div>{header(genericProps)}</div>
+          <div>{header}</div>
           <div className="flex w-full items-center space-x-2">
             <Slider
               max={inputNode.max_value}
@@ -229,7 +288,7 @@ export function SDInputsRender({
               step={0.01}
               value={[Number(inputValue)] || [inputNode.min_value]}
               onValueChange={(value) => {
-                updateInput(inputNode.input_id, value[0].toString());
+                handleNumberChange(value[0].toString());
               }}
             />
             <Input
@@ -243,10 +302,7 @@ export function SDInputsRender({
                   ? inputValue
                   : ""
               }
-              onChange={(e: any) => {
-                const newValue = e.target.value;
-                updateInput(inputNode.input_id, newValue);
-              }}
+              onChange={handleTextChange}
             />
           </div>
         </div>
@@ -255,7 +311,7 @@ export function SDInputsRender({
     case "ComfyUIDeployExternalNumberSliderInt":
       return (
         <div className="flex flex-col gap-1">
-          <div>{header(genericProps)}</div>
+          <div>{header}</div>
           <div className="flex w-full items-center space-x-2">
             <Slider
               max={inputNode.max_value}
@@ -263,7 +319,7 @@ export function SDInputsRender({
               step={1}
               value={[Number(inputValue)] || [inputNode.min_value]}
               onValueChange={(value) => {
-                updateInput(inputNode.input_id, value[0].toString());
+                handleNumberChange(value[0].toString());
               }}
             />
             <Input
@@ -277,10 +333,7 @@ export function SDInputsRender({
                   ? inputValue
                   : ""
               }
-              onChange={(e: any) => {
-                const newValue = e.target.value;
-                updateInput(inputNode.input_id, newValue);
-              }}
+              onChange={handleTextChange}
             />
           </div>
         </div>
@@ -289,44 +342,16 @@ export function SDInputsRender({
     case "ComfyUIDeployExternalImage":
     case "ComfyUIDeployExternalImageAlpha":
       if (!open) {
-        return;
+        return null;
       }
       return (
         <SDImageInput
           key={inputNode.input_id}
           file={inputValue}
           inputClasses="mt-1"
-          header={header(genericProps)}
+          header={header}
           {...genericProps}
-          onChange={(
-            file:
-              | File
-              | string
-              | undefined
-              | FileList
-              | { type: "folder"; path: string; name: string },
-          ) => {
-            if (file instanceof FileList) {
-              updateInput(inputNode.input_id, file[0]);
-              return;
-            }
-            if (
-              typeof file === "object" &&
-              file !== null &&
-              "type" in file &&
-              file.type === "folder"
-            ) {
-              updateInput(inputNode.input_id, JSON.stringify(file));
-              return;
-            }
-            if (
-              typeof file === "string" ||
-              file instanceof File ||
-              file === undefined
-            ) {
-              updateInput(inputNode.input_id, file);
-            }
-          }}
+          onChange={handleFileChange}
         />
       );
     case "ComfyUIDeployExternalVideo":
@@ -335,7 +360,7 @@ export function SDInputsRender({
           key={inputNode.input_id}
           file={inputValue}
           inputClasses="mt-1"
-          header={header(genericProps)}
+          header={header}
           isDisplayAssetInput={true}
           {...genericProps}
           onChange={(file: File | string | undefined | FileList) => {
@@ -353,38 +378,10 @@ export function SDInputsRender({
           key={inputNode.input_id}
           file={inputValue}
           inputClasses="mt-1"
-          header={header(genericProps)}
+          header={header}
           accept=".exr"
           {...genericProps}
-          onChange={(
-            file:
-              | File
-              | string
-              | undefined
-              | FileList
-              | { type: "folder"; path: string; name: string },
-          ) => {
-            if (file instanceof FileList) {
-              updateInput(inputNode.input_id, file[0]);
-              return;
-            }
-            if (
-              typeof file === "object" &&
-              file !== null &&
-              "type" in file &&
-              file.type === "folder"
-            ) {
-              updateInput(inputNode.input_id, JSON.stringify(file));
-              return;
-            }
-            if (
-              typeof file === "string" ||
-              file instanceof File ||
-              file === undefined
-            ) {
-              updateInput(inputNode.input_id, file);
-            }
-          }}
+          onChange={handleFileChange}
         />
       );
     case "ComfyUIDeployExternalAudio":
@@ -393,7 +390,7 @@ export function SDInputsRender({
           key={inputNode.input_id}
           file={inputValue}
           inputClasses="mt-1 bg-gray-50"
-          header={header(genericProps)}
+          header={header}
           {...genericProps}
           onChange={(file: File | string | undefined | FileList) => {
             if (file instanceof FileList) {
@@ -407,7 +404,7 @@ export function SDInputsRender({
     case "ComfyUIDeployExternalCheckpoint":
       return (
         <div className="flex flex-col">
-          <div>{header(genericProps)}</div>
+          <div>{header}</div>
           <FileDropdown
             value={inputValue as string}
             setValue={(value: string) => updateInput(inputNode.input_id, value)}
@@ -418,7 +415,7 @@ export function SDInputsRender({
     case "ComfyUIDeployExternalLora":
       return (
         <div className="flex flex-col">
-          <div>{header(genericProps)}</div>
+          <div>{header}</div>
           <FileDropdown
             value={inputValue as string}
             setValue={(value: string) => updateInput(inputNode.input_id, value)}
@@ -432,9 +429,9 @@ export function SDInputsRender({
           className=""
           key={inputNode.input_id}
           inputClasses="mt-1 bg-gray-50"
-          header={header(genericProps)}
+          header={header}
           value={inputValue || ""}
-          onChange={(e: any) => updateInput(inputNode.input_id, e.target.value)}
+          onChange={handleTextChange}
           {...genericProps}
         />
       );
@@ -448,7 +445,7 @@ export function SDInputsRender({
       return (
         <>
           <div className="flex items-center justify-between">
-            <div>{header(genericProps)}</div>
+            <div>{header}</div>
             <Button
               variant={"outline"}
               onClick={(e) => {
@@ -515,7 +512,7 @@ export function SDInputsRender({
     case "ComfyUIDeployExternalBoolean":
       return (
         <div className="flex flex-col">
-          <div>{header(genericProps)}</div>
+          <div>{header}</div>
           <Switch
             className="mt-1 bg-gray-50"
             key={inputNode.input_id}
@@ -532,7 +529,7 @@ export function SDInputsRender({
     case "ComfyUIDeployExternalEnum":
       return (
         <div className="flex flex-col">
-          <div>{header(genericProps)}</div>
+          <div>{header}</div>
           <Select
             defaultValue={inputValue as string}
             onValueChange={(value) => updateInput(inputNode.input_id, value)}
@@ -573,7 +570,7 @@ export function SDInputsRender({
 
       return (
         <div className="flex flex-col">
-          <div>{header(genericProps)}</div>
+          <div>{header}</div>
           <Input
             type="color"
             className="h-11 w-16"
@@ -603,13 +600,11 @@ export function SDInputsRender({
               value={inputValue || ""}
               inputClasses="mt-1 bg-gray-50 rounded-[8px] dark:bg-input/30 dark:ring-zinc-700"
               placeholder={`${minValue} - ${maxValue}`}
-              header={header(genericProps)}
+              header={header}
               {...genericProps}
               type="number"
               pattern="\d+"
-              onChange={(e: any) =>
-                updateInput(inputNode.input_id, e.target.value)
-              }
+              onChange={handleTextChange}
             />
           </div>
           <div className="flex items-end">
@@ -649,16 +644,14 @@ export function SDInputsRender({
               key={inputNode.input_id}
               inputClasses="mt-1"
               value={inputValue || ""}
-              onChange={(e: any) =>
-                updateInput(inputNode.input_id, e.target.value)
-              }
+              onChange={handleTextChange}
               {...genericProps}
             />
           </AlertDescription>
         </Alert>
       );
   }
-}
+});
 
 import { Check, ChevronsUpDown, Pencil, X } from "lucide-react";
 

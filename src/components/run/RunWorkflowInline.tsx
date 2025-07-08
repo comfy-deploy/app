@@ -40,6 +40,7 @@ import {
   useRef,
   useState,
   useCallback,
+  memo,
 } from "react";
 import { SortableItem, SortableDragHandle } from "@/components/custom/sortable";
 import {
@@ -67,6 +68,7 @@ import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { api } from "@/lib/api";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { queryClient } from "@/lib/providers";
+import { useDebouncedFormState } from "@/hooks/use-debounced-state";
 
 const MAX_FILE_SIZE_BYTES = 250_000_000; // 250MB
 
@@ -142,7 +144,7 @@ export async function parseFilesToImgURLs(
   return newValues;
 }
 
-export function WorkflowInputsForm({
+export const WorkflowInputsForm = memo(function WorkflowInputsForm({
   values,
   setValues,
   defaultValues,
@@ -169,16 +171,19 @@ export function WorkflowInputsForm({
 }) {
   const { inputs, hideRunButton } = props;
 
-  function updateInput(
-    key: string,
-    val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
-  ) {
-    if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
-      toast.error("Cannot upload files bigger than 250MB");
-      return;
-    }
-    setValues((prev: any) => ({ ...prev, [key]: val }));
-  }
+  const updateInput = useCallback(
+    (
+      key: string,
+      val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
+    ) => {
+      if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
+        toast.error("Cannot upload files bigger than 250MB");
+        return;
+      }
+      setValues((prev: any) => ({ ...prev, [key]: val }));
+    },
+    [setValues]
+  );
 
   const [_isLoading, setIsLoading] = useState(false);
   const isLoading = _isLoading;
@@ -186,40 +191,44 @@ export function WorkflowInputsForm({
   const [childrenOverrides, setChildrenOverrides] = useState<ReactNode>();
   const [tooltip, setTooltip] = useState<string | undefined>(undefined);
 
+  const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
+    // e.preventDefault();
+    if (isLoading) return;
+
+    const currentChildren = "Run";
+    const currentTooltip = tooltip;
+
+    setIsLoading(true);
+    if (props.onSubmit) {
+      e.preventDefault();
+      const generator = props.onSubmit(e);
+      for await (const message of generator) {
+        // setChildren(message.children);
+        setChildrenOverrides(message.children);
+        setTooltip(message.tooltip);
+      }
+    }
+    setIsLoading(false);
+    // setChildren(currentChildren);
+    setChildrenOverrides(undefined);
+    setTooltip(currentTooltip);
+  }, [isLoading, props.onSubmit, tooltip]);
+
+  const handleReset = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setValues(defaultValues);
+  }, [defaultValues, setValues]);
+
   return (
     <SDForm
-      onSubmit={async (e) => {
-        // e.preventDefault();
-        if (isLoading) return;
-
-        const currentChildren = "Run";
-        const currentTooltip = tooltip;
-
-        setIsLoading(true);
-        if (props.onSubmit) {
-          e.preventDefault();
-          const generator = props.onSubmit(e);
-          for await (const message of generator) {
-            // setChildren(message.children);
-            setChildrenOverrides(message.children);
-            setTooltip(message.tooltip);
-          }
-        }
-        setIsLoading(false);
-        // setChildren(currentChildren);
-        setChildrenOverrides(undefined);
-        setTooltip(currentTooltip);
-      }}
+      onSubmit={handleSubmit}
       actionArea={
         // props.actionArea
         !hideRunButton && (
           <div className="flex justify-end gap-2 pr-3">
             <Button
               variant="outline"
-              onClick={(e) => {
-                e.preventDefault();
-                setValues(defaultValues);
-              }}
+              onClick={handleReset}
             >
               Reset default
             </Button>
@@ -238,7 +247,7 @@ export function WorkflowInputsForm({
     >
       {inputs?.map((item) => {
         if (!values || !item?.input_id) {
-          return;
+          return null;
         }
         return (
           <SDInputsRender
@@ -251,7 +260,7 @@ export function WorkflowInputsForm({
       })}
     </SDForm>
   );
-}
+});
 
 export function parseInputValues(valuesParsed: Record<string, any>) {
   return Object.entries(valuesParsed)
@@ -274,6 +283,124 @@ export function parseInputValues(valuesParsed: Record<string, any>) {
       {},
     );
 }
+
+// Memoized component for draggable input item
+const DraggableInputItem = memo(function DraggableInputItem({
+  input,
+  value,
+  updateInput,
+}: {
+  input: any;
+  value: any;
+  updateInput: (key: string, value: any) => void;
+}) {
+  return (
+    <SortableItem
+      value={input.input_id || ""}
+      className="mb-2 flex items-center rounded-md border bg-card p-2 sortable-item-transition"
+    >
+      <div className="flex w-full items-center">
+        <SortableDragHandle
+          type="button"
+          variant="ghost"
+          className="mr-2 rounded p-1 hover:bg-muted"
+          size="sm"
+        >
+          <GripVertical size={16} />
+        </SortableDragHandle>
+        <div className="flex-1">
+          <SDInputsRender
+            inputNode={input}
+            updateInput={updateInput}
+            inputValue={value}
+          />
+        </div>
+      </div>
+    </SortableItem>
+  );
+});
+
+// Memoized component for input group
+const InputGroupWithItems = memo(function InputGroupWithItems({
+  group,
+  inputs,
+  values,
+  updateInput,
+  onTitleChange,
+  onDelete,
+  isDraggable,
+  collapsed,
+  onCollapseToggle,
+}: {
+  group: { id: string; title: string };
+  inputs: any[];
+  values: Record<string, any>;
+  updateInput: (key: string, value: any) => void;
+  onTitleChange: (id: string, title: string) => void;
+  onDelete: (id: string) => void;
+  isDraggable: boolean;
+  collapsed: boolean;
+  onCollapseToggle: (id: string, collapsed: boolean) => void;
+}) {
+  const content = isDraggable ? (
+    <SortableItem value={group.id} className="mb-4">
+      <SDInputGroup
+        id={group.id}
+        title={group.title}
+        onTitleChange={onTitleChange}
+        onDelete={onDelete}
+        isEmpty={inputs.length === 0}
+        items={inputs.map((item) => item.input_id || "")}
+        isDraggable={true}
+        defaultCollapsed={collapsed}
+        onCollapseToggle={onCollapseToggle}
+      >
+        {inputs.length === 0 ? (
+          <div className="rounded-md border-2 border-muted-foreground/20 border-dashed p-4 text-center text-muted-foreground text-sm">
+            Drag items here to add them to this group
+          </div>
+        ) : (
+          inputs.map((item, index) => {
+            const stableKey = item.input_id || `item-${index}`;
+            return (
+              <DraggableInputItem
+                key={stableKey}
+                input={item}
+                value={values[item.input_id || ""]}
+                updateInput={updateInput}
+              />
+            );
+          })
+        )}
+      </SDInputGroup>
+    </SortableItem>
+  ) : (
+    <SDInputGroup
+      id={group.id}
+      title={group.title}
+      onTitleChange={() => {}}
+      onDelete={() => {}}
+      isEmpty={false}
+      items={inputs.map((item) => item.input_id || "")}
+      isDraggable={false}
+      isEditMode={false}
+      defaultCollapsed={collapsed}
+      onCollapseToggle={onCollapseToggle}
+    >
+      {inputs.map((item) => (
+        <div key={item.input_id} className="mb-2">
+          <SDInputsRender
+            inputNode={item}
+            updateInput={updateInput}
+            inputValue={values[item.input_id || ""]}
+          />
+        </div>
+      ))}
+    </SDInputGroup>
+  );
+
+  return inputs.length === 0 && !isDraggable ? null : content;
+});
 
 // For share page
 export function RunWorkflowInline({
@@ -303,13 +430,12 @@ export function RunWorkflowInline({
   workflow_api?: string;
   canEditOrder?: boolean;
 }) {
-  const [values, setValues] =
-    useState<
-      Record<
-        string,
-        string | File | undefined | (File | string)[] | boolean | RGBColor[]
-      >
-    >(default_values);
+  // Use debounced state for form values to prevent excessive re-renders
+  const { values, debouncedValues, updateValue, setValues } = useDebouncedFormState(
+    default_values,
+    200 // 200ms debounce delay
+  );
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [currentRunId, setCurrentRunId] = useQueryState("run-id");
@@ -782,6 +908,22 @@ export function RunWorkflowInline({
     setImage,
   } = publicRunStore();
 
+  // Memoize the updateInput callback to prevent unnecessary re-renders
+  const updateInput = useCallback(
+    (
+      key: string,
+      val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
+    ) => {
+      if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
+        toast.error("Cannot upload files bigger than 250MB");
+        return;
+      }
+      updateValue(key as keyof typeof values, val);
+    },
+    [updateValue]
+  );
+
+  // Use debouncedValues for the actual workflow submission
   const runWorkflow = async () => {
     if (!user.isSignedIn) {
       clerk.openSignIn({
@@ -790,8 +932,11 @@ export function RunWorkflowInline({
       return;
     }
 
+    // Use debouncedValues instead of values for submission
+    const valuesToSubmit = debouncedValues;
+
     // Check for folder inputs and validate
-    const folderInputs = Object.entries(values).filter(([key, value]) => {
+    const folderInputs = Object.entries(valuesToSubmit).filter(([key, value]) => {
       // Handle folder stored as JSON string
       if (typeof value === "string") {
         try {
@@ -869,7 +1014,7 @@ export function RunWorkflowInline({
       // Helper function to process a single image
       const processImage = async (image: any, index: number) => {
         const currentValues = {
-          ...values,
+          ...debouncedValues,
           [inputKey]: image.url,
         };
 
@@ -958,7 +1103,7 @@ export function RunWorkflowInline({
     setLoading2(true);
     setIsLoading(true);
     try {
-      const valuesParsed = await parseFilesToImgURLs({ ...values });
+      const valuesParsed = await parseFilesToImgURLs({ ...debouncedValues });
       const val = parseInputValues(valuesParsed);
       console.log(val);
       setStatus({ state: "preparing", live_status: "", progress: 0 });
@@ -1030,17 +1175,6 @@ export function RunWorkflowInline({
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     runWorkflow();
-  }
-
-  function updateInput(
-    key: string,
-    val: string | File | undefined | (File | string)[] | boolean | RGBColor[],
-  ) {
-    if (val instanceof File && val.size > MAX_FILE_SIZE_BYTES) {
-      toast.error("Cannot upload files bigger than 250MB");
-      return;
-    }
-    setValues((prev) => ({ ...prev, [key]: val }));
   }
 
   useHotkeys(
@@ -1608,63 +1742,23 @@ export function RunWorkflowInline({
                       }
 
                       return (
-                        <SortableItem
+                        <InputGroupWithItems
                           key={group.id}
-                          value={group.id}
-                          className="mb-4"
-                        >
-                          <SDInputGroup
-                            id={group.id}
-                            title={group.title}
-                            onTitleChange={updateGroupTitle}
-                            onDelete={deleteGroup}
-                            isEmpty={false}
-                            items={groupInputs.map(
-                              (item) => item.input_id || "",
-                            )}
-                            isDraggable={true}
-                            defaultCollapsed={
-                              groupCollapseStates[group.id] || false
-                            }
-                            onCollapseToggle={(id, collapsed) => {
-                              setGroupCollapseStates((prev) => ({
-                                ...prev,
-                                [id]: collapsed,
-                              }));
-                            }}
-                          >
-                            {groupInputs.map((item, index) => {
-                              const stableKey =
-                                item.input_id || `item-${index}`;
-                              return (
-                                <SortableItem
-                                  key={stableKey}
-                                  value={item.input_id || `item-${index}`}
-                                  className="mb-2 flex items-center rounded-md border bg-card p-2 sortable-item-transition"
-                                >
-                                  <div className="flex w-full items-center">
-                                    <SortableDragHandle
-                                      type="button"
-                                      variant="ghost"
-                                      className="mr-2 rounded p-1 hover:bg-muted"
-                                      size="sm"
-                                    >
-                                      <GripVertical size={16} />
-                                    </SortableDragHandle>
-                                    <div className="flex-1">
-                                      <SDInputsRender
-                                        key={item.input_id}
-                                        inputNode={item}
-                                        updateInput={() => {}}
-                                        inputValue={values[item.input_id || ""]}
-                                      />
-                                    </div>
-                                  </div>
-                                </SortableItem>
-                              );
-                            })}
-                          </SDInputGroup>
-                        </SortableItem>
+                          group={group}
+                          inputs={groupInputs}
+                          values={values}
+                          updateInput={updateInput}
+                          onTitleChange={updateGroupTitle}
+                          onDelete={deleteGroup}
+                          isDraggable={true}
+                          collapsed={groupCollapseStates[group.id] || false}
+                          onCollapseToggle={(id, collapsed) => {
+                            setGroupCollapseStates((prev) => ({
+                              ...prev,
+                              [id]: collapsed,
+                            }));
+                          }}
+                        />
                       );
                     }
                     const input = ungroupedInputs.find(
@@ -1673,30 +1767,12 @@ export function RunWorkflowInline({
                     if (!input) return null;
 
                     return (
-                      <SortableItem
+                      <DraggableInputItem
                         key={input.input_id}
-                        value={input.input_id || ""}
-                        className="mb-2 flex items-center rounded-md border bg-card p-2 sortable-item-transition"
-                      >
-                        <div className="flex w-full items-center">
-                          <SortableDragHandle
-                            type="button"
-                            variant="ghost"
-                            className="mr-2 rounded p-1 hover:bg-muted"
-                            size="sm"
-                          >
-                            <GripVertical size={16} />
-                          </SortableDragHandle>
-                          <div className="flex-1">
-                            <SDInputsRender
-                              key={input.input_id}
-                              inputNode={input}
-                              updateInput={() => {}}
-                              inputValue={values[input.input_id || ""]}
-                            />
-                          </div>
-                        </div>
-                      </SortableItem>
+                        input={input}
+                        value={values[input.input_id || ""]}
+                        updateInput={updateInput}
+                      />
                     );
                   })}
                 </div>
@@ -1730,7 +1806,7 @@ export function RunWorkflowInline({
               for (const layoutItem of layoutOrder) {
                 if (layoutItem.type === "group") {
                   const group = inputGroups.find((g) => g.id === layoutItem.id);
-                  if (!group) return;
+                  if (!group) continue;
 
                   const groupInputs = inputs.filter(
                     (input) =>
@@ -1739,42 +1815,29 @@ export function RunWorkflowInline({
 
                   if (groupInputs.length > 0) {
                     renderedItems.push(
-                      <SDInputGroup
+                      <InputGroupWithItems
                         key={group.id}
-                        id={group.id}
-                        title={group.title}
+                        group={group}
+                        inputs={groupInputs}
+                        values={values}
+                        updateInput={updateInput}
                         onTitleChange={() => {}}
                         onDelete={() => {}}
-                        isEmpty={false}
-                        items={groupInputs.map((item) => item.input_id || "")}
                         isDraggable={false}
-                        isEditMode={false}
-                        defaultCollapsed={
-                          groupCollapseStates[group.id] || false
-                        }
+                        collapsed={groupCollapseStates[group.id] || false}
                         onCollapseToggle={(id, collapsed) => {
                           setGroupCollapseStates((prev) => ({
                             ...prev,
                             [id]: collapsed,
                           }));
                         }}
-                      >
-                        {groupInputs.map((item) => {
-                          if (item.input_id) {
-                            renderedInputIds.add(item.input_id);
-                          }
-                          return (
-                            <div key={item.input_id} className="mb-2">
-                              <SDInputsRender
-                                inputNode={item}
-                                updateInput={updateInput}
-                                inputValue={values[item.input_id || ""]}
-                              />
-                            </div>
-                          );
-                        })}
-                      </SDInputGroup>,
+                      />
                     );
+                    groupInputs.forEach(item => {
+                      if (item.input_id) {
+                        renderedInputIds.add(item.input_id);
+                      }
+                    });
                   }
                 } else {
                   // Render ungrouped input
