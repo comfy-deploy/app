@@ -341,9 +341,6 @@ export const SDInputsRender = React.memo(function SDInputsRender({
 
     case "ComfyUIDeployExternalImage":
     case "ComfyUIDeployExternalImageAlpha":
-      if (!open) {
-        return null;
-      }
       return (
         <SDImageInput
           key={inputNode.input_id}

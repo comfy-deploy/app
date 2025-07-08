@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useRef } from 'react';
 import { SDInputsRender } from './SDInputsRender';
 import type { RGBColor } from './SDInputsRender';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface SDInputWrapperProps {
   inputNode: any;
@@ -18,40 +19,33 @@ export const SDInputWrapper = memo(function SDInputWrapper({
 }: SDInputWrapperProps) {
   // Local state for immediate UI updates
   const [localValue, setLocalValue] = useState(initialValue);
-  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  
+  // Use the existing debounce hook
+  const debouncedValue = useDebounce(localValue, debounceMs);
+  
+  // Track if this is the first render
+  const isFirstRender = useRef(true);
 
   // Update local value when initial value changes (e.g., reset)
   useEffect(() => {
     setLocalValue(initialValue);
   }, [initialValue]);
 
-  // Handle input updates with debouncing
-  const handleUpdate = useCallback(
-    (inputId: string, value: any) => {
-      // Update local state immediately for responsive UI
-      setLocalValue(value);
-
-      // Clear existing timeout
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      // Set new timeout to update parent state
-      timeoutRef.current = setTimeout(() => {
-        onValueChange(inputId, value);
-      }, debounceMs);
-    },
-    [onValueChange, debounceMs]
-  );
-
-  // Cleanup timeout on unmount
+  // Call parent's onValueChange when debounced value changes
   useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
+    // Skip the first render to avoid unnecessary initial update
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    
+    onValueChange(inputNode.input_id, debouncedValue);
+  }, [debouncedValue, inputNode.input_id, onValueChange]);
+
+  // Handle input updates - only update local state immediately
+  const handleUpdate = (inputId: string, value: any) => {
+    setLocalValue(value);
+  };
 
   return (
     <SDInputsRender
@@ -59,13 +53,5 @@ export const SDInputWrapper = memo(function SDInputWrapper({
       updateInput={handleUpdate}
       inputValue={localValue}
     />
-  );
-}, (prevProps, nextProps) => {
-  // Custom comparison to prevent re-renders
-  return (
-    prevProps.inputNode === nextProps.inputNode &&
-    prevProps.initialValue === nextProps.initialValue &&
-    prevProps.onValueChange === nextProps.onValueChange &&
-    prevProps.debounceMs === nextProps.debounceMs
   );
 });
