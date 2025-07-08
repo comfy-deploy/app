@@ -108,7 +108,7 @@ function RootComponent() {
 
   const { pathname } = useLocation();
   const isSessionPage = pathname.includes("/sessions/");
-  const isWorkflowRoute = /^\/workflows\/[^\/]+\/[^\/]+/.test(pathname);
+  const isWorkflowRoute = /\/workflows\/[^\/]+\/[^\/]+/.test(pathname);
   const isAuthPage = publicRoutes.some((route) => {
     if (typeof route === "string") {
       return pathname === route;
