@@ -10,7 +10,9 @@ export const Route = createFileRoute("/models")({
   component: StoragePage,
 });
 
-export function StoragePage() {
+export function StoragePage({
+  isWorkflowPage = false,
+}: { isWorkflowPage?: boolean }) {
   const [showAddModel, setShowAddModel] = useState(false);
   const [selectedFolderPath, setSelectedFolderPath] = useState("");
 
@@ -20,7 +22,12 @@ export function StoragePage() {
   };
 
   return (
-    <PaddingLayout className="mx-auto flex h-full w-full flex-col gap-4 p-4 md:px-4">
+    <PaddingLayout
+      className={cn(
+        "mx-auto flex h-full w-full flex-col gap-4 p-4 md:px-4",
+        isWorkflowPage && "pt-12",
+      )}
+    >
       <div className="flex h-full flex-1 flex-col gap-2 rounded-md ">
         <Suspense
           fallback={

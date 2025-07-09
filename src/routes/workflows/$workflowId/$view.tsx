@@ -8,6 +8,7 @@ const pages = [
   "playground",
   "gallery",
   "machine",
+  "model",
 ];
 
 export const Route = createFileRoute("/workflows/$workflowId/$view")({

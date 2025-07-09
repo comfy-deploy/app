@@ -54,8 +54,8 @@ function CenterNavigation() {
   // Define which buttons should be visible for each view
   const visibleButtons = useMemo(() => {
     const buttonConfig = {
-      machine: view === "workspace" || view === "machine",
-      model: view === "workspace" || view === "model",
+      machine: view === "workspace" || view === "machine" || view === "model",
+      model: view === "workspace" || view === "model" || view === "machine",
       gallery: view === "playground" || view === "gallery",
       requests: view === "deployment" || view === "requests",
     };
@@ -285,6 +285,12 @@ function CenterNavigation() {
                     ? "text-gray-900"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
+                onClick={() => {
+                  router.navigate({
+                    to: "/workflows/$workflowId/$view",
+                    params: { workflowId: workflowId || "", view: "model" },
+                  });
+                }}
               >
                 <span className="sr-only">Model</span>
                 <Database className="h-4 w-[18px]" />

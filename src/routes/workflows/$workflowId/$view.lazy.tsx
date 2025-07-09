@@ -76,6 +76,7 @@ import { useIsDeploymentAllowed } from "@/hooks/use-current-plan";
 import { PricingPage } from "@/routes/pricing";
 import { useCurrentPlanQuery } from "@/hooks/use-current-plan";
 import { LoadingIcon } from "@/components/loading-icon";
+import { StoragePage } from "@/routes/models";
 
 interface Version {
   id: string;
@@ -123,7 +124,7 @@ interface Deployment {
 //   "gallery",
 // ];
 
-const workspace = ["workspace", "playground", "gallery", "machine"];
+const workspace = ["workspace", "playground", "gallery", "machine", "model"];
 const deployment = ["deployment", "requests"];
 
 export const Route = createLazyFileRoute("/workflows/$workflowId/$view")({
@@ -238,6 +239,9 @@ function WorkflowPageComponent() {
           </div>
         </>
       );
+      break;
+    case "model":
+      view = <StoragePage isWorkflowPage={true} />;
       break;
   }
 
