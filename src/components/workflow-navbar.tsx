@@ -103,6 +103,7 @@ function CenterNavigation() {
   return (
     <div className="mt-2 flex flex-row gap-2.5">
       <SessionTimerButton
+        workflowId={workflowId}
         sessionId={sessionId}
         restoreCachedSession={restoreCachedSession}
       />
@@ -141,7 +142,6 @@ function CenterNavigation() {
                 stiffness: 400,
                 damping: 30,
                 mass: 0.3,
-                delay: 0.2,
               }}
             />
           )}
@@ -517,12 +517,15 @@ function WorkflowNavbarRight() {
 // ============== utils ==============
 
 function SessionTimerButton({
+  workflowId,
   sessionId,
   restoreCachedSession,
 }: {
+  workflowId: string | null;
   sessionId: string | null;
   restoreCachedSession: () => void;
 }) {
+  const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const queryClient = useQueryClient();
   const { data: session } = useQuery<Session>({
@@ -548,6 +551,10 @@ function SessionTimerButton({
     if (!sessionId) return;
 
     try {
+      router.navigate({
+        to: "/workflows/$workflowId/$view",
+        params: { workflowId: workflowId || "", view: "workspace" },
+      });
       await deleteSession.mutateAsync({
         sessionId,
         waitForShutdown: true,
@@ -581,7 +588,7 @@ function SessionTimerButton({
           className="flex items-center"
         >
           <div
-            className={`relative flex h-10 items-center overflow-hidden rounded-full shadow-lg transition-all duration-300 ease-out ${
+            className={`relative flex h-10 items-center overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
               isLowTime
                 ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/25 hover:shadow-orange-500/40 dark:from-orange-500 dark:to-orange-700 dark:shadow-orange-600/25 dark:hover:shadow-orange-600/40"
                 : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"
@@ -590,6 +597,10 @@ function SessionTimerButton({
               width: isHovered ? "164px" : "42px",
               paddingLeft: isHovered ? "12px" : "0px",
               paddingRight: isHovered ? "12px" : "0px",
+              transitionTimingFunction: isHovered
+                ? "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+                : "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              transitionDuration: isHovered ? "400ms" : "200ms",
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -661,13 +672,17 @@ function SessionTimerButton({
 
             {/* Countdown Text and End Button */}
             <div
-              className={`flex items-center gap-2 transition-all duration-300 ease-out ${
+              className={`flex items-center gap-2 transition-all ${
                 isHovered
                   ? "opacity-100 translate-x-0"
                   : "opacity-0 translate-x-4"
               }`}
               style={{
                 transitionDelay: isHovered ? "100ms" : "0ms",
+                transitionDuration: isHovered ? "300ms" : "150ms",
+                transitionTimingFunction: isHovered
+                  ? "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                  : "ease-out",
               }}
             >
               <span

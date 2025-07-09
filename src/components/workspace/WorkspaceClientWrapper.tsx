@@ -22,6 +22,7 @@ import { SessionCreationDialog } from "./session-creator-dialog";
 import { SessionCreatorForm } from "./session-creator-form";
 import { ErrorBoundary } from "../error-boundary";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { useSearch } from "@tanstack/react-router";
 
 const ComfyUIFlow = lazy(() =>
   import("../workflow-preview/comfyui-flow").then((mod) => ({
@@ -74,7 +75,7 @@ export function WorkspaceClientWrapper({
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
-  const [sessionId, setSessionId] = useQueryState("sessionId");
+  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
   const { data: selectedSession } = useQuery({
     enabled: !!sessionId,
     queryKey: ["session", sessionId],
