@@ -42,6 +42,7 @@ import {
   Sparkles,
   StopCircle,
   Share,
+  ImageIcon,
 } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
@@ -55,6 +56,13 @@ import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { Textarea } from "../ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { FileURLRender } from "../workflows/OutputRender";
 
 interface SessionForm {
   machineId: string;
@@ -384,12 +392,67 @@ export function SessionCreatorForm({
             </Button>
           )}
         </div>
-        <DescriptionForm
-          workflowId={workflowId}
-          description={workflow?.description}
-          workflowJson={workflow?.versions[0].workflow}
-          workflowName={workflow?.name}
-        />
+        <div className="flex items-end justify-between gap-2">
+          <div className="w-full">
+            <DescriptionForm
+              workflowId={workflowId}
+              description={workflow?.description}
+              workflowJson={workflow?.versions[0].workflow}
+              workflowName={workflow?.name}
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="mx-auto flex items-center justify-center">
+              <TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    {workflow.cover_image ? (
+                      <div className="h-32 w-32 overflow-hidden rounded-md">
+                        <FileURLRender
+                          url={workflow.cover_image}
+                          imgClasses="w-full h-full object-cover aspect-square"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-32 w-32 items-center justify-center rounded-md border-2 border-gray-300 border-dashed hover:border-gray-400">
+                        <ImageIcon className="h-6 w-6 text-gray-400" />
+                      </div>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add Cover Image</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" className="w-40">
+              <DropdownMenuItem
+                onSelect={() => {
+                  router.navigate({
+                    to: "/workflows/$workflowId/$view",
+                    params: {
+                      workflowId,
+                      view: "gallery",
+                    },
+                    search: {
+                      action: true,
+                    },
+                  });
+                }}
+              >
+                From Gallery
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setOnAssetSelect(handleAsset);
+                  setAssetsOpen(true);
+                }}
+              >
+                From Assets
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     );
   }
@@ -896,7 +959,7 @@ function DescriptionForm({
                 <div className="group relative">
                   <Textarea
                     {...field}
-                    className="-mt-2 h-28 border-none text-muted-foreground focus-visible:bg-zinc-100/40 focus-visible:text-black focus-visible:ring-transparent dark:bg-transparent dark:focus-visible:bg-zinc-900/40 dark:focus-visible:text-white dark:focus-visible:ring-transparent"
+                    className="-mt-2 min-h-28 border-none text-muted-foreground focus-visible:bg-zinc-100/40 focus-visible:text-black focus-visible:ring-transparent dark:bg-transparent dark:focus-visible:bg-zinc-900/40 dark:focus-visible:text-white dark:focus-visible:ring-transparent"
                     placeholder="Describe your workflow"
                     onChange={(e) => {
                       field.onChange(e);

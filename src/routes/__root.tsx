@@ -35,6 +35,8 @@ import { Toaster } from "sonner";
 import { Providers, queryClient } from "../lib/providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AssetsBrowserPopup } from "@/components/workspace/assets-browser-drawer";
+import { WorkflowNavbar } from "@/components/workflow-navbar";
+import { cn } from "@/lib/utils";
 
 export type RootRouteContext = {
   auth?: ReturnType<typeof useAuth>;
@@ -95,18 +97,13 @@ function RootComponent() {
       return;
     }
 
-    // if (auth.orgId !== currentOrg.current) {
-    //   router.navigate({
-    //     to: "/",
-    //   });
-    // }
-
     currentOrg.current = auth.orgId;
     queryClient.resetQueries();
   }, [auth.orgId, router]);
 
   const { pathname } = useLocation();
   const isSessionPage = pathname.includes("/sessions/");
+  const isWorkflowPage = pathname.includes("/workflows/");
   const isAuthPage = publicRoutes.some((route) => {
     if (typeof route === "string") {
       return pathname === route;
@@ -123,19 +120,28 @@ function RootComponent() {
       {isAuthPage && !auth.isSignedIn ? (
         <GuestSidebar />
       ) : (
-        !isSessionPage && (
+        !isSessionPage &&
+        !isWorkflowPage && (
           <SignedIn>
             <AppSidebar />
           </SignedIn>
         )
       )}
-      <div className="fixed top-0 z-50 flex h-[40px] w-full flex-row items-center gap-2 border-gray-200 border-b bg-transparent p-1 md:hidden dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-md">
-        <SidebarTrigger className="h-8 w-8 rounded-none border-gray-200 border-r p-2 dark:border-zinc-700" />
-        <Link href="/" className="flex flex-row items-center justify-center">
-          <Icon />
-        </Link>
-      </div>
-      <div className="mt-[40px] flex max-h-[calc(100dvh-40px)] w-full flex-col items-center justify-start overflow-x-auto md:mt-0 md:max-h-[100dvh]">
+      {isWorkflowPage && <WorkflowNavbar />}
+      {!isWorkflowPage && (
+        <div className="fixed top-0 z-50 flex h-[40px] w-full flex-row items-center gap-2 border-gray-200 border-b bg-transparent p-1 md:hidden dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-md">
+          <SidebarTrigger className="h-8 w-8 rounded-none border-gray-200 border-r p-2 dark:border-zinc-700" />
+          <Link href="/" className="flex flex-row items-center justify-center">
+            <Icon />
+          </Link>
+        </div>
+      )}
+      <div
+        className={cn(
+          "flex max-h-[calc(100dvh-40px)] w-full flex-col items-center justify-start overflow-x-auto md:mt-0 md:max-h-[100dvh]",
+          !isWorkflowPage && "mt-[40px]",
+        )}
+      >
         {!isAuthPage && (
           <SignedIn>
             <Outlet />
