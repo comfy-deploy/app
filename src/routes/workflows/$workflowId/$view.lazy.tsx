@@ -226,8 +226,8 @@ function WorkflowPageComponent() {
     case "machine":
       view = machine && (
         <>
-          <MachineTopStickyBar machine={machine} />
-          <div className="mx-auto mt-4 w-full max-w-screen-lg">
+          {/* <MachineTopStickyBar machine={machine} /> */}
+          <div className="mx-auto mt-14 w-full max-w-screen-lg">
             <MachineVersionWrapper machine={machine} />
             <MachineSettingsWrapper
               title="Machine Settings"

@@ -138,8 +138,8 @@ function RootComponent() {
       )}
       <div
         className={cn(
-          "flex max-h-[calc(100dvh-40px)] w-full flex-col items-center justify-start overflow-x-auto md:mt-0 md:max-h-[100dvh]",
-          !isWorkflowPage && "mt-[40px]",
+          "flex w-full flex-col items-center justify-start overflow-x-auto md:mt-0 md:max-h-[100dvh]",
+          !isWorkflowPage && "mt-[40px] max-h-[calc(100dvh-40px)]",
         )}
       >
         {!isAuthPage && (

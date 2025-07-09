@@ -248,12 +248,7 @@ export function Playground(props: {
           >
             <div className="mb-1 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="ml-2 font-semibold text-sm">Edit</span>
-                {!isVersionLoading && version && (
-                  <Badge variant="secondary" className="!text-2xs !py-0">
-                    v{version.version}
-                  </Badge>
-                )}
+                <span className="h-7" />
               </div>
               <a
                 target="_blank"

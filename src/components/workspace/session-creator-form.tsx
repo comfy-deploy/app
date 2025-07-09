@@ -367,19 +367,12 @@ export function SessionCreatorForm({
   // Description-only mode for top-left floating area
   if (mode === "description-only") {
     return (
-      <div className="space-y-3">
-        {/* <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h2 className="line-clamp-1 font-semibold text-lg">
-              {workflow?.name || "ComfyUI"}
-            </h2>
-            <Badge
-              variant="outline"
-              className="gap-2 dark:outline dark:outline-gray-600/40"
-            >
-              v{version}
-            </Badge>
-          </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="line-clamp-1 font-semibold text-lg">
+            {workflow?.name || "ComfyUI"}
+          </h2>
+
           {onShareWorkflow && (
             <Button
               variant="outline"
@@ -391,7 +384,7 @@ export function SessionCreatorForm({
               <Share className="h-4 w-4" />
             </Button>
           )}
-        </div> */}
+        </div>
         <div className="flex items-end justify-between gap-2">
           <div className="w-full">
             <DescriptionForm
