@@ -8,6 +8,7 @@ import {
   ImageIcon,
   Play,
   Server,
+  Share,
   Slash,
   TextSearch,
   WorkflowIcon,
@@ -29,6 +30,8 @@ import { useEffect } from "react";
 import { useSessionAPI } from "@/hooks/use-session-api";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
+import { ShareWorkflowDialog } from "./share-workflow-dialog";
 
 export function WorkflowNavbar() {
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
@@ -57,7 +60,7 @@ export function WorkflowNavbar() {
         </div>
 
         <div className="pointer-events-auto ml-auto flex items-center">
-          {/* Right content */}
+          <WorkflowNavbarRight />
         </div>
       </div>
     </div>
@@ -459,6 +462,64 @@ function WorkflowNavbarLeft() {
         </>
       )}
     </div>
+  );
+}
+
+function WorkflowNavbarRight() {
+  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
+  const { workflowId, view } = useParams({
+    from: "/workflows/$workflowId/$view",
+  });
+  const workflow = useCurrentWorkflow(workflowId || "");
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  return (
+    <>
+      <AnimatePresence mode="popLayout">
+        {view === "workspace" && !sessionId && (
+          <motion.div
+            layout
+            key="session-timer"
+            initial={{ opacity: 0, scale: 0.8, rotateZ: -5 }}
+            animate={{ opacity: 1, scale: 1, rotateZ: 0 }}
+            exit={{ opacity: 0, scale: 0.8, rotateZ: 5 }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{
+              type: "spring",
+              stiffness: 180,
+              damping: 15,
+              mass: 0.8,
+              opacity: { duration: 0.4 },
+            }}
+            className={
+              "mt-2 flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
+            }
+          >
+            <ImageInputsTooltip tooltipText="Share" delayDuration={300}>
+              <button
+                type="button"
+                className={
+                  "flex h-12 items-center gap-1.5 p-4 text-gray-600 transition-colors hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                }
+                onClick={() => setIsShareDialogOpen(true)}
+              >
+                <Share className="h-4 w-[18px]" />
+                Share
+              </button>
+            </ImageInputsTooltip>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <ShareWorkflowDialog
+        open={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+        workflowId={workflowId}
+        workflowName={workflow?.name || "Untitled Workflow"}
+        workflowDescription={workflow?.description}
+        workflowCoverImage={workflow?.cover_image}
+      />
+    </>
   );
 }
 

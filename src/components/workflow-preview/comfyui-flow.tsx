@@ -242,11 +242,11 @@ function ComfyUIFlowContent({ workflow, apiFormat }: ComfyUIFlowProps) {
           return node.data.color || "#666";
         }}
       />
-      <Panel position="top-right" className="flex gap-2">
+      {/* <Panel position="top-right" className="flex gap-2">
         <Button variant="secondary" size="sm" onClick={handleFitView}>
           <ZoomIn className="h-4 w-4 mr-1" /> Fit View
         </Button>
-      </Panel>
+      </Panel> */}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-50">
           <div className="flex flex-col items-center gap-2">

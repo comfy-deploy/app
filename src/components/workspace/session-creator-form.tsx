@@ -63,6 +63,9 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { FileURLRender } from "../workflows/OutputRender";
+import { useAssetsBrowserStore } from "./Workspace";
+import type { AssetType } from "../SDInputs/sd-asset-input";
+import { callServerPromise } from "@/lib/call-server-promise";
 
 interface SessionForm {
   machineId: string;
@@ -295,6 +298,7 @@ export function SessionCreatorForm({
     defaultValue: version,
     ...parseAsInteger,
   });
+  const { setOpen: setAssetsOpen, setOnAssetSelect } = useAssetsBrowserStore();
 
   const [_, setSessionId] = useQueryState("sessionId");
 
@@ -312,6 +316,29 @@ export function SessionCreatorForm({
 
   const isFluidVersion =
     defaultIsFluidVersion ?? !!machineVersionData?.modal_image_id;
+
+  const handleAsset = async (asset: AssetType) => {
+    try {
+      await callServerPromise(
+        api({
+          url: `workflow/${workflowId}`,
+          init: {
+            method: "PATCH",
+            body: JSON.stringify({ cover_image: asset.url }),
+          },
+        }),
+      );
+      toast.success("Cover image updated!");
+      queryClient.invalidateQueries({
+        queryKey: ["workflow", workflowId],
+      });
+    } catch (error) {
+      toast.error("Failed to update cover image");
+    } finally {
+      setOnAssetSelect(null);
+      setAssetsOpen(false);
+    }
+  };
 
   const onSubmit = async (data: SessionForm) => {
     if (!workflow?.selected_machine_id) {
@@ -368,7 +395,7 @@ export function SessionCreatorForm({
   if (mode === "description-only") {
     return (
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
+        {/* <div className="flex items-center justify-between gap-2">
           <h2 className="line-clamp-1 font-semibold text-lg">
             {workflow?.name || "ComfyUI"}
           </h2>
@@ -384,7 +411,7 @@ export function SessionCreatorForm({
               <Share className="h-4 w-4" />
             </Button>
           )}
-        </div>
+        </div> */}
         <div className="flex items-end justify-between gap-2">
           <div className="w-full">
             <DescriptionForm
