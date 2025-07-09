@@ -368,7 +368,7 @@ export function SessionCreatorForm({
   if (mode === "description-only") {
     return (
       <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
+        {/* <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h2 className="line-clamp-1 font-semibold text-lg">
               {workflow?.name || "ComfyUI"}
@@ -391,7 +391,7 @@ export function SessionCreatorForm({
               <Share className="h-4 w-4" />
             </Button>
           )}
-        </div>
+        </div> */}
         <div className="flex items-end justify-between gap-2">
           <div className="w-full">
             <DescriptionForm

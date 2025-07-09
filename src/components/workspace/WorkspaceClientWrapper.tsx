@@ -258,7 +258,7 @@ export function WorkspaceClientWrapper({
 
             {/* Floating Description - Top Left (Desktop Only) */}
             <motion.div
-              className="absolute top-4 left-4 z-20 hidden w-full max-w-md md:block"
+              className="absolute top-[52px] left-4 z-20 hidden w-full max-w-md md:block"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}

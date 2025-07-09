@@ -26,7 +26,7 @@ import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { getRelativeTime } from "@/lib/get-relative-time";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronDown, Loader2 } from "lucide-react";
+import { Check, ChevronDown, ChevronsUpDown, Loader2 } from "lucide-react";
 import { Search } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
 import * as React from "react";
@@ -257,7 +257,7 @@ export function VersionSelectV2({
               v{value?.version || version}
             </Badge>
           </span>
-          <ChevronDown className="opacity-50" />
+          <ChevronsUpDown className="ml-2 flex-shrink-0 opacity-50" size={16} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[375px] overflow-hidden p-0" side="bottom">

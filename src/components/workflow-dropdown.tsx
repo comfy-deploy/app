@@ -116,7 +116,7 @@ export function WorkflowDropdown({
             type="button"
             aria-expanded={open}
             className={cn(
-              "flex w-full items-center justify-between rounded-sm px-2 py-1 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-zinc-700/40",
+              "flex w-full items-center justify-between rounded-sm px-2 py-1 text-sm",
               className,
             )}
             onDoubleClick={openRenameDialog}
@@ -124,7 +124,10 @@ export function WorkflowDropdown({
             <span className="truncate text-ellipsis text-start">
               {workflow?.name ?? "Select a workflow"}
             </span>
-            <ChevronsUpDown className="flex-shrink-0 opacity-50" size={16} />
+            <ChevronsUpDown
+              className="ml-2 flex-shrink-0 opacity-50"
+              size={16}
+            />
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-[375px] overflow-hidden p-0" side="bottom">
