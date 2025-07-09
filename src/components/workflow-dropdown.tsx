@@ -121,11 +121,11 @@ export function WorkflowDropdown({
             )}
             onDoubleClick={openRenameDialog}
           >
-            <span className="truncate text-ellipsis text-start">
+            <span className="truncate text-ellipsis text-start dark:text-zinc-100">
               {workflow?.name ?? "Select a workflow"}
             </span>
             <ChevronsUpDown
-              className="ml-2 flex-shrink-0 opacity-50"
+              className="ml-2 flex-shrink-0 opacity-50 dark:text-zinc-400"
               size={16}
             />
           </button>

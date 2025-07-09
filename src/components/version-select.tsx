@@ -257,7 +257,10 @@ export function VersionSelectV2({
               v{value?.version || version}
             </Badge>
           </span>
-          <ChevronsUpDown className="ml-2 flex-shrink-0 opacity-50" size={16} />
+          <ChevronsUpDown
+            className="ml-2 flex-shrink-0 opacity-50 dark:text-zinc-400"
+            size={16}
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[375px] overflow-hidden p-0" side="bottom">

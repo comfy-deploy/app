@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useRouter, useSearch } from "@tanstack/react-router";
 import { WorkflowDropdown } from "./workflow-dropdown";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { VersionSelectV2 } from "./version-select";
@@ -11,16 +11,30 @@ import {
   Slash,
   TextSearch,
   WorkflowIcon,
+  X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import { useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ImageInputsTooltip } from "./image-inputs-tooltip";
+import { useSessionIdInSessionView } from "@/hooks/hook";
+import { cn } from "@/lib/utils";
+import type { Session } from "./app-sidebar";
+import { useQuery } from "@tanstack/react-query";
+import { useSessionTimer } from "./workspace/SessionTimer";
+import { Clock } from "lucide-react";
+import { parseAsString, useQueryState } from "nuqs";
+import { useEffect } from "react";
+import { useSessionAPI } from "@/hooks/use-session-api";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function WorkflowNavbar() {
+  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
+
   return (
-    <>
+    <div className={cn(sessionId && "dark")}>
       <div
         className="pointer-events-none fixed top-0 right-0 left-0 z-40 h-14 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm dark:from-zinc-900/80 dark:to-transparent"
         style={{
@@ -30,7 +44,12 @@ export function WorkflowNavbar() {
             "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)",
         }}
       />
-      <div className="pointer-events-none fixed top-0 right-0 left-0 z-50 flex h-14 items-center px-4">
+      <div
+        className={cn(
+          "pointer-events-none fixed top-0 right-0 left-0 z-50 flex h-14 items-center px-4",
+          sessionId && "dark",
+        )}
+      >
         <WorkflowNavbarLeft />
 
         <div className="-translate-x-1/2 pointer-events-auto absolute left-1/2 flex transform items-center">
@@ -41,7 +60,7 @@ export function WorkflowNavbar() {
           {/* Right content */}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -50,6 +69,7 @@ function CenterNavigation() {
   const router = useRouter();
   const { view } = useParams({ from: "/workflows/$workflowId/$view" });
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
+  const { sessionId, restoreCachedSession } = useSessionWithCache();
 
   // Define which buttons should be visible for each view
   const visibleButtons = useMemo(() => {
@@ -72,6 +92,11 @@ function CenterNavigation() {
     return positions[buttonId as keyof typeof positions] || positions.workspace;
   };
 
+  const hoverPosition = useMemo(
+    () => getHoverPosition(hoveredButton || "workspace"),
+    [hoveredButton],
+  );
+
   return (
     <motion.div
       layout
@@ -83,6 +108,11 @@ function CenterNavigation() {
         mass: 0.8,
       }}
     >
+      <SessionTimerButton
+        sessionId={sessionId}
+        restoreCachedSession={restoreCachedSession}
+      />
+
       {/* Main navbar with layout animation */}
       <motion.div
         layout
@@ -95,7 +125,7 @@ function CenterNavigation() {
           mass: 0.6,
           opacity: { duration: 0.3 },
         }}
-        className="relative z-10 flex items-center rounded-full border border-gray-200 bg-white/60 px-1.5 text-sm shadow-md backdrop-blur-sm"
+        className="relative z-10 flex items-center rounded-full border border-gray-200 bg-white/60 px-1.5 text-sm shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
         onMouseLeave={() => setHoveredButton(null)}
       >
         {/* Floating hover background */}
@@ -103,20 +133,21 @@ function CenterNavigation() {
           {hoveredButton && (
             <motion.div
               layoutId="hover-background"
-              className="absolute inset-y-1 rounded-full bg-gray-100/60 backdrop-blur-sm"
-              initial={{ opacity: 0, scaleX: 0.8, scaleY: 0.8 }}
+              className="absolute inset-y-1 rounded-full bg-gray-100/60 backdrop-blur-sm dark:bg-zinc-600/5"
+              initial={{ opacity: 0, scaleX: 0.8, scaleY: 0.4 }}
               animate={{
                 opacity: 1,
                 scaleX: 1.05,
                 scaleY: 1.05,
-                ...getHoverPosition(hoveredButton),
+                ...hoverPosition,
               }}
-              exit={{ opacity: 0, scaleX: 0.8, scaleY: 0.8 }}
+              exit={{ opacity: 0, scaleX: 0.8, scaleY: 0.4 }}
               transition={{
                 type: "spring",
                 stiffness: 400,
                 damping: 30,
                 mass: 0.3,
+                delay: 0.2,
               }}
             />
           )}
@@ -126,8 +157,8 @@ function CenterNavigation() {
           type="button"
           className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
             view === "workspace"
-              ? "font-medium text-gray-900"
-              : "text-gray-600 hover:text-gray-900"
+              ? "font-medium text-gray-900 dark:text-zinc-100"
+              : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           }`}
           onClick={() => {
             router.navigate({
@@ -145,8 +176,8 @@ function CenterNavigation() {
           type="button"
           className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
             view === "playground"
-              ? "font-medium text-gray-900"
-              : "text-gray-600 hover:text-gray-900"
+              ? "font-medium text-gray-900 dark:text-zinc-100"
+              : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           }`}
           onClick={() => {
             router.navigate({
@@ -164,8 +195,8 @@ function CenterNavigation() {
           type="button"
           className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
             view === "deployment"
-              ? "font-medium text-gray-900"
-              : "text-gray-600 hover:text-gray-900"
+              ? "font-medium text-gray-900 dark:text-zinc-100"
+              : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           }`}
           onClick={() => {
             router.navigate({
@@ -181,7 +212,7 @@ function CenterNavigation() {
 
         {/* Active state background */}
         <motion.div
-          className="absolute inset-y-1 rounded-full bg-gray-200/60 backdrop-blur-sm"
+          className="absolute inset-y-1 rounded-full bg-gradient-to-br from-gray-100/60 via-gray-200/60 to-gray-300/60 backdrop-blur-sm dark:from-zinc-500/40 dark:via-zinc-600/40 dark:to-zinc-700/40"
           initial={false}
           animate={{
             opacity:
@@ -227,8 +258,8 @@ function CenterNavigation() {
             }}
             className={`flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm ${
               view === "machine"
-                ? "border-gray-300 bg-gray-200/60 shadow-gray-200"
-                : "border-gray-200 bg-white/60"
+                ? "border-gray-300 bg-gray-200/60 shadow-gray-200 dark:border-zinc-800/50 dark:bg-zinc-400/60 dark:shadow-zinc-600/40"
+                : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60"
             }`}
           >
             <ImageInputsTooltip tooltipText="Machine" delayDuration={300}>
@@ -236,8 +267,8 @@ function CenterNavigation() {
                 type="button"
                 className={`flex items-center gap-1.5 px-4 py-3 transition-colors ${
                   view === "machine"
-                    ? "text-gray-900"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "text-gray-900 dark:text-zinc-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 }`}
                 onClick={() => {
                   router.navigate({
@@ -273,8 +304,8 @@ function CenterNavigation() {
             }}
             className={`flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm ${
               view === "model"
-                ? "border-gray-300 bg-gray-200/60 shadow-gray-200"
-                : "border-gray-200 bg-white/60"
+                ? "border-gray-300 bg-gray-200/60 shadow-gray-200 dark:border-zinc-800/50 dark:bg-zinc-400/60 dark:shadow-zinc-600/40"
+                : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60"
             }`}
           >
             <ImageInputsTooltip tooltipText="Model" delayDuration={300}>
@@ -282,8 +313,8 @@ function CenterNavigation() {
                 type="button"
                 className={`flex items-center gap-1.5 px-4 py-3 transition-colors ${
                   view === "model"
-                    ? "text-gray-900"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "text-gray-900 dark:text-zinc-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 }`}
                 onClick={() => {
                   router.navigate({
@@ -318,8 +349,8 @@ function CenterNavigation() {
             }}
             className={`flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm ${
               view === "gallery"
-                ? "border-gray-300 bg-gray-200/60 shadow-gray-200"
-                : "border-gray-200 bg-white/60"
+                ? "border-gray-300 bg-gray-200/60 shadow-gray-200 dark:border-zinc-800/50 dark:bg-zinc-400/60 dark:shadow-zinc-600/40"
+                : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60"
             }`}
           >
             <ImageInputsTooltip tooltipText="Gallery" delayDuration={300}>
@@ -327,8 +358,8 @@ function CenterNavigation() {
                 type="button"
                 className={`flex items-center gap-1.5 px-4 py-3 transition-colors ${
                   view === "gallery"
-                    ? "text-gray-900"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "text-gray-900 dark:text-zinc-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 }`}
                 onClick={() => {
                   router.navigate({
@@ -363,8 +394,8 @@ function CenterNavigation() {
             }}
             className={`flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm ${
               view === "requests"
-                ? "border-gray-300 bg-gray-200/60 shadow-gray-200"
-                : "border-gray-200 bg-white/60"
+                ? "border-gray-300 bg-gray-200/60 shadow-gray-200 dark:border-zinc-800/50 dark:bg-zinc-400/60 dark:shadow-zinc-600/40"
+                : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60"
             }`}
           >
             <ImageInputsTooltip tooltipText="Request" delayDuration={300}>
@@ -372,8 +403,8 @@ function CenterNavigation() {
                 type="button"
                 className={`flex items-center gap-1.5 px-4 py-3 transition-colors ${
                   view === "requests"
-                    ? "text-gray-900"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "text-gray-900 dark:text-zinc-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 }`}
                 onClick={() => {
                   router.navigate({
@@ -429,4 +460,239 @@ function WorkflowNavbarLeft() {
       )}
     </div>
   );
+}
+
+// ============== utils ==============
+
+function SessionTimerButton({
+  sessionId,
+  restoreCachedSession,
+}: {
+  sessionId: string | null;
+  restoreCachedSession: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: session } = useQuery<Session>({
+    enabled: !!sessionId,
+    queryKey: ["session", sessionId],
+    refetchInterval: (data) => (data ? 1000 : false),
+  });
+
+  const { countdown, progressPercentage } = useSessionTimer(session);
+  const { deleteSession } = useSessionAPI();
+
+  // Calculate if less than 30 seconds remaining
+  const isLowTime = countdown
+    ? (() => {
+        const [hours, minutes, seconds] = countdown.split(":").map(Number);
+        const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        return totalSeconds < 30;
+      })()
+    : false;
+
+  const handleDeleteSession = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!sessionId) return;
+
+    try {
+      await deleteSession.mutateAsync({
+        sessionId,
+        waitForShutdown: true,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+
+      toast.success("Session ended successfully");
+    } catch (error) {
+      toast.error("Failed to end session");
+    }
+  };
+
+  return (
+    <AnimatePresence mode="popLayout">
+      {session && sessionId && (
+        <motion.div
+          layout
+          key="session-timer"
+          initial={{ opacity: 0, scale: 0.3, x: 120, rotateZ: -5 }}
+          animate={{ opacity: 1, scale: 1, x: 0, rotateZ: 0 }}
+          exit={{ opacity: 0, scale: 0.3, x: 120, rotateZ: 5 }}
+          transition={{
+            type: "spring",
+            stiffness: 180,
+            damping: 15,
+            mass: 0.8,
+            opacity: { duration: 0.4 },
+          }}
+          className="flex items-center"
+        >
+          <div
+            className={`relative flex h-10 items-center overflow-hidden rounded-full shadow-lg transition-all duration-300 ease-out ${
+              isLowTime
+                ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/25 hover:shadow-orange-500/40 dark:from-orange-500 dark:to-orange-700 dark:shadow-orange-600/25 dark:hover:shadow-orange-600/40"
+                : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"
+            }`}
+            style={{
+              width: isHovered ? "auto" : "40px",
+              paddingLeft: isHovered ? "12px" : "0px",
+              paddingRight: isHovered ? "12px" : "0px",
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            {/* Timer Icon */}
+            <button
+              type="button"
+              className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95"
+              onClick={restoreCachedSession}
+            >
+              {/* Progress ring */}
+              <div className="absolute inset-0.5">
+                <svg
+                  viewBox="0 0 32 32"
+                  className="-rotate-90 h-full w-full"
+                  role="img"
+                  aria-label="Session timer progress"
+                >
+                  {/* Background ring */}
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="10"
+                    fill="none"
+                    stroke={
+                      isLowTime
+                        ? "rgba(255, 255, 255, 0.2)"
+                        : "rgba(251, 146, 60, 0.2)"
+                    }
+                    strokeWidth="2"
+                  />
+                  {/* Progress ring */}
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="10"
+                    fill="none"
+                    stroke={
+                      isLowTime
+                        ? "rgba(255, 255, 255, 0.9)"
+                        : "rgba(251, 146, 60, 0.9)"
+                    }
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 10}`}
+                    strokeDashoffset={`${2 * Math.PI * 10 * (1 - progressPercentage / 100)}`}
+                    className="transition-all duration-1000 ease-out"
+                  />
+
+                  {/* Clock hand */}
+                  <line
+                    x1="16"
+                    y1="16"
+                    x2="16"
+                    y2="9"
+                    stroke={
+                      isLowTime
+                        ? "rgba(255, 255, 255, 0.95)"
+                        : "rgba(251, 146, 60, 0.95)"
+                    }
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    transform={`rotate(${-270 + progressPercentage * 3.6} 16 16)`}
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+              </div>
+            </button>
+
+            {/* Countdown Text and End Button */}
+            <div
+              className={`flex items-center gap-2 transition-all duration-300 ease-out ${
+                isHovered
+                  ? "opacity-100 translate-x-0"
+                  : "opacity-0 translate-x-4"
+              }`}
+              style={{
+                transitionDelay: isHovered ? "100ms" : "0ms",
+              }}
+            >
+              <span
+                className={`text-sm font-medium whitespace-nowrap ${
+                  isLowTime ? "text-white" : "text-gray-900 dark:text-white"
+                }`}
+              >
+                {countdown || "00:00:00"}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleDeleteSession}
+                disabled={deleteSession.isPending}
+                className={`p-1 rounded-full transition-colors duration-200 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isLowTime
+                    ? "text-white hover:text-white"
+                    : "text-gray-600 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400"
+                }`}
+                title="End session"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Create a custom hook for session management with caching
+function useSessionWithCache() {
+  const [sessionId, setSessionId] = useQueryState("sessionId", parseAsString);
+  const workflowId = useWorkflowIdInWorkflowPage();
+  const router = useRouter();
+
+  // Get cached session ID from session storage
+  const getCachedSessionId = () => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("lastSessionId");
+    }
+    return null;
+  };
+
+  // Cache session ID to session storage
+  const cacheSessionId = (id: string | null) => {
+    if (typeof window !== "undefined") {
+      if (id) {
+        sessionStorage.setItem("lastSessionId", id);
+      } else {
+        sessionStorage.removeItem("lastSessionId");
+      }
+    }
+  };
+
+  // Update cache when sessionId changes
+  useEffect(() => {
+    cacheSessionId(sessionId);
+  }, [sessionId]);
+
+  // Function to restore cached session
+  const restoreCachedSession = () => {
+    const cachedId = getCachedSessionId();
+    if (cachedId) {
+      router.navigate({
+        to: "/workflows/$workflowId/$view",
+        params: { workflowId: workflowId || "", view: "workspace" },
+        search: { sessionId: cachedId },
+      });
+    }
+  };
+
+  return {
+    sessionId,
+    setSessionId,
+    getCachedSessionId,
+    restoreCachedSession,
+  };
 }

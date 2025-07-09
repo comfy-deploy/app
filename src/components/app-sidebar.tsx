@@ -130,7 +130,7 @@ import { GuideDialog } from "./guide/GuideDialog";
 import { Icon } from "./icon-word";
 
 // Add Session type
-interface Session {
+export interface Session {
   created_at: string;
   timeout_end?: string;
   timeout?: number;
