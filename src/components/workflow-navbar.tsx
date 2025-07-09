@@ -101,16 +101,7 @@ function CenterNavigation() {
   );
 
   return (
-    <motion.div
-      layout
-      className="mt-2 flex flex-row gap-2.5"
-      transition={{
-        type: "spring",
-        stiffness: 200,
-        damping: 25,
-        mass: 0.8,
-      }}
-    >
+    <div className="mt-2 flex flex-row gap-2.5">
       <SessionTimerButton
         sessionId={sessionId}
         restoreCachedSession={restoreCachedSession}
@@ -423,7 +414,7 @@ function CenterNavigation() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -483,7 +474,7 @@ function WorkflowNavbarRight() {
             initial={{ opacity: 0, scale: 0.8, rotateZ: -5 }}
             animate={{ opacity: 1, scale: 1, rotateZ: 0 }}
             exit={{ opacity: 0, scale: 0.8, rotateZ: 5 }}
-            whileHover={{ scale: 1.08 }}
+            whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.95 }}
             transition={{
               type: "spring",
@@ -596,7 +587,7 @@ function SessionTimerButton({
                 : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"
             }`}
             style={{
-              width: isHovered ? "auto" : "40px",
+              width: isHovered ? "164px" : "42px",
               paddingLeft: isHovered ? "12px" : "0px",
               paddingRight: isHovered ? "12px" : "0px",
             }}
