@@ -1,9 +1,21 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { WorkflowDropdown } from "./workflow-dropdown";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { VersionSelectV2 } from "./version-select";
-import { Slash } from "lucide-react";
+import {
+  Database,
+  GitBranch,
+  ImageIcon,
+  Play,
+  Server,
+  Slash,
+  TextSearch,
+  WorkflowIcon,
+} from "lucide-react";
 import { motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import { useParams } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 export function WorkflowNavbar() {
   return (
@@ -33,12 +45,209 @@ export function WorkflowNavbar() {
 }
 
 function CenterNavigation() {
+  const workflowId = useWorkflowIdInWorkflowPage();
+  const router = useRouter();
+  const { view } = useParams({ from: "/workflows/$workflowId/$view" });
+
+  // Define which buttons should be visible for each view
+  const visibleButtons = useMemo(() => {
+    const buttonConfig = {
+      machine: view === "workspace" || view === "machine",
+      model: view === "workspace" || view === "model",
+      gallery: view === "playground" || view === "gallery",
+      requests: view === "deployment" || view === "requests",
+    };
+    return buttonConfig;
+  }, [view]);
+
   return (
-    <div>
-      <motion.button type="button">Workflow</motion.button>
-      <motion.button type="button">Playground</motion.button>
-      <motion.button type="button">API</motion.button>
-    </div>
+    <motion.div
+      layout
+      className="mt-2 flex flex-row gap-2.5"
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      {/* Main navbar with layout animation */}
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 30,
+          opacity: { duration: 0.2 },
+        }}
+        className="z-10 flex items-center rounded-full border border-gray-200 bg-white/60 px-2 text-sm shadow-md backdrop-blur-sm"
+      >
+        <button
+          type="button"
+          className="flex items-center gap-1.5 px-4 py-3"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: { workflowId: workflowId || "", view: "workspace" },
+            });
+          }}
+        >
+          <WorkflowIcon className="h-4 w-4" />
+          Workflow
+        </button>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 px-4 py-3"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: { workflowId: workflowId || "", view: "playground" },
+            });
+          }}
+        >
+          <Play className="h-4 w-4" />
+          Playground
+        </button>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 px-4 py-3"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: { workflowId: workflowId || "", view: "deployment" },
+            });
+          }}
+        >
+          <GitBranch className="h-4 w-4" />
+          API
+        </button>
+      </motion.div>
+
+      <AnimatePresence mode="popLayout">
+        {/* Machine button */}
+        {visibleButtons.machine && (
+          <motion.div
+            layout
+            key="machine"
+            initial={{ opacity: 0, scale: 0.4, x: -100 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.4, x: -100 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 30,
+              opacity: { duration: 0.2 },
+            }}
+            className="flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm"
+          >
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-4 py-3"
+              onClick={() => {
+                router.navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: { workflowId: workflowId || "", view: "machine" },
+                });
+              }}
+            >
+              <span className="sr-only">Machine</span>
+              <Server className="h-4 w-[18px]" />
+            </button>
+          </motion.div>
+        )}
+
+        {/* Model button */}
+        {visibleButtons.model && (
+          <motion.div
+            layout
+            key="model"
+            initial={{ opacity: 0, scale: 0.4, x: -100 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.4, x: -100 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 30,
+              opacity: { duration: 0.2 },
+            }}
+            className="flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm"
+          >
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-4 py-3"
+            >
+              <span className="sr-only">Model</span>
+              <Database className="h-4 w-[18px]" />
+            </button>
+          </motion.div>
+        )}
+
+        {/* Gallery button */}
+        {visibleButtons.gallery && (
+          <motion.div
+            layout
+            key="gallery"
+            initial={{ opacity: 0, scale: 0.4, x: -100 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.4, x: -100 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 30,
+              opacity: { duration: 0.2 },
+            }}
+            className="flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm"
+          >
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-4 py-3"
+              onClick={() => {
+                router.navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: { workflowId: workflowId || "", view: "gallery" },
+                });
+              }}
+            >
+              <span className="sr-only">Gallery</span>
+              <ImageIcon className="h-4 w-[18px]" />
+            </button>
+          </motion.div>
+        )}
+
+        {/* Request button */}
+        {visibleButtons.requests && (
+          <motion.div
+            layout
+            key="requests"
+            initial={{ opacity: 0, scale: 0.4, x: -100 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.4, x: -100 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 30,
+              opacity: { duration: 0.2 },
+            }}
+            className="flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm"
+          >
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-4 py-3"
+              onClick={() => {
+                router.navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: { workflowId: workflowId || "", view: "requests" },
+                });
+              }}
+            >
+              <span className="sr-only">Request</span>
+              <TextSearch className="h-4 w-[18px]" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 

@@ -164,7 +164,7 @@ export function DeploymentPage() {
           <DeploymentWorkflowVersionList workflowId={workflowId} />
         </div>
 
-        <div className="mx-2 mt-4 mb-1 flex items-center justify-between">
+        <div className="mx-2 mt-10 mb-1 flex items-center justify-between">
           <h3 className="font-medium text-sm">Requests</h3>
           <FilterDropdown
             workflowId={workflowId}

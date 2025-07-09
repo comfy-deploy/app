@@ -340,7 +340,7 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-[1200px]">
+      <div className="mx-auto w-full max-w-[1200px] pt-12">
         {coverImageNotified && (
           <div className="m-4">
             <RenderAlert

@@ -191,7 +191,7 @@ function WorkflowPageComponent() {
       break;
     case "deployment":
       view = (
-        <PaddingLayout>
+        <PaddingLayout className="pt-4">
           {isPlanLoading ? (
             <div className="flex h-full w-full items-center justify-center">
               <LoadingIcon />
