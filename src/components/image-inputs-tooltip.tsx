@@ -5,11 +5,17 @@ interface Props {
   children: React.ReactNode;
   tooltipText: string;
   side?: "top" | "bottom" | "left" | "right";
+  delayDuration?: number;
 }
 
-export const ImageInputsTooltip = ({ tooltipText, children, side }: Props) => {
+export const ImageInputsTooltip = ({
+  tooltipText,
+  children,
+  side,
+  delayDuration = 0,
+}: Props) => {
   return (
-    <Tooltip>
+    <Tooltip delayDuration={delayDuration}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipContent side={side}>
         <p className="text-sm">{tooltipText}</p>
