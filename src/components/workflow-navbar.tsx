@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { ShareWorkflowDialog } from "./share-workflow-dialog";
+import { useIsAdminAndMember } from "./permissions";
 
 export function WorkflowNavbar() {
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
@@ -69,6 +70,7 @@ export function WorkflowNavbar() {
 
 function CenterNavigation() {
   const workflowId = useWorkflowIdInWorkflowPage();
+  const isAdminAndMember = useIsAdminAndMember();
   const router = useRouter();
   const { view } = useParams({ from: "/workflows/$workflowId/$view" });
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
@@ -77,6 +79,17 @@ function CenterNavigation() {
 
   // Define which buttons should be visible for each view
   const visibleButtons = useMemo(() => {
+    if (!isAdminAndMember) {
+      // When user is not admin and member, only show gallery
+      return {
+        machine: false,
+        model: false,
+        gallery: view === "playground" || view === "gallery",
+        requests: false,
+      };
+    }
+
+    // Original logic for admin and members
     const buttonConfig = {
       machine: view === "workspace" || view === "machine" || view === "model",
       model: view === "workspace" || view === "model" || view === "machine",
@@ -84,10 +97,20 @@ function CenterNavigation() {
       requests: view === "deployment" || view === "requests",
     };
     return buttonConfig;
-  }, [view]);
+  }, [view, isAdminAndMember]);
 
   // Calculate hover background position
   const getHoverPosition = (buttonId: string) => {
+    if (!isAdminAndMember) {
+      // When only playground is shown, center it
+      const positions = {
+        playground: { left: "6px", width: "calc(100% - 12px)" },
+      } as const;
+      return (
+        positions[buttonId as keyof typeof positions] || positions.playground
+      );
+    }
+
     const positions = {
       workspace: { left: "8px", width: "35%" },
       playground: { left: "37%", width: "38%" },
@@ -97,8 +120,11 @@ function CenterNavigation() {
   };
 
   const hoverPosition = useMemo(
-    () => getHoverPosition(hoveredButton || "workspace"),
-    [hoveredButton],
+    () =>
+      getHoverPosition(
+        hoveredButton || (isAdminAndMember ? "workspace" : "playground"),
+      ),
+    [hoveredButton, isAdminAndMember],
   );
 
   return (
@@ -148,24 +174,27 @@ function CenterNavigation() {
           )}
         </AnimatePresence>
 
-        <button
-          type="button"
-          className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
-            view === "workspace"
-              ? "font-medium text-gray-900 dark:text-zinc-100"
-              : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-          }`}
-          onClick={() => {
-            router.navigate({
-              to: "/workflows/$workflowId/$view",
-              params: { workflowId: workflowId || "", view: "workspace" },
-            });
-          }}
-          onMouseEnter={() => setHoveredButton("workspace")}
-        >
-          <WorkflowIcon className="h-4 w-4" />
-          Workflow
-        </button>
+        {/* Conditionally render workspace button */}
+        {isAdminAndMember && (
+          <button
+            type="button"
+            className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
+              view === "workspace"
+                ? "font-medium text-gray-900 dark:text-zinc-100"
+                : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            }`}
+            onClick={() => {
+              router.navigate({
+                to: "/workflows/$workflowId/$view",
+                params: { workflowId: workflowId || "", view: "workspace" },
+              });
+            }}
+            onMouseEnter={() => setHoveredButton("workspace")}
+          >
+            <WorkflowIcon className="h-4 w-4" />
+            Workflow
+          </button>
+        )}
 
         <button
           type="button"
@@ -186,24 +215,27 @@ function CenterNavigation() {
           Playground
         </button>
 
-        <button
-          type="button"
-          className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
-            view === "deployment"
-              ? "font-medium text-gray-900 dark:text-zinc-100"
-              : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-          }`}
-          onClick={() => {
-            router.navigate({
-              to: "/workflows/$workflowId/$view",
-              params: { workflowId: workflowId || "", view: "deployment" },
-            });
-          }}
-          onMouseEnter={() => setHoveredButton("deployment")}
-        >
-          <GitBranch className="h-4 w-4" />
-          API
-        </button>
+        {/* Conditionally render deployment button */}
+        {isAdminAndMember && (
+          <button
+            type="button"
+            className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
+              view === "deployment"
+                ? "font-medium text-gray-900 dark:text-zinc-100"
+                : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            }`}
+            onClick={() => {
+              router.navigate({
+                to: "/workflows/$workflowId/$view",
+                params: { workflowId: workflowId || "", view: "deployment" },
+              });
+            }}
+            onMouseEnter={() => setHoveredButton("deployment")}
+          >
+            <GitBranch className="h-4 w-4" />
+            API
+          </button>
+        )}
 
         {/* Active state background */}
         <motion.div
@@ -211,9 +243,9 @@ function CenterNavigation() {
           initial={false}
           animate={{
             opacity:
-              view === "workspace" ||
-              view === "playground" ||
-              view === "deployment"
+              (isAdminAndMember &&
+                (view === "workspace" || view === "deployment")) ||
+              view === "playground"
                 ? 1
                 : 0,
             ...getHoverPosition(

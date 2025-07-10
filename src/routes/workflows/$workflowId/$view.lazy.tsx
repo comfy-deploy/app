@@ -133,6 +133,7 @@ export const Route = createLazyFileRoute("/workflows/$workflowId/$view")({
 
 function WorkflowPageComponent() {
   const { workflowId, view: currentView } = Route.useParams();
+  const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -153,6 +154,76 @@ function WorkflowPageComponent() {
     new Set([currentView]),
   );
 
+  // Call all hooks first before any conditional logic
+  const { workflow } = useCurrentWorkflow(workflowId);
+  const { data: machine } = useMachine(workflow?.selected_machine_id);
+  const { value: version } = useSelectedVersion(workflowId);
+  const isAdminAndMember = useIsAdminAndMember();
+  const { isLoading: isPlanLoading } = useCurrentPlanQuery();
+  const isDeploymentAllowed = useIsDeploymentAllowed();
+  const { openMobile: isMobileSidebarOpen, isMobile } = useSidebar();
+  const [sessionId, setSessionId] = useQueryState("sessionId");
+  const { setOpen: setAssetsOpen, setOnAssetSelect } = useAssetsBrowserStore();
+
+  // All other hooks and state...
+  const publicShareDeployment = deployments?.find(
+    (d: Deployment) => d.environment === "public-share",
+  );
+  const communityShareDeployment = deployments?.find(
+    (d: Deployment) => d.environment === "community-share",
+  );
+  const privateShareDeployment = deployments?.find(
+    (d: Deployment) => d.environment === "private-share",
+  );
+
+  const handleAsset = async (asset: AssetType) => {
+    try {
+      await callServerPromise(
+        api({
+          url: `workflow/${workflowId}`,
+          init: {
+            method: "PATCH",
+            body: JSON.stringify({ cover_image: asset.url }),
+          },
+        }),
+      );
+      toast.success("Cover image updated!");
+      queryClient.invalidateQueries({
+        queryKey: ["workflow", workflowId],
+      });
+    } catch (error) {
+      toast.error("Failed to update cover image");
+    } finally {
+      setOnAssetSelect(null);
+      setAssetsOpen(false);
+    }
+  };
+
+  // Define allowed views based on permissions
+  const allowedViews = isAdminAndMember
+    ? [
+        "workspace",
+        "playground",
+        "gallery",
+        "machine",
+        "model",
+        "requests",
+        "deployment",
+      ]
+    : ["playground", "gallery"];
+
+  // Permission check and redirect - do this after all hooks are called
+  useEffect(() => {
+    if (!allowedViews.includes(currentView)) {
+      // Redirect to playground as the default allowed view
+      router.navigate({
+        to: "/workflows/$workflowId/$view",
+        params: { workflowId, view: "playground" },
+        replace: true,
+      });
+    }
+  }, [isAdminAndMember, currentView, router, workflowId, allowedViews]);
+
   useEffect(() => {
     if (currentView === "gallery") {
       return;
@@ -164,15 +235,16 @@ function WorkflowPageComponent() {
     });
   }, [currentView]);
 
+  // If user doesn't have permission for current view, show loading while redirecting
+  if (!allowedViews.includes(currentView)) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <LoadingIcon />
+      </div>
+    );
+  }
+
   let view: React.ReactNode;
-
-  const { workflow } = useCurrentWorkflow(workflowId);
-  const { data: machine } = useMachine(workflow?.selected_machine_id);
-
-  const { value: version } = useSelectedVersion(workflowId);
-  const isAdminAndMember = useIsAdminAndMember();
-  const { isLoading: isPlanLoading } = useCurrentPlanQuery();
-  const isDeploymentAllowed = useIsDeploymentAllowed();
 
   switch (currentView) {
     case "requests":
@@ -246,49 +318,6 @@ function WorkflowPageComponent() {
   }
 
   const tabs = isAdminAndMember ? workspace : ["playground", "gallery"];
-
-  const { openMobile: isMobileSidebarOpen, isMobile } = useSidebar();
-
-  const router = useRouter();
-
-  const [sessionId, setSessionId] = useQueryState("sessionId");
-  const { setOpen: setAssetsOpen, setOnAssetSelect } = useAssetsBrowserStore();
-
-  // Find public share deployment if it exists
-  const publicShareDeployment = deployments?.find(
-    (d: Deployment) => d.environment === "public-share",
-  );
-
-  const communityShareDeployment = deployments?.find(
-    (d: Deployment) => d.environment === "community-share",
-  );
-
-  const privateShareDeployment = deployments?.find(
-    (d: Deployment) => d.environment === "private-share",
-  );
-
-  const handleAsset = async (asset: AssetType) => {
-    try {
-      await callServerPromise(
-        api({
-          url: `workflow/${workflowId}`,
-          init: {
-            method: "PATCH",
-            body: JSON.stringify({ cover_image: asset.url }),
-          },
-        }),
-      );
-      toast.success("Cover image updated!");
-      queryClient.invalidateQueries({
-        queryKey: ["workflow", workflowId],
-      });
-    } catch (error) {
-      toast.error("Failed to update cover image");
-    } finally {
-      setOnAssetSelect(null);
-      setAssetsOpen(false);
-    }
-  };
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -536,7 +565,8 @@ function WorkflowPageComponent() {
           </div>
         )}
       </Portal>
-      {mountedViews.has("workspace") ? (
+      {/* Workspace view - only render if user has admin permissions */}
+      {mountedViews.has("workspace") && isAdminAndMember ? (
         <div
           className="h-full w-full"
           style={{
