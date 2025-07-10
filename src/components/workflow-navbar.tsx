@@ -107,7 +107,6 @@ function CenterNavigation() {
         workflowId={workflowId}
         sessionId={sessionId}
         restoreCachedSession={restoreCachedSession}
-        cacheSessionId={cacheSessionId}
       />
 
       {/* Main navbar with layout animation */}
@@ -422,7 +421,8 @@ function CenterNavigation() {
 
 function WorkflowNavbarLeft() {
   const workflowId = useWorkflowIdInWorkflowPage();
-  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
+  const search = useSearch({ from: "/workflows/$workflowId/$view" });
+  const sessionId = (search as any)?.sessionId;
 
   return (
     <div
@@ -467,7 +467,8 @@ function WorkflowNavbarLeft() {
 }
 
 function WorkflowNavbarRight() {
-  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
+  const search = useSearch({ from: "/workflows/$workflowId/$view" });
+  const sessionId = (search as any)?.sessionId;
   const { workflowId, view } = useParams({
     from: "/workflows/$workflowId/$view",
   });
@@ -530,21 +531,38 @@ function SessionTimerButton({
   workflowId,
   sessionId,
   restoreCachedSession,
-  cacheSessionId,
 }: {
   workflowId: string | null;
   sessionId: string | null;
   restoreCachedSession: () => void;
-  cacheSessionId: (id: string | null) => void;
 }) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const queryClient = useQueryClient();
+
+  // Get cached session ID if URL sessionId is null
+  const getCachedSessionId = () => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("lastSessionId");
+    }
+    return null;
+  };
+
+  // Use sessionId from URL or fallback to cached sessionId
+  const effectiveSessionId = sessionId || getCachedSessionId();
+
   const { data: session } = useQuery<Session>({
-    enabled: !!sessionId,
-    queryKey: ["session", sessionId],
-    refetchInterval: (data) => (data ? 1000 : false),
+    enabled: !!effectiveSessionId,
+    queryKey: ["session", effectiveSessionId],
+    refetchInterval: (data) => {
+      if (!data) return false;
+      if (data.timeout_end !== null) return false;
+      return 1000;
+    },
   });
+
+  // Only show session if we have both session data AND a valid session ID
+  const activeSession = effectiveSessionId ? session : null;
 
   const { countdown, progressPercentage } = useSessionTimer(session);
   const { deleteSession } = useSessionAPI();
@@ -560,7 +578,8 @@ function SessionTimerButton({
 
   const handleDeleteSession = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!sessionId) return;
+    const sessionIdToDelete = effectiveSessionId;
+    if (!sessionIdToDelete) return;
 
     try {
       router.navigate({
@@ -568,15 +587,14 @@ function SessionTimerButton({
         params: { workflowId: workflowId || "", view: "workspace" },
       });
       await deleteSession.mutateAsync({
-        sessionId,
+        sessionId: sessionIdToDelete,
         waitForShutdown: true,
       });
 
-      // Clean up cached session ID
-      cacheSessionId(null);
-
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+      queryClient.invalidateQueries({
+        queryKey: ["session", sessionIdToDelete],
+      });
 
       toast.success("Session ended successfully");
     } catch (error) {
@@ -586,7 +604,7 @@ function SessionTimerButton({
 
   return (
     <AnimatePresence mode="popLayout">
-      {session && sessionId && (
+      {activeSession && effectiveSessionId && (
         <motion.div
           layout
           key="session-timer"
@@ -743,21 +761,32 @@ function useSessionWithCache() {
     return null;
   };
 
-  // Cache session ID to session storage
+  // Cache session ID to session storage (separate from clearing)
   const cacheSessionId = (id: string | null) => {
     if (typeof window !== "undefined") {
       if (id) {
         sessionStorage.setItem("lastSessionId", id);
       } else {
+        // Only remove from session storage when explicitly requested
         sessionStorage.removeItem("lastSessionId");
-        setSessionId(null);
       }
     }
   };
 
-  // Update cache when sessionId changes
+  // Clear session ID from both URL and session storage
+  const clearSessionId = () => {
+    setSessionId(null);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("lastSessionId");
+    }
+  };
+
+  // Update cache ONLY when sessionId is present (not null)
   useEffect(() => {
-    cacheSessionId(sessionId);
+    if (sessionId) {
+      cacheSessionId(sessionId);
+    }
+    // Don't automatically clear when sessionId becomes null
   }, [sessionId]);
 
   // Function to restore cached session
@@ -777,6 +806,6 @@ function useSessionWithCache() {
     setSessionId,
     getCachedSessionId,
     restoreCachedSession,
-    cacheSessionId,
+    cacheSessionId: clearSessionId, // Use the new clear function
   };
 }

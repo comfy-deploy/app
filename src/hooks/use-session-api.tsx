@@ -55,7 +55,7 @@ export function useSessionAPI(machineId?: string | null) {
         waitForShutdown?: boolean;
       }) => {
         console.log(data);
-        return await api({
+        const response = await api({
           url: `session/${data.sessionId}`,
           init: {
             method: "DELETE",
@@ -64,6 +64,15 @@ export function useSessionAPI(machineId?: string | null) {
             wait_for_shutdown: data.waitForShutdown,
           },
         });
+
+        if (response.success === true) {
+          const lastSessionId = sessionStorage.getItem("lastSessionId");
+          if (lastSessionId === data.sessionId) {
+            sessionStorage.removeItem("lastSessionId");
+          }
+        }
+
+        return response;
       },
     }),
     listSession: useQuery<any[]>({
@@ -73,9 +82,11 @@ export function useSessionAPI(machineId?: string | null) {
       },
       refetchInterval: 2000,
       meta: {
-        params: machineId ? {
-          machine_id: machineId,
-        } : {},
+        params: machineId
+          ? {
+              machine_id: machineId,
+            }
+          : {},
       },
       enabled: true,
       // queryFn: async () => {
