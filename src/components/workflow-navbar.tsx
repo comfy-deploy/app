@@ -14,24 +14,16 @@ import {
   TextSearch,
   WorkflowIcon,
   X,
-  ChevronDown,
-  Globe,
-  Users,
-  Building,
-  Copy,
-  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import { useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ImageInputsTooltip } from "./image-inputs-tooltip";
-import { useSessionIdInSessionView } from "@/hooks/hook";
 import { cn } from "@/lib/utils";
 import type { Session } from "./app-sidebar";
 import { useQuery } from "@tanstack/react-query";
 import { useSessionTimer } from "./workspace/SessionTimer";
-import { Clock } from "lucide-react";
 import { parseAsString, useQueryState } from "nuqs";
 import { useEffect } from "react";
 import { useSessionAPI } from "@/hooks/use-session-api";
@@ -44,23 +36,11 @@ import {
   useCurrentPlanQuery,
   useIsDeploymentAllowed,
 } from "@/hooks/use-current-plan";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useWorkflowDeployments } from "@/components/workspace/ContainersTable";
 import {
   DeploymentDialog,
   useSelectedDeploymentStore,
 } from "@/components/deployment/deployment-page";
-import { api } from "@/lib/api";
-import { callServerPromise } from "@/lib/call-server-promise";
 import { getEnvColor } from "@/components/workspace/ContainersTable";
 
 export function WorkflowNavbar() {
@@ -578,9 +558,9 @@ function WorkflowNavbarRight() {
           <motion.div
             layout
             key="workspace-share"
-            initial={{ opacity: 0, scale: 0.8, rotateZ: -5 }}
-            animate={{ opacity: 1, scale: 1, rotateZ: 0 }}
-            exit={{ opacity: 0, scale: 0.8, rotateZ: 5 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.95 }}
             transition={{
@@ -608,9 +588,9 @@ function WorkflowNavbarRight() {
           <motion.div
             layout
             key="playground-share"
-            initial={{ opacity: 0, scale: 0.8, rotateZ: -5 }}
-            animate={{ opacity: 1, scale: 1, rotateZ: 0 }}
-            exit={{ opacity: 0, scale: 0.8, rotateZ: 5 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.95 }}
             transition={{
@@ -624,12 +604,12 @@ function WorkflowNavbarRight() {
               "mt-2 flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm",
               // Apply environment color or default styling
               publicShareDeployment
-                ? getEnvColor(publicShareDeployment.environment)
+                ? `${getEnvColor(publicShareDeployment.environment)} border-green-200 bg-green-100/40`
                 : communityShareDeployment
-                  ? getEnvColor(communityShareDeployment.environment)
+                  ? `${getEnvColor(communityShareDeployment.environment)} border-cyan-200 bg-cyan-100/40`
                   : privateShareDeployment
-                    ? getEnvColor(privateShareDeployment.environment)
-                    : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60",
+                    ? `${getEnvColor(privateShareDeployment.environment)} border-purple-200 bg-purple-100/40`
+                    : "border-gray-200 bg-white/40 dark:border-zinc-800/50 dark:bg-zinc-700/60",
             )}
           >
             <button
@@ -637,11 +617,11 @@ function WorkflowNavbarRight() {
               className={cn(
                 "flex h-12 items-center gap-1.5 px-4 transition-colors",
                 publicShareDeployment
-                  ? "text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-100"
+                  ? "text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-100"
                   : communityShareDeployment
-                    ? "text-cyan-600 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-100"
+                    ? "text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-100"
                     : privateShareDeployment
-                      ? "text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-100"
+                      ? "text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-100"
                       : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100",
               )}
               onClick={(e) => {
