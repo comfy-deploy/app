@@ -72,7 +72,8 @@ function CenterNavigation() {
   const router = useRouter();
   const { view } = useParams({ from: "/workflows/$workflowId/$view" });
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
-  const { sessionId, restoreCachedSession } = useSessionWithCache();
+  const { sessionId, restoreCachedSession, cacheSessionId } =
+    useSessionWithCache();
 
   // Define which buttons should be visible for each view
   const visibleButtons = useMemo(() => {
@@ -106,6 +107,7 @@ function CenterNavigation() {
         workflowId={workflowId}
         sessionId={sessionId}
         restoreCachedSession={restoreCachedSession}
+        cacheSessionId={cacheSessionId}
       />
 
       {/* Main navbar with layout animation */}
@@ -520,10 +522,12 @@ function SessionTimerButton({
   workflowId,
   sessionId,
   restoreCachedSession,
+  cacheSessionId,
 }: {
   workflowId: string | null;
   sessionId: string | null;
   restoreCachedSession: () => void;
+  cacheSessionId: (id: string | null) => void;
 }) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
@@ -559,6 +563,9 @@ function SessionTimerButton({
         sessionId,
         waitForShutdown: true,
       });
+
+      // Clean up cached session ID
+      cacheSessionId(null);
 
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
@@ -735,6 +742,7 @@ function useSessionWithCache() {
         sessionStorage.setItem("lastSessionId", id);
       } else {
         sessionStorage.removeItem("lastSessionId");
+        setSessionId(null);
       }
     }
   };
@@ -761,5 +769,6 @@ function useSessionWithCache() {
     setSessionId,
     getCachedSessionId,
     restoreCachedSession,
+    cacheSessionId,
   };
 }
