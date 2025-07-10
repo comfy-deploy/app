@@ -14,6 +14,12 @@ import {
   TextSearch,
   WorkflowIcon,
   X,
+  ChevronDown,
+  Globe,
+  Users,
+  Building,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
@@ -38,6 +44,24 @@ import {
   useCurrentPlanQuery,
   useIsDeploymentAllowed,
 } from "@/hooks/use-current-plan";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useWorkflowDeployments } from "@/components/workspace/ContainersTable";
+import {
+  DeploymentDialog,
+  useSelectedDeploymentStore,
+} from "@/components/deployment/deployment-page";
+import { api } from "@/lib/api";
+import { callServerPromise } from "@/lib/call-server-promise";
+import { getEnvColor } from "@/components/workspace/ContainersTable";
 
 export function WorkflowNavbar() {
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
@@ -518,8 +542,34 @@ function WorkflowNavbarRight() {
   const { workflowId, view } = useParams({
     from: "/workflows/$workflowId/$view",
   });
-  const workflow = useCurrentWorkflow(workflowId || "");
+  const { workflow } = useCurrentWorkflow(workflowId || "");
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<any>(null);
+  const { setSelectedDeployment } = useSelectedDeploymentStore();
+
+  // Get deployments and versions for sharing
+  const { data: deployments } = useWorkflowDeployments(workflowId || "");
+  const { data: versions } = useQuery<any[]>({
+    queryKey: ["workflow", workflowId, "versions"],
+    enabled: !!workflowId,
+    meta: {
+      params: {
+        limit: 1,
+        offset: 0,
+      },
+    },
+  });
+
+  const publicShareDeployment = deployments?.find(
+    (d: any) => d.environment === "public-share",
+  );
+  const communityShareDeployment = deployments?.find(
+    (d: any) => d.environment === "community-share",
+  );
+  const privateShareDeployment = deployments?.find(
+    (d: any) => d.environment === "private-share",
+  );
 
   return (
     <>
@@ -527,7 +577,7 @@ function WorkflowNavbarRight() {
         {view === "workspace" && !sessionId && (
           <motion.div
             layout
-            key="session-timer"
+            key="workspace-share"
             initial={{ opacity: 0, scale: 0.8, rotateZ: -5 }}
             animate={{ opacity: 1, scale: 1, rotateZ: 0 }}
             exit={{ opacity: 0, scale: 0.8, rotateZ: 5 }}
@@ -540,16 +590,12 @@ function WorkflowNavbarRight() {
               mass: 0.8,
               opacity: { duration: 0.4 },
             }}
-            className={
-              "mt-2 flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
-            }
+            className="mt-2 flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
           >
             <ImageInputsTooltip tooltipText="Share" delayDuration={300}>
               <button
                 type="button"
-                className={
-                  "flex h-12 items-center gap-1.5 p-4 text-gray-600 transition-colors hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-                }
+                className="flex h-12 items-center gap-1.5 p-4 text-gray-600 transition-colors hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 onClick={() => setIsShareDialogOpen(true)}
               >
                 <Share className="h-4 w-[18px]" />
@@ -558,7 +604,76 @@ function WorkflowNavbarRight() {
             </ImageInputsTooltip>
           </motion.div>
         )}
+        {(view === "playground" || view === "gallery") && (
+          <motion.div
+            layout
+            key="playground-share"
+            initial={{ opacity: 0, scale: 0.8, rotateZ: -5 }}
+            animate={{ opacity: 1, scale: 1, rotateZ: 0 }}
+            exit={{ opacity: 0, scale: 0.8, rotateZ: 5 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{
+              type: "spring",
+              stiffness: 180,
+              damping: 15,
+              mass: 0.8,
+              opacity: { duration: 0.4 },
+            }}
+            className={cn(
+              "mt-2 flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm",
+              // Apply environment color or default styling
+              publicShareDeployment
+                ? getEnvColor(publicShareDeployment.environment)
+                : communityShareDeployment
+                  ? getEnvColor(communityShareDeployment.environment)
+                  : privateShareDeployment
+                    ? getEnvColor(privateShareDeployment.environment)
+                    : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60",
+            )}
+          >
+            <button
+              type="button"
+              className={cn(
+                "flex h-12 items-center gap-1.5 px-4 transition-colors",
+                publicShareDeployment
+                  ? "text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-100"
+                  : communityShareDeployment
+                    ? "text-cyan-600 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-100"
+                    : privateShareDeployment
+                      ? "text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-100"
+                      : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100",
+              )}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (publicShareDeployment) {
+                  setSelectedDeployment(publicShareDeployment.id);
+                } else if (communityShareDeployment) {
+                  setSelectedDeployment(communityShareDeployment.id);
+                } else if (privateShareDeployment) {
+                  setSelectedDeployment(privateShareDeployment.id);
+                } else if (versions?.[0]) {
+                  setSelectedVersion(versions[0]);
+                  setIsDrawerOpen(true);
+                }
+              }}
+            >
+              <Share className="h-4 w-[18px]" />
+              <span>
+                {publicShareDeployment
+                  ? "Shared"
+                  : communityShareDeployment
+                    ? "Community"
+                    : privateShareDeployment
+                      ? "Internal"
+                      : "Link"}
+              </span>
+            </button>
+          </motion.div>
+        )}
       </AnimatePresence>
+
       <ShareWorkflowDialog
         open={isShareDialogOpen}
         onOpenChange={setIsShareDialogOpen}
@@ -566,6 +681,19 @@ function WorkflowNavbarRight() {
         workflowName={workflow?.name || "Untitled Workflow"}
         workflowDescription={workflow?.description}
         workflowCoverImage={workflow?.cover_image}
+      />
+
+      <DeploymentDialog
+        open={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedVersion(null);
+        }}
+        selectedVersion={selectedVersion}
+        workflowId={workflowId || ""}
+        onSuccess={setSelectedDeployment}
+        publicLinkOnly={true}
+        existingDeployments={deployments || []}
       />
     </>
   );
