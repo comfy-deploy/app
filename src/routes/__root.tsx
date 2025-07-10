@@ -102,7 +102,8 @@ function RootComponent() {
   }, [auth.orgId, router]);
 
   const { pathname } = useLocation();
-  const isSessionPage = pathname.includes("/sessions/");
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get("sessionId");
   const isWorkflowPage = pathname.includes("/workflows/");
   const isAuthPage = publicRoutes.some((route) => {
     if (typeof route === "string") {
@@ -120,8 +121,7 @@ function RootComponent() {
       {isAuthPage && !auth.isSignedIn ? (
         <GuestSidebar />
       ) : (
-        !isSessionPage &&
-        !isWorkflowPage && (
+        (!isWorkflowPage || (isWorkflowPage && sessionId)) && (
           <SignedIn>
             <AppSidebar />
           </SignedIn>

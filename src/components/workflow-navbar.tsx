@@ -517,8 +517,7 @@ function WorkflowNavbarLeft() {
 }
 
 function WorkflowNavbarRight() {
-  const search = useSearch({ from: "/workflows/$workflowId/$view" });
-  const sessionId = (search as any)?.sessionId;
+  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
   const { workflowId, view } = useParams({
     from: "/workflows/$workflowId/$view",
   });

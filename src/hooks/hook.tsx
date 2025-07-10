@@ -31,10 +31,12 @@ export function useSessionIdInSessionView() {
     from: "/sessions/$sessionId/",
     shouldThrow: false,
   });
-  const [sessionId] = useQueryState("sessionId", parseAsString);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get("sessionId");
 
   if (sessionId) {
-    return sessionId;
+    return sessionId as string;
   }
   return match?.params.sessionId;
 }
