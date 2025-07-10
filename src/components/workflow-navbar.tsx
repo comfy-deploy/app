@@ -49,7 +49,7 @@ export function WorkflowNavbar() {
       />
       <div
         className={cn(
-          "pointer-events-none fixed top-0 right-0 left-0 z-50 flex h-14 items-center px-4",
+          "pointer-events-none fixed top-0 right-0 left-0 z-50 flex h-14 items-center",
           sessionId && "dark",
         )}
       >
@@ -59,7 +59,7 @@ export function WorkflowNavbar() {
           <CenterNavigation />
         </div>
 
-        <div className="pointer-events-auto ml-auto flex items-center">
+        <div className="pointer-events-auto ml-auto flex items-center pr-4">
           <WorkflowNavbarRight />
         </div>
       </div>
@@ -422,9 +422,17 @@ function CenterNavigation() {
 
 function WorkflowNavbarLeft() {
   const workflowId = useWorkflowIdInWorkflowPage();
+  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
 
   return (
-    <div className="pointer-events-auto flex items-center gap-2">
+    <div
+      className={cn(
+        "pointer-events-auto flex items-center gap-2",
+        sessionId
+          ? "ml-1 rounded-full bg-zinc-700/30 px-4 backdrop-blur-md"
+          : "ml-4",
+      )}
+    >
       <Link
         href="/"
         className="mr-2 shrink-0 drop-shadow-md transition-transform hover:scale-105"
@@ -595,7 +603,7 @@ function SessionTimerButton({
           className="flex items-center"
         >
           <div
-            className={`relative flex h-10 items-center overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
+            className={`relative flex h-10 items-center justify-between overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
               isLowTime
                 ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/25 hover:shadow-orange-500/40 dark:from-orange-500 dark:to-orange-700 dark:shadow-orange-600/25 dark:hover:shadow-orange-600/40"
                 : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"

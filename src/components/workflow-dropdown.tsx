@@ -16,7 +16,7 @@ import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { useWorkflowList } from "@/hooks/use-workflow-list";
 import { callServerPromise } from "@/lib/call-server-promise";
 import { cn } from "@/lib/utils";
-import { useMatch, useRouter } from "@tanstack/react-router";
+import { useMatch, useRouter, useSearch } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, ExternalLink, Search } from "lucide-react";
 import * as React from "react";
 import { useMemo, useState } from "react";
@@ -102,6 +102,7 @@ export function WorkflowDropdown({
   const [renameValue, setRenameValue] = useState("");
   const { workflow } = useCurrentWorkflow(workflow_id);
   const query = useWorkflowList("");
+  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
 
   const openRenameDialog = () => {
     setRenameValue(workflow?.name || "");
@@ -111,7 +112,7 @@ export function WorkflowDropdown({
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
+        <PopoverTrigger asChild disabled={sessionId}>
           <button
             type="button"
             aria-expanded={open}
