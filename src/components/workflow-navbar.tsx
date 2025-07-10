@@ -6,6 +6,7 @@ import {
   Database,
   GitBranch,
   ImageIcon,
+  Lock,
   Play,
   Server,
   Share,
@@ -33,6 +34,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentWorkflow } from "@/hooks/use-current-workflow";
 import { ShareWorkflowDialog } from "./share-workflow-dialog";
 import { useIsAdminAndMember } from "./permissions";
+import {
+  useCurrentPlanQuery,
+  useIsDeploymentAllowed,
+} from "@/hooks/use-current-plan";
 
 export function WorkflowNavbar() {
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
@@ -71,13 +76,16 @@ export function WorkflowNavbar() {
 function CenterNavigation() {
   const workflowId = useWorkflowIdInWorkflowPage();
   const isAdminAndMember = useIsAdminAndMember();
+  const { isLoading: isPlanLoading } = useCurrentPlanQuery();
+  const isDeploymentAllowed = useIsDeploymentAllowed();
   const router = useRouter();
   const { view } = useParams({ from: "/workflows/$workflowId/$view" });
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const { sessionId, restoreCachedSession, cacheSessionId } =
     useSessionWithCache();
 
-  // Define which buttons should be visible for each view
+  const shouldHideDeploymentFeatures = !isPlanLoading && !isDeploymentAllowed;
+
   const visibleButtons = useMemo(() => {
     if (!isAdminAndMember) {
       // When user is not admin and member, only show gallery
@@ -220,9 +228,11 @@ function CenterNavigation() {
           <button
             type="button"
             className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
-              view === "deployment"
-                ? "font-medium text-gray-900 dark:text-zinc-100"
-                : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              shouldHideDeploymentFeatures
+                ? "text-purple-600 opacity-50 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-100"
+                : view === "deployment"
+                  ? "font-medium text-gray-900 dark:text-zinc-100"
+                  : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             }`}
             onClick={() => {
               router.navigate({
@@ -232,7 +242,11 @@ function CenterNavigation() {
             }}
             onMouseEnter={() => setHoveredButton("deployment")}
           >
-            <GitBranch className="h-4 w-4" />
+            {shouldHideDeploymentFeatures ? (
+              <Lock className="h-4 w-4" />
+            ) : (
+              <GitBranch className="h-4 w-4" />
+            )}
             API
           </button>
         )}
