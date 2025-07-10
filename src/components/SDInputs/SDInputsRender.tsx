@@ -227,9 +227,14 @@ export function SDInputsRender({
               max={inputNode.max_value}
               min={inputNode.min_value}
               step={0.01}
-              value={[Number(inputValue)] || [inputNode.min_value]}
+              value={[
+                inputValue != null && inputValue !== ""
+                  ? Number.parseFloat(Number(inputValue).toFixed(2))
+                  : inputNode.min_value || 0,
+              ]}
               onValueChange={(value) => {
-                updateInput(inputNode.input_id, value[0].toString());
+                const roundedValue = Number.parseFloat(value[0].toFixed(2));
+                updateInput(inputNode.input_id, roundedValue.toString());
               }}
             />
             <Input
@@ -239,13 +244,32 @@ export function SDInputsRender({
               min={inputNode.min_value}
               max={inputNode.max_value}
               value={
-                inputValue !== undefined && inputValue !== null
-                  ? inputValue
+                inputValue !== undefined &&
+                inputValue !== null &&
+                inputValue !== ""
+                  ? Number.parseFloat(Number(inputValue).toFixed(2)).toString()
                   : ""
               }
-              onChange={(e: any) => {
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 const newValue = e.target.value;
-                updateInput(inputNode.input_id, newValue);
+                if (newValue !== "") {
+                  let parsedValue = Number.parseFloat(newValue);
+
+                  // Clamp value between min and max
+                  if (parsedValue > (inputNode.max_value ?? 0)) {
+                    parsedValue = inputNode.max_value ?? 0;
+                  }
+                  if (parsedValue < (inputNode.min_value ?? 0)) {
+                    parsedValue = inputNode.min_value ?? 0;
+                  }
+
+                  const roundedValue = Number.parseFloat(
+                    parsedValue.toFixed(2),
+                  );
+                  updateInput(inputNode.input_id, roundedValue.toString());
+                } else {
+                  updateInput(inputNode.input_id, newValue);
+                }
               }}
             />
           </div>

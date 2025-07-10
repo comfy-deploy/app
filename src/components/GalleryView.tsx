@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { MyDrawer } from "./drawer";
 import { MoveAssetDialog } from "./move-asset-dialog";
@@ -79,26 +79,32 @@ export function useGalleryData(
   userFilter?: string,
   fileTypeFilter?: string,
 ) {
+  const queryKeyHashFn = useCallback((queryKey: readonly unknown[]) => {
+    return [...queryKey, originFilter, userFilter, fileTypeFilter].join(",");
+  }, [originFilter, userFilter, fileTypeFilter]);
+
+  const meta = useMemo(() => ({
+    limit: BATCH_SIZE,
+    offset: 0,
+    params: {
+      ...(originFilter ? { origin: originFilter } : {}),
+      ...(userFilter ? { user_id: userFilter } : {}),
+      ...(fileTypeFilter ? { file_type: fileTypeFilter } : {}),
+    },
+  }), [originFilter, userFilter, fileTypeFilter]);
+
+  const getNextPageParam = useCallback((lastPage: any[], allPages: any[][]) => {
+    return lastPage?.length === BATCH_SIZE
+      ? allPages?.length * BATCH_SIZE
+      : undefined;
+  }, []);
+
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   return useInfiniteQuery<any[]>({
     queryKey: ["workflow", workflow_id, "gallery"],
-    queryKeyHashFn: (queryKey) => {
-      return [...queryKey, originFilter, userFilter, fileTypeFilter].join(",");
-    },
-    meta: {
-      limit: BATCH_SIZE,
-      offset: 0,
-      params: {
-        ...(originFilter ? { origin: originFilter } : {}),
-        ...(userFilter ? { user_id: userFilter } : {}),
-        ...(fileTypeFilter ? { file_type: fileTypeFilter } : {}),
-      },
-    },
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage?.length === BATCH_SIZE
-        ? allPages?.length * BATCH_SIZE
-        : undefined;
-    },
+    queryKeyHashFn,
+    meta,
+    getNextPageParam,
     initialPageParam: 0,
   });
 }
@@ -178,8 +184,8 @@ function RenderAlert({
           variant === "destructive"
             ? "red"
             : variant === "warning"
-              ? "yellow"
-              : "gray"
+            ? "yellow"
+            : "gray"
         }-100`}
         variant="ghost"
         size="icon"
@@ -221,10 +227,10 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
   const { mutate: addAsset } = useAddAsset();
 
   // Handle user filter changes from UserFilterSelect
-  const handleUserFilterChange = (userIds: string) => {
+  const handleUserFilterChange = useCallback((userIds: string) => {
     // In single select mode, userIds will be a single user ID or empty string
     setUserFilter(userIds || null);
-  };
+  }, [setUserFilter]);
 
   // Update column count based on screen size
   useEffect(() => {
@@ -266,12 +272,12 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
     setIsDrawerOpen(!!runId);
   }, [runId]);
 
-  const handleCloseRun = () => {
+  const handleCloseRun = useCallback(() => {
     setRunId(null);
     setIsDrawerOpen(false);
-  };
+  }, [setRunId]);
 
-  const handleSetAsCoverImage = async (imageUrl: string) => {
+  const handleSetAsCoverImage = useCallback(async (imageUrl: string) => {
     setLoadingCoverId(runId);
     try {
       await callServerPromise(
@@ -291,9 +297,9 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
       setLoadingCoverId(null);
       setOpenDropdownId(null);
     }
-  };
+  }, [runId, workflowID]);
 
-  const handleAddAsset = async ({
+  const handleAddAsset = useCallback(async ({
     url,
     path,
   }: { url: string; path: string }) => {
@@ -304,7 +310,29 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
     } catch (error) {
       toast.error(`Failed to add asset: ${error}`);
     }
-  };
+  }, [addAsset, selectedFilename]);
+
+  const items = useMemo(() => query.data?.pages.flat() || [], [query.data?.pages]);
+
+  // Split items into columns
+  const columns = useMemo(() => {
+    const cols: GalleryItem[][] = Array.from(
+      { length: columnCount },
+      () => [],
+    );
+    items.forEach((item: GalleryItem, index: number) => {
+      const columnIndex = index % columnCount;
+      cols[columnIndex].push(item);
+    });
+    return cols;
+  }, [items, columnCount]);
+
+  // Map columnCount to Tailwind width classes
+  const widthClass = useMemo(() => ({
+    2: "w-1/2",
+    3: "w-1/3",
+    4: "w-1/4",
+  }[columnCount]), [columnCount]);
 
   if (query.isLoading) {
     return (
@@ -313,30 +341,6 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
       </div>
     );
   }
-
-  const items = query.data?.pages.flat() || [];
-
-  // Debug: Log the first few items to see what data we're getting
-  if (items.length > 0) {
-    console.log("Gallery items sample:", items.slice(0, 3));
-  }
-
-  // Split items into columns
-  const columns: GalleryItem[][] = Array.from(
-    { length: columnCount },
-    () => [],
-  );
-  items.forEach((item: GalleryItem, index: number) => {
-    const columnIndex = index % columnCount;
-    columns[columnIndex].push(item);
-  });
-
-  // Map columnCount to Tailwind width classes
-  const widthClass = {
-    2: "w-1/2",
-    3: "w-1/3",
-    4: "w-1/4",
-  }[columnCount];
 
   return (
     <>
@@ -494,12 +498,6 @@ export function GalleryView({ workflowID }: GalleryViewProps) {
                               {page.data?.images?.[0]?.filename}
                             </span>
                           )}
-                          {/* Debug info */}
-                          {/* {page.origin && (
-                            <span className="rounded bg-blue-500/60 px-1.5 py-0.5 text-[10px] text-white/90">
-                              {page.origin}
-                            </span>
-                          )} */}
                           {page.user_id && (
                             <UserIcon
                               user_id={page.user_id}

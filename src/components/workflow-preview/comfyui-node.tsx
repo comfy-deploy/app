@@ -10,6 +10,7 @@ import {
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Handle, type NodeProps, Position } from "reactflow";
+import { memo } from "react";
 
 // Define the node data structure
 interface ComfyNodeData {
@@ -36,7 +37,7 @@ interface UnifiedPort {
   originalIndex?: number;
 }
 
-export function ComfyNode({ id, data }: NodeProps<ComfyNodeData>) {
+export const ComfyNode = memo(({ data, ...props }) => {
   // Start with inputs collapsed by default
   const [isOpen, setIsOpen] = useState(false);
 
@@ -552,7 +553,7 @@ export function ComfyNode({ id, data }: NodeProps<ComfyNodeData>) {
       </Card>
     </div>
   );
-}
+});
 
 // Helper function to get a color for a handle based on its type
 function getHandleColorByType(type: string): string {
