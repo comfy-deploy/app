@@ -1010,20 +1010,7 @@ function SessionBar() {
                       <span className="font-medium">Integration</span>
                     </div>
                     <div className="flex-1">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/50 p-3">
-                          <div className="truncate text-muted-foreground text-sm">
-                            {url || "No session URL available"}
-                          </div>
-                          {url && (
-                            <CopyButton
-                              text={url}
-                              variant="outline"
-                              className="shrink-0"
-                            />
-                          )}
-                        </div>
-                      </div>
+                      <IntegrationUrl />
                     </div>
                   </motion.div>
                 )}
@@ -1070,6 +1057,29 @@ function SessionBar() {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+function IntegrationUrl() {
+  const sessionId = useSessionIdInSessionView();
+  const { data: session } = useQuery<Session>({
+    queryKey: ["session", sessionId],
+    enabled: !!sessionId,
+  });
+
+  const url = useMemo(() => session?.url || session?.tunnel_url, [session]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/50 p-3">
+        <div className="truncate text-muted-foreground text-sm">
+          {url || "No session URL available"}
+        </div>
+        {url && (
+          <CopyButton text={url} variant="outline" className="shrink-0" />
+        )}
+      </div>
+    </div>
   );
 }
 

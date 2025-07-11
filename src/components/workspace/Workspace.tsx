@@ -545,7 +545,7 @@ export default function Workspace({
           className={cn(
             "inset-0 z-[20] h-full w-full border-none",
             !cdSetup && "pointer-events-none",
-            iframeLoaded && "bg-[#353535] pt-10",
+            iframeLoaded && "bg-[#353535] pt-12",
             activeDrawer === "assets" && "pointer-events-none blur-sm",
           )}
           title="iframeContent"
