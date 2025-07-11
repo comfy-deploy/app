@@ -17,6 +17,7 @@ import {
   Play,
   Save,
   Server,
+  Settings,
   Share,
   Slash,
   TextSearch,
@@ -696,7 +697,8 @@ function WorkflowNavbarRight() {
 // ============== utils ==============
 
 function SessionBar() {
-  const { hasChanged, workflow } = useWorkflowStore();
+  // const { hasChanged, workflow } = useWorkflowStore();
+  const hasChanged = true;
 
   return (
     <div className="mt-2 flex items-center gap-2">
@@ -718,14 +720,9 @@ function SessionBar() {
         className={cn(
           "flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm transition-colors duration-300",
           hasChanged
-            ? "border-orange-400/50 bg-orange-500/20 shadow-orange-400/25 hover:bg-orange-400/30 hover:shadow-orange-400/40"
+            ? "border-orange-400/20 bg-gradient-to-br from-orange-400/40 to-orange-600/40 shadow-orange-500/25 hover:from-orange-500/50 hover:to-orange-600/50 hover:shadow-orange-400/40"
             : " border-zinc-800/30 bg-zinc-700/30 opacity-50 shadow-zinc-700/20",
         )}
-        style={{
-          boxShadow: hasChanged
-            ? "0 0 20px rgba(251, 146, 60, 0.3), 0 0 40px rgba(251, 146, 60, 0.1)"
-            : undefined,
-        }}
       >
         <button
           type="button"
@@ -798,6 +795,11 @@ function SessionBar() {
           <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
             <Link2 size={16} className="mr-2" />
             Integration
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-600/60" />
+          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
+            <Settings size={16} className="mr-2" />
+            Configuration
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
