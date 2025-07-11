@@ -25,7 +25,7 @@ export function StoragePage({
     <PaddingLayout
       className={cn(
         "mx-auto flex h-full w-full flex-col gap-4 p-4 md:px-4",
-        isWorkflowPage && "pt-12",
+        isWorkflowPage && "pt-16",
       )}
     >
       <div className="flex h-full flex-1 flex-col gap-2 rounded-md ">

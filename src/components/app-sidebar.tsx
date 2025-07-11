@@ -678,8 +678,6 @@ export function AppSidebar() {
           )}
         </SidebarContent>
         <SidebarFooter className="flex w-full flex-col justify-center gap-2 pb-4">
-          <div id="sidebar-panel-footer" />
-
           {!(workflow_id && parentPath === "workflows") && (
             <div className="grid grid-cols-2 gap-2 px-2">
               {links.map((item, index) =>
