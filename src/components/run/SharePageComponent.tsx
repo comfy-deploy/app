@@ -405,6 +405,7 @@ export function Playground(props: {
           backgroundInteractive={true}
           onClose={() => setShowRunInputsMobileLayout(false)}
           desktopClassName="w-[500px] xl:hidden shadow-lg border border-gray-200"
+          side="left"
         >
           <RunWorkflowInline
             blocking={false}

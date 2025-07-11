@@ -75,6 +75,10 @@ export function WorkspaceClientWrapper({
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
+  // Add state for the description panel
+  const [isDescriptionVisible, setIsDescriptionVisible] = useState(true);
+  const [isDescriptionHovered, setIsDescriptionHovered] = useState(false);
+
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
   const { data: selectedSession } = useQuery({
     enabled: !!sessionId,
@@ -128,6 +132,17 @@ export function WorkspaceClientWrapper({
     setHasActiveSession(false);
     setCachedSessionId(null);
   }, []);
+
+  // Auto-hide after 5 seconds unless hovered
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isDescriptionHovered) {
+        setIsDescriptionVisible(false);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [isDescriptionHovered]);
 
   if (isLoadingWorkflow || isLoading || isLoadingVersions || !versions) {
     return (
@@ -260,11 +275,21 @@ export function WorkspaceClientWrapper({
             {/* Floating Description - Top Left (Desktop Only) */}
             <motion.div
               className="absolute top-[52px] left-4 z-20 hidden w-full max-w-md md:block"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              initial={{ opacity: 0, x: -200 }}
+              animate={{
+                opacity: isDescriptionVisible ? 1 : 0.8,
+                x: isDescriptionVisible ? 0 : -430,
+              }}
+              transition={{ duration: 0.3, ease: "circOut" }}
+              onMouseEnter={() => {
+                setIsDescriptionHovered(true);
+                setIsDescriptionVisible(true);
+              }}
+              onMouseLeave={() => {
+                setIsDescriptionHovered(false);
+              }}
             >
-              <div className="rounded-lg bg-white/80 p-4 shadow-lg backdrop-blur-md dark:bg-zinc-900/80">
+              <div className="rounded-lg bg-white/80 p-4 shadow-lg backdrop-blur-md dark:bg-zinc-800/40">
                 <SessionCreatorForm
                   workflowId={props.workflow_id}
                   version={versions[0]?.version ?? 0}
@@ -286,7 +311,7 @@ export function WorkspaceClientWrapper({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.1, ease: "easeInOut" }}
               >
-                <div className="rounded-xl bg-white/80 p-4 shadow-lg backdrop-blur-md dark:bg-zinc-900/80">
+                <div className="rounded-xl bg-white/80 p-4 shadow-lg backdrop-blur-md dark:bg-zinc-800/40">
                   <SessionCreatorForm
                     workflowId={props.workflow_id}
                     version={versions[0]?.version ?? 0}
