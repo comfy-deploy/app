@@ -795,6 +795,8 @@ function SessionBar() {
           </button>
         </motion.div>
 
+        <BackgroundAutoUpdate />
+
         <DropdownMenu>
           <DropdownMenuTrigger>
             <motion.div
@@ -1058,9 +1060,7 @@ function SessionBar() {
                       </span>
                     </div>
                     <div className="flex-1">
-                      {sessionId && (
-                        <WorkspaceConfigurationPanel sessionId={sessionId} />
-                      )}
+                      <WorkspaceConfigurationPanel />
                     </div>
                   </motion.div>
                 )}
@@ -1151,10 +1151,12 @@ function SessionTimerButton({
     }
   };
 
-  const handleTimerClick = () => {
+  const handleTimerClick = (e: React.MouseEvent) => {
     if (urlSessionId) {
       setIsPopoverOpen(true);
     } else {
+      e.preventDefault();
+      e.stopPropagation();
       restoreCachedSession();
     }
   };
@@ -1211,7 +1213,12 @@ function SessionTimerButton({
               {/* Timer Icon */}
               {deleteSession.isPending ? (
                 <div className="relative flex h-10 w-10 flex-shrink-0 animate-pulse items-center justify-center rounded-full">
-                  <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
+                  <Loader2
+                    className={cn(
+                      "h-5 w-5 animate-spin",
+                      isLowTime ? "text-white" : "text-orange-500",
+                    )}
+                  />
                 </div>
               ) : (
                 <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95">
@@ -1562,23 +1569,21 @@ function increaseSessionTimeout(
   );
 }
 
-// Workspace Configuration Panel Component
-function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
-  const workflowId = useWorkflowIdInWorkflowPage();
+function BackgroundAutoUpdate() {
   const { userId } = useAuth();
   const { hasChanged } = useWorkflowStore();
+  const workflowId = useWorkflowIdInWorkflowPage();
 
   // Load settings from localStorage with defaults
-  const [settings, setSettings] = useState(() => {
-    const savedSettings = localStorage.getItem("workspaceConfig");
-    return savedSettings
-      ? JSON.parse(savedSettings)
-      : {
-          autoSave: false,
-          autoSaveInterval: "60",
-          autoExpandSession: false,
-        };
-  });
+  const settings = JSON.parse(
+    localStorage.getItem("workspaceConfig") || "{}",
+  ) || {
+    autoSave: false,
+    autoSaveInterval: "60",
+    autoExpandSession: false,
+  };
+
+  const sessionId = useSessionIdInSessionView();
 
   const { data: session, refetch } = useQuery<Session>({
     queryKey: ["session", sessionId],
@@ -1607,13 +1612,6 @@ function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
     session_url,
     workflowId,
   });
-
-  // Update settings and save to localStorage
-  const updateSettings = (key: string, value: any) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    localStorage.setItem("workspaceConfig", JSON.stringify(newSettings));
-  };
 
   // Auto-extend functionality
   useEffect(() => {
@@ -1700,6 +1698,36 @@ function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
     selectedVersion,
   ]);
 
+  return <></>;
+}
+
+// Workspace Configuration Panel Component
+function WorkspaceConfigurationPanel() {
+  const sessionId = useSessionIdInSessionView();
+  // Load settings from localStorage with defaults
+  const [settings, setSettings] = useState(() => {
+    const savedSettings = localStorage.getItem("workspaceConfig");
+    return savedSettings
+      ? JSON.parse(savedSettings)
+      : {
+          autoSave: false,
+          autoSaveInterval: "60",
+          autoExpandSession: false,
+        };
+  });
+  const { data: session } = useQuery<Session>({
+    queryKey: ["session", sessionId],
+    enabled: !!sessionId && settings.autoExpandSession,
+  });
+  const isLegacyMode = !session?.timeout_end;
+
+  // Update settings and save to localStorage
+  const updateSettings = (key: string, value: any) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    localStorage.setItem("workspaceConfig", JSON.stringify(newSettings));
+  };
+
   // Format interval text
   const getIntervalText = () => {
     if (!settings.autoSave) return "";
@@ -1724,7 +1752,7 @@ function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
                 </Badge>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Automatically commit workflow changes
             </p>
           </div>
@@ -1735,16 +1763,16 @@ function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
         </div>
 
         {settings.autoSave && (
-          <div className="ml-4 pl-4 border-l-2 border-muted">
+          <div className="ml-4 border-muted border-l-2 pl-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Interval:</span>
+              <span className="text-muted-foreground text-xs">Interval:</span>
               <Select
                 value={settings.autoSaveInterval}
                 onValueChange={(value) =>
                   updateSettings("autoSaveInterval", value)
                 }
               >
-                <SelectTrigger className="w-24 h-8 text-xs">
+                <SelectTrigger className="h-8 w-24 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1765,7 +1793,7 @@ function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span className="font-medium text-sm">Auto Expand Session</span>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Automatically extend session time when about to expire
             </p>
           </div>
@@ -1778,8 +1806,8 @@ function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
         </div>
 
         {settings.autoExpandSession && session && (
-          <div className="ml-4 pl-4 border-l-2 border-muted">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="ml-4 border-muted border-l-2 pl-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs">
               <span>Status:</span>
               <span className="text-green-600">
                 {isLegacyMode ? "Not supported (legacy session)" : "Active"}
@@ -1788,8 +1816,6 @@ function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
           </div>
         )}
       </div>
-
-      {/* Future sections can be added here */}
     </div>
   );
 }
