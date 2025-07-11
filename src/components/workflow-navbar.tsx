@@ -32,7 +32,7 @@ import {
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import { useParams } from "@tanstack/react-router";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { ImageInputsTooltip } from "./image-inputs-tooltip";
 import { cn } from "@/lib/utils";
 import type { Session } from "./app-sidebar";
@@ -1573,8 +1573,9 @@ function BackgroundAutoUpdate() {
   const { userId } = useAuth();
   const { hasChanged } = useWorkflowStore();
   const workflowId = useWorkflowIdInWorkflowPage();
+  const sessionId = useSessionIdInSessionView();
 
-  // Load settings from localStorage with defaults
+  // Get all the values we need
   const settings = JSON.parse(
     localStorage.getItem("workspaceConfig") || "{}",
   ) || {
@@ -1582,8 +1583,6 @@ function BackgroundAutoUpdate() {
     autoSaveInterval: "60",
     autoExpandSession: false,
   };
-
-  const sessionId = useSessionIdInSessionView();
 
   const { data: session, refetch } = useQuery<Session>({
     queryKey: ["session", sessionId],
@@ -1594,6 +1593,7 @@ function BackgroundAutoUpdate() {
   const autoExtendInProgressRef = useRef(false);
   const isLegacyMode = !session?.timeout_end;
 
+  // Auto-save related data
   const machine_id = session?.machine_id;
   const machine_version_id = session?.machine_version_id;
   const session_url = session?.url;
@@ -1613,48 +1613,16 @@ function BackgroundAutoUpdate() {
     workflowId,
   });
 
-  // Auto-extend functionality
+  // Store the save function in a ref so it doesn't change
+  const saveFunction = useRef<() => Promise<void>>(undefined);
+
+  // Store the extend function in a ref so it doesn't change
+  const extendFunction = useRef<() => Promise<void>>(undefined);
+
+  // Update the save function whenever dependencies change
   useEffect(() => {
-    if (
-      !settings.autoExpandSession ||
-      !sessionId ||
-      !countdown ||
-      autoExtendInProgressRef.current ||
-      isLegacyMode
-    ) {
-      return;
-    }
-
-    const [hours, minutes, seconds] = countdown.split(":").map(Number);
-    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-
-    if (totalSeconds > 0 && totalSeconds < 60) {
-      autoExtendInProgressRef.current = true;
-
-      increaseSessionTimeout(sessionId, 5)
-        .then(() => {
-          refetch();
-        })
-        .catch((error) => {
-          toast.error(`Failed to auto-extend session: ${error}`);
-        })
-        .finally(() => {
-          // Add a small delay before allowing another auto-extension
-          setTimeout(() => {
-            autoExtendInProgressRef.current = false;
-          }, 10000); // 10 seconds cooldown
-        });
-    }
-  }, [countdown, settings.autoExpandSession, sessionId, refetch, isLegacyMode]);
-
-  // Auto-save functionality
-  useEffect(() => {
-    let saveIntervalId: NodeJS.Timeout | undefined;
-
-    const { autoSave, autoSaveInterval } = settings;
-
-    if (hasChanged && autoSave) {
-      saveIntervalId = setInterval(async () => {
+    saveFunction.current = async () => {
+      try {
         await serverAction({
           comment: "Auto Save",
           endpoint,
@@ -1672,18 +1640,9 @@ function BackgroundAutoUpdate() {
           sessionId,
           workflow_api: selectedVersion?.workflow_api,
         });
-      }, +autoSaveInterval * 1000);
-    }
-
-    return () => {
-      if (saveIntervalId) {
-        clearInterval(saveIntervalId);
-        saveIntervalId = undefined;
-      }
+      } catch (error) {}
     };
   }, [
-    settings,
-    hasChanged,
     endpoint,
     machine_id,
     machine_version_id,
@@ -1695,8 +1654,72 @@ function BackgroundAutoUpdate() {
     comfyui_snapshot,
     comfyui_snapshot_loading,
     sessionId,
-    selectedVersion,
+    selectedVersion?.workflow_api,
   ]);
+
+  // Update the extend function whenever dependencies change
+  useEffect(() => {
+    extendFunction.current = async () => {
+      if (!sessionId) return;
+
+      try {
+        autoExtendInProgressRef.current = true;
+
+        await increaseSessionTimeout(sessionId, 5);
+        await refetch();
+      } catch (error) {
+        toast.error(`Failed to auto-extend session: ${error}`);
+      } finally {
+        // Add a small delay before allowing another auto-extension
+        setTimeout(() => {
+          autoExtendInProgressRef.current = false;
+        }, 10000);
+      }
+    };
+  }, [sessionId, refetch]);
+
+  // Separate effect for managing the auto-save interval - only depends on stable values
+  useEffect(() => {
+    let saveIntervalId: NodeJS.Timeout | undefined;
+
+    const { autoSave, autoSaveInterval } = settings;
+
+    if (hasChanged && autoSave && saveFunction.current) {
+      saveIntervalId = setInterval(() => {
+        if (saveFunction.current) {
+          saveFunction.current();
+        }
+      }, +autoSaveInterval * 1000);
+    }
+
+    return () => {
+      if (saveIntervalId) {
+        clearInterval(saveIntervalId);
+        saveIntervalId = undefined;
+      }
+    };
+  }, [settings.autoSave, settings.autoSaveInterval, hasChanged]); // Only stable dependencies
+
+  // Separate effect for monitoring countdown - runs every second but only checks conditions
+  useEffect(() => {
+    if (
+      !settings.autoExpandSession ||
+      !sessionId ||
+      !countdown ||
+      autoExtendInProgressRef.current ||
+      isLegacyMode ||
+      !extendFunction.current
+    ) {
+      return;
+    }
+
+    const [hours, minutes, seconds] = countdown.split(":").map(Number);
+    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+    if (totalSeconds > 0 && totalSeconds < 60) {
+      extendFunction.current();
+    }
+  }, [countdown, settings.autoExpandSession, sessionId, isLegacyMode]);
 
   return <></>;
 }
@@ -1722,12 +1745,13 @@ function WorkspaceConfigurationPanel() {
   const isLegacyMode = !session?.timeout_end;
 
   // Update settings and save to localStorage
-  const updateSettings = (key: string, value: any) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    localStorage.setItem("workspaceConfig", JSON.stringify(newSettings));
-  };
-
+  const updateSettings = useCallback((key: string, value: any) => {
+    setSettings((prev) => {
+      const newSettings = { ...prev, [key]: value };
+      localStorage.setItem("workspaceConfig", JSON.stringify(newSettings));
+      return newSettings;
+    });
+  }, []);
   // Format interval text
   const getIntervalText = () => {
     if (!settings.autoSave) return "";
