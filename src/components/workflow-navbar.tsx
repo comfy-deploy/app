@@ -1636,16 +1636,6 @@ function BackgroundAutoUpdate() {
   const workflowId = useWorkflowIdInWorkflowPage();
   const sessionId = useSessionIdInSessionView();
 
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      "Notification" in window &&
-      Notification.permission === "default"
-    ) {
-      Notification.requestPermission();
-    }
-  }, []);
-
   // Get all the values we need
   const settings = JSON.parse(
     localStorage.getItem("workspaceConfig") || "{}",
@@ -1683,6 +1673,17 @@ function BackgroundAutoUpdate() {
     session_url,
     workflowId,
   });
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "default" &&
+      settings.autoExpandSession
+    ) {
+      Notification.requestPermission();
+    }
+  }, []);
 
   // Store the save function in a ref so it doesn't change
   const saveFunction = useRef<() => Promise<void>>(undefined);
@@ -1728,6 +1729,13 @@ function BackgroundAutoUpdate() {
     selectedVersion?.workflow_api,
   ]);
 
+  useEffect(() => {
+    new Notification("ComfyUI Session Extended", {
+      body: "Your session was automatically extended.",
+      icon: "/icon.svg",
+    });
+  }, []);
+
   // Update the extend function whenever dependencies change
   useEffect(() => {
     extendFunction.current = async () => {
@@ -1736,14 +1744,15 @@ function BackgroundAutoUpdate() {
       try {
         autoExtendInProgressRef.current = true;
 
-        await increaseSessionTimeout(sessionId, 5);
+        await increaseSessionTimeout(sessionId, 1);
         await refetch();
         if (
           typeof window !== "undefined" &&
           Notification.permission === "granted"
         ) {
-          new Notification("Session extended", {
+          new Notification("ComfyUI Session Extended", {
             body: "Your session was automatically extended.",
+            icon: "/icon.svg",
           });
         }
       } catch (error) {
