@@ -55,19 +55,31 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useWorkflowStore } from "./workspace/Workspace";
+import { useDrawerStore } from "@/stores/drawer-store";
+import { LogDisplay } from "./workspace/LogDisplay";
+import { AssetBrowserSidebar } from "./workspace/assets-browser-sidebar";
+import { ExternalNodeDocs } from "./workspace/external-node-docs";
+import { WorkflowModelCheck } from "./onboarding/workflow-model-check";
+import { sendWorkflow } from "./workspace/sendEventToCD";
+import { CopyButton } from "./ui/copy-button";
+import { ScrollArea } from "./ui/scroll-area";
 
 export function WorkflowNavbar() {
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
 
   return (
-    <div className={cn(sessionId && "dark")}>
+    <div>
       <div
-        className="pointer-events-none fixed top-0 right-0 left-0 z-40 h-14 bg-gradient-to-b from-white/80 to-transparent backdrop-blur-sm dark:from-zinc-900/80 dark:to-transparent"
+        className={cn(
+          "pointer-events-none fixed top-0 right-0 left-0 z-40 h-14 backdrop-blur-sm dark:from-zinc-900/80 dark:to-transparent",
+          sessionId
+            ? "from-zinc-900/80 to-transparent"
+            : "bg-gradient-to-b from-white/80 to-transparent ",
+        )}
         style={{
           maskImage:
             "linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)",
@@ -75,15 +87,15 @@ export function WorkflowNavbar() {
             "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)",
         }}
       />
-      <div
-        className={cn(
-          "pointer-events-none fixed top-0 right-0 left-0 z-50 flex h-14 items-center",
-          sessionId && "dark",
-        )}
-      >
+      <div className="pointer-events-none fixed top-0 right-0 left-0 z-50 flex h-14 items-center">
         <WorkflowNavbarLeft />
 
-        <div className="-translate-x-1/2 pointer-events-auto absolute left-1/2 flex transform items-center">
+        <div
+          className={cn(
+            "-translate-x-1/2 pointer-events-auto absolute left-1/2 flex transform items-center",
+            sessionId && "dark",
+          )}
+        >
           <CenterNavigation />
         </div>
 
@@ -496,7 +508,7 @@ function WorkflowNavbarLeft() {
       className={cn(
         "pointer-events-auto flex items-center gap-2",
         sessionId
-          ? "ml-2 rounded-full bg-zinc-700/30 pr-2 pl-4 shadow-md backdrop-blur-md"
+          ? "dark ml-2 rounded-full bg-zinc-700/30 pr-2 pl-4 shadow-md backdrop-blur-md"
           : "ml-4",
       )}
     >
@@ -697,113 +709,304 @@ function WorkflowNavbarRight() {
 // ============== utils ==============
 
 function SessionBar() {
-  // const { hasChanged, workflow } = useWorkflowStore();
-  const hasChanged = true;
+  const { hasChanged, workflow } = useWorkflowStore();
+  const { activeDrawer, toggleDrawer, closeDrawer } = useDrawerStore();
+  const [workflowUpdateTrigger, setWorkflowUpdateTrigger] = useState(0);
+  const [sessionId] = useQueryState("sessionId", parseAsString);
+
+  const { data: session } = useQuery<Session>({
+    enabled: !!sessionId,
+    queryKey: ["session", sessionId],
+    refetchInterval: (data) => (data ? 1000 : false),
+  });
+
+  const url = session?.url || session?.tunnel_url;
+
+  useEffect(() => {
+    if (workflow) {
+      setWorkflowUpdateTrigger((prev) => prev + 1);
+    }
+  }, [workflow]);
 
   return (
-    <div className="mt-2 flex items-center gap-2">
-      <motion.div
-        layout
-        key="session-bar-commit"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        whileHover={{ scale: hasChanged ? 1.03 : 1 }}
-        whileTap={{ scale: hasChanged ? 0.95 : 1 }}
-        transition={{
-          type: "spring",
-          stiffness: 180,
-          damping: 15,
-          mass: 0.8,
-          opacity: { duration: 0.4 },
-        }}
-        className={cn(
-          "flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm transition-colors duration-300",
-          hasChanged
-            ? "border-orange-400/20 bg-gradient-to-br from-orange-400/40 to-orange-600/40 shadow-orange-500/25 hover:from-orange-500/50 hover:to-orange-600/50 hover:shadow-orange-400/40"
-            : " border-zinc-800/30 bg-zinc-700/30 opacity-50 shadow-zinc-700/20",
-        )}
-      >
-        <button
-          type="button"
-          disabled={!hasChanged}
-          className={cn(
-            "flex h-12 items-center gap-1.5 p-4 transition-colors duration-200",
-            hasChanged ? "text-orange-200 hover:text-white" : " text-zinc-600",
-          )}
-          onClick={() => {
-            if (hasChanged) {
-              // TODO: Implement commit functionality
-            }
+    <>
+      <div className="mt-2 flex items-center gap-2">
+        <motion.div
+          layout
+          key="session-bar-commit"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          whileHover={{ scale: hasChanged ? 1.03 : 1 }}
+          whileTap={{ scale: hasChanged ? 0.95 : 1 }}
+          transition={{
+            type: "spring",
+            stiffness: 180,
+            damping: 15,
+            mass: 0.8,
+            opacity: { duration: 0.4 },
           }}
+          className={cn(
+            "flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm transition-colors duration-300",
+            hasChanged
+              ? "border-orange-400/20 bg-gradient-to-br from-orange-400/40 to-orange-600/40 shadow-orange-500/25 hover:from-orange-500/50 hover:to-orange-600/50 hover:shadow-orange-400/40"
+              : " border-zinc-800/30 bg-zinc-700/30 opacity-50 shadow-zinc-700/20",
+          )}
         >
-          <Save className="h-4 w-[18px]" />
-          Commit
-        </button>
-      </motion.div>
+          <button
+            type="button"
+            disabled={!hasChanged}
+            className={cn(
+              "flex h-12 items-center gap-1.5 p-4 transition-colors duration-200",
+              hasChanged
+                ? "text-orange-200 hover:text-white"
+                : " text-zinc-600",
+            )}
+            onClick={() => {
+              if (hasChanged) {
+                // TODO: Implement commit functionality
+              }
+            }}
+          >
+            <Save className="h-4 w-[18px]" />
+            Commit
+          </button>
+        </motion.div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <motion.div
+              layout
+              key="session-bar-more"
+              initial={{ opacity: 0, scale: 0.3 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.3 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{
+                type: "spring",
+                stiffness: 180,
+                damping: 15,
+                mass: 0.8,
+                opacity: { duration: 0.4 },
+              }}
+              className="flex items-center rounded-full border border-zinc-800/50 bg-zinc-700/60 text-sm shadow-md backdrop-blur-sm"
+            >
+              <ImageInputsTooltip tooltipText="Menu" delayDuration={300}>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 p-4 text-zinc-400 transition-colors hover:text-zinc-100"
+                >
+                  <span className="sr-only">More</span>
+                  <Menu className="h-4 w-[16px] shrink-0" />
+                </button>
+              </ImageInputsTooltip>
+            </motion.div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="dark w-44 rounded-2xl border-zinc-700/50 bg-zinc-800/70 text-gray-400 backdrop-blur-sm"
+          >
+            <DropdownMenuItem
+              className="px-3 py-2 focus:bg-zinc-700/40"
+              onClick={() => toggleDrawer("log")}
+            >
+              <FileClock size={16} className="mr-2" />
+              Log
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="px-3 py-2 focus:bg-zinc-700/40"
+              onClick={() => toggleDrawer("assets")}
+            >
+              <Folder size={16} className="mr-2" />
+              Assets
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-600/60" />
+            <DropdownMenuItem
+              className="px-3 py-2 focus:bg-zinc-700/40"
+              onClick={() => toggleDrawer("external-node")}
+            >
+              <BookText size={16} className="mr-2" />
+              API Nodes
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="px-3 py-2 focus:bg-zinc-700/40"
+              onClick={() => toggleDrawer("model")}
+            >
+              <Box size={16} className="mr-2" />
+              Model Check
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="px-3 py-2 focus:bg-zinc-700/40"
+              onClick={() => toggleDrawer("integration")}
+            >
+              <Link2 size={16} className="mr-2" />
+              Integration
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-600/60" />
+            <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
+              <Settings size={16} className="mr-2" />
+              Configuration
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Drawer Panel - Slides out from navbar */}
+      <AnimatePresence>
+        {activeDrawer && (
           <motion.div
-            layout
-            key="session-bar-more"
-            initial={{ opacity: 0, scale: 0.3 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.3 }}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.95 }}
+            className="fixed top-16 right-4 z-40 h-[calc(100vh-80px)] w-[450px] rounded-xl bg-background shadow-2xl"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{
+              opacity: 1,
+              x: 0,
+              width: activeDrawer === "log" ? 575 : 450,
+            }}
+            exit={{
+              opacity: 0,
+              x: 50,
+            }}
             transition={{
               type: "spring",
-              stiffness: 180,
-              damping: 15,
-              mass: 0.8,
-              opacity: { duration: 0.4 },
+              stiffness: 400,
+              damping: 40,
             }}
-            className="flex items-center rounded-full border border-zinc-800/50 bg-zinc-700/60 text-sm shadow-md backdrop-blur-sm"
           >
+            {/* Close button */}
             <button
               type="button"
-              className="flex items-center gap-1.5 p-4 text-zinc-400 transition-colors hover:text-zinc-100"
-              onClick={() => {}}
+              onClick={closeDrawer}
+              className="absolute top-2 right-2 z-10 rounded-full p-2 text-zinc-400 transition-colors hover:bg-zinc-700/50 hover:text-zinc-100"
             >
-              <span className="sr-only">More</span>
-              <Menu className="h-4 w-[16px] shrink-0" />
+              <X className="h-4 w-4" />
             </button>
+
+            <div className="flex h-full flex-col overflow-hidden">
+              <AnimatePresence mode="wait">
+                {activeDrawer === "log" && (
+                  <motion.div
+                    key="log"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex h-full flex-col p-4"
+                  >
+                    <div className="mb-4 flex items-center gap-2">
+                      <FileClock className="h-4 w-4" />
+                      <span className="font-medium">Log</span>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <LogDisplay
+                        className="!w-full h-full"
+                        containerClassName="min-h-full"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {activeDrawer === "assets" && (
+                  <motion.div
+                    key="assets"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex h-full flex-col p-4"
+                  >
+                    <div className="mb-4 flex items-center gap-2">
+                      <Folder className="h-4 w-4" />
+                      <span className="font-medium">Assets</span>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <AssetBrowserSidebar
+                        onItemClick={(asset) => {
+                          closeDrawer();
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {activeDrawer === "external-node" && (
+                  <motion.div
+                    key="external-node"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex h-full flex-col gap-2 p-4"
+                  >
+                    <div className="mb-4 flex items-center gap-2">
+                      <BookText className="h-4 w-4" />
+                      <span className="font-medium">External API Nodes</span>
+                    </div>
+                    <span className="mb-4 text-xs leading-snug">
+                      External API Nodes are a way to connect to external APIs
+                      from within the workflow. Hover to see more details.
+                    </span>
+                    <ScrollArea className="flex-1">
+                      <ExternalNodeDocs />
+                    </ScrollArea>
+                  </motion.div>
+                )}
+
+                {activeDrawer === "model" && (
+                  <motion.div
+                    key="model"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex h-full flex-col p-4"
+                  >
+                    <div className="mb-4 flex items-center gap-2">
+                      <Box className="h-4 w-4" />
+                      <span className="font-medium">Model Check</span>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <WorkflowModelCheck
+                        workflow={JSON.stringify(workflow)}
+                        key={workflowUpdateTrigger}
+                        onWorkflowUpdate={sendWorkflow}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {activeDrawer === "integration" && (
+                  <motion.div
+                    key="integration"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex h-full flex-col p-4"
+                  >
+                    <div className="mb-4 flex items-center gap-2">
+                      <Link2 className="h-4 w-4" />
+                      <span className="font-medium">Integration</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/50 p-3">
+                          <div className="truncate text-muted-foreground text-sm">
+                            {url || "No session URL available"}
+                          </div>
+                          {url && (
+                            <CopyButton
+                              text={url}
+                              variant="outline"
+                              className="shrink-0"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="dark w-44 rounded-2xl border-zinc-700/50 bg-zinc-800/70 text-gray-400 backdrop-blur-sm"
-        >
-          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
-            <FileClock size={16} className="mr-2" />
-            Log
-          </DropdownMenuItem>
-          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
-            <Folder size={16} className="mr-2" />
-            Assets
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-600/60" />
-          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
-            <BookText size={16} className="mr-2" />
-            API Nodes
-          </DropdownMenuItem>
-          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
-            <Box size={16} className="mr-2" />
-            Model Check
-          </DropdownMenuItem>
-          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
-            <Link2 size={16} className="mr-2" />
-            Integration
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-600/60" />
-          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
-            <Settings size={16} className="mr-2" />
-            Configuration
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -923,75 +1126,78 @@ function SessionTimerButton({
             onClick={restoreCachedSession}
           >
             {/* Timer Icon */}
-            <button
-              type="button"
-              className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95"
-            >
-              {/* Progress ring */}
-              <div className="absolute inset-0.5">
-                <svg
-                  viewBox="0 0 32 32"
-                  className="-rotate-90 h-full w-full"
-                  role="img"
-                  aria-label="Session timer progress"
-                >
-                  {/* Background ring */}
-                  <circle
-                    cx="16"
-                    cy="16"
-                    r="10"
-                    fill="none"
-                    stroke={
-                      isLowTime
-                        ? "rgba(255, 255, 255, 0.2)"
-                        : "rgba(251, 146, 60, 0.2)"
-                    }
-                    strokeWidth="2"
-                  />
-                  {/* Progress ring */}
-                  <circle
-                    cx="16"
-                    cy="16"
-                    r="10"
-                    fill="none"
-                    stroke={
-                      isLowTime
-                        ? "rgba(255, 255, 255, 0.9)"
-                        : "rgba(251, 146, 60, 0.9)"
-                    }
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 10}`}
-                    strokeDashoffset={`${2 * Math.PI * 10 * (1 - progressPercentage / 100)}`}
-                    className="transition-all duration-1000 ease-out"
-                  />
-
-                  {/* Clock hand */}
-                  <line
-                    x1="16"
-                    y1="16"
-                    x2="16"
-                    y2="9"
-                    stroke={
-                      isLowTime
-                        ? "rgba(255, 255, 255, 0.95)"
-                        : "rgba(251, 146, 60, 0.95)"
-                    }
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    transform={`rotate(${-270 + progressPercentage * 3.6} 16 16)`}
-                    className="transition-all duration-1000 ease-out"
-                  />
-                </svg>
+            {!deleteSession.isPending ? (
+              <div className="relative flex h-10 w-10 flex-shrink-0 animate-pulse items-center justify-center rounded-full">
+                <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
               </div>
-            </button>
+            ) : (
+              <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95">
+                {/* Progress ring */}
+                <div className="absolute inset-0.5">
+                  <svg
+                    viewBox="0 0 32 32"
+                    className="-rotate-90 h-full w-full"
+                    role="img"
+                    aria-label="Session timer progress"
+                  >
+                    {/* Background ring */}
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="10"
+                      fill="none"
+                      stroke={
+                        isLowTime
+                          ? "rgba(255, 255, 255, 0.2)"
+                          : "rgba(251, 146, 60, 0.2)"
+                      }
+                      strokeWidth="2"
+                    />
+                    {/* Progress ring */}
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="10"
+                      fill="none"
+                      stroke={
+                        isLowTime
+                          ? "rgba(255, 255, 255, 0.9)"
+                          : "rgba(251, 146, 60, 0.9)"
+                      }
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 10}`}
+                      strokeDashoffset={`${2 * Math.PI * 10 * (1 - progressPercentage / 100)}`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+
+                    {/* Clock hand */}
+                    <line
+                      x1="16"
+                      y1="16"
+                      x2="16"
+                      y2="9"
+                      stroke={
+                        isLowTime
+                          ? "rgba(255, 255, 255, 0.95)"
+                          : "rgba(251, 146, 60, 0.95)"
+                      }
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      transform={`rotate(${-270 + progressPercentage * 3.6} 16 16)`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                  </svg>
+                </div>
+              </div>
+            )}
 
             {/* Countdown Text and End Button */}
             <div
               className={`flex items-center gap-2 transition-all ${
                 isHovered
-                  ? "opacity-100 translate-x-0"
-                  : "opacity-0 translate-x-4"
+                  ? "translate-x-0 opacity-100"
+                  : "translate-x-4 opacity-0"
               }`}
               style={{
                 transitionDelay: isHovered ? "100ms" : "0ms",
@@ -1002,7 +1208,7 @@ function SessionTimerButton({
               }}
             >
               <span
-                className={`text-sm font-medium whitespace-nowrap ${
+                className={`whitespace-nowrap font-medium text-sm ${
                   isLowTime ? "text-white" : "text-gray-900 dark:text-white"
                 }`}
               >
