@@ -8,7 +8,8 @@ export type Drawer =
   | "version"
   | "log"
   | "external-node"
-  | "assets";
+  | "assets"
+  | "configuration";
 
 interface DrawerState {
   activeDrawer: Drawer | null;

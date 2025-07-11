@@ -1,6 +1,9 @@
 import { Link, useRouter, useSearch } from "@tanstack/react-router";
 import { WorkflowDropdown } from "./workflow-dropdown";
-import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
+import {
+  useSessionIdInSessionView,
+  useWorkflowIdInWorkflowPage,
+} from "@/hooks/hook";
 import { VersionSelectV2 } from "./version-select";
 import {
   BookText,
@@ -9,12 +12,14 @@ import {
   FileClock,
   Folder,
   GitBranch,
+  History,
   ImageIcon,
   Link2,
   Loader2,
   Lock,
   Menu,
   Play,
+  Plus,
   Save,
   Server,
   Settings,
@@ -27,14 +32,13 @@ import {
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
 import { useParams } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { ImageInputsTooltip } from "./image-inputs-tooltip";
 import { cn } from "@/lib/utils";
 import type { Session } from "./app-sidebar";
 import { useQuery } from "@tanstack/react-query";
-import { useSessionTimer } from "./workspace/SessionTimer";
+import { SessionTimer, useSessionTimer } from "./workspace/SessionTimer";
 import { parseAsString, useQueryState } from "nuqs";
-import { useEffect } from "react";
 import { useSessionAPI } from "@/hooks/use-session-api";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,6 +72,24 @@ import { sendWorkflow } from "./workspace/sendEventToCD";
 import { CopyButton } from "./ui/copy-button";
 import { ScrollArea } from "./ui/scroll-area";
 import { WorkflowCommitSidePanel } from "./workspace/WorkflowCommitSidePanel";
+import { callServerPromise } from "@/lib/call-server-promise";
+import { api } from "@/lib/api";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Button } from "./ui/button";
+import { Switch } from "./ui/switch";
+import { Badge } from "./ui/badge";
+import { Separator } from "./ui/separator";
+import { useAuth } from "@clerk/clerk-react";
+import { useSelectedVersion } from "./version-select";
+import { useGetWorkflowVersionData } from "@/hooks/use-get-workflow-version-data";
+import { serverAction } from "@/lib/workflow-version-api";
 
 export function WorkflowNavbar() {
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
@@ -116,7 +138,7 @@ function CenterNavigation() {
   const router = useRouter();
   const { view } = useParams({ from: "/workflows/$workflowId/$view" });
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
-  const { sessionId, restoreCachedSession } = useSessionWithCache();
+  const { restoreCachedSession } = useSessionWithCache();
 
   const shouldHideDeploymentFeatures = !isPlanLoading && !isDeploymentAllowed;
 
@@ -173,7 +195,6 @@ function CenterNavigation() {
     <div className="mt-2 flex flex-row gap-2">
       <SessionTimerButton
         workflowId={workflowId}
-        sessionId={sessionId}
         restoreCachedSession={restoreCachedSession}
       />
 
@@ -806,7 +827,7 @@ function SessionBar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="dark w-44 rounded-2xl border-zinc-700/50 bg-zinc-800/70 text-gray-400 backdrop-blur-sm"
+            className="dark w-44 rounded-2xl border-zinc-700/50 bg-zinc-800/70 text-gray-300 backdrop-blur-sm"
           >
             <DropdownMenuItem
               className="px-3 py-2 focus:bg-zinc-700/40"
@@ -844,8 +865,10 @@ function SessionBar() {
               <Link2 size={16} className="mr-2" />
               Integration
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-600/60" />
-            <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
+            <DropdownMenuItem
+              className="px-3 py-2 focus:bg-zinc-700/40"
+              onClick={() => toggleDrawer("configuration")}
+            >
               <Settings size={16} className="mr-2" />
               Configuration
             </DropdownMenuItem>
@@ -1019,6 +1042,28 @@ function SessionBar() {
                     />
                   </motion.div>
                 )}
+
+                {activeDrawer === "configuration" && (
+                  <motion.div
+                    key="configuration"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex h-full flex-col p-4"
+                  >
+                    <div className="mb-4 flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      <span className="font-medium">
+                        Workspace Configuration
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      {sessionId && (
+                        <WorkspaceConfigurationPanel sessionId={sessionId} />
+                      )}
+                    </div>
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           </motion.div>
@@ -1030,16 +1075,16 @@ function SessionBar() {
 
 function SessionTimerButton({
   workflowId,
-  sessionId,
   restoreCachedSession,
 }: {
   workflowId: string | null;
-  sessionId: string | null;
   restoreCachedSession: () => void;
 }) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const queryClient = useQueryClient();
+  const urlSessionId = useSessionIdInSessionView();
 
   // Get cached session ID if URL sessionId is null
   const getCachedSessionId = () => {
@@ -1050,9 +1095,9 @@ function SessionTimerButton({
   };
 
   // Use sessionId from URL or fallback to cached sessionId
-  const effectiveSessionId = sessionId || getCachedSessionId();
+  const effectiveSessionId = getCachedSessionId();
 
-  const { data: session } = useQuery<Session>({
+  const { data: session, refetch } = useQuery<Session>({
     enabled: !!effectiveSessionId,
     queryKey: ["session", effectiveSessionId],
     refetchInterval: (data) => {
@@ -1083,6 +1128,7 @@ function SessionTimerButton({
 
     const sessionIdToDelete = effectiveSessionId;
     if (!sessionIdToDelete) return;
+    setIsPopoverOpen(false);
 
     try {
       router.navigate({
@@ -1105,6 +1151,19 @@ function SessionTimerButton({
     }
   };
 
+  const handleTimerClick = () => {
+    if (urlSessionId) {
+      setIsPopoverOpen(true);
+    } else {
+      restoreCachedSession();
+    }
+  };
+
+  const handleRefetch = async () => {
+    await refetch();
+    return Promise.resolve();
+  };
+
   return (
     <AnimatePresence mode="popLayout">
       {activeSession && effectiveSessionId && (
@@ -1123,138 +1182,294 @@ function SessionTimerButton({
           }}
           className="flex items-center"
         >
-          {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-          <div
-            className={`relative flex h-10 cursor-pointer items-center justify-between overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
-              isLowTime
-                ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/25 hover:shadow-orange-500/40 dark:from-orange-500 dark:to-orange-700 dark:shadow-orange-600/25 dark:hover:shadow-orange-600/40"
-                : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"
-            }`}
-            style={{
-              width: isHovered ? "134px" : "42px",
-              paddingLeft: isHovered ? "6px" : "0px",
-              paddingRight: isHovered ? "12px" : "0px",
-              transitionTimingFunction: isHovered
-                ? "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
-                : "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-              transitionDuration: isHovered ? "400ms" : "200ms",
-            }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onClick={restoreCachedSession}
+          <TimerPopover
+            session={activeSession}
+            onRefetch={handleRefetch}
+            open={isPopoverOpen}
+            onOpenChange={setIsPopoverOpen}
           >
-            {/* Timer Icon */}
-            {deleteSession.isPending ? (
-              <div className="relative flex h-10 w-10 flex-shrink-0 animate-pulse items-center justify-center rounded-full">
-                <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
-              </div>
-            ) : (
-              <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95">
-                {/* Progress ring */}
-                <div className="absolute inset-0.5">
-                  <svg
-                    viewBox="0 0 32 32"
-                    className="-rotate-90 h-full w-full"
-                    role="img"
-                    aria-label="Session timer progress"
-                  >
-                    {/* Background ring */}
-                    <circle
-                      cx="16"
-                      cy="16"
-                      r="10"
-                      fill="none"
-                      stroke={
-                        isLowTime
-                          ? "rgba(255, 255, 255, 0.2)"
-                          : "rgba(251, 146, 60, 0.2)"
-                      }
-                      strokeWidth="2"
-                    />
-                    {/* Progress ring */}
-                    <circle
-                      cx="16"
-                      cy="16"
-                      r="10"
-                      fill="none"
-                      stroke={
-                        isLowTime
-                          ? "rgba(255, 255, 255, 0.9)"
-                          : "rgba(251, 146, 60, 0.9)"
-                      }
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeDasharray={`${2 * Math.PI * 10}`}
-                      strokeDashoffset={`${2 * Math.PI * 10 * (1 - progressPercentage / 100)}`}
-                      className="transition-all duration-1000 ease-out"
-                    />
-
-                    {/* Clock hand */}
-                    <line
-                      x1="16"
-                      y1="16"
-                      x2="16"
-                      y2="9"
-                      stroke={
-                        isLowTime
-                          ? "rgba(255, 255, 255, 0.95)"
-                          : "rgba(251, 146, 60, 0.95)"
-                      }
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      transform={`rotate(${-270 + progressPercentage * 3.6} 16 16)`}
-                      className="transition-all duration-1000 ease-out"
-                    />
-                  </svg>
-                </div>
-              </div>
-            )}
-
-            {/* Countdown Text and End Button */}
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
             <div
-              className={`flex items-center gap-2 transition-all ${
-                isHovered
-                  ? "translate-x-0 opacity-100"
-                  : "translate-x-4 opacity-0"
+              className={`relative flex h-10 cursor-pointer items-center justify-between overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
+                isLowTime
+                  ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/25 hover:shadow-orange-500/40 dark:from-orange-500 dark:to-orange-700 dark:shadow-orange-600/25 dark:hover:shadow-orange-600/40"
+                  : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"
               }`}
               style={{
-                transitionDelay: isHovered ? "100ms" : "0ms",
-                transitionDuration: isHovered ? "300ms" : "150ms",
+                width: isHovered ? "134px" : "42px",
+                paddingLeft: isHovered ? "6px" : "0px",
+                paddingRight: isHovered ? "12px" : "0px",
                 transitionTimingFunction: isHovered
-                  ? "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-                  : "ease-out",
+                  ? "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+                  : "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                transitionDuration: isHovered ? "400ms" : "200ms",
               }}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              onClick={handleTimerClick}
             >
-              <span
-                className={`whitespace-nowrap font-medium text-sm ${
-                  isLowTime ? "text-white" : "text-gray-900 dark:text-white"
-                }`}
-              >
-                {countdown ? countdown.split(":").slice(1).join(":") : "00:00"}
-              </span>
+              {/* Timer Icon */}
+              {deleteSession.isPending ? (
+                <div className="relative flex h-10 w-10 flex-shrink-0 animate-pulse items-center justify-center rounded-full">
+                  <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
+                </div>
+              ) : (
+                <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95">
+                  {/* Progress ring */}
+                  <div className="absolute inset-0.5">
+                    <svg
+                      viewBox="0 0 32 32"
+                      className="-rotate-90 h-full w-full"
+                      role="img"
+                      aria-label="Session timer progress"
+                    >
+                      {/* Background ring */}
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r="10"
+                        fill="none"
+                        stroke={
+                          isLowTime
+                            ? "rgba(255, 255, 255, 0.2)"
+                            : "rgba(251, 146, 60, 0.2)"
+                        }
+                        strokeWidth="2"
+                      />
+                      {/* Progress ring */}
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r="10"
+                        fill="none"
+                        stroke={
+                          isLowTime
+                            ? "rgba(255, 255, 255, 0.9)"
+                            : "rgba(251, 146, 60, 0.9)"
+                        }
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 10}`}
+                        strokeDashoffset={`${2 * Math.PI * 10 * (1 - progressPercentage / 100)}`}
+                        className="transition-all duration-1000 ease-out"
+                      />
 
-              <button
-                type="button"
-                onClick={handleDeleteSession}
-                disabled={deleteSession.isPending}
-                className={`rounded-full p-1 transition-colors duration-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 ${
-                  isLowTime
-                    ? "text-white hover:text-white"
-                    : "text-gray-600 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400"
+                      {/* Clock hand */}
+                      <line
+                        x1="16"
+                        y1="16"
+                        x2="16"
+                        y2="9"
+                        stroke={
+                          isLowTime
+                            ? "rgba(255, 255, 255, 0.95)"
+                            : "rgba(251, 146, 60, 0.95)"
+                        }
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        transform={`rotate(${-270 + progressPercentage * 3.6} 16 16)`}
+                        className="transition-all duration-1000 ease-out"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              )}
+
+              {/* Countdown Text and End Button */}
+              <div
+                className={`flex items-center gap-2 transition-all ${
+                  isHovered
+                    ? "translate-x-0 opacity-100"
+                    : "translate-x-4 opacity-0"
                 }`}
-                title="End session"
+                style={{
+                  transitionDelay: isHovered ? "100ms" : "0ms",
+                  transitionDuration: isHovered ? "300ms" : "150ms",
+                  transitionTimingFunction: isHovered
+                    ? "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                    : "ease-out",
+                }}
               >
-                {deleteSession.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <X className="h-4 w-4" />
-                )}
-              </button>
+                <span
+                  className={`whitespace-nowrap font-medium text-sm ${
+                    isLowTime ? "text-white" : "text-gray-900 dark:text-white"
+                  }`}
+                >
+                  {countdown
+                    ? countdown.split(":").slice(1).join(":")
+                    : "00:00"}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleDeleteSession}
+                  disabled={deleteSession.isPending}
+                  className={`rounded-full p-1 transition-colors duration-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isLowTime
+                      ? "text-white hover:text-white"
+                      : "text-gray-600 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400"
+                  }`}
+                  title="End session"
+                >
+                  {deleteSession.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          </TimerPopover>
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function TimerPopover({
+  session,
+  onRefetch,
+  open,
+  onOpenChange,
+  children,
+}: {
+  session: Session | undefined;
+  onRefetch: () => Promise<unknown>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const [selectedIncrement, setSelectedIncrement] = useState("5");
+  const sessionId = useSessionIdInSessionView();
+  const { countdown } = useSessionTimer(session);
+
+  const [hours, minutes, seconds] = countdown.split(":").map(Number);
+  const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+  // Auto-open popover when less than 30 seconds remaining
+  useEffect(() => {
+    if (totalSeconds > 0 && totalSeconds < 30) {
+      onOpenChange(true);
+    }
+  }, [totalSeconds, onOpenChange]);
+
+  const timeIncrements = [
+    { value: "1", label: "1 minute" },
+    { value: "5", label: "5 minutes" },
+    { value: "10", label: "10 minutes" },
+    { value: "15", label: "15 minutes" },
+  ];
+
+  const incrementTime = async () => {
+    if (!session || !sessionId) {
+      toast.error("Session details not found");
+      return;
+    }
+
+    try {
+      await increaseSessionTimeout(sessionId, Number(selectedIncrement));
+      onRefetch();
+      // Only close the popover when time is increased
+      if (totalSeconds >= 30) {
+        onOpenChange(false);
+      }
+    } catch (error) {
+      // Error handling is already done in the utility function
+      console.error("Failed to increase session timeout:", error);
+    }
+  };
+
+  // Function to determine text color based on the time remaining
+  const getTimeWarningClass = () => {
+    if (totalSeconds < 30) {
+      return "text-yellow-600";
+    }
+    return "text-muted-foreground";
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(openState) => {
+        // Only allow closing the popover if time is >= 30 seconds
+        if (totalSeconds < 30 && !openState) {
+          return; // Prevent closing when time is < 30 seconds
+        }
+        onOpenChange(openState);
+      }}
+    >
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent className="w-[340px]">
+        <span className="font-medium text-sm">Increase Session Time</span>
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center text-muted-foreground text-sm">
+              <span className="flex items-center space-x-2">
+                Instance:{" "}
+                <span className="ml-1 font-medium">{session?.gpu}</span>
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between rounded-none bg-muted/50 px-2 py-3">
+                <div className="flex items-center gap-2">
+                  <History className={`h-4 w-4 ${getTimeWarningClass()}`} />
+                  <span
+                    className={`font-medium text-sm ${getTimeWarningClass()}`}
+                  >
+                    Time Remaining
+                  </span>
+                </div>
+                {session && (
+                  <SessionTimer
+                    session={session}
+                    size="sm"
+                    className={getTimeWarningClass()}
+                  />
+                )}
+              </div>
+              {session?.timeout_end && session?.created_at && (
+                <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className={`h-full transition-all ${
+                      totalSeconds < 30 ? "bg-yellow-500" : "bg-primary"
+                    }`}
+                    style={{
+                      width: `${
+                        ((new Date(session.timeout_end).getTime() -
+                          new Date().getTime()) /
+                          (new Date(session.timeout_end).getTime() -
+                            new Date(session.created_at).getTime())) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Select
+              value={selectedIncrement}
+              onValueChange={setSelectedIncrement}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Minutes" />
+              </SelectTrigger>
+              <SelectContent>
+                {timeIncrements.map((increment) => (
+                  <SelectItem key={increment.value} value={increment.value}>
+                    {increment.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={incrementTime} className="flex-1">
+              <Plus className="mr-2 h-4 w-4" /> Add Time
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -1319,4 +1534,262 @@ function useSessionWithCache() {
     restoreCachedSession,
     cacheSessionId: clearSessionId, // Use the new clear function
   };
+}
+
+// Utility function to increase session timeout
+function increaseSessionTimeout(
+  sessionId: string | null,
+  minutes: number,
+): Promise<any> {
+  if (!sessionId) {
+    return Promise.reject("No session ID provided");
+  }
+
+  return callServerPromise(
+    api({
+      url: `session/${sessionId}/increase-timeout`,
+      init: {
+        method: "POST",
+        body: JSON.stringify({
+          minutes: minutes,
+        }),
+      },
+    }),
+    {
+      loadingText: "Increasing session time...",
+      successMessage: "Session time extended",
+    },
+  );
+}
+
+// Workspace Configuration Panel Component
+function WorkspaceConfigurationPanel({ sessionId }: { sessionId: string }) {
+  const workflowId = useWorkflowIdInWorkflowPage();
+  const { userId } = useAuth();
+  const { hasChanged } = useWorkflowStore();
+
+  // Load settings from localStorage with defaults
+  const [settings, setSettings] = useState(() => {
+    const savedSettings = localStorage.getItem("workspaceConfig");
+    return savedSettings
+      ? JSON.parse(savedSettings)
+      : {
+          autoSave: false,
+          autoSaveInterval: "60",
+          autoExpandSession: false,
+        };
+  });
+
+  const { data: session, refetch } = useQuery<Session>({
+    queryKey: ["session", sessionId],
+    enabled: !!sessionId && settings.autoExpandSession,
+  });
+
+  const { countdown } = useSessionTimer(session);
+  const autoExtendInProgressRef = useRef(false);
+  const isLegacyMode = !session?.timeout_end;
+
+  const machine_id = session?.machine_id;
+  const machine_version_id = session?.machine_version_id;
+  const session_url = session?.url;
+  const endpoint = session?.url || session?.tunnel_url;
+  const { value: selectedVersion } = useSelectedVersion(workflowId || "");
+
+  const {
+    query,
+    setVersion,
+    is_fluid_machine,
+    comfyui_snapshot,
+    comfyui_snapshot_loading,
+  } = useGetWorkflowVersionData({
+    machine_id,
+    machine_version_id,
+    session_url,
+    workflowId,
+  });
+
+  // Update settings and save to localStorage
+  const updateSettings = (key: string, value: any) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    localStorage.setItem("workspaceConfig", JSON.stringify(newSettings));
+  };
+
+  // Auto-extend functionality
+  useEffect(() => {
+    if (
+      !settings.autoExpandSession ||
+      !sessionId ||
+      !countdown ||
+      autoExtendInProgressRef.current ||
+      isLegacyMode
+    ) {
+      return;
+    }
+
+    const [hours, minutes, seconds] = countdown.split(":").map(Number);
+    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+    if (totalSeconds > 0 && totalSeconds < 60) {
+      autoExtendInProgressRef.current = true;
+
+      increaseSessionTimeout(sessionId, 5)
+        .then(() => {
+          refetch();
+        })
+        .catch((error) => {
+          toast.error(`Failed to auto-extend session: ${error}`);
+        })
+        .finally(() => {
+          // Add a small delay before allowing another auto-extension
+          setTimeout(() => {
+            autoExtendInProgressRef.current = false;
+          }, 10000); // 10 seconds cooldown
+        });
+    }
+  }, [countdown, settings.autoExpandSession, sessionId, refetch, isLegacyMode]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    let saveIntervalId: NodeJS.Timeout | undefined;
+
+    const { autoSave, autoSaveInterval } = settings;
+
+    if (hasChanged && autoSave) {
+      saveIntervalId = setInterval(async () => {
+        await serverAction({
+          comment: "Auto Save",
+          endpoint,
+          machine_id,
+          machine_version_id,
+          userId,
+          workflowId,
+          is_fluid_machine,
+          query,
+          setVersion,
+          setOpen: () => {},
+          snapshotAction: "COMMIT_ONLY",
+          comfyui_snapshot,
+          comfyui_snapshot_loading,
+          sessionId,
+          workflow_api: selectedVersion?.workflow_api,
+        });
+      }, +autoSaveInterval * 1000);
+    }
+
+    return () => {
+      if (saveIntervalId) {
+        clearInterval(saveIntervalId);
+        saveIntervalId = undefined;
+      }
+    };
+  }, [
+    settings,
+    hasChanged,
+    endpoint,
+    machine_id,
+    machine_version_id,
+    userId,
+    workflowId,
+    is_fluid_machine,
+    query,
+    setVersion,
+    comfyui_snapshot,
+    comfyui_snapshot_loading,
+    sessionId,
+    selectedVersion,
+  ]);
+
+  // Format interval text
+  const getIntervalText = () => {
+    if (!settings.autoSave) return "";
+    return settings.autoSaveInterval === "30"
+      ? "30s"
+      : settings.autoSaveInterval === "300"
+        ? "5m"
+        : "1m";
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Auto Save Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm">Auto Save</span>
+              {settings.autoSave && (
+                <Badge variant="outline" className="h-5 px-2 text-xs">
+                  {getIntervalText()}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Automatically commit workflow changes
+            </p>
+          </div>
+          <Switch
+            checked={settings.autoSave}
+            onCheckedChange={(checked) => updateSettings("autoSave", checked)}
+          />
+        </div>
+
+        {settings.autoSave && (
+          <div className="ml-4 pl-4 border-l-2 border-muted">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Interval:</span>
+              <Select
+                value={settings.autoSaveInterval}
+                onValueChange={(value) =>
+                  updateSettings("autoSaveInterval", value)
+                }
+              >
+                <SelectTrigger className="w-24 h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30s</SelectItem>
+                  <SelectItem value="60">1m</SelectItem>
+                  <SelectItem value="300">5m</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Separator />
+
+      {/* Session Management Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="font-medium text-sm">Auto Expand Session</span>
+            <p className="text-xs text-muted-foreground">
+              Automatically extend session time when about to expire
+            </p>
+          </div>
+          <Switch
+            checked={settings.autoExpandSession}
+            onCheckedChange={(checked) =>
+              updateSettings("autoExpandSession", checked)
+            }
+          />
+        </div>
+
+        {settings.autoExpandSession && session && (
+          <div className="ml-4 pl-4 border-l-2 border-muted">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Status:</span>
+              <span className="text-green-600">
+                {isLegacyMode ? "Not supported (legacy session)" : "Active"}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Future sections can be added here */}
+    </div>
+  );
 }
