@@ -125,10 +125,12 @@ export function WorkflowDropdown({
             <span className="truncate text-ellipsis text-start dark:text-zinc-100">
               {workflow?.name ?? "Select a workflow"}
             </span>
-            <ChevronsUpDown
-              className="ml-2 flex-shrink-0 opacity-50 dark:text-zinc-400"
-              size={16}
-            />
+            {!sessionId && (
+              <ChevronsUpDown
+                className="ml-2 flex-shrink-0 opacity-50 dark:text-zinc-400"
+                size={16}
+              />
+            )}
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-[375px] overflow-hidden p-0" side="bottom">

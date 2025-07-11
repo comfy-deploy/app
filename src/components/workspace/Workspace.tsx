@@ -543,9 +543,10 @@ export default function Workspace({
             userSelect: "none",
           }}
           className={cn(
-            "border-none h-full inset-0 w-full z-[20]",
+            "inset-0 z-[20] h-full w-full border-none",
             !cdSetup && "pointer-events-none",
-            activeDrawer === "assets" && "blur-sm pointer-events-none",
+            iframeLoaded && "bg-[#353535] pt-10",
+            activeDrawer === "assets" && "pointer-events-none blur-sm",
           )}
           title="iframeContent"
           allow="autoplay; encrypted-media; fullscreen; display-capture; camera; microphone"

@@ -3,11 +3,19 @@ import { WorkflowDropdown } from "./workflow-dropdown";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { VersionSelectV2 } from "./version-select";
 import {
+  BookText,
+  Box,
   Database,
+  FileClock,
+  Folder,
   GitBranch,
   ImageIcon,
+  Link2,
+  Loader2,
   Lock,
+  Menu,
   Play,
+  Save,
   Server,
   Share,
   Slash,
@@ -42,6 +50,15 @@ import {
   useSelectedDeploymentStore,
 } from "@/components/deployment/deployment-page";
 import { getEnvColor } from "@/components/workspace/ContainersTable";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { useWorkflowStore } from "./workspace/Workspace";
 
 export function WorkflowNavbar() {
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
@@ -85,8 +102,7 @@ function CenterNavigation() {
   const router = useRouter();
   const { view } = useParams({ from: "/workflows/$workflowId/$view" });
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
-  const { sessionId, restoreCachedSession, cacheSessionId } =
-    useSessionWithCache();
+  const { sessionId, restoreCachedSession } = useSessionWithCache();
 
   const shouldHideDeploymentFeatures = !isPlanLoading && !isDeploymentAllowed;
 
@@ -140,7 +156,7 @@ function CenterNavigation() {
   );
 
   return (
-    <div className="mt-2 flex flex-row gap-2.5">
+    <div className="mt-2 flex flex-row gap-2">
       <SessionTimerButton
         workflowId={workflowId}
         sessionId={sessionId}
@@ -479,7 +495,7 @@ function WorkflowNavbarLeft() {
       className={cn(
         "pointer-events-auto flex items-center gap-2",
         sessionId
-          ? "ml-1 rounded-full bg-zinc-700/30 px-4 backdrop-blur-md"
+          ? "ml-2 rounded-full bg-zinc-700/30 pr-2 pl-4 shadow-md backdrop-blur-md"
           : "ml-4",
       )}
     >
@@ -503,7 +519,7 @@ function WorkflowNavbarLeft() {
           <Slash className="h-3 w-3 shrink-0 text-muted-foreground/50 drop-shadow-md" />
           <WorkflowDropdown
             workflow_id={workflowId}
-            className="max-w-36 drop-shadow-md"
+            className="max-w-32 drop-shadow-md"
           />
           <Slash className="h-3 w-3 shrink-0 text-muted-foreground/50 drop-shadow-md" />
           <VersionSelectV2
@@ -571,16 +587,14 @@ function WorkflowNavbarRight() {
             }}
             className="mt-2 flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
           >
-            <ImageInputsTooltip tooltipText="Share" delayDuration={300}>
-              <button
-                type="button"
-                className="flex h-12 items-center gap-1.5 p-4 text-gray-600 transition-colors hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-                onClick={() => setIsShareDialogOpen(true)}
-              >
-                <Share className="h-4 w-[18px]" />
-                Share
-              </button>
-            </ImageInputsTooltip>
+            <button
+              type="button"
+              className="flex h-12 items-center gap-1.5 p-4 text-gray-600 transition-colors hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              onClick={() => setIsShareDialogOpen(true)}
+            >
+              <Share className="h-4 w-[18px]" />
+              Share
+            </button>
           </motion.div>
         )}
         {(view === "playground" || view === "gallery") && (
@@ -651,6 +665,7 @@ function WorkflowNavbarRight() {
             </button>
           </motion.div>
         )}
+        {view === "workspace" && sessionId && <SessionBar />}
       </AnimatePresence>
 
       <ShareWorkflowDialog
@@ -679,6 +694,116 @@ function WorkflowNavbarRight() {
 }
 
 // ============== utils ==============
+
+function SessionBar() {
+  const { hasChanged, workflow } = useWorkflowStore();
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <motion.div
+        layout
+        key="session-bar-commit"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        whileHover={{ scale: hasChanged ? 1.03 : 1 }}
+        whileTap={{ scale: hasChanged ? 0.95 : 1 }}
+        transition={{
+          type: "spring",
+          stiffness: 180,
+          damping: 15,
+          mass: 0.8,
+          opacity: { duration: 0.4 },
+        }}
+        className={cn(
+          "flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm transition-colors duration-300",
+          hasChanged
+            ? "border-orange-400/50 bg-orange-500/20 shadow-orange-400/25 hover:bg-orange-400/30 hover:shadow-orange-400/40"
+            : " border-zinc-800/30 bg-zinc-700/30 opacity-50 shadow-zinc-700/20",
+        )}
+        style={{
+          boxShadow: hasChanged
+            ? "0 0 20px rgba(251, 146, 60, 0.3), 0 0 40px rgba(251, 146, 60, 0.1)"
+            : undefined,
+        }}
+      >
+        <button
+          type="button"
+          disabled={!hasChanged}
+          className={cn(
+            "flex h-12 items-center gap-1.5 p-4 transition-colors duration-200",
+            hasChanged ? "text-orange-200 hover:text-white" : " text-zinc-600",
+          )}
+          onClick={() => {
+            if (hasChanged) {
+              // TODO: Implement commit functionality
+            }
+          }}
+        >
+          <Save className="h-4 w-[18px]" />
+          Commit
+        </button>
+      </motion.div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <motion.div
+            layout
+            key="session-bar-more"
+            initial={{ opacity: 0, scale: 0.3 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.3 }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{
+              type: "spring",
+              stiffness: 180,
+              damping: 15,
+              mass: 0.8,
+              opacity: { duration: 0.4 },
+            }}
+            className="flex items-center rounded-full border border-zinc-800/50 bg-zinc-700/60 text-sm shadow-md backdrop-blur-sm"
+          >
+            <button
+              type="button"
+              className="flex items-center gap-1.5 p-4 text-zinc-400 transition-colors hover:text-zinc-100"
+              onClick={() => {}}
+            >
+              <span className="sr-only">More</span>
+              <Menu className="h-4 w-[16px] shrink-0" />
+            </button>
+          </motion.div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="dark w-44 rounded-2xl border-zinc-700/50 bg-zinc-800/70 text-gray-400 backdrop-blur-sm"
+        >
+          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
+            <FileClock size={16} className="mr-2" />
+            Log
+          </DropdownMenuItem>
+          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
+            <Folder size={16} className="mr-2" />
+            Assets
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-600/60" />
+          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
+            <BookText size={16} className="mr-2" />
+            API Nodes
+          </DropdownMenuItem>
+          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
+            <Box size={16} className="mr-2" />
+            Model Check
+          </DropdownMenuItem>
+          <DropdownMenuItem className="px-3 py-2 focus:bg-zinc-700/40">
+            <Link2 size={16} className="mr-2" />
+            Integration
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
 
 function SessionTimerButton({
   workflowId,
@@ -730,7 +855,9 @@ function SessionTimerButton({
     : false;
 
   const handleDeleteSession = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+
     const sessionIdToDelete = effectiveSessionId;
     if (!sessionIdToDelete) return;
 
@@ -773,15 +900,16 @@ function SessionTimerButton({
           }}
           className="flex items-center"
         >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
           <div
-            className={`relative flex h-10 items-center justify-between overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
+            className={`relative flex h-10 cursor-pointer items-center justify-between overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
               isLowTime
                 ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/25 hover:shadow-orange-500/40 dark:from-orange-500 dark:to-orange-700 dark:shadow-orange-600/25 dark:hover:shadow-orange-600/40"
                 : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"
             }`}
             style={{
-              width: isHovered ? "164px" : "42px",
-              paddingLeft: isHovered ? "12px" : "0px",
+              width: isHovered ? "134px" : "42px",
+              paddingLeft: isHovered ? "6px" : "0px",
               paddingRight: isHovered ? "12px" : "0px",
               transitionTimingFunction: isHovered
                 ? "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
@@ -790,12 +918,12 @@ function SessionTimerButton({
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onClick={restoreCachedSession}
           >
             {/* Timer Icon */}
             <button
               type="button"
               className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95"
-              onClick={restoreCachedSession}
             >
               {/* Progress ring */}
               <div className="absolute inset-0.5">
@@ -876,21 +1004,25 @@ function SessionTimerButton({
                   isLowTime ? "text-white" : "text-gray-900 dark:text-white"
                 }`}
               >
-                {countdown || "00:00:00"}
+                {countdown ? countdown.split(":").slice(1).join(":") : "00:00"}
               </span>
 
               <button
                 type="button"
                 onClick={handleDeleteSession}
                 disabled={deleteSession.isPending}
-                className={`p-1 rounded-full transition-colors duration-200 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`rounded-full p-1 transition-colors duration-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 ${
                   isLowTime
                     ? "text-white hover:text-white"
                     : "text-gray-600 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400"
                 }`}
                 title="End session"
               >
-                <X className="h-4 w-4" />
+                {deleteSession.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>
@@ -949,7 +1081,7 @@ function useSessionWithCache() {
       router.navigate({
         to: "/workflows/$workflowId/$view",
         params: { workflowId: workflowId || "", view: "workspace" },
-        search: { sessionId: cachedId },
+        search: (prev) => ({ ...prev, sessionId: cachedId }),
       });
     }
   };
