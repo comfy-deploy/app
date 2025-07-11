@@ -1636,6 +1636,16 @@ function BackgroundAutoUpdate() {
   const workflowId = useWorkflowIdInWorkflowPage();
   const sessionId = useSessionIdInSessionView();
 
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "default"
+    ) {
+      Notification.requestPermission();
+    }
+  }, []);
+
   // Get all the values we need
   const settings = JSON.parse(
     localStorage.getItem("workspaceConfig") || "{}",
@@ -1728,6 +1738,14 @@ function BackgroundAutoUpdate() {
 
         await increaseSessionTimeout(sessionId, 5);
         await refetch();
+        if (
+          typeof window !== "undefined" &&
+          Notification.permission === "granted"
+        ) {
+          new Notification("Session extended", {
+            body: "Your session was automatically extended.",
+          });
+        }
       } catch (error) {
         toast.error(`Failed to auto-extend session: ${error}`);
       } finally {
