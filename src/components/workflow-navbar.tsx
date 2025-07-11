@@ -67,6 +67,7 @@ import { WorkflowModelCheck } from "./onboarding/workflow-model-check";
 import { sendWorkflow } from "./workspace/sendEventToCD";
 import { CopyButton } from "./ui/copy-button";
 import { ScrollArea } from "./ui/scroll-area";
+import { WorkflowCommitSidePanel } from "./workspace/WorkflowCommitSidePanel";
 
 export function WorkflowNavbar() {
   const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
@@ -764,7 +765,7 @@ function SessionBar() {
             )}
             onClick={() => {
               if (hasChanged) {
-                // TODO: Implement commit functionality
+                toggleDrawer("commit");
               }
             }}
           >
@@ -1001,6 +1002,23 @@ function SessionBar() {
                     </div>
                   </motion.div>
                 )}
+
+                {activeDrawer === "commit" && url && (
+                  <motion.div
+                    key="commit"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="h-full"
+                  >
+                    <WorkflowCommitSidePanel
+                      endpoint={url}
+                      machine_id={session?.machine_id}
+                      machine_version_id={session?.machine_version_id}
+                      onClose={() => closeDrawer()}
+                    />
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           </motion.div>
@@ -1126,7 +1144,7 @@ function SessionTimerButton({
             onClick={restoreCachedSession}
           >
             {/* Timer Icon */}
-            {!deleteSession.isPending ? (
+            {deleteSession.isPending ? (
               <div className="relative flex h-10 w-10 flex-shrink-0 animate-pulse items-center justify-center rounded-full">
                 <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
               </div>
