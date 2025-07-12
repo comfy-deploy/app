@@ -6,6 +6,7 @@ import {
 } from "@/hooks/hook";
 import { VersionSelectV2 } from "./version-select";
 import {
+  ArrowLeft,
   BookText,
   Box,
   Database,
@@ -116,14 +117,14 @@ export function WorkflowNavbar() {
 
         <div
           className={cn(
-            "-translate-x-1/2 pointer-events-auto absolute left-1/2 flex transform items-center",
+            "-translate-x-1/2 pointer-events-auto absolute left-1/2 hidden transform items-center md:flex",
             sessionId && "dark",
           )}
         >
           <CenterNavigation />
         </div>
 
-        <div className="pointer-events-auto ml-auto flex items-center pr-4">
+        <div className="pointer-events-auto ml-auto flex items-center pr-2 md:pr-4">
           <WorkflowNavbarRight />
         </div>
       </div>
@@ -510,7 +511,7 @@ function CenterNavigation() {
                   });
                 }}
               >
-                <span className="sr-only">Request</span>
+                <span className="sr-only">Requests</span>
                 <TextSearch className="h-4 w-[18px]" />
               </button>
             </ImageInputsTooltip>
@@ -555,7 +556,10 @@ function WorkflowNavbarLeft() {
           <Slash className="h-3 w-3 shrink-0 text-muted-foreground/50 drop-shadow-md" />
           <WorkflowDropdown
             workflow_id={workflowId}
-            className="max-w-32 drop-shadow-md"
+            className={cn(
+              "drop-shadow-md sm:max-w-32",
+              sessionId ? "max-w-12" : "max-w-28",
+            )}
           />
           <Slash className="h-3 w-3 shrink-0 text-muted-foreground/50 drop-shadow-md" />
           <VersionSelectV2
@@ -622,7 +626,7 @@ function WorkflowNavbarRight() {
               mass: 0.8,
               opacity: { duration: 0.4 },
             }}
-            className="mt-2 flex items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
+            className="mt-2 hidden items-center rounded-full border border-gray-200 bg-white/60 text-sm shadow-md backdrop-blur-sm md:flex dark:border-zinc-800/50 dark:bg-zinc-700/60"
           >
             <button
               type="button"
@@ -651,8 +655,7 @@ function WorkflowNavbarRight() {
               opacity: { duration: 0.4 },
             }}
             className={cn(
-              "mt-2 flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm",
-              // Apply environment color or default styling
+              "mt-2 hidden items-center rounded-full border text-sm shadow-md backdrop-blur-sm md:flex",
               publicShareDeployment
                 ? `${getEnvColor(publicShareDeployment.environment)} border-green-200 bg-green-100/40`
                 : communityShareDeployment
@@ -703,6 +706,11 @@ function WorkflowNavbarRight() {
           </motion.div>
         )}
         {view === "workspace" && sessionId && <SessionBar />}
+        {!sessionId && (
+          <div className="md:hidden">
+            <WorkflowNavbarRightMobile />
+          </div>
+        )}
       </AnimatePresence>
 
       <ShareWorkflowDialog
@@ -772,6 +780,157 @@ function WorkflowNavbarRight() {
   );
 }
 
+function WorkflowNavbarRightMobile() {
+  const router = useRouter();
+  const { workflowId } = useParams({
+    from: "/workflows/$workflowId/$view",
+  });
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <motion.div
+          layout
+          key="workflow-navbar-right-mobile"
+          initial={{ opacity: 0, scale: 0.3 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.3 }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{
+            type: "spring",
+            stiffness: 180,
+            damping: 15,
+            mass: 0.8,
+            opacity: { duration: 0.4 },
+          }}
+          className="mt-2 flex items-center rounded-full border border-zinc-300/50 bg-white/80 text-sm shadow-md backdrop-blur-sm dark:border-zinc-700/50 dark:bg-zinc-700/60"
+        >
+          <button
+            type="button"
+            className="flex items-center gap-1.5 p-4 transition-colors dark:text-zinc-400 dark:hover:text-zinc-100"
+          >
+            <span className="sr-only">More</span>
+            <Menu className="h-4 w-[16px] shrink-0" />
+          </button>
+        </motion.div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-44 rounded-2xl bg-white/80 text-gray-600 backdrop-blur-sm dark:border-zinc-700/50 dark:bg-zinc-800/70 dark:text-gray-300"
+      >
+        <DropdownMenuItem
+          className="px-3 py-2 md:hidden dark:focus:bg-zinc-700/40"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: {
+                workflowId,
+                view: "workspace",
+              },
+            });
+          }}
+        >
+          <WorkflowIcon size={16} className="mr-2" />
+          Workflow
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="px-3 py-2 md:hidden dark:focus:bg-zinc-700/40"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: {
+                workflowId,
+                view: "machine",
+              },
+            });
+          }}
+        >
+          <Server size={16} className="mr-2" />
+          Machine
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="px-3 py-2 md:hidden dark:focus:bg-zinc-700/40"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: {
+                workflowId,
+                view: "model",
+              },
+            });
+          }}
+        >
+          <Database size={16} className="mr-2" />
+          Model
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-200/60 md:hidden dark:bg-zinc-600/60" />
+        <DropdownMenuItem
+          className="px-3 py-2 md:hidden dark:focus:bg-zinc-700/40"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: {
+                workflowId,
+                view: "playground",
+              },
+            });
+          }}
+        >
+          <Play size={16} className="mr-2" />
+          Playground
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="px-3 py-2 md:hidden dark:focus:bg-zinc-700/40"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: {
+                workflowId,
+                view: "gallery",
+              },
+            });
+          }}
+        >
+          <ImageIcon size={16} className="mr-2" />
+          Gallery
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-200/60 md:hidden dark:bg-zinc-600/60" />
+        <DropdownMenuItem
+          className="px-3 py-2 md:hidden dark:focus:bg-zinc-700/40"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: {
+                workflowId,
+                view: "deployment",
+              },
+            });
+          }}
+        >
+          <GitBranch size={16} className="mr-2" />
+          API
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="px-3 py-2 md:hidden dark:focus:bg-zinc-700/40"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: {
+                workflowId,
+                view: "requests",
+              },
+            });
+          }}
+        >
+          <TextSearch size={16} className="mr-2" />
+          Requests
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 // ============== utils ==============
 
 function SessionBar() {
@@ -779,6 +938,10 @@ function SessionBar() {
   const { activeDrawer, toggleDrawer, closeDrawer } = useDrawerStore();
   const [workflowUpdateTrigger, setWorkflowUpdateTrigger] = useState(0);
   const [sessionId] = useQueryState("sessionId", parseAsString);
+  const { workflowId } = useParams({
+    from: "/workflows/$workflowId/$view",
+  });
+  const router = useRouter();
 
   const { data: session } = useQuery<Session>({
     enabled: !!sessionId,
@@ -839,7 +1002,7 @@ function SessionBar() {
               }}
             >
               <Save className="h-4 w-[18px]" />
-              Commit
+              <span className="hidden sm:block">Commit</span>
             </button>
           </ImageInputsTooltip>
         </motion.div>
@@ -880,6 +1043,22 @@ function SessionBar() {
             align="end"
             className="dark w-44 rounded-2xl border-zinc-700/50 bg-zinc-800/70 text-gray-300 backdrop-blur-sm"
           >
+            <DropdownMenuItem
+              className="px-3 py-2 focus:bg-zinc-700/40 md:hidden"
+              onClick={() => {
+                router.navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: {
+                    workflowId,
+                    view: "workspace",
+                  },
+                });
+              }}
+            >
+              <ArrowLeft size={16} className="mr-2" />
+              Back
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="mx-4 my-2 bg-zinc-600/60 md:hidden" />
             <DropdownMenuItem
               className="px-3 py-2 focus:bg-zinc-700/40"
               onClick={() => toggleDrawer("log")}
@@ -931,12 +1110,11 @@ function SessionBar() {
       <AnimatePresence>
         {activeDrawer && (
           <motion.div
-            className="fixed top-16 right-4 z-40 h-[calc(100vh-80px)] w-[450px] rounded-xl bg-background shadow-2xl"
+            className="fixed top-16 right-0 z-40 h-[calc(100vh-66px)] w-full rounded-xl bg-background shadow-2xl md:right-4 md:h-[calc(100vh-80px)] md:w-[450px]"
             initial={{ opacity: 0, x: 50 }}
             animate={{
               opacity: 1,
               x: 0,
-              width: activeDrawer === "log" ? 575 : 450,
             }}
             exit={{
               opacity: 0,

@@ -179,105 +179,6 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
   );
 }
 
-export function CompactMachineSessionsList({
-  machineId,
-}: { machineId: string }) {
-  const { listSession, deleteSession } = useSessionAPI(machineId);
-  const { data: sessions } = listSession;
-  const router = useRouter();
-  const params = useParams({ from: "/workflows/$workflowId/$view" });
-  const [sessionId, setSessionId] = useQueryState("sessionId");
-
-  if (!sessions || sessions.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground text-xs py-1">
-        No active sessions
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-1">
-      <div className="text-xs text-muted-foreground">
-        Active Sessions ({sessions.length})
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {sessions.map((session) => (
-          <TooltipProvider key={session.session_id}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="group relative">
-                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-                  <div
-                    className="flex cursor-pointer items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/40"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setSessionId(session.session_id);
-                      router.navigate({
-                        to: "/workflows/$workflowId/$view",
-                        params: {
-                          workflowId: params.workflowId,
-                          view: "workspace",
-                        },
-                        search: {
-                          isFirstTime: true,
-                          workflowId: params.workflowId,
-                        },
-                      });
-                    }}
-                  >
-                    <div className="relative flex h-3 w-3 items-center justify-center">
-                      <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                      <RotateCw className="absolute h-3 w-3 animate-spin text-green-500 opacity-50" />
-                    </div>
-                    <UserIcon user_id={session.user_id} className="h-4 w-4" />
-                    <span className="text-muted-foreground">
-                      {session.session_id.slice(0, 6)}
-                    </span>
-                    <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                      {session.gpu}
-                    </Badge>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    isLoading={deleteSession.isPending}
-                    className="absolute -right-1 -top-1 h-4 w-4 p-0 text-red-500 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-600 dark:text-red-400 dark:hover:text-red-500"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      try {
-                        await deleteSession.mutateAsync({
-                          sessionId: session.session_id,
-                          waitForShutdown: true,
-                        });
-                        await listSession.refetch();
-                        toast.success("Session stopped successfully");
-                      } catch (error) {
-                        toast.error("Failed to stop session");
-                      }
-                    }}
-                  >
-                    <StopCircle className="h-3 w-3" />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-xs">
-                  <div>Session: {session.session_id.slice(0, 8)}</div>
-                  <div>GPU: {session.gpu}</div>
-                  <div>Click to join • Click X to stop</div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function SessionCreatorForm({
   workflowId,
   version,
@@ -708,9 +609,7 @@ export function SessionCreatorForm({
 
           {/* Mobile Active Sessions List */}
           {workflow?.selected_machine_id && (
-            <CompactMachineSessionsList
-              machineId={workflow.selected_machine_id}
-            />
+            <MachineSessionsList machineId={workflow.selected_machine_id} />
           )}
         </div>
 
