@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   BookText,
   Box,
+  Clock,
   Database,
   FileClock,
   Folder,
@@ -37,7 +38,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { ImageInputsTooltip } from "./image-inputs-tooltip";
 import { cn } from "@/lib/utils";
 import type { Session } from "./app-sidebar";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionTimer, useSessionTimer } from "./workspace/SessionTimer";
 import { parseAsString, useQueryState } from "nuqs";
 import { useSessionAPI } from "@/hooks/use-session-api";
@@ -138,9 +139,16 @@ function CenterNavigation() {
   const { isLoading: isPlanLoading } = useCurrentPlanQuery();
   const isDeploymentAllowed = useIsDeploymentAllowed();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { view } = useParams({ from: "/workflows/$workflowId/$view" });
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const { restoreCachedSession } = useSessionWithCache();
+  
+  const sessionId = useSessionIdInSessionView();
+  const { data: session, isLoading: isSessionLoading } = useQuery<Session>({
+    queryKey: ["session", sessionId],
+    enabled: !!sessionId,
+  });
 
   const shouldHideDeploymentFeatures = !isPlanLoading && !isDeploymentAllowed;
 
@@ -192,6 +200,109 @@ function CenterNavigation() {
       ),
     [hoveredButton, isAdminAndMember],
   );
+
+  const handleCloseSession = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!sessionId || !session) return;
+
+    try {
+      router.navigate({
+        to: "/workflows/$workflowId/$view",
+        params: { workflowId: workflowId || "", view: "workspace" },
+      });
+      
+      const { deleteSession } = useSessionAPI();
+      await deleteSession.mutateAsync({
+        sessionId: sessionId,
+        waitForShutdown: true,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["session", sessionId],
+      });
+
+      // Clear session storage
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("lastSessionId");
+      }
+
+      toast.success("Session ended successfully");
+    } catch (error) {
+      console.error("Failed to end session:", error);
+      toast.error("Failed to end session. Please try again.");
+    }
+  };
+
+  if (sessionId) {
+    if (isSessionLoading) {
+      return (
+        <div className="mt-2 flex flex-row gap-2">
+          <motion.div
+            layout
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-3 rounded-full border border-gray-200 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Loading session...</span>
+          </motion.div>
+        </div>
+      );
+    }
+
+    if (session) {
+      return (
+        <div className="mt-2 flex flex-row gap-2">
+          {/* Return button */}
+          <motion.button
+            layout
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white/60 shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60 hover:bg-gray-100/60 dark:hover:bg-zinc-600/60 transition-colors"
+            onClick={() => {
+              router.navigate({
+                to: "/workflows/$workflowId/$view",
+                params: { workflowId: workflowId || "", view: "workspace" },
+              });
+            }}
+            title="Return to workspace"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </motion.button>
+
+          {/* Session info display */}
+          <motion.div
+            layout
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-3 rounded-full border border-gray-200 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
+          >
+            {/* Timer - clickable to show popover */}
+            <SessionTimerDisplay session={session} sessionId={sessionId} />
+            
+            {/* GPU display */}
+            {session.gpu && (
+              <Badge variant="secondary" className="text-sm">
+                {session.gpu}
+              </Badge>
+            )}
+            
+            {/* Close button */}
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+              onClick={handleCloseSession}
+              title="End session"
+            >
+              <X className="h-4 w-4 text-red-600" />
+            </button>
+          </motion.div>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="mt-2 flex flex-row gap-2">
@@ -522,6 +633,77 @@ function CenterNavigation() {
   );
 }
 
+function SessionTimerDisplay({ session, sessionId }: { session: Session; sessionId: string }) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { countdown, progressPercentage } = useSessionTimer(session);
+  
+  // Calculate if less than 30 seconds remaining
+  const isLowTime = countdown
+    ? (() => {
+        const [hours, minutes, seconds] = countdown.split(":").map(Number);
+        const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        return totalSeconds < 30;
+      })()
+    : false;
+
+  const handleTimerClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsPopoverOpen(true);
+  };
+
+  const handleRefetch = async () => {
+    queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+  };
+
+  return (
+    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-gray-100/60 dark:hover:bg-zinc-600/60"
+          onClick={handleTimerClick}
+        >
+          <div className="relative">
+            <Clock className="h-4 w-4" />
+            {progressPercentage !== undefined && (
+              <div
+                className="absolute inset-0 rounded-full border-2 border-transparent"
+                style={{
+                  background: `conic-gradient(from 0deg, ${
+                    isLowTime ? "#ef4444" : "#10b981"
+                  } ${progressPercentage}%, transparent ${progressPercentage}%)`,
+                  WebkitMask: "radial-gradient(circle, transparent 40%, black 40%)",
+                  mask: "radial-gradient(circle, transparent 40%, black 40%)",
+                }}
+              />
+            )}
+          </div>
+          <span className={`text-sm font-mono ${isLowTime ? "text-red-600" : ""}`}>
+            {countdown || "00:00:00"}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+        <TimerPopover 
+          session={session} 
+          isDeleteSessionPending={false}
+          onRefetch={handleRefetch}
+          open={isPopoverOpen}
+          onOpenChange={setIsPopoverOpen}
+        >
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="text-2xl font-mono">{countdown || "00:00:00"}</div>
+              <div className="text-muted-foreground text-sm">Time remaining</div>
+            </div>
+          </div>
+        </TimerPopover>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function WorkflowNavbarLeft() {
   const workflowId = useWorkflowIdInWorkflowPage();
   const search = useSearch({ from: "/workflows/$workflowId/$view" });
@@ -537,7 +719,7 @@ function WorkflowNavbarLeft() {
       )}
     >
       <Link
-        href="/"
+        to="/"
         className="mr-2 shrink-0 drop-shadow-md transition-transform hover:scale-105"
       >
         <img
@@ -573,7 +755,7 @@ function WorkflowNavbarLeft() {
 }
 
 function WorkflowNavbarRight() {
-  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
+  const sessionId = useSessionIdInSessionView();
   const { workflowId, view } = useParams({
     from: "/workflows/$workflowId/$view",
   });
@@ -1374,7 +1556,7 @@ function SessionTimerButton({
     queryKey: ["session", effectiveSessionId],
     refetchInterval: (data) => {
       if (!data) return false;
-      if (data.timeout_end !== null) return false;
+      if ((data as any).timeout_end !== null) return false;
       return 1000;
     },
   });
@@ -2021,7 +2203,7 @@ function WorkspaceConfigurationPanel() {
 
   // Update settings and save to localStorage
   const updateSettings = useCallback((key: string, value: any) => {
-    setSettings((prev) => {
+    setSettings((prev: any) => {
       const newSettings = { ...prev, [key]: value };
       localStorage.setItem("workspaceConfig", JSON.stringify(newSettings));
       return newSettings;
