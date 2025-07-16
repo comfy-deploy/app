@@ -30,6 +30,7 @@ import {
   TextSearch,
   WorkflowIcon,
   X,
+  Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
@@ -236,72 +237,252 @@ function CenterNavigation() {
     }
   };
 
-  if (sessionId) {
-    if (isSessionLoading) {
-      return (
-        <div className="mt-2 flex flex-row gap-2">
-          <motion.div
-            layout
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-3 rounded-full border border-gray-200 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
-          >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Loading session...</span>
-          </motion.div>
-        </div>
-      );
-    }
+  const sessionContent = sessionId && session && (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="session-content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-row gap-2"
+      >
+        {/* Return button with slide animation */}
+        <motion.button
+          initial={{ opacity: 0, x: 0, scale: 0.8 }}
+          animate={{ opacity: 1, x: -60, scale: 1 }}
+          exit={{ opacity: 0, x: 0, scale: 0.8 }}
+          transition={{ 
+            duration: 0.4,
+            type: "spring",
+            stiffness: 300,
+            damping: 30
+          }}
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white/60 shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60 hover:bg-gray-100/60 dark:hover:bg-zinc-600/60 transition-colors"
+          onClick={() => {
+            router.navigate({
+              to: "/workflows/$workflowId/$view",
+              params: { workflowId: workflowId || "", view: "workspace" },
+            });
+          }}
+          title="Return to workspace"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </motion.button>
 
-    if (session) {
-      return (
-        <div className="mt-2 flex flex-row gap-2">
-          {/* Return button */}
-          <motion.button
-            layout
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white/60 shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60 hover:bg-gray-100/60 dark:hover:bg-zinc-600/60 transition-colors"
-            onClick={() => {
-              router.navigate({
-                to: "/workflows/$workflowId/$view",
-                params: { workflowId: workflowId || "", view: "workspace" },
-              });
-            }}
-            title="Return to workspace"
+        {/* Session info display */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="flex items-center gap-3 rounded-full border border-gray-200 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
+        >
+          {/* Timer - clickable to show popover */}
+          <SessionTimerDisplay session={session} sessionId={sessionId} />
+          
+          {/* Machine display */}
+          {session.machine_id && (
+            <Badge variant="outline" className="text-xs">
+              Machine: {session.machine_id}
+            </Badge>
+          )}
+          
+          {/* GPU display */}
+          {session.gpu && (
+            <Badge variant="secondary" className="text-xs">
+              GPU: {session.gpu}
+            </Badge>
+          )}
+          
+          {/* Close button */}
+          <button
+            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+            onClick={handleCloseSession}
+            title="End session"
           >
-            <ArrowLeft className="h-5 w-5" />
-          </motion.button>
+            <X className="h-4 w-4 text-red-600" />
+          </button>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
 
-          {/* Session info display */}
-          <motion.div
-            layout
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-3 rounded-full border border-gray-200 bg-white/60 px-4 py-2 shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
-          >
-            {/* Timer - clickable to show popover */}
-            <SessionTimerDisplay session={session} sessionId={sessionId} />
-            
-            {/* GPU display */}
-            {session.gpu && (
-              <Badge variant="secondary" className="text-sm">
-                {session.gpu}
-              </Badge>
+  const normalContent = !sessionId && (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="normal-content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-row gap-2"
+      >
+        {/* Existing 3-button layout */}
+        <div className="relative">
+          {/* Floating hover background */}
+          <AnimatePresence>
+            {hoveredButton && (
+              <motion.div
+                layoutId="hoverBackground"
+                className="absolute inset-0 rounded-full bg-gray-100/60 dark:bg-zinc-600/60"
+                style={hoverPosition}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              />
             )}
-            
-            {/* Close button */}
-            <button
-              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
-              onClick={handleCloseSession}
-              title="End session"
-            >
-              <X className="h-4 w-4 text-red-600" />
-            </button>
-          </motion.div>
+          </AnimatePresence>
+
+          <AnimatePresence mode="popLayout">
+            {/* Machine button */}
+            {visibleButtons.machine && (
+              <motion.div
+                layout
+                key="machine"
+                initial={{ opacity: 0, scale: 0.3, x: -120, rotateZ: -5 }}
+                animate={{ opacity: 1, scale: 1, x: 0, rotateZ: 0 }}
+                exit={{ opacity: 0, scale: 0.3, x: -120, rotateZ: 5 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  mass: 0.8,
+                  delay: 0.05,
+                  opacity: { duration: 0.4 },
+                }}
+                className={`flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm ${
+                  view === "machine"
+                    ? "border-gray-300 bg-gray-200/60 shadow-gray-200 dark:border-zinc-800/50 dark:bg-zinc-400/60 dark:shadow-zinc-600/40"
+                    : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60"
+                }`}
+              >
+                <ImageInputsTooltip tooltipText="Machine" delayDuration={300}>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-1.5 px-4 py-3 transition-colors ${
+                      view === "machine"
+                        ? "text-gray-900 dark:text-zinc-100"
+                        : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    }`}
+                    onClick={() => {
+                      router.navigate({
+                        to: "/workflows/$workflowId/$view",
+                        params: { workflowId: workflowId || "", view: "machine" },
+                      });
+                    }}
+                    onMouseEnter={() => setHoveredButton("machine")}
+                    onMouseLeave={() => setHoveredButton(null)}
+                  >
+                    <span className="sr-only">Machine</span>
+                    <Server className="h-4 w-[18px]" />
+                  </button>
+                </ImageInputsTooltip>
+              </motion.div>
+            )}
+
+            {/* Model button */}
+            {visibleButtons.model && (
+              <motion.div
+                layout
+                key="model"
+                initial={{ opacity: 0, scale: 0.3, x: -120, rotateZ: -5 }}
+                animate={{ opacity: 1, scale: 1, x: 0, rotateZ: 0 }}
+                exit={{ opacity: 0, scale: 0.3, x: -120, rotateZ: 5 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  mass: 0.8,
+                  delay: 0.1,
+                }}
+                className={`flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm ${
+                  view === "model"
+                    ? "border-gray-300 bg-gray-200/60 shadow-gray-200 dark:border-zinc-800/50 dark:bg-zinc-400/60 dark:shadow-zinc-600/40"
+                    : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60"
+                }`}
+              >
+                <ImageInputsTooltip tooltipText="Model" delayDuration={300}>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-1.5 px-4 py-3 transition-colors ${
+                      view === "model"
+                        ? "text-gray-900 dark:text-zinc-100"
+                        : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    }`}
+                    onClick={() => {
+                      router.navigate({
+                        to: "/workflows/$workflowId/$view",
+                        params: { workflowId: workflowId || "", view: "model" },
+                      });
+                    }}
+                    onMouseEnter={() => setHoveredButton("model")}
+                    onMouseLeave={() => setHoveredButton(null)}
+                  >
+                    <span className="sr-only">Model</span>
+                    <Box className="h-4 w-[18px]" />
+                  </button>
+                </ImageInputsTooltip>
+              </motion.div>
+            )}
+
+            {/* Gallery button */}
+            {visibleButtons.gallery && (
+              <motion.div
+                layout
+                key="gallery"
+                initial={{ opacity: 0, scale: 0.3, x: -120, rotateZ: -5 }}
+                animate={{ opacity: 1, scale: 1, x: 0, rotateZ: 0 }}
+                exit={{ opacity: 0, scale: 0.3, x: -120, rotateZ: 5 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  mass: 0.8,
+                  delay: 0.15,
+                }}
+                className={`flex items-center rounded-full border text-sm shadow-md backdrop-blur-sm ${
+                  view === "playground" || view === "gallery"
+                    ? "border-gray-300 bg-gray-200/60 shadow-gray-200 dark:border-zinc-800/50 dark:bg-zinc-400/60 dark:shadow-zinc-600/40"
+                    : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60"
+                }`}
+              >
+                <ImageInputsTooltip tooltipText="Playground" delayDuration={300}>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-1.5 px-4 py-3 transition-colors ${
+                      view === "playground" || view === "gallery"
+                        ? "text-gray-900 dark:text-zinc-100"
+                        : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    }`}
+                    onClick={() => {
+                      router.navigate({
+                        to: "/workflows/$workflowId/$view",
+                        params: { workflowId: workflowId || "", view: "playground" },
+                      });
+                    }}
+                    onMouseEnter={() => setHoveredButton("gallery")}
+                    onMouseLeave={() => setHoveredButton(null)}
+                  >
+                    <span className="sr-only">Playground</span>
+                    <Zap className="h-4 w-[18px]" />
+                  </button>
+                </ImageInputsTooltip>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      );
-    }
+      </motion.div>
+    </AnimatePresence>
+  );
+
+  if (sessionId && session) {
+    return (
+      <div className="mt-2 flex flex-row gap-2">
+        {sessionContent}
+      </div>
+    );
   }
 
   return (
@@ -633,6 +814,75 @@ function CenterNavigation() {
   );
 }
 
+// Reusable orange timer icon component extracted from SessionTimerButton
+function OrangeTimerIcon({ 
+  progressPercentage, 
+  isLowTime, 
+  size = 24 
+}: { 
+  progressPercentage: number; 
+  isLowTime: boolean; 
+  size?: number; 
+}) {
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg
+        viewBox="0 0 32 32"
+        className="-rotate-90 h-full w-full"
+        role="img"
+        aria-label="Session timer progress"
+      >
+        {/* Background ring */}
+        <circle
+          cx="16"
+          cy="16"
+          r="10"
+          fill="none"
+          stroke={
+            isLowTime
+              ? "rgba(255, 255, 255, 0.2)"
+              : "rgba(251, 146, 60, 0.2)"
+          }
+          strokeWidth="2"
+        />
+        {/* Progress ring */}
+        <circle
+          cx="16"
+          cy="16"
+          r="10"
+          fill="none"
+          stroke={
+            isLowTime
+              ? "rgba(255, 255, 255, 0.9)"
+              : "rgba(251, 146, 60, 0.9)"
+          }
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray={`${2 * Math.PI * 10}`}
+          strokeDashoffset={`${2 * Math.PI * 10 * (1 - progressPercentage / 100)}`}
+          className="transition-all duration-1000 ease-out"
+        />
+        {/* Clock hand */}
+        <line
+          x1="16"
+          y1="16"
+          x2="16"
+          y2="9"
+          stroke={
+            isLowTime
+              ? "rgba(255, 255, 255, 0.95)"
+              : "rgba(251, 146, 60, 0.95)"
+          }
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          transform={`rotate(${-270 + progressPercentage * 3.6} 16 16)`}
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+    </div>
+  );
+}
+
 function SessionTimerDisplay({ session, sessionId }: { session: Session; sessionId: string }) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -661,24 +911,15 @@ function SessionTimerDisplay({ session, sessionId }: { session: Session; session
     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
       <PopoverTrigger asChild>
         <button
-          className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-gray-100/60 dark:hover:bg-zinc-600/60"
+          className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-gray-100/60 dark:hover:bg-zinc-600/60 transition-colors"
           onClick={handleTimerClick}
         >
-          <div className="relative">
-            <Clock className="h-4 w-4" />
-            {progressPercentage !== undefined && (
-              <div
-                className="absolute inset-0 rounded-full border-2 border-transparent"
-                style={{
-                  background: `conic-gradient(from 0deg, ${
-                    isLowTime ? "#ef4444" : "#10b981"
-                  } ${progressPercentage}%, transparent ${progressPercentage}%)`,
-                  WebkitMask: "radial-gradient(circle, transparent 40%, black 40%)",
-                  mask: "radial-gradient(circle, transparent 40%, black 40%)",
-                }}
-              />
-            )}
-          </div>
+          {/* Use extracted orange timer icon */}
+          <OrangeTimerIcon 
+            progressPercentage={progressPercentage} 
+            isLowTime={isLowTime} 
+            size={24} 
+          />
           <span className={`text-sm font-mono ${isLowTime ? "text-red-600" : ""}`}>
             {countdown || "00:00:00"}
           </span>
