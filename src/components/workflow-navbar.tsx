@@ -92,6 +92,7 @@ import { useGetWorkflowVersionData } from "@/hooks/use-get-workflow-version-data
 import { serverAction } from "@/lib/workflow-version-api";
 import { DeploymentDrawer } from "./workspace/DeploymentDisplay";
 import { queryClient } from "@/lib/providers";
+import { LoadingIcon } from "./loading-icon";
 
 export function WorkflowNavbar() {
   const sessionId = useSessionIdInSessionView();
@@ -141,6 +142,7 @@ function CenterNavigation() {
   const { view } = useParams({ from: "/workflows/$workflowId/$view" });
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const { restoreCachedSession } = useSessionWithCache();
+  const sessionId = useSessionIdInSessionView();
 
   const shouldHideDeploymentFeatures = !isPlanLoading && !isDeploymentAllowed;
 
@@ -200,6 +202,53 @@ function CenterNavigation() {
         restoreCachedSession={restoreCachedSession}
       />
 
+      <AnimatePresence mode="popLayout">
+        {sessionId && (
+          <motion.div
+            layout
+            key="back"
+            initial={{ opacity: 0, scale: 0.3, x: 120, rotateZ: -5 }}
+            animate={{ opacity: 1, scale: 1, x: 0, rotateZ: 0 }}
+            exit={{ opacity: 0, scale: 0.3, x: 120, rotateZ: 5 }}
+            whileHover={{ scale: 1.08, rotateZ: 1 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{
+              type: "spring",
+              stiffness: 180,
+              damping: 15,
+              mass: 0.8,
+              opacity: { duration: 0.4 },
+              delay: 0.2,
+            }}
+            className={`flex h-12 items-center rounded-full border text-sm shadow-md backdrop-blur-sm ${
+              view === "machine"
+                ? "border-gray-300 bg-gray-200/60 shadow-gray-200 dark:border-zinc-800/50 dark:bg-zinc-400/60 dark:shadow-zinc-600/40"
+                : "border-gray-200 bg-white/60 dark:border-zinc-800/50 dark:bg-zinc-700/60"
+            }`}
+          >
+            <ImageInputsTooltip tooltipText="Workspace" delayDuration={300}>
+              <button
+                type="button"
+                className={`flex items-center gap-1.5 px-4 py-3 transition-colors ${
+                  view === "machine"
+                    ? "text-gray-900 dark:text-zinc-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                }`}
+                onClick={() => {
+                  router.navigate({
+                    to: "/workflows/$workflowId/$view",
+                    params: { workflowId: workflowId || "", view: "workspace" },
+                  });
+                }}
+              >
+                <span className="sr-only">Workspace</span>
+                <ArrowLeft className="h-4 w-[16px]" />
+              </button>
+            </ImageInputsTooltip>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main navbar with layout animation */}
       <motion.div
         layout
@@ -212,128 +261,137 @@ function CenterNavigation() {
           mass: 0.6,
           opacity: { duration: 0.3 },
         }}
+        style={{ transformOrigin: "center" }}
         className="relative z-10 flex items-center rounded-full border border-gray-200 bg-white/60 px-1.5 text-sm shadow-md backdrop-blur-sm dark:border-zinc-800/50 dark:bg-zinc-700/60"
         onMouseLeave={() => setHoveredButton(null)}
       >
-        {/* Floating hover background */}
-        <AnimatePresence>
-          {hoveredButton && (
-            <motion.div
-              layoutId="hover-background"
-              className="absolute inset-y-1 rounded-full bg-gray-100/60 backdrop-blur-sm dark:bg-zinc-600/5"
-              initial={{ opacity: 0, scaleX: 0.8, scaleY: 0.4 }}
-              animate={{
-                opacity: 1,
-                scaleX: 1.05,
-                scaleY: 1.05,
-                ...hoverPosition,
-              }}
-              exit={{ opacity: 0, scaleX: 0.8, scaleY: 0.4 }}
-              transition={{
-                type: "spring",
-                stiffness: 400,
-                damping: 30,
-                mass: 0.3,
-              }}
-            />
-          )}
-        </AnimatePresence>
+        {sessionId ? (
+          <SessionTimerButton
+            workflowId={workflowId}
+            restoreCachedSession={restoreCachedSession}
+            isLargeView={true}
+          />
+        ) : (
+          <>
+            {/* Floating hover background */}
+            <AnimatePresence>
+              {hoveredButton && (
+                <motion.div
+                  layoutId="hover-background"
+                  className="absolute inset-y-1 rounded-full bg-gray-100/60 backdrop-blur-sm dark:bg-zinc-600/5"
+                  initial={{ opacity: 0, scaleX: 0.8, scaleY: 0.4 }}
+                  animate={{
+                    opacity: 1,
+                    scaleX: 1.05,
+                    scaleY: 1.05,
+                    ...hoverPosition,
+                  }}
+                  exit={{ opacity: 0, scaleX: 0.8, scaleY: 0.4 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                    mass: 0.3,
+                  }}
+                />
+              )}
+            </AnimatePresence>
 
-        {/* Conditionally render workspace button */}
-        {isAdminAndMember && (
-          <button
-            type="button"
-            className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
-              view === "workspace"
-                ? "font-medium text-gray-900 dark:text-zinc-100"
-                : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-            }`}
-            onClick={() => {
-              router.navigate({
-                to: "/workflows/$workflowId/$view",
-                params: { workflowId: workflowId || "", view: "workspace" },
-              });
-            }}
-            onMouseEnter={() => setHoveredButton("workspace")}
-          >
-            <WorkflowIcon className="h-4 w-4" />
-            Workflow
-          </button>
-        )}
+            {/* Conditionally render workspace button */}
+            {isAdminAndMember && (
+              <button
+                type="button"
+                className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
+                  view === "workspace"
+                    ? "font-medium text-gray-900 dark:text-zinc-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                }`}
+                onClick={restoreCachedSession}
+                onMouseEnter={() => setHoveredButton("workspace")}
+              >
+                <WorkflowIcon className="h-4 w-4" />
+                Workflow
+              </button>
+            )}
 
-        <button
-          type="button"
-          className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
-            view === "playground"
-              ? "font-medium text-gray-900 dark:text-zinc-100"
-              : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-          }`}
-          onClick={() => {
-            router.navigate({
-              to: "/workflows/$workflowId/$view",
-              params: { workflowId: workflowId || "", view: "playground" },
-            });
-          }}
-          onMouseEnter={() => setHoveredButton("playground")}
-        >
-          <Play className="h-4 w-4" />
-          Playground
-        </button>
-
-        {/* Conditionally render deployment button */}
-        {isAdminAndMember && (
-          <button
-            type="button"
-            className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
-              shouldHideDeploymentFeatures
-                ? "text-purple-600 opacity-50 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-100"
-                : view === "deployment"
+            <button
+              type="button"
+              className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
+                view === "playground"
                   ? "font-medium text-gray-900 dark:text-zinc-100"
                   : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-            }`}
-            onClick={() => {
-              router.navigate({
-                to: "/workflows/$workflowId/$view",
-                params: { workflowId: workflowId || "", view: "deployment" },
-              });
-            }}
-            onMouseEnter={() => setHoveredButton("deployment")}
-          >
-            {shouldHideDeploymentFeatures ? (
-              <Lock className="h-4 w-4" />
-            ) : (
-              <GitBranch className="h-4 w-4" />
-            )}
-            API
-          </button>
-        )}
+              }`}
+              onClick={() => {
+                router.navigate({
+                  to: "/workflows/$workflowId/$view",
+                  params: { workflowId: workflowId || "", view: "playground" },
+                });
+              }}
+              onMouseEnter={() => setHoveredButton("playground")}
+            >
+              <Play className="h-4 w-4" />
+              Playground
+            </button>
 
-        {/* Active state background */}
-        <motion.div
-          className="absolute inset-y-1 rounded-full bg-gradient-to-br from-gray-100/60 via-gray-200/60 to-gray-300/60 backdrop-blur-sm dark:from-zinc-500/40 dark:via-zinc-600/40 dark:to-zinc-700/40"
-          initial={false}
-          animate={{
-            opacity:
-              (isAdminAndMember &&
-                (view === "workspace" || view === "deployment")) ||
-              view === "playground"
-                ? 1
-                : 0,
-            ...getHoverPosition(
-              view === "workspace"
-                ? "workspace"
-                : view === "playground"
-                  ? "playground"
-                  : "deployment",
-            ),
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-            mass: 0.5,
-          }}
-        />
+            {/* Conditionally render deployment button */}
+            {isAdminAndMember && (
+              <button
+                type="button"
+                className={`relative z-10 flex items-center gap-1.5 px-4 py-3 transition-colors ${
+                  shouldHideDeploymentFeatures
+                    ? "text-purple-600 opacity-50 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-100"
+                    : view === "deployment"
+                      ? "font-medium text-gray-900 dark:text-zinc-100"
+                      : "text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                }`}
+                onClick={() => {
+                  router.navigate({
+                    to: "/workflows/$workflowId/$view",
+                    params: {
+                      workflowId: workflowId || "",
+                      view: "deployment",
+                    },
+                  });
+                }}
+                onMouseEnter={() => setHoveredButton("deployment")}
+              >
+                {shouldHideDeploymentFeatures ? (
+                  <Lock className="h-4 w-4" />
+                ) : (
+                  <GitBranch className="h-4 w-4" />
+                )}
+                API
+              </button>
+            )}
+
+            {/* Active state background */}
+            <motion.div
+              className="absolute inset-y-1 rounded-full bg-gradient-to-br from-gray-100/60 via-gray-200/60 to-gray-300/60 backdrop-blur-sm dark:from-zinc-500/40 dark:via-zinc-600/40 dark:to-zinc-700/40"
+              initial={false}
+              animate={{
+                opacity:
+                  (isAdminAndMember &&
+                    (view === "workspace" || view === "deployment")) ||
+                  view === "playground"
+                    ? 1
+                    : 0,
+                ...getHoverPosition(
+                  view === "workspace"
+                    ? "workspace"
+                    : view === "playground"
+                      ? "playground"
+                      : "deployment",
+                ),
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+                mass: 0.5,
+              }}
+            />
+          </>
+        )}
       </motion.div>
 
       <AnimatePresence mode="popLayout">
@@ -573,7 +631,7 @@ function WorkflowNavbarLeft() {
 }
 
 function WorkflowNavbarRight() {
-  const { sessionId } = useSearch({ from: "/workflows/$workflowId/$view" });
+  const sessionId = useSessionIdInSessionView();
   const { workflowId, view } = useParams({
     from: "/workflows/$workflowId/$view",
   });
@@ -1349,9 +1407,11 @@ function IntegrationUrl() {
 function SessionTimerButton({
   workflowId,
   restoreCachedSession,
+  isLargeView = false,
 }: {
   workflowId: string | null;
   restoreCachedSession: () => void;
+  isLargeView?: boolean;
 }) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
@@ -1369,7 +1429,11 @@ function SessionTimerButton({
   // Use sessionId from URL or fallback to cached sessionId
   const effectiveSessionId = getCachedSessionId();
 
-  const { data: session, refetch } = useQuery<Session>({
+  const {
+    data: session,
+    isLoading,
+    refetch,
+  } = useQuery<Session>({
     enabled: !!effectiveSessionId,
     queryKey: ["session", effectiveSessionId],
     refetchInterval: (data) => {
@@ -1384,6 +1448,7 @@ function SessionTimerButton({
 
   const { countdown, progressPercentage } = useSessionTimer(session);
   const { deleteSession } = useSessionAPI();
+  let toastId: any = null;
 
   // Calculate if less than 30 seconds remaining
   const isLowTime = countdown
@@ -1407,6 +1472,7 @@ function SessionTimerButton({
         to: "/workflows/$workflowId/$view",
         params: { workflowId: workflowId || "", view: "workspace" },
       });
+      toastId = toast.loading("Ending session...");
       await deleteSession.mutateAsync({
         sessionId: sessionIdToDelete,
         waitForShutdown: true,
@@ -1420,6 +1486,8 @@ function SessionTimerButton({
       toast.success("Session ended successfully");
     } catch (error) {
       toast.error("Failed to end session");
+    } finally {
+      toast.dismiss(toastId);
     }
   };
 
@@ -1440,167 +1508,220 @@ function SessionTimerButton({
 
   return (
     <AnimatePresence mode="popLayout">
-      {activeSession && effectiveSessionId && (
-        <motion.div
-          layout
-          key="session-timer"
-          initial={{ opacity: 0, scale: 0.3, x: 120, rotateZ: -5 }}
-          animate={{ opacity: 1, scale: 1, x: 0, rotateZ: 0 }}
-          exit={{ opacity: 0, scale: 0.3, x: 120, rotateZ: 5 }}
-          transition={{
-            type: "spring",
-            stiffness: 180,
-            damping: 15,
-            mass: 0.8,
-            opacity: { duration: 0.4 },
-          }}
-          className="flex items-center"
-        >
-          <TimerPopover
-            session={activeSession}
-            isDeleteSessionPending={deleteSession.isPending}
-            onRefetch={handleRefetch}
-            open={isPopoverOpen}
-            onOpenChange={setIsPopoverOpen}
+      {isLoading && isLargeView ? (
+        <div className="flex w-16 items-center justify-center">
+          <LoadingIcon />
+        </div>
+      ) : (
+        activeSession &&
+        effectiveSessionId &&
+        (!urlSessionId || (urlSessionId && isLargeView)) && (
+          <motion.div
+            layout
+            key="session-timer"
+            initial={{ opacity: 0, scale: 0.3, x: 120, rotateZ: -5 }}
+            animate={{ opacity: 1, scale: 1, x: 0, rotateZ: 0 }}
+            exit={{ opacity: 0, scale: 0.3, x: 120, rotateZ: 5 }}
+            transition={{
+              type: "spring",
+              stiffness: 180,
+              damping: 15,
+              mass: 0.8,
+              opacity: { duration: 0.4 },
+            }}
+            style={{ transformOrigin: "center" }}
+            className="flex items-center"
           >
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
-            <div
-              className={`relative flex h-10 cursor-pointer items-center justify-between overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
-                isLowTime
-                  ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/25 hover:shadow-orange-500/40 dark:from-orange-500 dark:to-orange-700 dark:shadow-orange-600/25 dark:hover:shadow-orange-600/40"
-                  : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"
-              }`}
-              style={{
-                width: isHovered ? "134px" : "42px",
-                paddingLeft: isHovered ? "6px" : "0px",
-                paddingRight: isHovered ? "12px" : "0px",
-                transitionTimingFunction: isHovered
-                  ? "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
-                  : "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-                transitionDuration: isHovered ? "400ms" : "200ms",
-              }}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-              onClick={handleTimerClick}
+            <TimerPopover
+              session={activeSession}
+              isDeleteSessionPending={deleteSession.isPending}
+              onRefetch={handleRefetch}
+              open={isPopoverOpen}
+              onOpenChange={setIsPopoverOpen}
             >
-              {/* Timer Icon */}
-              {deleteSession.isPending ? (
-                <div className="relative flex h-10 w-10 flex-shrink-0 animate-pulse items-center justify-center rounded-full">
-                  <Loader2
-                    className={cn(
-                      "h-5 w-5 animate-spin",
-                      isLowTime ? "text-white" : "text-orange-500",
-                    )}
-                  />
-                </div>
-              ) : (
-                <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95">
-                  {/* Progress ring */}
-                  <div className="absolute inset-0.5">
-                    <svg
-                      viewBox="0 0 32 32"
-                      className="-rotate-90 h-full w-full"
-                      role="img"
-                      aria-label="Session timer progress"
-                    >
-                      {/* Background ring */}
-                      <circle
-                        cx="16"
-                        cy="16"
-                        r="10"
-                        fill="none"
-                        stroke={
-                          isLowTime
-                            ? "rgba(255, 255, 255, 0.2)"
-                            : "rgba(251, 146, 60, 0.2)"
-                        }
-                        strokeWidth="2"
-                      />
-                      {/* Progress ring */}
-                      <circle
-                        cx="16"
-                        cy="16"
-                        r="10"
-                        fill="none"
-                        stroke={
-                          isLowTime
-                            ? "rgba(255, 255, 255, 0.9)"
-                            : "rgba(251, 146, 60, 0.9)"
-                        }
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeDasharray={`${2 * Math.PI * 10}`}
-                        strokeDashoffset={`${2 * Math.PI * 10 * (1 - progressPercentage / 100)}`}
-                        className="transition-all duration-1000 ease-out"
-                      />
-
-                      {/* Clock hand */}
-                      <line
-                        x1="16"
-                        y1="16"
-                        x2="16"
-                        y2="9"
-                        stroke={
-                          isLowTime
-                            ? "rgba(255, 255, 255, 0.95)"
-                            : "rgba(251, 146, 60, 0.95)"
-                        }
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        transform={`rotate(${-270 + progressPercentage * 3.6} 16 16)`}
-                        className="transition-all duration-1000 ease-out"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              )}
-
-              {/* Countdown Text and End Button */}
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
               <div
-                className={`flex items-center gap-2 transition-all ${
-                  isHovered
-                    ? "translate-x-0 opacity-100"
-                    : "translate-x-4 opacity-0"
+                className={`relative flex ${
+                  isLargeView ? "h-12" : "h-10"
+                } cursor-pointer items-center justify-between overflow-hidden rounded-full shadow-lg transition-all duration-400 ${
+                  isLowTime
+                    ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/25 hover:shadow-orange-500/40 dark:from-orange-500 dark:to-orange-700 dark:shadow-orange-600/25 dark:hover:shadow-orange-600/40"
+                    : "border border-gray-200 bg-gradient-to-br from-white to-white shadow-md dark:border-zinc-800/50 dark:from-gray-700 dark:to-gray-800 dark:shadow-gray-700/25 dark:hover:shadow-gray-700/40"
                 }`}
                 style={{
-                  transitionDelay: isHovered ? "100ms" : "0ms",
-                  transitionDuration: isHovered ? "300ms" : "150ms",
+                  width: isLargeView ? "245px" : isHovered ? "134px" : "42px",
+                  paddingLeft: isLargeView ? "6px" : isHovered ? "6px" : "0px",
+                  paddingRight: isLargeView
+                    ? "12px"
+                    : isHovered
+                      ? "12px"
+                      : "0px",
                   transitionTimingFunction: isHovered
-                    ? "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-                    : "ease-out",
+                    ? "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+                    : "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                  transitionDuration: isHovered ? "400ms" : "200ms",
+                  transformOrigin: "center",
                 }}
+                onMouseEnter={() => !isLargeView && setIsHovered(true)}
+                onMouseLeave={() => !isLargeView && setIsHovered(false)}
+                onClick={handleTimerClick}
               >
-                <span
-                  className={`whitespace-nowrap font-medium text-sm ${
-                    isLowTime ? "text-white" : "text-gray-900 dark:text-white"
-                  }`}
-                >
-                  {countdown
-                    ? countdown.split(":").slice(1).join(":")
-                    : "00:00"}
-                </span>
+                {/* Timer Icon */}
+                {deleteSession.isPending ? (
+                  <div className="relative flex h-10 w-10 flex-shrink-0 animate-pulse items-center justify-center rounded-full">
+                    <Loader2
+                      className={cn(
+                        "h-5 w-5 animate-spin",
+                        isLowTime ? "text-white" : "text-orange-500",
+                      )}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105 active:scale-95">
+                      {/* Progress ring */}
+                      <div className="absolute inset-0.5">
+                        <svg
+                          viewBox="0 0 32 32"
+                          className="-rotate-90 h-full w-full"
+                          role="img"
+                          aria-label="Session timer progress"
+                        >
+                          {/* Background ring */}
+                          <circle
+                            cx="16"
+                            cy="16"
+                            r="10"
+                            fill="none"
+                            stroke={
+                              isLowTime
+                                ? "rgba(255, 255, 255, 0.2)"
+                                : "rgba(251, 146, 60, 0.2)"
+                            }
+                            strokeWidth="2"
+                          />
+                          {/* Progress ring */}
+                          <circle
+                            cx="16"
+                            cy="16"
+                            r="10"
+                            fill="none"
+                            stroke={
+                              isLowTime
+                                ? "rgba(255, 255, 255, 0.9)"
+                                : "rgba(251, 146, 60, 0.9)"
+                            }
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeDasharray={`${2 * Math.PI * 10}`}
+                            strokeDashoffset={`${2 * Math.PI * 10 * (1 - progressPercentage / 100)}`}
+                            className="transition-all duration-1000 ease-out"
+                          />
 
-                <button
-                  type="button"
-                  onClick={handleDeleteSession}
-                  disabled={deleteSession.isPending}
-                  className={`rounded-full p-1 transition-colors duration-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    isLowTime
-                      ? "text-white hover:text-white"
-                      : "text-gray-600 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400"
+                          {/* Clock hand */}
+                          <line
+                            x1="16"
+                            y1="16"
+                            x2="16"
+                            y2="9"
+                            stroke={
+                              isLowTime
+                                ? "rgba(255, 255, 255, 0.95)"
+                                : "rgba(251, 146, 60, 0.95)"
+                            }
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            transform={`rotate(${-270 + progressPercentage * 3.6} 16 16)`}
+                            className="transition-all duration-1000 ease-out"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    {isLargeView && (
+                      <span
+                        className={`whitespace-nowrap font-medium text-sm ${
+                          isLowTime
+                            ? "text-white"
+                            : "text-gray-900 dark:text-white"
+                        }`}
+                      >
+                        {countdown
+                          ? countdown.split(":").slice(1).join(":")
+                          : "00:00"}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Countdown Text and End Button */}
+                <div
+                  className={`flex items-center gap-2 transition-all ${
+                    isLargeView
+                      ? "translate-x-0 opacity-100"
+                      : isHovered
+                        ? "translate-x-0 opacity-100"
+                        : "translate-x-4 opacity-0"
                   }`}
-                  title="End session"
+                  style={{
+                    transitionDelay: isLargeView
+                      ? "0ms"
+                      : isHovered
+                        ? "100ms"
+                        : "0ms",
+                    transitionDuration: isLargeView
+                      ? "0ms"
+                      : isHovered
+                        ? "300ms"
+                        : "150ms",
+                    transitionTimingFunction: isHovered
+                      ? "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                      : "ease-out",
+                  }}
                 >
-                  {deleteSession.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <X className="h-4 w-4" />
+                  {!isLargeView && (
+                    <span
+                      className={`whitespace-nowrap font-medium text-sm ${
+                        isLowTime
+                          ? "text-white"
+                          : "text-gray-900 dark:text-white"
+                      }`}
+                    >
+                      {countdown
+                        ? countdown.split(":").slice(1).join(":")
+                        : "00:00"}
+                    </span>
                   )}
-                </button>
+
+                  {isLargeView && (
+                    <Badge className="ml-2">
+                      <span className="whitespace-nowrap text-xs">
+                        {activeSession.gpu}
+                      </span>
+                    </Badge>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleDeleteSession}
+                    disabled={deleteSession.isPending}
+                    className={`rounded-full p-1 transition-colors duration-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isLowTime
+                        ? "text-white hover:text-white"
+                        : "text-gray-600 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400"
+                    }`}
+                    title="End session"
+                  >
+                    {deleteSession.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          </TimerPopover>
-        </motion.div>
+            </TimerPopover>
+          </motion.div>
+        )
       )}
     </AnimatePresence>
   );
@@ -1805,6 +1926,11 @@ function useSessionWithCache() {
         to: "/workflows/$workflowId/$view",
         params: { workflowId: workflowId || "", view: "workspace" },
         search: (prev) => ({ ...prev, sessionId: cachedId }),
+      });
+    } else {
+      router.navigate({
+        to: "/workflows/$workflowId/$view",
+        params: { workflowId: workflowId || "", view: "workspace" },
       });
     }
   };
