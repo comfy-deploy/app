@@ -5,6 +5,7 @@ const BLACKLISTED_CUSTOM_NODES = [
   // Add more blacklisted nodes here
   "https://github.com/audioscavenger/ComfyUI-Thumbnails",
   "https://github.com/mrhan1993/ComfyUI-Fooocus",
+  "https://github.com/iacoposk8/ComfyUI-Fooocus-Inpaint-Wrapper",
 ];
 
 export type CustomNodeInfo = {

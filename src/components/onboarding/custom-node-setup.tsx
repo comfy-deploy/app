@@ -116,6 +116,7 @@ const BLACKLIST = [
   // "https://github.com/BennyKok/comfyui-deploy",
   // Add more blacklisted references here
   "https://github.com/mrhan1993/ComfyUI-Fooocus",
+  "https://github.com/iacoposk8/ComfyUI-Fooocus-Inpaint-Wrapper",
 ];
 
 function getRepoAuthor(repository: string) {
