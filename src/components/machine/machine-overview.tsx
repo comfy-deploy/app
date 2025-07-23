@@ -44,6 +44,40 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { VersionChecker } from "./version-checker";
+import { useCachedQuery } from "@/lib/use-cached-query";
+
+// Utility function to compare semantic versions
+function compareVersions(version1: string, version2: string): number {
+  const v1parts = version1.replace(/^v/, "").split(".").map(Number);
+  const v2parts = version2.replace(/^v/, "").split(".").map(Number);
+  
+  for (let i = 0; i < Math.max(v1parts.length, v2parts.length); i++) {
+    const v1part = v1parts[i] || 0;
+    const v2part = v2parts[i] || 0;
+    
+    if (v1part < v2part) return -1;
+    if (v1part > v2part) return 1;
+  }
+  return 0;
+}
+
+// Utility function to get ComfyUI version from hash
+function useComfyUIVersionFromHash(comfyuiHash?: string) {
+  const { data: versions } = useCachedQuery({
+    queryKey: ["comfyui-versions"],
+    cacheTime: 1000 * 60 * 30,
+  });
+
+  return useMemo(() => {
+    if (!comfyuiHash || !versions?.releases) return null;
+    
+    const matchingVersion = versions.releases.find(
+      (version: any) => version.sha === comfyuiHash || version.value === comfyuiHash
+    );
+    
+    return matchingVersion ? matchingVersion.label || matchingVersion.value : null;
+  }, [comfyuiHash, versions]);
+}
 
 // -----------------------components-----------------------
 
@@ -219,6 +253,7 @@ function MachineAlert({
   const [showDeprecated, setShowDeprecated] = useState(true);
   const [showImportFailed, setShowImportFailed] = useState(true);
   const [showRollback, setShowRollback] = useState(true);
+  const [showOptimizedRunner, setShowOptimizedRunner] = useState(true);
 
   const hasImportFailedLogs = useMemo(() => {
     try {
@@ -229,6 +264,17 @@ function MachineAlert({
       return false;
     }
   }, [machine.import_failed_logs]);
+
+  // Get ComfyUI version from machine hash
+  const comfyuiVersion = useComfyUIVersionFromHash(machine.comfyui_version);
+  
+  // Check if optimized runner is enabled but ComfyUI version is too old
+  const shouldShowOptimizedRunnerWarning = useMemo(() => {
+    if (!machine.optimized_runner || !comfyuiVersion) return false;
+    
+    // Compare with v0.3.45 - if current version is less than 0.3.45, show warning
+    return compareVersions(comfyuiVersion, "0.3.45") < 0;
+  }, [machine.optimized_runner, comfyuiVersion]);
 
   const renderAlert = (
     show: boolean,
@@ -317,6 +363,28 @@ function MachineAlert({
               Learn more about Machine Rollback
               <ExternalLink className="ml-1 h-3 w-3" />
             </a>
+          </div>,
+          "bg-yellow-50",
+        )}
+      {shouldShowOptimizedRunnerWarning &&
+        renderAlert(
+          showOptimizedRunner,
+          setShowOptimizedRunner,
+          "warning",
+          "Optimized Cold Start Compatibility Issue",
+          <div className="mt-2">
+            <span className="font-semibold">Optimized Cold Start</span> is enabled but requires{" "}
+            <span className="font-semibold">ComfyUI version 0.3.45 or above</span>.
+            <br />
+            Current version: <span className="font-mono text-xs">{comfyuiVersion}</span>
+            <br />
+            <div className="mt-2 space-x-2">
+              <span>Please either:</span>
+              <ul className="list-disc space-y-1 pl-4 mt-1">
+                <li>Upgrade ComfyUI to version 0.3.45 or above, or</li>
+                <li>Disable Optimized Cold Start in machine settings</li>
+              </ul>
+            </div>
           </div>,
           "bg-yellow-50",
         )}
