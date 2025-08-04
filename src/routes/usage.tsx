@@ -53,6 +53,7 @@ export const Route = createFileRoute("/usage")({
 
 function RouteComponent() {
   const [viewMode, setViewMode] = useState<"graph" | "grid">("graph");
+
   const { data: invoices, isLoading: invoicesLoading } = useQuery<Invoice[]>({
     queryKey: ["platform", "invoices"],
   });
@@ -456,18 +457,29 @@ export function UsageBreakdown({
     };
   }, [startTimeOverride, endTimeOverride]);
 
-  const { data: usageInfo } = useSuspenseQuery<any>({
-    queryKey: ["platform", "usage-details"],
-    queryKeyHashFn: (queryKey) =>
-      [...queryKey, startDate.split("T")[0], endDate.split("T")[0]].toString(),
-    meta: {
-      params: {
-        start_time: startDate,
-        end_time: endDate,
-      },
-    },
+  // const { data: usageInfo } = useSuspenseQuery<any>({
+  //   queryKey: ["platform", "usage-details"],
+  //   queryKeyHashFn: (queryKey) =>
+  //     [...queryKey, startDate.split("T")[0], endDate.split("T")[0]].toString(),
+  //   meta: {
+  //     params: {
+  //       start_time: startDate,
+  //       end_time: endDate,
+  //     },
+  //   },
+  // });
+
+  const { data: autumnData, isLoading: autumnDataLoading } = useQuery<any>({
+    queryKey: ["platform", "autumn-data"],
   });
-  return <UsageGraph chartData={usageInfo} />;
+
+  if (autumnDataLoading) {
+    return <Skeleton className="h-[400px]" />;
+  }
+
+  console.log(autumnData.list);
+
+  return <UsageGraph chartData={autumnData.list} />;
 }
 
 const UsageBreakdownMemo = memo(UsageBreakdown);

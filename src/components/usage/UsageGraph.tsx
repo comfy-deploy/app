@@ -36,49 +36,83 @@ export function UsageGraph({
   chartData: any[];
 }) {
   // Find which GPU types have actual usage
-  const activeGPUs = React.useMemo(() => {
-    if (!chartData?.length) return [];
+  // const activeGPUs = React.useMemo(() => {
+  //   if (!chartData?.length) return [];
 
-    // Get all GPU types that have non-zero values
-    const usedGPUs = new Set<string>();
-    for (const dayData of chartData) {
-      for (const gpu of machineGPUOptions) {
-        if (dayData[gpu] && dayData[gpu] > 0) {
-          usedGPUs.add(gpu);
-        }
-      }
-    }
+  //   // Get all GPU types that have non-zero values
+  //   const usedGPUs = new Set<string>();
+  //   for (const dayData of chartData) {
+  //     for (const gpu of machineGPUOptions) {
+  //       if (dayData[gpu] && dayData[gpu] > 0) {
+  //         usedGPUs.add(gpu);
+  //       }
+  //     }
+  //   }
 
-    return Array.from(usedGPUs);
-  }, [chartData]);
+  //   return Array.from(usedGPUs);
+  // }, [chartData]);
 
   // Filter chartConfig to only include active GPUs
-  const filteredChartConfig = React.useMemo(() => {
-    return {
-      views: chartConfig.views,
-      ...Object.fromEntries(
-        activeGPUs.map((gpu) => [
-          gpu,
-          {
-            label: gpu,
-            color: `var(--color-gpu-${gpu})`,
-          },
-        ]),
-      ),
-    } satisfies ChartConfig;
-  }, [activeGPUs]);
+  // const filteredChartConfig = React.useMemo(() => {
+  //   return {
+  //     views: chartConfig.views,
+  //     ...Object.fromEntries(
+  //       activeGPUs.map((gpu) => [
+  //         gpu,
+  //         {
+  //           label: gpu,
+  //           color: `var(--color-gpu-${gpu})`,
+  //         },
+  //       ]),
+  //     ),
+  //   } satisfies ChartConfig;
+  // }, [activeGPUs]);
 
   // If no data or no active GPUs, show empty state
-  if (!chartData?.length || activeGPUs.length === 0) {
-    return (
-      <Card className="aspect-auto flex h-[250px] items-center justify-center text-muted-foreground w-full">
-        <div className="flex flex-col items-center gap-2">
-          <BarChart2 className="h-8 w-8" />
-          <CardDescription>No GPU usage data available</CardDescription>
-        </div>
-      </Card>
-    );
-  }
+  // if (!chartData?.length || activeGPUs.length === 0) {
+  //   return (
+  //     <Card className="aspect-auto flex h-[250px] items-center justify-center text-muted-foreground w-full">
+  //       <div className="flex flex-col items-center gap-2">
+  //         <BarChart2 className="h-8 w-8" />
+  //         <CardDescription>No GPU usage data available</CardDescription>
+  //       </div>
+  //     </Card>
+  //   );
+  // }
+
+  const gpu = [
+    "gpu-b200",
+    "gpu-h200",
+    "cpu",
+    "gpu-h100",
+    "gpu-a100-80gb",
+    "gpu-a100",
+    "gpu-l4",
+    "gpu-t4",
+    "gpu-l40s",
+    "gpu-a10g",
+  ];
+
+  const chartConfig = Object.fromEntries(
+    [
+      "gpu-b200",
+      "gpu-h200",
+      "cpu",
+      "gpu-h100",
+      "gpu-a100-80gb",
+      "gpu-a100",
+      "gpu-l4",
+      "gpu-t4",
+      "gpu-l40s",
+      "gpu-a10g",
+    ].map((gpu) => [
+      gpu,
+      {
+        label: gpu,
+        color: `var(--color-gpu-${gpu.replace("gpu-", "").toUpperCase()})`,
+      },
+    ]),
+  );
 
   return (
     // <Card>
@@ -90,7 +124,7 @@ export function UsageGraph({
     //   </CardHeader>
     //   <CardContent className="px-2 sm:p-6">
     <ChartContainer
-      config={filteredChartConfig}
+      config={chartConfig}
       className="aspect-auto h-[250px] w-full"
     >
       <BarChart
@@ -103,7 +137,7 @@ export function UsageGraph({
       >
         <CartesianGrid vertical={false} />
         <XAxis
-          dataKey="date"
+          dataKey="period"
           tickLine={false}
           axisLine={false}
           tickMargin={8}
@@ -131,7 +165,7 @@ export function UsageGraph({
           }
         />
         <ChartLegend content={<ChartLegendContent />} />
-        {activeGPUs.map((gpu) => (
+        {gpu.map((gpu) => (
           <Bar
             key={gpu}
             dataKey={gpu}

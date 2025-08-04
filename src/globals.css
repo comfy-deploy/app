@@ -19,10 +19,12 @@
     --color-gpu-T4: hsl(142, 55%, 45%); /* Muted green for T4 */
     --color-gpu-L4: hsl(187, 65%, 45%); /* Ocean blue for L4 */
     --color-gpu-A10G: hsl(230, 60%, 55%); /* Royal blue for A10G */
-    --color-gpu-L40S: hsl(230, 60%, 55%); /* Royal blue for A10G */
+    --color-gpu-L40S: hsl(230, 60%, 55%); /* Royal blue for L40S */
     --color-gpu-A100: hsl(270, 55%, 50%); /* Deep purple for A100 */
     --color-gpu-A100-80GB: hsl(290, 50%, 45%); /* Rich plum for A100-80GB */
     --color-gpu-H100: hsl(320, 55%, 45%); /* Deep rose for H100 */
+    --color-gpu-B200: hsl(35, 70%, 50%); /* Warm amber for B200 */
+    --color-gpu-H200: hsl(175, 60%, 45%); /* Vibrant teal for H200 */
   }
 
   .dolloar .tooltip-value::before {

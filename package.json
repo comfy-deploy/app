@@ -70,6 +70,7 @@
     "@tanstack/router-devtools": "^1.89.2",
     "@types/lodash": "^4.17.14",
     "@types/semver": "^7.5.8",
+    "autumn-js": "^0.1.0",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.0.4",
     "comfyui-json": "^0.1.31",
