@@ -82,7 +82,6 @@ export function useSessionAPI(machineId?: string | null) {
               }
             : {},
       },
-      enabled: !!machineId && machineId !== "new",
     }),
   };
 }

@@ -189,7 +189,7 @@ export function MachineSessionsList({ machineId }: { machineId: string }) {
                     try {
                       await deleteSession.mutateAsync({
                         sessionId: session.session_id,
-                        waitForShutdown: true,
+                        // waitForShutdown: true,
                       });
                       await listSession.refetch();
                       toast.success("Session stopped successfully");

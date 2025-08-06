@@ -77,7 +77,7 @@ function SessionsOverview() {
     try {
       await deleteSession.mutateAsync({
         sessionId: sessionId,
-        waitForShutdown: true,
+        // waitForShutdown: true,
       });
     } catch (error) {
       console.error("Failed to delete session:", error);

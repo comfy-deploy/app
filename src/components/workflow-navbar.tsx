@@ -1415,7 +1415,7 @@ function SessionTimerButton({
       });
       await deleteSession.mutateAsync({
         sessionId: sessionIdToDelete,
-        waitForShutdown: true,
+        // waitForShutdown: true,
       });
       setUrlSessionId(null);
 
