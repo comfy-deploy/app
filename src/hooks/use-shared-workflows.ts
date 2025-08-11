@@ -44,13 +44,14 @@ export function useSharedWorkflows(
       },
     },
     getNextPageParam: (lastPage, allPages) => {
-      if (
-        lastPage &&
-        Array.isArray(lastPage) &&
-        lastPage.length === BATCH_SIZE
-      ) {
-        return allPages.length * BATCH_SIZE;
+      const pageItems = Array.isArray(lastPage)
+        ? (lastPage as SharedWorkflow[])
+        : (lastPage as SharedWorkflowListResponse)?.shared_workflows ?? [];
+
+      if (pageItems.length === limit) {
+        return allPages.length * limit;
       }
+
       return undefined;
     },
     initialPageParam: 0,
