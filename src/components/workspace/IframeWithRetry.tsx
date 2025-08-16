@@ -12,6 +12,7 @@ interface IframeWithRetryProps {
   hasSetupEventListener: boolean;
   cdSetup: boolean;
   iframeLoaded: boolean;
+  activeDrawer: string | null;
   [key: string]: any;
 }
 
@@ -22,6 +23,7 @@ export function IframeWithRetry({
   hasSetupEventListener,
   cdSetup,
   iframeLoaded,
+  activeDrawer,
   ...props
 }: IframeWithRetryProps) {
   const [retryCount, setRetryCount] = useState(0);
@@ -34,8 +36,8 @@ export function IframeWithRetry({
   const handleError = useCallback(() => {
     if (retryCount < MAX_RETRIES) {
       setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        setIframeKey(prev => prev + 1);
+        setRetryCount((prev) => prev + 1);
+        setIframeKey((prev) => prev + 1);
       }, retryDelay);
     } else {
       setShowErrorOverlay(true);
@@ -55,7 +57,7 @@ export function IframeWithRetry({
   const handleRetry = useCallback(() => {
     setShowErrorOverlay(false);
     setRetryCount(0);
-    setIframeKey(prev => prev + 1);
+    setIframeKey((prev) => prev + 1);
   }, []);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export function IframeWithRetry({
     window.addEventListener("message", eventListener, {
       capture: true,
     });
-    
+
     timeoutRef.current = setTimeout(() => {
       window.removeEventListener("message", eventListener);
       handleError();
@@ -117,6 +119,8 @@ export function IframeWithRetry({
           className={cn(
             "inset-0 h-full w-full border-none z-[20]",
             !cdSetup && "pointer-events-none",
+            iframeLoaded && "bg-[#353535] pt-12",
+            activeDrawer === "assets" && "pointer-events-none blur-sm"
           )}
           title="iframeContent"
           allow="autoplay; encrypted-media; fullscreen; display-capture; camera; microphone"
@@ -125,10 +129,8 @@ export function IframeWithRetry({
           {...props}
         />
       )}
-      
-      {showErrorOverlay && (
-        <RefreshOverlay onRetry={handleRetry} />
-      )}
+
+      {showErrorOverlay && <RefreshOverlay onRetry={handleRetry} />}
     </>
   );
 }

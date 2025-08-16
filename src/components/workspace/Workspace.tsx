@@ -497,6 +497,7 @@ export default function Workspace({
         hasSetupEventListener={hasSetupEventListener}
         cdSetup={cdSetup}
         iframeLoaded={iframeLoaded}
+        activeDrawer={activeDrawer}
         onLoad={() => {
           console.log("Iframe has finished loading");
           setIframeLoaded(true);
