@@ -11,6 +11,7 @@ import {
   sendInetrnalEventToCD,
   sendWorkflow,
 } from "./sendEventToCD";
+import { IframeWithRetry } from "./IframeWithRetry";
 import {
   Dialog,
   DialogContent,
@@ -467,44 +468,6 @@ export default function Workspace({
     };
   }, [volumeName, machineId, endpoint]);
 
-  useEffect(() => {
-    if (!iframeLoaded) return;
-    if (cdSetup) return;
-
-    let timeout: ReturnType<typeof setTimeout>;
-    const eventListener = (event: any) => {
-      if (event.origin !== endpoint) return;
-
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "cd_plugin_onInit") {
-          console.log("clear Timeout");
-          clearTimeout(timeout);
-          window.removeEventListener("message", eventListener, {
-            capture: true,
-          });
-        }
-      } catch (error) {}
-    };
-    console.log("event listner");
-
-    window.addEventListener("message", eventListener, {
-      capture: true,
-    });
-    timeout = setTimeout(() => {
-      window.removeEventListener("message", eventListener);
-      // setEndpointError((x) => {
-      // 	if (x) return x;
-      // 	return "timeout";
-      // });
-    }, 20000);
-
-    return () => {
-      window.removeEventListener("message", eventListener, {
-        capture: true,
-      });
-    };
-  }, [iframeLoaded, cdSetup, endpoint]);
 
   return (
     <>
@@ -590,31 +553,18 @@ export default function Workspace({
         </DialogContent>
       </Dialog>
 
-      {hasSetupEventListener && (
-        <iframe
-          key={endpoint}
-          id="workspace-iframe"
-          src={
-            nativeMode
-              ? `${endpoint}?native_mode=true`
-              : `${endpoint}?workspace_mode=true`
-          }
-          style={{
-            userSelect: "none",
-          }}
-          className={cn(
-            "inset-0 h-full w-full border-none z-[20]",
-            !cdSetup && "pointer-events-none",
-          )}
-          title="iframeContent"
-          allow="autoplay; encrypted-media; fullscreen; display-capture; camera; microphone"
-          onLoad={() => {
-            console.log("Iframe has finished loading");
-            setIframeLoaded(true);
-            setProgress(60);
-          }}
-        />
-      )}
+      <IframeWithRetry
+        endpoint={endpoint}
+        nativeMode={nativeMode}
+        hasSetupEventListener={hasSetupEventListener}
+        cdSetup={cdSetup}
+        iframeLoaded={iframeLoaded}
+        onLoad={() => {
+          console.log("Iframe has finished loading");
+          setIframeLoaded(true);
+          setProgress(60);
+        }}
+      />
     </>
   );
 }
