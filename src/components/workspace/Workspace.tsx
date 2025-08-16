@@ -6,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 import { useDrawerStore } from "@/stores/drawer-store";
 import { useAuth } from "@clerk/clerk-react";
 import { diff } from "json-diff-ts";
@@ -29,6 +28,7 @@ import { create } from "zustand";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import type { AssetType } from "../SDInputs/sd-asset-input";
+import { IframeWithRetry } from "./IframeWithRetry";
 
 export const useCDStore = create<{
   cdSetup: boolean;
@@ -124,7 +124,7 @@ export default function Workspace({
   // const [isFirstTime] = useQueryState("isFirstTime", parseAsBoolean);
   const [isFirstTime, setIsFirstTime] = useQueryState(
     "isFirstTime",
-    parseAsBoolean,
+    parseAsBoolean
   );
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
@@ -174,7 +174,7 @@ export default function Workspace({
       staleTime: 1000 * 60 * 5, // Cache for 5 minutes
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-    },
+    }
   );
 
   useEffect(() => {
@@ -195,7 +195,7 @@ export default function Workspace({
       isDraftDifferent,
       selectedVersion.workflow,
       currentWorkflow,
-      differences,
+      differences
     );
     setHasChanged(isDraftDifferent);
     // return isDraftDifferent;
@@ -322,7 +322,7 @@ export default function Workspace({
                 loading: `Uploading ${file.name}`,
                 success: "File uploaded",
                 error: (error) => error.message,
-              },
+              }
             );
 
             sendInetrnalEventToCD({
@@ -368,7 +368,7 @@ export default function Workspace({
               embeddedObjKeys: {
                 nodes: "id",
               },
-            },
+            }
           );
 
           if (Object.keys(differences).length > 0) {
@@ -383,7 +383,7 @@ export default function Workspace({
               machine_id: machineId,
               native_run_api_endpoint: new URL(
                 "/api/run",
-                newPythonEndpoint,
+                newPythonEndpoint
               ).toString(),
               cd_token: x,
               gpu_event_id: sessionIdOverride,
@@ -414,45 +414,6 @@ export default function Workspace({
       });
     };
   }, [volumeName, machineId, endpoint]);
-
-  useEffect(() => {
-    if (!iframeLoaded) return;
-    if (cdSetup) return;
-
-    let timeout: ReturnType<typeof setTimeout>;
-    const eventListener = (event: any) => {
-      if (event.origin !== endpoint) return;
-
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "cd_plugin_onInit") {
-          console.log("clear Timeout");
-          clearTimeout(timeout);
-          window.removeEventListener("message", eventListener, {
-            capture: true,
-          });
-        }
-      } catch (error) {}
-    };
-    console.log("event listner");
-
-    window.addEventListener("message", eventListener, {
-      capture: true,
-    });
-    timeout = setTimeout(() => {
-      window.removeEventListener("message", eventListener);
-      // setEndpointError((x) => {
-      // 	if (x) return x;
-      // 	return "timeout";
-      // });
-    }, 20000);
-
-    return () => {
-      window.removeEventListener("message", eventListener, {
-        capture: true,
-      });
-    };
-  }, [iframeLoaded, cdSetup, endpoint]);
 
   return (
     <>
@@ -530,33 +491,18 @@ export default function Workspace({
         </DialogContent>
       </Dialog>
 
-      {hasSetupEventListener && (
-        <iframe
-          key={endpoint}
-          id="workspace-iframe"
-          src={
-            nativeMode
-              ? `${endpoint}?native_mode=true`
-              : `${endpoint}?workspace_mode=true`
-          }
-          style={{
-            userSelect: "none",
-          }}
-          className={cn(
-            "inset-0 z-[20] h-full w-full border-none",
-            !cdSetup && "pointer-events-none",
-            iframeLoaded && "bg-[#353535] pt-12",
-            activeDrawer === "assets" && "pointer-events-none blur-sm",
-          )}
-          title="iframeContent"
-          allow="autoplay; encrypted-media; fullscreen; display-capture; camera; microphone"
-          onLoad={() => {
-            console.log("Iframe has finished loading");
-            setIframeLoaded(true);
-            setProgress(60);
-          }}
-        />
-      )}
+      <IframeWithRetry
+        endpoint={endpoint}
+        nativeMode={nativeMode}
+        hasSetupEventListener={hasSetupEventListener}
+        cdSetup={cdSetup}
+        iframeLoaded={iframeLoaded}
+        onLoad={() => {
+          console.log("Iframe has finished loading");
+          setIframeLoaded(true);
+          setProgress(60);
+        }}
+      />
     </>
   );
 }
