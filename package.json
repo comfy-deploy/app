@@ -34,7 +34,7 @@
     "vite": "^6.2.2"
   },
   "dependencies": {
-    "@clerk/clerk-react": "5.31.8",
+    "@clerk/clerk-react": "5.43.1",
     "@clerk/themes": "^2.2.32",
     "@date-fns/utc": "^2.1.0",
     "@dnd-kit/core": "^6.3.1",
