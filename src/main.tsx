@@ -262,6 +262,45 @@ function InnerApp() {
 
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
+  
+  // Dynamically determine the base URL for redirects based on current hostname
+  const getRedirectBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const protocol = window.location.protocol;
+      
+      // For staging environment
+      if (hostname === 'staging.app.comfydeploy.com') {
+        return `${protocol}//staging.app.comfydeploy.com`;
+      }
+      
+      // For production environment
+      if (hostname === 'app.comfydeploy.com') {
+        return `${protocol}//app.comfydeploy.com`;
+      }
+      
+      // For local development, use relative paths
+      return '';
+    }
+    return '';
+  };
+
+  const baseUrl = getRedirectBaseUrl();
+  const defaultRedirectPath = '/workflows';
+  
+  // Build redirect URLs - use environment variables if provided, otherwise use dynamic URLs
+  const afterSignUpUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL || 
+    (baseUrl ? `${baseUrl}${defaultRedirectPath}` : defaultRedirectPath);
+  
+  const afterSignInUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL || 
+    (baseUrl ? `${baseUrl}${defaultRedirectPath}` : defaultRedirectPath);
+  
+  const signUpFallbackRedirectUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL || 
+    (baseUrl ? `${baseUrl}${defaultRedirectPath}` : undefined);
+  
+  const signInFallbackRedirectUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL || 
+    (baseUrl ? `${baseUrl}${defaultRedirectPath}` : undefined);
+
   root.render(
     <ClerkProvider
       appearance={{
@@ -271,10 +310,10 @@ if (!rootElement.innerHTML) {
       }}
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       afterSignOutUrl="/"
-      afterSignUpUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL || "/workflows"}
-      afterSignInUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL || "/workflows"}
-      signUpFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL}
-      signInFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
+      afterSignUpUrl={afterSignUpUrl}
+      afterSignInUrl={afterSignInUrl}
+      signUpFallbackRedirectUrl={signUpFallbackRedirectUrl}
+      signInFallbackRedirectUrl={signInFallbackRedirectUrl}
     >
       <InnerApp />
     </ClerkProvider>,
