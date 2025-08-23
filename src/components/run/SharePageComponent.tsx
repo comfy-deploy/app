@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +18,7 @@ import {
   getTotalUrlCountAndUrls,
 } from "@/components/workflows/OutputRender";
 import { useRuns } from "@/components/workflows/RunsTable";
+import { useSelectedVersion } from "@/components/version-select";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { api } from "@/lib/api";
 import { customInputNodes } from "@/lib/customInputNodes";
@@ -36,10 +38,11 @@ import {
   ChevronRight,
   ChevronUp,
   Clock,
+  Code,
   Loader2,
   Play,
 } from "lucide-react";
-import { parseAsBoolean, useQueryState } from "nuqs";
+import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 import {
   type ReactNode,
   useCallback,
@@ -49,13 +52,13 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import ApiPlaygroundDemo from "../api-playground-demo";
 import { MyDrawer } from "../drawer";
 import { Fab } from "../fab";
 import { LogsViewer } from "../log/logs-viewer";
 import { AlertDescription } from "../ui/alert";
 import { Progress } from "../ui/progress";
 import { Separator } from "../ui/separator";
-import { useSelectedVersion } from "../version-select";
 import { VirtualizedInfiniteList } from "../virtualized-infinite-list";
 import { LogsTab, RunDetails } from "../workflows/WorkflowComponent";
 
@@ -105,6 +108,7 @@ export function Playground(props: {
   const workflow_id = useWorkflowIdInWorkflowPage();
   const [runId, setRunId] = useQueryState("run-id");
   const [isTweak, setIsTweak] = useQueryState("tweak", parseAsBoolean);
+  const [playgroundTab, setPlaygroundTab] = useQueryState("playground-tab", parseAsString.withDefault("playground"));
   const { tweak: tweakQuery } = useSearch({
     from: "/workflows/$workflowId/$view",
   });
@@ -238,184 +242,224 @@ export function Playground(props: {
 
   return (
     <>
-      <div className="flex h-full w-full justify-between overflow-x-hidden pt-4 md:pt-12">
-        <div className="hidden h-full w-[400px] flex-col xl:flex">
-          <div
-            className={cn(
-              "flex flex-col transition-all",
-              logsCollapsed ? "h-[calc(100%-60px)]" : "h-[calc(100%-370px)]",
-            )}
-          >
-            <div className="mb-1 flex items-center justify-between">
-              <span className="ml-2 font-semibold text-sm">Edit</span>
-              <a
-                target="_blank"
-                href="https://docs.comfydeploy.com/docs/api/inputs"
-                className="mr-2 text-2xs text-muted-foreground hover:underline"
-                rel="noreferrer"
+      {/* Playground Tab Navigation */}
+      <div className="border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+        <div className="mx-auto max-w-screen-2xl px-4">
+          <Tabs value={playgroundTab} onValueChange={setPlaygroundTab} className="w-full">
+            <TabsList className="grid w-fit grid-cols-2 bg-transparent p-0">
+              <TabsTrigger 
+                value="playground" 
+                className="flex items-center gap-2 border-b-2 border-transparent bg-transparent px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:text-zinc-400 dark:hover:text-zinc-100 dark:data-[state=active]:text-blue-400"
               >
-                Learn about external inputs
-              </a>
-            </div>
-            <div className="flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-600/40 dark:bg-zinc-900">
-              {isVersionLoading ? (
-                <div className="flex h-full items-center justify-center">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : version ? (
-                <RunWorkflowInline
-                  blocking={false}
-                  default_values={default_values}
-                  inputs={workflowInputs}
-                  runOrigin={props.runOrigin}
-                  workflow_version_id={version?.id}
-                  machine_id={props.workflow?.selected_machine_id}
-                  workflow_api={version?.workflow_api}
-                  canEditOrder={true}
-                />
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-2">
-                  <p className="text-center font-medium text-muted-foreground text-sm">
-                    No deployments found for this workflow.
-                  </p>
-                  <p className="mx-4 text-center text-muted-foreground text-xs leading-5">
-                    Start a new workspace below to save a version, and promote
-                    it to a deployment for testing in the playground.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div
-            className={cn(
-              "my-2 flex flex-col transition-all",
-              logsCollapsed ? "h-[40px]" : "h-[350px]",
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <span className="ml-2 font-semibold text-sm">Logs</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setLogsCollapsed(!logsCollapsed)}
-                className="h-6 px-2"
+                <Play className="h-4 w-4" />
+                Playground
+              </TabsTrigger>
+              <TabsTrigger 
+                value="api" 
+                className="flex items-center gap-2 border-b-2 border-transparent bg-transparent px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:text-zinc-400 dark:hover:text-zinc-100 dark:data-[state=active]:text-blue-400"
               >
-                {logsCollapsed ? (
-                  <ChevronUp size={16} />
-                ) : (
-                  <ChevronDown size={16} />
-                )}
-              </Button>
-            </div>
-            <div
-              className={cn(
-                "mt-2 overflow-auto rounded-sm border border-gray-200 p-2 shadow-sm",
-                logsCollapsed
-                  ? "h-0 opacity-0 transition-all"
-                  : "h-[calc(100%-30px)] opacity-100 transition-all",
-              )}
-            >
-              {runId && run?.modal_function_call_id ? (
-                <LogsTab runId={runId} />
-              ) : (
-                <div className="h-[300px] w-full">
-                  <LogsViewer
-                    logs={[
-                      {
-                        timestamp: 0,
-                        logs: "Listening for logs...",
-                      },
-                    ]}
-                    stickToBottom
-                    hideTimestamp
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="h-[calc(100vh-35px)] w-full min-w-0 flex-1 md:h-full lg:mx-4">
-          <div className="relative h-full">
-            {/* Useless Background */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1 }}
-              className="pointer-events-none absolute inset-0 z-0"
-            >
-              <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
-              <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
-              <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
-            </motion.div>
-
-            <div className="relative z-10 h-full w-full">
-              <RunDisplay runId={runId ?? undefined} />
-              <ArrowIndicator
-                disableTop={true}
-                disableLeft={true}
-                disableDown={true}
-                disableRight={true}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="hidden h-full min-w-[120px] max-w-[120px] flex-col lg:flex">
-          <span className="mb-1 ml-2 font-semibold text-sm">Gallery</span>
-          <div className="relative mb-2 flex-1 overflow-hidden rounded-sm border border-gray-200 shadow-sm dark:border-gray-600/40">
-            <VirtualizedInfiniteList
-              ref={virtualizerRef}
-              className="!h-full scrollbar-track-transparent scrollbar-thin scrollbar-none p-1.5"
-              queryResult={runsQuery}
-              renderItem={(run) => <RunGallery runId={run?.id} />}
-              estimateSize={107}
-              renderLoading={() => {
-                return [...Array(4)].map((_, i) => (
-                  <Skeleton
-                    key={i}
-                    className="aspect-square w-[100px] rounded-[8px]"
-                  />
-                ));
-              }}
-            />
-            <div className="pointer-events-none absolute top-0 right-0 left-0 z-10 h-10 bg-gradient-to-b from-white to-transparent dark:from-zinc-900" />
-            <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-10 bg-gradient-to-t from-white to-transparent dark:from-zinc-900" />
-          </div>
+                <Code className="h-4 w-4" />
+                API
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
-      <Fab
-        refScrollingContainerKey="fab-playground"
-        className="z-50 xl:hidden"
-        mainItem={{
-          onClick: () =>
-            setShowRunInputsMobileLayout(!showRunInputsMobileLayout),
-          name: "Queue run",
-          icon: Play,
-        }}
-      />
+      {/* Tab Content */}
+      <Tabs value={playgroundTab} onValueChange={setPlaygroundTab} className="h-full">
+        <TabsContent value="playground" className="m-0 h-full">
+          <div className="flex h-full w-full justify-between overflow-x-hidden pt-4 md:pt-12">
+            <div className="hidden h-full w-[400px] flex-col xl:flex">
+              <div
+                className={cn(
+                  "flex flex-col transition-all",
+                  logsCollapsed ? "h-[calc(100%-60px)]" : "h-[calc(100%-370px)]",
+                )}
+              >
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="ml-2 font-semibold text-sm">Edit</span>
+                  <a
+                    target="_blank"
+                    href="https://docs.comfydeploy.com/docs/api/inputs"
+                    className="mr-2 text-2xs text-muted-foreground hover:underline"
+                    rel="noreferrer"
+                  >
+                    Learn about external inputs
+                  </a>
+                </div>
+                <div className="flex-1 overflow-hidden rounded-sm border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-600/40 dark:bg-zinc-900">
+                  {isVersionLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : version ? (
+                    <RunWorkflowInline
+                      blocking={false}
+                      default_values={default_values}
+                      inputs={workflowInputs}
+                      runOrigin={props.runOrigin}
+                      workflow_version_id={version?.id}
+                      machine_id={props.workflow?.selected_machine_id}
+                      workflow_api={version?.workflow_api}
+                      canEditOrder={true}
+                    />
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-2">
+                      <p className="text-center font-medium text-muted-foreground text-sm">
+                        No deployments found for this workflow.
+                      </p>
+                      <p className="mx-4 text-center text-muted-foreground text-xs leading-5">
+                        Start a new workspace below to save a version, and promote
+                        it to a deployment for testing in the playground.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-      {showRunInputsMobileLayout && (
-        <MyDrawer
-          open={showRunInputsMobileLayout}
-          backgroundInteractive={true}
-          onClose={() => setShowRunInputsMobileLayout(false)}
-          desktopClassName="w-[500px] xl:hidden shadow-lg border border-gray-200 dark:border-zinc-700/50"
-          side="left"
-        >
-          <RunWorkflowInline
-            blocking={false}
-            default_values={default_values}
-            inputs={workflowInputs}
-            runOrigin={props.runOrigin}
-            workflow_version_id={version?.id}
-            machine_id={props.workflow?.selected_machine_id}
-            workflow_api={version?.workflow_api}
+              <div
+                className={cn(
+                  "my-2 flex flex-col transition-all",
+                  logsCollapsed ? "h-[40px]" : "h-[350px]",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="ml-2 font-semibold text-sm">Logs</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setLogsCollapsed(!logsCollapsed)}
+                    className="h-6 px-2"
+                  >
+                    {logsCollapsed ? (
+                      <ChevronUp size={16} />
+                    ) : (
+                      <ChevronDown size={16} />
+                    )}
+                  </Button>
+                </div>
+                <div
+                  className={cn(
+                    "mt-2 overflow-auto rounded-sm border border-gray-200 p-2 shadow-sm",
+                    logsCollapsed
+                      ? "h-0 opacity-0 transition-all"
+                      : "h-[calc(100%-30px)] opacity-100 transition-all",
+                  )}
+                >
+                  {runId && run?.modal_function_call_id ? (
+                    <LogsTab runId={runId} />
+                  ) : (
+                    <div className="h-[300px] w-full">
+                      <LogsViewer
+                        logs={[
+                          {
+                            timestamp: 0,
+                            logs: "Listening for logs...",
+                          },
+                        ]}
+                        stickToBottom
+                        hideTimestamp
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="h-[calc(100vh-35px)] w-full min-w-0 flex-1 md:h-full lg:mx-4">
+              <div className="relative h-full">
+                {/* Useless Background */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 1 }}
+                  className="pointer-events-none absolute inset-0 z-0"
+                >
+                  <div className="-translate-x-[20%] -translate-y-1/2 absolute inset-1/2 h-[450px] w-[450px] animate-[pulse_9s_ease-in-out_infinite] rounded-full bg-blue-400 bg-opacity-30 blur-3xl" />
+                  <div className="-translate-x-[90%] -translate-y-[10%] absolute inset-1/2 h-72 w-72 animate-[pulse_7s_ease-in-out_infinite] rounded-full bg-purple-400 bg-opacity-30 blur-3xl delay-300" />
+                  <div className="-translate-x-[90%] -translate-y-[120%] absolute inset-1/2 h-52 w-52 animate-[pulse_6s_ease-in-out_infinite] rounded-full bg-red-400 bg-opacity-40 blur-2xl delay-600" />
+                </motion.div>
+
+                <div className="relative z-10 h-full w-full">
+                  <RunDisplay runId={runId ?? undefined} />
+                  <ArrowIndicator
+                    disableTop={true}
+                    disableLeft={true}
+                    disableDown={true}
+                    disableRight={true}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden h-full min-w-[120px] max-w-[120px] flex-col lg:flex">
+              <span className="mb-1 ml-2 font-semibold text-sm">Gallery</span>
+              <div className="relative mb-2 flex-1 overflow-hidden rounded-sm border border-gray-200 shadow-sm dark:border-gray-600/40">
+                <VirtualizedInfiniteList
+                  ref={virtualizerRef}
+                  className="!h-full scrollbar-track-transparent scrollbar-thin scrollbar-none p-1.5"
+                  queryResult={runsQuery}
+                  renderItem={(run) => <RunGallery runId={run?.id} />}
+                  estimateSize={107}
+                  renderLoading={() => {
+                    return [...Array(4)].map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="aspect-square w-[100px] rounded-[8px]"
+                      />
+                    ));
+                  }}
+                />
+                <div className="pointer-events-none absolute top-0 right-0 left-0 z-10 h-10 bg-gradient-to-b from-white to-transparent dark:from-zinc-900" />
+                <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-10 bg-gradient-to-t from-white to-transparent dark:from-zinc-900" />
+              </div>
+            </div>
+          </div>
+
+          <Fab
+            refScrollingContainerKey="fab-playground"
+            className="z-50 xl:hidden"
+            mainItem={{
+              onClick: () =>
+                setShowRunInputsMobileLayout(!showRunInputsMobileLayout),
+              name: "Queue run",
+              icon: Play,
+            }}
           />
-        </MyDrawer>
-      )}
+
+          {showRunInputsMobileLayout && (
+            <MyDrawer
+              open={showRunInputsMobileLayout}
+              backgroundInteractive={true}
+              onClose={() => setShowRunInputsMobileLayout(false)}
+              desktopClassName="w-[500px] xl:hidden shadow-lg border border-gray-200 dark:border-zinc-700/50"
+              side="left"
+            >
+              <RunWorkflowInline
+                blocking={false}
+                default_values={default_values}
+                inputs={workflowInputs}
+                runOrigin={props.runOrigin}
+                workflow_version_id={version?.id}
+                machine_id={props.workflow?.selected_machine_id}
+                workflow_api={version?.workflow_api}
+              />
+            </MyDrawer>
+          )}
+        </TabsContent>
+
+        <TabsContent value="api" className="m-0 h-full">
+          <div className="h-full w-full p-4">
+            <div className="mx-auto h-full max-w-screen-2xl">
+              <ApiPlaygroundDemo 
+                defaultInputs={default_values}
+                defaultPathParams={{}}
+              />
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
