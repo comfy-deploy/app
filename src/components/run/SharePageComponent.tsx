@@ -1,4 +1,4 @@
-import { RunWorkflowInline } from "@/components/run-workflow-inline";
+import { RunWorkflowInline } from "@/components/run/RunWorkflowInline";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,8 @@ import {
   PlaygroundOutputRenderRun,
   getTotalUrlCountAndUrls,
 } from "@/components/workflows/OutputRender";
-import { useRuns } from "@/hooks/use-runs";
-import { useSelectedVersion } from "@/hooks/use-selected-version";
+import { useRuns } from "@/components/workflows/RunsTable";
+import { useSelectedVersion } from "@/components/version-select";
 import { useWorkflowIdInWorkflowPage } from "@/hooks/hook";
 import { api } from "@/lib/api";
 import { customInputNodes } from "@/lib/customInputNodes";
@@ -26,8 +26,7 @@ import { getDuration, getRelativeTime } from "@/lib/get-relative-time";
 import {
   getDefaultValuesFromWorkflow,
   getInputsFromWorkflow,
-  getFormattedInputs,
-} from "@/lib/workflow-input-utils";
+} from "@/lib/getInputsFromWorkflow";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
@@ -53,17 +52,15 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { ApiPlaygroundDemo } from "../api-playground-demo";
-import { ArrowIndicator } from "../arrow-indicator";
+import ApiPlaygroundDemo from "../api-playground-demo";
 import { MyDrawer } from "../drawer";
 import { Fab } from "../fab";
 import { LogsViewer } from "../log/logs-viewer";
-import { LogsTab } from "../log/logs-tab";
 import { AlertDescription } from "../ui/alert";
 import { Progress } from "../ui/progress";
 import { Separator } from "../ui/separator";
 import { VirtualizedInfiniteList } from "../virtualized-infinite-list";
-import { RunDetails } from "../workflows/WorkflowComponent";
+import { LogsTab, RunDetails } from "../workflows/WorkflowComponent";
 
 type run = {
   status:
