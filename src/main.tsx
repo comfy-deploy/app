@@ -260,6 +260,32 @@ function InnerApp() {
   );
 }
 
+// Helper function to get the correct redirect URL based on environment
+function getRedirectUrl(path: string = "/workflows"): string {
+  if (typeof window === "undefined") return path; // SSR fallback
+  
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  // For local development
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return path;
+  }
+  
+  // For staging environment
+  if (hostname === "staging.app.comfydeploy.com") {
+    return `${protocol}//staging.app.comfydeploy.com${path}`;
+  }
+  
+  // For production environment
+  if (hostname === "app.comfydeploy.com") {
+    return `${protocol}//app.comfydeploy.com${path}`;
+  }
+  
+  // Fallback to current origin + path
+  return `${window.location.origin}${path}`;
+}
+
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
@@ -271,10 +297,10 @@ if (!rootElement.innerHTML) {
       }}
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       afterSignOutUrl="/"
-      afterSignUpUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL || "/workflows"}
-      afterSignInUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL || "/workflows"}
-      signUpFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL}
-      signInFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL}
+      afterSignUpUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL || getRedirectUrl("/workflows")}
+      afterSignInUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL || getRedirectUrl("/workflows")}
+      signUpFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL || getRedirectUrl("/workflows")}
+      signInFallbackRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL || getRedirectUrl("/workflows")}
     >
       <InnerApp />
     </ClerkProvider>,
