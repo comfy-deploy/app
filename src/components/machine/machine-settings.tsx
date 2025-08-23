@@ -389,6 +389,7 @@ function ServerlessSettings({
       extra_args: machine.extra_args,
       disable_metadata: machine.disable_metadata,
       prestart_command: machine.prestart_command,
+      hide_community_uploads: machine.hide_community_uploads ?? false,
 
       optimized_runner: machine.optimized_runner,
       models_to_cache: machine.models_to_cache || [],
@@ -977,6 +978,26 @@ function ServerlessSettings({
                               <FormControl>
                                 <Switch
                                   id="disable_metadata"
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="hide_community_uploads"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hide Community Uploads</FormLabel>
+                              <FormDescription>
+                                Hide community models and uploads from view
+                              </FormDescription>
+                              <FormControl>
+                                <Switch
+                                  id="hide_community_uploads"
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
                                 />

@@ -12,7 +12,11 @@ export const Route = createFileRoute("/models")({
 
 export function StoragePage({
   isWorkflowPage = false,
-}: { isWorkflowPage?: boolean }) {
+  machine,
+}: { 
+  isWorkflowPage?: boolean;
+  machine?: any;
+}) {
   const [showAddModel, setShowAddModel] = useState(false);
   const [selectedFolderPath, setSelectedFolderPath] = useState("");
 
@@ -41,7 +45,7 @@ export function StoragePage({
             </div>
           }
         >
-          <FolderTree onAddModel={handleAddModel} />
+          <FolderTree onAddModel={handleAddModel} machine={machine} />
         </Suspense>
       </div>
 
