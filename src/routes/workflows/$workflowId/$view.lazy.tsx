@@ -191,7 +191,7 @@ function WorkflowPageComponent() {
       );
       break;
     case "model":
-      view = <StoragePage isWorkflowPage={true} />;
+      view = <StoragePage isWorkflowPage={true} machine={machine} />;
       break;
   }
 

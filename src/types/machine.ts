@@ -33,6 +33,7 @@ export interface Machine {
   install_custom_node_with_gpu?: boolean;
   optimized_runner?: boolean;
   disable_metadata?: boolean;
+  hide_community_uploads?: boolean;
 
   // Resource settings
   cpu_request?: number | null;
@@ -79,6 +80,7 @@ export interface MachineVersion {
   prestart_command?: string;
   keep_warm: number;
   disable_metadata?: boolean;
+  hide_community_uploads?: boolean;
   allow_concurrent_inputs?: number;
   machine_builder_version?: string;
   cpu_request?: number | null;

@@ -166,6 +166,11 @@ export const serverlessFormSchema = z.object({
     .default(true)
     .optional()
     .describe("Disable metadata"),
+  hide_community_uploads: z
+    .boolean()
+    .default(false)
+    .optional()
+    .describe("Hide community uploads"),
   cpu_request: z.number().describe("CPU request").nullable().optional(),
   cpu_limit: z.number().describe("CPU limit").nullable().optional(),
   memory_request: z.number().describe("Memory request").nullable().optional(),

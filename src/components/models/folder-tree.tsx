@@ -47,7 +47,7 @@ import {
 } from "lucide-react";
 import { useQueryState } from "nuqs";
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 
 // Format file size to human-readable format (KB, MB, GB)
@@ -71,6 +71,7 @@ interface FileEntry {
 interface FolderTreeProps {
   className?: string;
   onAddModel: (folderPath: string) => void;
+  machine?: any; // Optional machine prop to access settings
 }
 
 interface TreeNode {
@@ -903,7 +904,7 @@ function mergeNodes(
   return result;
 }
 
-export function FolderTree({ className, onAddModel }: FolderTreeProps) {
+export function FolderTree({ className, onAddModel, machine }: FolderTreeProps) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useQueryState<ModelFilter>("model_view", {
@@ -922,6 +923,16 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
   const [sortBy, setSortBy] = useState<"name" | "size">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
+  // Check if community uploads should be hidden based on machine setting
+  const shouldHideCommunityUploads = machine?.hide_community_uploads ?? false;
+
+  // Auto-set filter to private if community uploads are hidden and current filter is public/all
+  useEffect(() => {
+    if (shouldHideCommunityUploads && (filter === "public" || filter === "all")) {
+      setFilter("private");
+    }
+  }, [shouldHideCommunityUploads, filter, setFilter]);
+
   const { data: privateFiles, isLoading: isLoadingPrivate } = useQuery<
     FileEntry[]
   >({
@@ -929,14 +940,16 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
     refetchInterval: 5000,
   });
 
+  // Only load public files if community uploads are not hidden
   const { data: publicFiles, isLoading: isLoadingPublic } = useQuery<
     FileEntry[]
   >({
     queryKey: ["volume", "public-models"],
+    enabled: !shouldHideCommunityUploads,
   });
 
   const privateTree = privateFiles ? buildTree(privateFiles, true) : [];
-  const publicTree = publicFiles ? buildTree(publicFiles, false) : [];
+  const publicTree = publicFiles && !shouldHideCommunityUploads ? buildTree(publicFiles, false) : [];
 
   const injectFrontendFolders = (
     tree: TreeNode[],
@@ -1013,7 +1026,7 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
     injectedPrivateTree,
     publicTree,
     filter === "private" || filter === "all",
-    filter === "public" || filter === "all",
+    (filter === "public" || filter === "all") && !shouldHideCommunityUploads,
   );
 
   // Apply sorting to the merged tree
@@ -1268,32 +1281,36 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
                       Private
                     </TabsTrigger>
                   </motion.div>
-                  <motion.div layout className="relative">
-                    <TabsTrigger
-                      value="public"
-                      className={cn(
-                        "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
-                        filter === "public"
-                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700"
-                          : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700",
-                      )}
-                    >
-                      Public
-                    </TabsTrigger>
-                  </motion.div>
-                  <motion.div layout className="relative">
-                    <TabsTrigger
-                      value="all"
-                      className={cn(
-                        "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
-                        filter === "all"
-                          ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700"
-                          : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700",
-                      )}
-                    >
-                      All
-                    </TabsTrigger>
-                  </motion.div>
+                  {!shouldHideCommunityUploads && (
+                    <>
+                      <motion.div layout className="relative">
+                        <TabsTrigger
+                          value="public"
+                          className={cn(
+                            "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
+                            filter === "public"
+                              ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700"
+                              : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700",
+                          )}
+                        >
+                          Public
+                        </TabsTrigger>
+                      </motion.div>
+                      <motion.div layout className="relative">
+                        <TabsTrigger
+                          value="all"
+                          className={cn(
+                            "rounded-md px-4 py-1.5 font-medium text-sm transition-all",
+                            filter === "all"
+                              ? "bg-gradient-to-b from-white to-gray-100 shadow-sm ring-1 ring-gray-200/50 dark:from-zinc-800 dark:to-zinc-700 dark:ring-zinc-700"
+                              : "text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700",
+                          )}
+                        >
+                          All
+                        </TabsTrigger>
+                      </motion.div>
+                    </>
+                  )}
                 </TabsList>
               </motion.div>
             </Tabs>
@@ -1338,7 +1355,9 @@ export function FolderTree({ className, onAddModel }: FolderTreeProps) {
               {filter === "all"
                 ? "No models available. Upload models to your folders or create a new folder."
                 : filter === "private"
-                  ? "No private models found. Upload models to your folders or create a new folder."
+                  ? shouldHideCommunityUploads 
+                    ? "No private models found. Community uploads are hidden for this machine. Upload models to your folders or create a new folder."
+                    : "No private models found. Upload models to your folders or create a new folder."
                   : "No public models available at the moment."}
             </p>
             {/* Allow upload even for public filter */}
