@@ -333,9 +333,9 @@ async function uploadMultipart(
   const { partUrls, partSize, uploadId, objectKey } = uploadResponse;
   const parts: Array<{ETag: string, PartNumber: number}> = [];
   
-  let completedParts = 0;
   const totalParts = partUrls.length;
   const startTime = Date.now();
+  const completedPartSizes: number[] = new Array(totalParts).fill(0);
 
   try {
     const partPromises = partUrls.map(async (url: string, index: number) => {
@@ -346,17 +346,17 @@ async function uploadMultipart(
 
       const etag = await uploadPart(url, partData, partNumber);
       
-      completedParts++;
+      completedPartSizes[index] = partData.size;
       
       if (onProgress) {
-        const progress = (completedParts / totalParts) * 100;
-        const uploadedBytes = completedParts * partSize;
+        const totalUploadedBytes = completedPartSizes.reduce((sum, size) => sum + size, 0);
+        const progress = (totalUploadedBytes / file.size) * 100;
         const elapsedTime = (Date.now() - startTime) / 1000;
-        const uploadSpeed = uploadedBytes / elapsedTime;
-        const remainingBytes = file.size - uploadedBytes;
+        const uploadSpeed = totalUploadedBytes / elapsedTime;
+        const remainingBytes = file.size - totalUploadedBytes;
         const estimatedTime = remainingBytes / uploadSpeed;
 
-        onProgress(progress, Math.min(uploadedBytes, file.size), file.size, estimatedTime);
+        onProgress(progress, totalUploadedBytes, file.size, estimatedTime);
       }
 
       return { ETag: etag, PartNumber: partNumber };
