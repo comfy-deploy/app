@@ -224,3 +224,175 @@ export async function uploadFileToVolume({
     throw error;
   }
 }
+
+async function retryUpload<T>(
+  uploadFn: () => Promise<T>,
+  maxRetries: number = 3,
+  delays: number[] = [1000, 2000, 4000] // 1s, 2s, 4s
+): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await uploadFn();
+    } catch (error) {
+      if (attempt === maxRetries - 1) {
+        throw error;
+      }
+      
+      const delay = delays[attempt] || delays[delays.length - 1];
+      console.log(`Upload attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('All retry attempts failed');
+}
+
+async function uploadPart(url: string, data: Blob, partNumber: number): Promise<string> {
+  return retryUpload(async () => {
+    const response = await fetch(url, {
+      method: 'PUT',
+      body: data,
+      headers: {
+        'Content-Type': 'application/octet-stream'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Part ${partNumber} upload failed: ${response.status}`);
+    }
+    
+    const etag = response.headers.get('ETag');
+    if (!etag) {
+      throw new Error(`No ETag received for part ${partNumber}`);
+    }
+    
+    return etag;
+  });
+}
+
+export async function uploadFileWithProgress(
+  file: File,
+  onProgress?: (progress: number, uploadedSize: number, totalSize: number, estimatedTime: number) => void
+) {
+  const uploadResponse = await generateUploadUrl(
+    file.name,
+    file.type || 'application/octet-stream',
+    file.size
+  );
+
+  if (uploadResponse.isMultipart) {
+    return await uploadMultipart(file, uploadResponse, onProgress);
+  } else {
+    return await uploadSingle(file, uploadResponse.uploadUrl, onProgress);
+  }
+}
+
+async function uploadSingle(
+  file: File, 
+  uploadUrl: string, 
+  onProgress?: (progress: number, uploadedSize: number, totalSize: number, estimatedTime: number) => void
+) {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const startTime = Date.now();
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        const progress = (event.loaded / event.total) * 100;
+        const elapsedTime = (Date.now() - startTime) / 1000;
+        const uploadSpeed = event.loaded / elapsedTime;
+        const remainingSize = event.total - event.loaded;
+        const estimatedTime = remainingSize / uploadSpeed;
+
+        onProgress(progress, event.loaded, event.total, estimatedTime);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Network error during upload'));
+    };
+
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.send(file);
+  });
+}
+
+async function uploadMultipart(
+  file: File,
+  uploadResponse: any,
+  onProgress?: (progress: number, uploadedSize: number, totalSize: number, estimatedTime: number) => void
+) {
+  const { partUrls, partSize, uploadId, objectKey } = uploadResponse;
+  const parts: Array<{ETag: string, PartNumber: number}> = [];
+  
+  let completedParts = 0;
+  const totalParts = partUrls.length;
+  const startTime = Date.now();
+
+  try {
+    const partPromises = partUrls.map(async (url: string, index: number) => {
+      const partNumber = index + 1;
+      const start = index * partSize;
+      const end = Math.min(start + partSize, file.size);
+      const partData = file.slice(start, end);
+
+      const etag = await uploadPart(url, partData, partNumber);
+      
+      completedParts++;
+      
+      if (onProgress) {
+        const progress = (completedParts / totalParts) * 100;
+        const uploadedBytes = completedParts * partSize;
+        const elapsedTime = (Date.now() - startTime) / 1000;
+        const uploadSpeed = uploadedBytes / elapsedTime;
+        const remainingBytes = file.size - uploadedBytes;
+        const estimatedTime = remainingBytes / uploadSpeed;
+
+        onProgress(progress, Math.min(uploadedBytes, file.size), file.size, estimatedTime);
+      }
+
+      return { ETag: etag, PartNumber: partNumber };
+    });
+
+    const completedPartsList = await Promise.all(partPromises);
+    parts.push(...completedPartsList);
+
+    await api({
+      url: "volume/file/complete-multipart-upload",
+      init: {
+        method: "POST",
+        body: JSON.stringify({
+          objectKey,
+          uploadId,
+          parts: parts.sort((a, b) => a.PartNumber - b.PartNumber)
+        })
+      }
+    });
+
+  } catch (error) {
+    try {
+      await api({
+        url: "volume/file/abort-multipart-upload",
+        init: {
+          method: "POST",
+          body: JSON.stringify({
+            objectKey,
+            uploadId
+          })
+        }
+      });
+    } catch (cleanupError) {
+      console.error('Failed to cleanup multipart upload:', cleanupError);
+    }
+    
+    throw error;
+  }
+}
