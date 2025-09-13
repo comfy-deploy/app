@@ -603,6 +603,28 @@ const OptionList = memo(
 
         if (!isNodeSuccessful(value, category)) {
           const folders = Array.isArray(folder) ? folder.join(", ") : folder;
+          
+          // Special handling for LoadImage nodes to provide better guidance
+          if (category === "Image") {
+            return (
+              <StatusTooltip
+                content={
+                  <div className="space-y-2">
+                    <div>
+                      Fail to find the <b>"{value}"</b> file! 
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      💡 <b>Tip:</b> You can replace this image file in your workspace by uploading a new image with the same name, or update the LoadImage node to reference a different image file.
+                    </div>
+                  </div>
+                }
+                variant="yellow"
+              >
+                Not Exist
+              </StatusTooltip>
+            );
+          }
+          
           return (
             <TooltipProvider>
               <Tooltip>
