@@ -4,8 +4,6 @@ import type React from "react";
 
 import {
   ArrowLeft,
-  Eye,
-  EyeOff,
   KeyRound,
   Link,
   Link2Off,
@@ -59,12 +57,13 @@ import {
 import { toast } from "sonner";
 import { RebuildMachineDialog } from "../machines/machine-list";
 import { Badge } from "../ui/badge";
+import { PasswordInput } from "../ui/password-input";
 
 export function SecretsSelector({ machine }: { machine: any }) {
   const [visibleValues, setVisibleValues] = useState<Record<number, boolean>>(
     {},
   );
-  const [showNewValue, setShowNewValue] = useState(false);
+
   const [isAddingSecret, setIsAddingSecret] = useState(false);
   const [isEditingSecret, setIsEditingSecret] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -317,9 +316,7 @@ export function SecretsSelector({ machine }: { machine: any }) {
     }));
   };
 
-  const toggleShowNewValue = () => {
-    setShowNewValue(!showNewValue);
-  };
+
 
   const selectGroup = async (groupId: string) => {
     try {
@@ -415,31 +412,12 @@ export function SecretsSelector({ machine }: { machine: any }) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="secret-value">Value</Label>
-                  <div className="relative">
-                    <Input
-                      id="secret-value"
-                      value={newSecretValue}
-                      onChange={(e) => setNewSecretValue(e.target.value)}
-                      type={showNewValue ? "text" : "password"}
-                      placeholder="Enter secret value"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground"
-                      onClick={toggleShowNewValue}
-                    >
-                      {showNewValue ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">
-                        {showNewValue ? "Hide" : "Show"} value
-                      </span>
-                    </Button>
-                  </div>
+                  <PasswordInput
+                    id="secret-value"
+                    value={newSecretValue}
+                    onChange={(e) => setNewSecretValue(e.target.value)}
+                    placeholder="Enter secret value"
+                  />
                 </div>
               </div>
             </div>
@@ -667,31 +645,12 @@ export function SecretsSelector({ machine }: { machine: any }) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="secret-value">Value</Label>
-                <div className="relative">
-                  <Input
-                    id="secret-value"
-                    value={newSecretValue}
-                    onChange={(e) => setNewSecretValue(e.target.value)}
-                    type={showNewValue ? "text" : "password"}
-                    placeholder="Enter secret value"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground"
-                    onClick={toggleShowNewValue}
-                  >
-                    {showNewValue ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">
-                      {showNewValue ? "Hide" : "Show"} value
-                    </span>
-                  </Button>
-                </div>
+                <PasswordInput
+                  id="secret-value"
+                  value={newSecretValue}
+                  onChange={(e) => setNewSecretValue(e.target.value)}
+                  placeholder="Enter secret value"
+                />
               </div>
             </div>
           </div>
@@ -746,31 +705,12 @@ export function SecretsSelector({ machine }: { machine: any }) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-secret-value">Value</Label>
-                <div className="relative">
-                  <Input
-                    id="edit-secret-value"
-                    value={editSecretValue}
-                    onChange={(e) => setEditSecretValue(e.target.value)}
-                    type={showNewValue ? "text" : "password"}
-                    placeholder="Enter secret value"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground"
-                    onClick={toggleShowNewValue}
-                  >
-                    {showNewValue ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">
-                      {showNewValue ? "Hide" : "Show"} password
-                    </span>
-                  </Button>
-                </div>
+                <PasswordInput
+                  id="edit-secret-value"
+                  value={editSecretValue}
+                  onChange={(e) => setEditSecretValue(e.target.value)}
+                  placeholder="Enter secret value"
+                />
               </div>
             </div>
           </div>
