@@ -1064,47 +1064,6 @@ export function PricingPage() {
           <h1 className="font-bold sm:text-5xl text-4xl text-gray-900 tracking-tight dark:text-zinc-200">
             Power your teams with Cloud Hosted ComfyUI
           </h1>
-
-          {/* Aesthetic announcement card */}
-          <div className="mt-8 max-w-5xl">
-            <div className="rounded-lg bg-orange-50/80 p-4 ring-1 ring-orange-200/50 dark:bg-orange-900/20 dark:ring-orange-800/20">
-              <div className="flex items-start gap-3">
-                <span className="inline-flex items-center rounded-full bg-orange-100/80 px-2 py-1 text-xs font-medium text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
-                  👋 From Benny
-                </span>
-                <div className="flex-1 space-y-2 text-sm text-gray-700 dark:text-zinc-300">
-                  <p className="font-medium">
-                    We are no longer taking new customers.
-                  </p>
-                  <p className="text-gray-600 dark:text-zinc-400">
-                    Existing customers: service and support remain unchanged.
-                  </p>
-                  <div className="flex flex-wrap items-center gap-3 text-xs">
-                    See why:
-                    <a
-                      href="https://x.com/BennyKokMusic/status/1968325785158394089"
-                      className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
-                    >
-                      Twitter
-                    </a>
-                    <a
-                      href="https://www.comfydeploy.com/blog/re-open-sourcing-comfydeploy"
-                      className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
-                    >
-                      Blog Post
-                    </a>
-                    Contact us at:
-                    <a
-                      href="mailto:founders@comfydeploy.com"
-                      className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
-                    >
-                      founders@comfydeploy.com
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Pricing Section */}
