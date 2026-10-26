@@ -1,10 +1,9 @@
 import { SignedIn } from "@clerk/clerk-react";
-import { createFileRoute, Link, useRouter, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useId, useState } from "react";
-import { useCustomer } from "autumn-js/react";
+import { useId, useState } from "react";
 import { AnimatedLogoCard } from "@/components/AnimatedLogoCard";
 import {
   GPUPriceSimulator,
@@ -40,7 +39,6 @@ export const Route = createFileRoute("/pricing")({
     return {
       ready: search.ready as boolean | undefined,
       plan: search.plan as string | undefined,
-      checkout: search.checkout as string | undefined,
     };
   },
 });
@@ -1010,16 +1008,13 @@ function RouteComponent() {
 }
 
 export function PricingPage() {
-  const { data: _sub, isLoading, refetch: refetchPlan } = useCurrentPlanWithStatus();
-  const { refetch: refetchCustomer } = useCustomer();
-  const router = useRouter();
-  const search = useSearch({ from: "/pricing" });
+  const { data: _sub, isLoading } = useCurrentPlanWithStatus();
   const [isYearly, setIsYearly] = useState(false);
-  const [isUnlockingWorkspace, setIsUnlockingWorkspace] = useState(false);
 
   // Feature flags
   const showBusinessUpgradeButton = true;
 
+  // Determine user's current plan
   const userPlans = _sub?.plans?.plans || [];
   const isOnFreePlan =
     userPlans.some((plan: string) => plan.startsWith("free")) ||
@@ -1054,63 +1049,12 @@ export function PricingPage() {
     return true;
   });
 
+  // Show billing toggle only when creator or deployment tiers are present
   const showBillingToggle = filteredTiers.some(
     (tier) => tier.id === "creator" || tier.id === "deployment",
   );
 
   const isCancelled = _sub?.sub?.cancel_at_period_end;
-
-  useEffect(() => {
-    if (search.checkout !== "success") {
-      return;
-    }
-
-    let isActive = true;
-
-    const unlockWorkspace = async () => {
-      setIsUnlockingWorkspace(true);
-
-      try {
-        for (let attempt = 0; attempt < 6; attempt += 1) {
-          await refetchCustomer();
-          const refreshedPlan = await refetchPlan();
-          const activePlans = refreshedPlan.data?.plans?.plans ?? [];
-
-          if (
-            isActive &&
-            activePlans.some(
-              (plan: string) =>
-                plan === "business_monthly" || plan === "business_yearly",
-            )
-          ) {
-            router.navigate({
-              to: "/workflows",
-              search: {
-                view: undefined,
-                shared_workflow_id: undefined,
-                shared_slug: undefined,
-              },
-            });
-            return;
-          }
-
-          if (attempt < 5) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        }
-      } finally {
-        if (isActive) {
-          setIsUnlockingWorkspace(false);
-        }
-      }
-    };
-
-    void unlockWorkspace();
-
-    return () => {
-      isActive = false;
-    };
-  }, [refetchCustomer, refetchPlan, router, search.checkout]);
 
   return (
     <div className="min-h-screen">
@@ -1118,16 +1062,49 @@ export function PricingPage() {
         {/* Header */}
         <div className="mx-auto max-w-6xl py-12">
           <h1 className="font-bold sm:text-5xl text-4xl text-gray-900 tracking-tight dark:text-zinc-200">
-            Choose a business plan to activate your workspace
+            Power your teams with Cloud Hosted ComfyUI
           </h1>
-          <p className="leading-8 mt-4 text-lg text-gray-600 dark:text-zinc-400">
-            ComfyDeploy is currently business-plan only. Pick a plan to start checkout and unlock machines, workflows, and private model storage.
-          </p>
-          {isUnlockingWorkspace && (
-            <p className="mt-3 text-sm text-gray-500 dark:text-zinc-400">
-              Confirming your Business plan and unlocking your workspace...
-            </p>
-          )}
+
+          {/* Aesthetic announcement card */}
+          <div className="mt-8 max-w-5xl">
+            <div className="rounded-lg bg-orange-50/80 p-4 ring-1 ring-orange-200/50 dark:bg-orange-900/20 dark:ring-orange-800/20">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex items-center rounded-full bg-orange-100/80 px-2 py-1 text-xs font-medium text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
+                  👋 From Benny
+                </span>
+                <div className="flex-1 space-y-2 text-sm text-gray-700 dark:text-zinc-300">
+                  <p className="font-medium">
+                    We are no longer taking new customers.
+                  </p>
+                  <p className="text-gray-600 dark:text-zinc-400">
+                    Existing customers: service and support remain unchanged.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                    See why:
+                    <a
+                      href="https://x.com/BennyKokMusic/status/1968325785158394089"
+                      className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                    >
+                      Twitter
+                    </a>
+                    <a
+                      href="https://www.comfydeploy.com/blog/re-open-sourcing-comfydeploy"
+                      className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                    >
+                      Blog Post
+                    </a>
+                    Contact us at:
+                    <a
+                      href="mailto:founders@comfydeploy.com"
+                      className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                    >
+                      founders@comfydeploy.com
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Pricing Section */}
