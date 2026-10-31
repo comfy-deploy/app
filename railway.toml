@@ -1,9 +1,0 @@
-[build]
-builder = "nixpacks"
-buildCommand = "bun run build"
-
-[deploy]
-startCommand = "caddy run --config Caddyfile --adapter caddyfile"
-healthcheckPath = "/health"
-healthcheckTimeout = 100
-restartPolicyType = "never"
