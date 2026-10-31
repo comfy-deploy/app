@@ -35,6 +35,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAddAsset } from "@/hooks/hook";
 import { useAuthStore } from "@/lib/auth-store";
+import { isSafeHttpUrl } from "@/lib/safe-url";
 import { cn, getOptimizedImage } from "@/lib/utils";
 import { downloadImage } from "@/utils/download-image";
 import { ShineBorder } from "../magicui/shine-border";
@@ -395,7 +396,11 @@ function TextFileRenderer({
           variant="outline"
           size="sm"
           className="mt-3"
-          onClick={() => window.open(url, "_blank")}
+          onClick={() => {
+            if (isSafeHttpUrl(url)) {
+              window.open(url, "_blank", "noopener,noreferrer");
+            }
+          }}
         >
           <Download className="mr-2 h-3.5 w-3.5" />
           Download Instead

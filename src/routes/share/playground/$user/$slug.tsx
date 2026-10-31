@@ -27,6 +27,7 @@ import {
 import { RunDetails } from "@/components/workflows/WorkflowComponent";
 import { api } from "@/lib/api";
 import { getDefaultValuesFromWorkflow } from "@/lib/getInputsFromWorkflow";
+import { isSafeHttpUrl } from "@/lib/safe-url";
 import { cn } from "@/lib/utils";
 import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
@@ -339,7 +340,7 @@ function RouteComponent() {
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/;
     try {
       const match = description.match(linkRegex);
-      if (match && match.length >= 3) {
+      if (match && match.length >= 3 && isSafeHttpUrl(match[2])) {
         return {
           text: match[1],
           url: match[2],
@@ -503,7 +504,7 @@ function RouteComponent() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                window.open(linkData.url);
+                window.open(linkData.url, "_blank", "noopener,noreferrer");
               }}
             >
               <img
