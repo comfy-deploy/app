@@ -31,6 +31,8 @@
     /* Rich plum for A100-80GB */
     --color-gpu-H100: hsl(320, 55%, 45%);
     /* Deep rose for H100 */
+    --color-gpu-RTX-PRO-6000: hsl(25, 80%, 50%);
+    /* Amber for RTX PRO 6000 */
   }
 
   .dolloar .tooltip-value::before {

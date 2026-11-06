@@ -69,6 +69,7 @@ export const CPU_MEMORY_MAP: Record<string, string> = {
   A100: "40GB",
   "A100-80GB": "80GB",
   H100: "80GB",
+  "RTX-PRO-6000": "96GB",
 };
 
 // -------------------------hooks-------------------------
