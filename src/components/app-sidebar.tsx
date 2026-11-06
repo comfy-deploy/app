@@ -33,7 +33,6 @@ import {
   Telescope,
   Users,
   Workflow,
-  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { useIsAdminAndMember, useIsAdminOnly } from "@/components/permissions";
@@ -902,15 +901,9 @@ function UpdateInfoCard20261107() {
         onMouseEnter={() => bellRef.current?.startAnimation()}
         onMouseLeave={() => bellRef.current?.stopAnimation()}
       >
-        <div className="-top-4 -left-4 absolute h-[10px] w-[10px] animate-ping rounded-full bg-orange-500" />
-        <div className="-top-4 -left-4 absolute h-[10px] w-[10px] rounded-full bg-orange-500" />
-        <InfoCardDismiss
-          className="-top-1 -right-1 absolute rounded p-0.5 text-muted-foreground hover:text-foreground"
-          aria-label="Dismiss"
-        >
-          <X size={14} />
-        </InfoCardDismiss>
-        <InfoCardTitle className="flex flex-row items-center gap-1.5 pr-4">
+        <div className="-top-4 -right-4 absolute h-[14px] w-[14px] animate-ping rounded-full bg-orange-500" />
+        <div className="-top-4 -right-4 absolute h-[14px] w-[14px] rounded-full bg-orange-500" />
+        <InfoCardTitle className="flex flex-row items-center gap-1.5">
           <BellIcon ref={bellRef} size={15} /> New: RTX PRO 6000
         </InfoCardTitle>
         <InfoCardDescription className="text-2xs leading-4">
@@ -920,6 +913,7 @@ function UpdateInfoCard20261107() {
           On ComfyUI v0.44? Update the ComfyDeploy node.
         </InfoCardDescription>
         <InfoCardFooter>
+          <InfoCardDismiss className="text-2xs">Dismiss</InfoCardDismiss>
           <InfoCardAction>
             <Link
               to="https://docs.comfydeploy.com/docs/upgrade/changelog"
