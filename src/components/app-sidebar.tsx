@@ -605,7 +605,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
       <SidebarFooter>
-        {/* <WorkspaceUpdateInfoCard20250724 /> */}
+        <UpdateInfoCard20261107 />
         <div className="flex w-full flex-col justify-center gap-2 pb-4">
           {!(workflow_id && parentPath === "workflows") && (
             <div className="grid grid-cols-2 gap-2 px-2">
@@ -888,6 +888,45 @@ export function GuestSidebar() {
         </div>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function UpdateInfoCard20261107() {
+  const bellRef = useRef<BellIconHandle>(null);
+
+  return (
+    <InfoCard storageKey="update-2026-11-07" dismissType="forever">
+      <InfoCardContent
+        className="relative"
+        onMouseEnter={() => bellRef.current?.startAnimation()}
+        onMouseLeave={() => bellRef.current?.stopAnimation()}
+      >
+        <div className="-top-4 -right-4 absolute h-[14px] w-[14px] animate-ping rounded-full bg-orange-500" />
+        <div className="-top-4 -right-4 absolute h-[14px] w-[14px] rounded-full bg-orange-500" />
+        <InfoCardTitle className="flex flex-row items-center gap-1.5">
+          <BellIcon ref={bellRef} size={15} /> New: RTX PRO 6000
+        </InfoCardTitle>
+        <InfoCardDescription className="text-2xs leading-4">
+          96GB VRAM, available on all plans. Pick it under GPU in your machine
+          settings.
+        </InfoCardDescription>
+        <InfoCardDescription className="mt-1 text-2xs leading-4">
+          On ComfyUI v0.44? Update the ComfyDeploy node on your machine.
+        </InfoCardDescription>
+        <InfoCardFooter>
+          <InfoCardDismiss className="text-2xs">Dismiss</InfoCardDismiss>
+          <InfoCardAction>
+            <Link
+              to="https://docs.comfydeploy.com/docs/upgrade/changelog"
+              target="_blank"
+              className="flex flex-row items-center gap-1 text-2xs underline"
+            >
+              Learn more <ExternalLink size={12} />
+            </Link>
+          </InfoCardAction>
+        </InfoCardFooter>
+      </InfoCardContent>
+    </InfoCard>
   );
 }
 
