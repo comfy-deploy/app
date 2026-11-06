@@ -914,11 +914,10 @@ function UpdateInfoCard20261107() {
           <BellIcon ref={bellRef} size={15} /> New: RTX PRO 6000
         </InfoCardTitle>
         <InfoCardDescription className="text-2xs leading-4">
-          96GB VRAM, available on all plans. Pick it under GPU in your machine
-          settings.
+          96GB GPU, on all plans.
         </InfoCardDescription>
         <InfoCardDescription className="mt-1 text-2xs leading-4">
-          On ComfyUI v0.44? Update the ComfyDeploy node on your machine.
+          On ComfyUI v0.44? Update the ComfyDeploy node.
         </InfoCardDescription>
         <InfoCardFooter>
           <InfoCardAction>
