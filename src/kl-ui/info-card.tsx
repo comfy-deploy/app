@@ -121,15 +121,21 @@ function InfoCard({
   const [allImagesLoaded, setAllImagesLoaded] = useState(true);
   const [isDismissed, setIsDismissed] = useState(() => {
     if (typeof window === "undefined" || dismissType === "once") return false;
-    return dismissType === "forever"
-      ? localStorage.getItem(storageKey!) === "dismissed"
-      : false;
+    try {
+      return localStorage.getItem(storageKey!) === "dismissed";
+    } catch {
+      return false;
+    }
   });
 
   const handleDismiss = useCallback(() => {
     setIsDismissed(true);
     if (dismissType === "forever") {
-      localStorage.setItem(storageKey!, "dismissed");
+      try {
+        localStorage.setItem(storageKey!, "dismissed");
+      } catch {
+        // storage blocked (private mode): stays hidden for this page view only
+      }
     }
   }, [storageKey, dismissType]);
 
