@@ -9,4 +9,5 @@ export const machineGPUOptions = [
   "H100",
   "H200",
   "B200",
+  "RTX-PRO-6000",
 ] as const;

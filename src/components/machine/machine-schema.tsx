@@ -33,6 +33,7 @@ export const machineGPUOptions = [
   "H100",
   "H200",
   "B200",
+  "RTX-PRO-6000",
 ] as const;
 
 const machineBuilderVersionTypes = ["2", "3", "4"] as const;
@@ -250,6 +251,13 @@ export function useGPUConfig() {
       pricePerSec: 0.02,
       tier: "business",
     },
+    {
+      id: "RTX-PRO-6000",
+      gpuName: "RTX PRO 6000",
+      ram: "96GB",
+      pricePerSec: 0.02,
+      tier: "free",
+    },
   ];
 
   const gpuConfig = baseConfig.map((config) => ({
@@ -279,6 +287,7 @@ export const sharedMachineConfig: FieldConfig<
         ["A10G", , "A10G (24GB)"],
         ["L4", , "L4 (24GB)"],
         ["L40S", , "L40S (48GB)"],
+        ["RTX-PRO-6000", , "RTX PRO 6000 (96GB)"],
         ["A100", "business", "A100 (40GB)"],
         ["A100-80GB", "business", "A100-80GB (80GB)"],
         ["H100", "business", "H100 (80GB)"],

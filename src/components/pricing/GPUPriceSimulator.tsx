@@ -91,9 +91,7 @@ function PriceWithSavingsBadge({
       const displayName = item.metered_feature_id
         .replace(/^gpu-/, "")
         .replace(/^cpu$/, "CPU")
-        .toUpperCase()
-        .replace(/-80GB$/, "-80GB")
-        .replace(/-/, "");
+        .toUpperCase();
 
       pricing[displayName] = item.credit_cost / 100;
     });
@@ -166,9 +164,7 @@ export function GPUPriceSimulator() {
       const displayName = item.metered_feature_id
         .replace(/^gpu-/, "")
         .replace(/^cpu$/, "CPU")
-        .toUpperCase()
-        .replace(/-80GB$/, "-80GB")
-        .replace(/-/, "");
+        .toUpperCase();
 
       pricing[displayName] = item.credit_cost / 100; // Convert from cents to dollars
     });
