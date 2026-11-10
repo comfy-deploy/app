@@ -928,7 +928,11 @@ export function UpgradeButton(props: PlanButtonProps) {
                 return;
               }
 
-              if (!orgId) {
+              // Org is only required to start a new paid plan; legacy personal
+              // subscribers must still be able to manage/downgrade theirs.
+              const isExistingSubscriber =
+                label.includes("Manage") || label === "Downgrade";
+              if (!orgId && !isExistingSubscriber) {
                 router.navigate({
                   to: "/create-org",
                   search: {},
